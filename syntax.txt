@@ -1,0 +1,263 @@
+JEDES(AUẞER<E*>?)
+
+RESOURCEN: {
+	münzen,
+	
+	goldbarren, silberbarren,
+	goldbrocken, silberbrocken,
+	
+	eisenbaren,
+	eisenbrocken,
+	
+	kohle,
+	
+	wasser,
+	
+	brot,
+	
+	mehl,
+	
+	getreide,
+	
+	baumstämme,
+	holzbretter,
+	
+	steinbrocken,
+	steinziegel,
+}
+
+GELÄNDE: {
+	steinberg,
+	goldberg,
+	silberberg,
+	eisenberg,
+	kohleberg,
+	
+	hügel,
+	
+	wald,
+	wiese,
+	wüste,
+	
+	küstenwasser,
+	tiefeswasser,
+	ozeanwasser,
+	
+	flussHoch,
+	flussRechts,
+	flussRunter,
+	flussLinks,
+	flussHochRechtsKurve,
+	flussHochLinksKurve,
+	flussRunterRechtsKurve,
+	flussRunterLinksKurve,
+}
+
+GEBÄUDE: {
+	KONSTANTEN: {
+		(breite=ZAHL),
+		(länge=ZAHL),
+		(baukosten=(RESOURCEN,ZAHL)*),
+		(verbesserung=GEBÄUDE?),
+		(minimalarbeiteranzahl=ZAHL),
+		(maximalarbeiteranzahl=ZAHL),
+		(produziert=RESOURCEN*),
+		(prodktionsminimum=((RESOURCEN,(ZAHL,INTERVALL)+)*),
+		(prodktionsmaximum=((RESOURCEN,(ZAHL,INTERVALL)+)*),
+		(lagert=(RESOURCEN+, ZAHL)*),
+		(bodenfelder=länge*:[breite*:[GELÄNDE+]]),
+	}
+	
+	
+	goldmiene={
+		(breite=1),
+		(länge=1),
+		(baukosten=(holzbretter,10)),
+		(minimalarbeiteranzahl=1),
+		(maximalarbeiteranzahl=10),
+		(produziert=goldbrocken),
+		(prodktionsminimum=goldbrocken,1,N-ZÜGE(5)),
+		(prodktionsmaximum=((goldbrocken,10*:[1,N-ZÜGE(5)]),(steinbrocken,1,N-ZÜGE(1))),
+		(bodenfelder=1*:[2*:[goldberg]]),
+	},
+	silbermine={
+		(breite=2),
+		(länge=2),
+		(baukosten=(holzbretter,10)),
+		(minimalarbeiteranzahl=1),
+		(maximalarbeiteranzahl=10),
+		(produziert=silberbrocken),
+		(prodktionsminimum=(silberbrocken,1,N-ZÜGE(5)),(steinbrocken,1,N-ZÜGE(1))),
+		(prodktionsmaximum=((silberbrocken,10*:[1,N-ZÜGE(5)]),(steinbrocken,1,N-ZÜGE(1)))),
+		(bodenfelder=1*:[2*:[silberberg]]),
+	},
+	eisenmine={
+		(breite=2),
+		(länge=1),
+		(baukosten=(holzbretter,10)),
+		(minimalarbeiteranzahl=1),
+		(maximalarbeiteranzahl=10),
+		(produziert=eisenbrocken),
+		(prodktionsminimum=(eisenbrocken,1,N-ZÜGE(5)),(steinbrocken,1,N-ZÜGE(1))),
+		(prodktionsmaximum=((eisenbrocken,10*:[1,N-ZÜGE(5)]),(steinbrocken,10,N-ZÜGE(1))),
+		(bodenfelder=1*:[2*:[eisenberg]]),
+	},
+	steinmine={
+		(breite=2),
+		(länge=1),
+		(baukosten=(holzbretter,10)),
+		(minimalarbeiteranzahl=1),
+		(maximalarbeiteranzahl=10),
+		(produziert=steinbrocken),
+		(prodktionsminimum=steinbrocken,1,N-ZÜGE(1)),
+		(prodktionsmaximum=steinbrocken,10,N-ZÜGE(1)),
+		(bodenfelder=1*:[2*:[steinberg]]),
+	},
+	
+	brunnen={
+		(breite=1),
+		(länge=1),
+		(baukosten=(steinziegel,5)*),
+		(minimalarbeiteranzahl=1),
+		(maximalarbeiteranzahl=1),
+		(produziert=wasser),
+		(prodktionsminimum=(wasser,5,N-ZÜGE(1)),
+		(prodktionsmaximum=(wasser,5,N-ZÜGE(1)),
+		(bodenfelder=JEDES(AUẞER<wüste,ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)),
+	}
+	wüstenbrunnen={
+		(breite=1),
+		(länge=1),
+		(baukosten=(steinziegel,10)*),
+		(minimalarbeiteranzahl=1),
+		(maximalarbeiteranzahl=1),
+		(produziert=wasser),
+		(prodktionsminimum=(wasser,5,N-ZÜGE(1)),
+		(prodktionsmaximum=(wasser,5,N-ZÜGE(1)),
+		(bodenfelder=wüste),
+	}
+
+	getreidefarm={
+		(breite=4),
+		(länge=4),
+		(baukosten=(holzbretter,20)*),
+		(minimalarbeiteranzahl=2),
+		(maximalarbeiteranzahl=4),
+		(produziert=RESOURCEN*),
+		(prodktionsminimum=(10*:[getreide,5,N-ZÜGE(20)]),
+		(prodktionsmaximum=(5*:[getreide,10,N-ZÜGE(15)]),
+		(bodenfelder=4*:[4*:[wiese,hügel]]),
+	}
+
+	wohnhaus={
+		(breite=2),
+		(länge=1),
+		(baukosten=(holzbretter,5),(steinziegel, 2)),
+		(minimalarbeiteranzahl=0),
+		(maximalarbeiteranzahl=0),
+		(bodenfelder=1*:[2*:[JEDES(AUẞER<ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)]]),
+	}
+
+	nahrungslager={
+		(breite=1),
+		(länge=1),
+		(baukosten=(holzbretter,5)*),
+		(minimalarbeiteranzahl=0),
+		(maximalarbeiteranzahl=0),
+		(lagert=((brot, mehl, getreide), 20),
+		(bodenfelder=1*:[1*:[JEDES(AUẞER<ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)]]),
+	}
+	wasserlager={
+		(breite=1),
+		(länge=1),
+		(baukosten=(holzbretter,5),
+		(minimalarbeiteranzahl=0),
+		(maximalarbeiteranzahl=0),
+		(lagert=((wasser), 50)*),
+		(bodenfelder=1*:[1*:[JEDES(AUẞER<ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)]]),
+	}
+	metalllager={
+		(breite=1),
+		(länge=1),
+		(baukosten=(holzbretter,5)*),
+		(minimalarbeiteranzahl=0),
+		(maximalarbeiteranzahl=0),
+		(lagert=(((eisenbaren, silberbarren, goldbarren), 10)), ((eisenbrocken, silberbrocken, goldbrocken), 5)),
+		(bodenfelder=1*:[1*:[JEDES(AUẞER<ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)]]),
+	}
+	kohllager={
+		(breite=1),
+		(länge=1),
+		(baukosten=(holzbretter,5)*),
+		(minimalarbeiteranzahl=0),
+		(maximalarbeiteranzahl=0),
+		(lagert=(kohle, 5),
+		(bodenfelder=1*:[1*:[JEDES(AUẞER<ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)]]),
+	}
+	holzlager={
+		(breite=1),
+		(länge=1),
+		(baukosten=(holzbretter,5)*),
+		(minimalarbeiteranzahl=0),
+		(maximalarbeiteranzahl=0),
+		(lagert=((holzbretter, 20),(baumstämme, 5)),
+		(bodenfelder=1*:[1*:[JEDES(AUẞER<ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)]]),
+	}
+	steinlager={
+		(breite=1),
+		(länge=1),
+		(baukosten=(holzbretter,5)*),
+		(minimalarbeiteranzahl=0),
+		(maximalarbeiteranzahl=0),
+		(lagert=((steinziegel, 20),(steinbrocken, 5)),
+		(bodenfelder=1*:[1*:[JEDES(AUẞER<ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)]]),
+	}
+	
+	straße={
+		(breite=1),
+		(länge=1),
+		(baukosten=(steinziegel,1),(holzbretter,5)),
+		(minimalarbeiteranzahl=0),
+		(maximalarbeiteranzahl=0),
+		(bodenfelder=JEDES(AUẞER<ozeanwasser,tiefeswasser,küstenwasser,flussHoch,flussRechts,flussRunter,flussLinks,flussHochRechtsKurve,flussHochLinksKurve,flussRunterRechtsKurve,flussRunterLinksKurve>)),
+	}
+}
+
+INTERVALL: {
+	N-ZÜGE(ZAHL),
+}
+
+SPEZIES: {
+	KONSTANTEN: {
+		(geschwindigkeit=ZAHL),
+		(fortpflanzungsproduktmöglichkeiten=(SPEZIES*, SPEZIES, ZAHL)*),
+		(weiterentwickeln=(SPEZIES,INTERVALL)?),
+		(arbeitsverweigerungen=GEBÄUDE*),
+	}
+	menschM={
+		(geschwindigkeit=5),
+		(fortpflanzungsproduktmöglichkeiten=(menschW, menschM, 1),(menschW, menschW, 1),(menschW, menschM, 1),(menschW, menschW, 1),(menschW, menschM, 1),(menschW, menschW, 1),(menschW, menschM, 2),(menschW, menschW, 2)),
+	}
+	menschMkind={
+		(geschwindigkeit=2),
+		(weiterentwickeln=menschMkind,N-ZÜGE(100)),
+	}
+	menschMbaby={
+		(geschwindigkeit=0),
+		(weiterentwickeln=menschMkind,N-ZÜGE(50)),
+		(arbeitsverweigerungen=JEDES),
+	}
+	menschW={
+		(geschwindigkeit=5),
+		(fortpflanzungsproduktmöglichkeiten=(menschM, menschM, 1),(menschM, menschW, 1),(menschM, menschM, 1),(menschM, menschW, 1),(menschM, menschM, 1),(menschM, menschW, 1),(menschM, menschM, 2),(menschM, menschW, 2)),
+	}
+	menschWkind={
+		(geschwindigkeit=2),
+		(weiterentwickeln=menschWkind,N-ZÜGE(100)),
+	}
+	menschWbaby={
+		(geschwindigkeit=0),
+		(weiterentwickeln=menschWkind,N-ZÜGE(50)),
+		(arbeitsverweigerungen=JEDES),
+	}
+}
