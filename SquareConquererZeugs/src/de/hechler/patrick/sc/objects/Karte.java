@@ -199,6 +199,11 @@ public class Karte {
 		return baue(factory, new Position(x, y));
 	}
 	
+	public int maximaleEinheitenAnzahl(Position pos) throws IndexOutOfBoundsException {
+		if (pos.x >= felder.length || pos.y >= felder[0].length) throw new IndexOutOfBoundsException("pos=" + pos + " len=(" + felder.length + "|" + felder[0].length + ")");
+		return 1;
+	}
+	
 	/**
 	 * Gibt <code>true</code> zurück, wenn das {@link GebäudeObj} vorher in der {@link Karte} vorhanden war. Wenn es nicht vorhanden war wird <code>false</code> zurückgegeben. Egal was danach ist es
 	 * nicht mehr in der {@link Karte}.

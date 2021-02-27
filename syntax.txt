@@ -58,7 +58,6 @@ GEBÄUDE: {
 		(breite=ZAHL),
 		(länge=ZAHL),
 		(baukosten=(RESOURCEN,ZAHL)*),
-		(verbesserung=GEBÄUDE?),
 		(minimalarbeiteranzahl=ZAHL),
 		(maximalarbeiteranzahl=ZAHL),
 		(produziert=RESOURCEN*),

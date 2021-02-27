@@ -21,7 +21,7 @@ public abstract class GebäudeFactory <G extends GebäudeObj> {
 	/**
 	 * resets the map {@link #facs} and may put some default {@link GebäudeFactory}s in it.
 	 */
-	public final static void load() {
+	public static void load() {
 		facs = new EnumMap <GebäudeEnum, GebäudeFactory <?>>(GebäudeEnum.class);
 	}
 	
@@ -31,7 +31,7 @@ public abstract class GebäudeFactory <G extends GebäudeObj> {
 	 * @param fac the {@link GebäudeFactory}, which will creates buildings fromm {@link GeländerEnum} {@code art}.
 	 * @return the old mapping of {@code art}
 	 */
-	public final static GebäudeFactory <?> put(GebäudeEnum art, GebäudeFactory <?> fac) {
+	public static GebäudeFactory <?> put(GebäudeEnum art, GebäudeFactory <?> fac) {
 		if (art == null || fac == null) {
 			throw new NullPointerException("(art|fac)=null art=" + art + " fac=" + fac);
 		}
@@ -54,7 +54,7 @@ public abstract class GebäudeFactory <G extends GebäudeObj> {
 	 * @throws GebäudeBauException
 	 *             if no new {@link GebäudeObj} can be created and added.
 	 */
-	public final static GebäudeObj create(GebäudeEnum art, Karte karte, Position pos) throws GebäudeBauException {
+	public static GebäudeObj create(GebäudeEnum art, Karte karte, Position pos) throws GebäudeBauException {
 		GebäudeFactory <?> fac = facs.get(art);
 		if (fac == null) {
 			throw new GebäudeBauException("unknown art=" + art + " facs=" + facs);
