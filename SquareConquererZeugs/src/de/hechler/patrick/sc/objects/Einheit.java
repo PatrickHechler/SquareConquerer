@@ -1,7 +1,11 @@
 package de.hechler.patrick.sc.objects;
 
+import de.hechler.patrick.sc.enums.EinheitenEnum;
+import de.hechler.patrick.sc.enums.GeländerEnum;
 import de.hechler.patrick.sc.enums.Richtung;
 import de.hechler.patrick.sc.fehler.UnbewegbarException;
+import de.hechler.patrick.sc.fehler.UngültigeBewegungException;
+import de.hechler.patrick.sc.zeugs.EinheitenFactory;
 
 public interface Einheit {
 	
@@ -10,10 +14,12 @@ public interface Einheit {
 	 * 
 	 * @return die aktuelle {@link Position} der {@link Einheit}
 	 */
-	Position poition();
+	Position position();
 	
 	/**
-	 * Setzt die {@link Position} der {@link Einheit} auf die neue {@link Position}
+	 * Setzt die {@link Position} der {@link Einheit} auf die neue {@link Position}<br>
+	 * 
+	 * Diese Methode ist für getragene {@link Einheit}en, da hierbei der {@link PosChangeChecker} nicht benachrichtigt wird.
 	 * 
 	 * @throws NullPointerException
 	 *             wenn {@link Position} neu <code>null</code> ist
@@ -21,6 +27,15 @@ public interface Einheit {
 	 *            die neue {@link Position} der {@link Einheit}
 	 */
 	void position(Position neu);
+	
+	/**
+	 * springt zu der übergebenen {@link Position}. <br>
+	 * Das springen zählt nicht als Bewegung, daher wird kein Bewegungspunkt abgezogen, allerdings wird der {@link PosChangeChecker} aufgerufen.
+	 * 
+	 * @param ziel
+	 *            die Ziel-{@link Position}
+	 */
+	void springe(Position ziel);
 	
 	/**
 	 * Gibt die Anzahl an Bewegungen zurück, welche die {@link Einheit} am Anfang nächsten Zuges voraussichtlich haben wird.
@@ -46,7 +61,7 @@ public interface Einheit {
 	 * @throws IllegalStateException
 	 *             wenn die {@link Einheit} sich aktuell nicht bewegen kann, da Beispielsweise all ihre Bewegungen für diesen Zug aufgebraucht sind oder sie getragen wird.
 	 */
-	void bewege(Richtung richtung) throws UnbewegbarException, IllegalStateException;
+	void bewege(Richtung richtung) throws UnbewegbarException, IllegalStateException, UngültigeBewegungException;
 	
 	/**
 	 * Trägt von nun an die andere {@link Einheit}, bis {@link #stoppeTragen()} aufgerufen wird. Bewegungsaktionen werden nun möglicherweise mehr Bewegungspunkte kosten, dies wird allerdings bei
@@ -66,8 +81,10 @@ public interface Einheit {
 	 * 
 	 * @throws UnsupportedOperationException
 	 *             wenn diese {@link Einheit} sich nicht tragen lässt
+	 * @throws IllegalStateException
+	 *             wenn diese {@link Einheit} bereits getragen wird
 	 */
-	void werdeGetragen() throws UnsupportedOperationException;
+	void werdeGetragen() throws UnsupportedOperationException, IllegalStateException;
 	
 	/**
 	 * signalisiert dieser {@link Einheit}, dass sie nicht länger getragen wird, d.h. sie kann sich wieder von alleine fortbewegen.
@@ -86,21 +103,50 @@ public interface Einheit {
 	
 	/**
 	 * Hört auf die andere {@link Einheit} zu tragen.
+	 * 
+	 * @throws IllegalStateException
+	 *             wenn die {@link Einheit} keine andere {@link Einheit} trägt
 	 */
-	void stoppeTragen();
+	void stoppeTragen() throws IllegalStateException;
 	
 	/**
-	 * signalisiert der {@link Einheit} dass ein neuer Zug begonnen hat.
+	 * signalisiert der {@link Einheit} dass ein neuer Zug begonnen hat.<br>
+	 * gibt <code>true</code> zurück, wenn sich die {@link Einheit} entwickeln möchte.
+	 * 
+	 * @return <code>true</code>, wenn sich die {@link Einheit} entwickeln möchte.
 	 */
-	void neuerZug();
-	
+	boolean neuerZug();
 	
 	void positionChangeChecker(PosChangeChecker pcl);
 	
 	public interface PosChangeChecker {
 		
-		boolean posChanged(Position old, Position neu);
+		void posChanged(Position old, Position neu, Einheit getragen) throws UngültigeBewegungException;
 		
 	}
+	
+	/**
+	 * prüft, ob diese Einheit sich auf dieses {@link GeländerEnum} bewegen kann oder nicht.
+	 * 
+	 * @param test
+	 *            das zu testende {@link GeländerEnum}
+	 * @return ob sich die {@link Einheit} zu diesem {@link GeländerEnum} bewegen kann.
+	 */
+	boolean kannAuf(GeländerEnum test);
+	
+	/**
+	 * Gibt die Spezies/das {@link EinheitenEnum} dieser {@link Einheit} zurück.
+	 * 
+	 * @return Die Spezies/das {@link EinheitenEnum} dieser {@link Einheit}
+	 */
+	EinheitenEnum spezies();
+	
+	Integer entwickeltIn();
+	
+	EinheitenEnum entwickeltZu();
+	
+	void entwickele(Einheit ziel) throws UnsupportedOperationException;
+	
+	EinheitenFactory <?> entwickleMit();
 	
 }

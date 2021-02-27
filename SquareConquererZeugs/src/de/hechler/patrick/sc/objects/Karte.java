@@ -201,7 +201,7 @@ public class Karte {
 	
 	public int maximaleEinheitenAnzahl(Position pos) throws IndexOutOfBoundsException {
 		if (pos.x >= felder.length || pos.y >= felder[0].length) throw new IndexOutOfBoundsException("pos=" + pos + " len=(" + felder.length + "|" + felder[0].length + ")");
-		return 1;
+		return 2;
 	}
 	
 	/**

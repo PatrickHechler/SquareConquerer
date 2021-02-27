@@ -5,7 +5,6 @@ import java.util.Map;
 
 import de.hechler.patrick.sc.enums.EinheitenEnum;
 import de.hechler.patrick.sc.fehler.CreationException;
-import de.hechler.patrick.sc.fehler.GebäudeBauException;
 import de.hechler.patrick.sc.objects.Einheit;
 import de.hechler.patrick.sc.objects.Karte;
 import de.hechler.patrick.sc.objects.Position;
@@ -55,26 +54,13 @@ public abstract class EinheitenFactory <E extends Einheit> {
 	 * @throws CreationException
 	 *             if something went wrong
 	 */
-	public static Einheit create(EinheitenEnum art, Karte karte, Position pos) throws CreationException {
+	public static Einheit create(EinheitenEnum art) throws CreationException {
 		EinheitenFactory <?> fac = facs.get(art);
 		if (fac == null) {
-			throw new GebäudeBauException("unknown art=" + art + " facs=" + facs);
+			throw new CreationException("unknown art=" + art + " facs=" + facs);
 		}
-		return fac.create(karte, pos);
+		return fac.create();
 	}
-	
-	/**
-	 * creates an new {@link Einheit} and returns it. The {@link Einheit} will be created on the {@link Position} pos on the {@link Karte} karte.
-	 * 
-	 * @param karte
-	 *            the Karte where the {@link Einheit} will be placed
-	 * @param pos
-	 *            the {@link Position} on the {@link Karte} of the {@link Einheit}
-	 * @return the created {@link Einheit}
-	 * @throws CreationException
-	 *             if something went wrong
-	 */
-	public abstract E create(Karte karte, Position pos) throws CreationException;
 	
 	/**
 	 * creates an new {@link Einheit} and returns it.
@@ -83,6 +69,6 @@ public abstract class EinheitenFactory <E extends Einheit> {
 	 * @throws CreationException
 	 *             if something went wrong
 	 */
-	public abstract E create() throws CreationException;
+	public abstract E create();
 	
 }
