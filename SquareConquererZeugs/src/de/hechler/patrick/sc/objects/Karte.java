@@ -236,4 +236,10 @@ public class Karte {
 		
 	}
 	
+	public void insideOfBorders(Position pos) {
+		if (pos.x >= felder.length || pos.y >= felder[0].length) {
+			throw new IndexOutOfBoundsException("MAX_POS=(" + (felder.length - 1) + "|" + (felder[0].length - 1) + ") pos=" + pos);
+		}
+	}
+	
 }

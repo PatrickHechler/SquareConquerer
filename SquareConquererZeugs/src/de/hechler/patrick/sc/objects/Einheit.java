@@ -45,7 +45,8 @@ public interface Einheit {
 	int geschwindigkeit();
 	
 	/**
-	 * Gibt die anzahl an verbleibenden Bewegungen zurück, welche die {@link Einheit} in diesem Zug noch durchführen kann.
+	 * Gibt die anzahl an verbleibenden Bewegungen zurück, welche die {@link Einheit} in diesem Zug noch durchführen kann. wenn diese {@link Einheit} gerade {@link #arbeitet()} oder eine
+	 * {@link Einheit} {@link #trägt()}, wird dies hier ignoriert.
 	 * 
 	 * @return die anzahl an verbleibenden Bewegungen, welche die {@link Einheit} in diesem Zug noch durchführen kann.
 	 */
@@ -108,6 +109,36 @@ public interface Einheit {
 	 *             wenn die {@link Einheit} keine andere {@link Einheit} trägt
 	 */
 	void stoppeTragen() throws IllegalStateException;
+	
+	/**
+	 * Befiehlt der {@link Einheit} bei der aktuellen {@link Position} auf der {@link Karte} zu arbeiten. <br>
+	 * Eine {@link Einheit}, die arbeitet kann sich nicht bewegen, bis sie aufhört zu arbeiten ({@link #stoppeArbeiten()}) <br>
+	 * Wenn sich dort kein Gebäude befindet oder keines, bei dem diese {@link Einheit} arbeiten kann wird eine {@link UnsupportedOperationException} geworfen.
+	 * 
+	 * @param karte
+	 *            die {@link Karte}
+	 * @throws UnsupportedOperationException
+	 *             Wenn sich dort kein Gebäude befindet oder keines, bei dem diese {@link Einheit} arbeiten kann
+	 * @throws IllegalStateException
+	 *             wenn die {@link Einheit} bereits arbeitet.
+	 */
+	void arbeite(Karte karte) throws UnsupportedOperationException, IllegalStateException;
+	
+	/**
+	 * gibt <code>true</code> zurück, wenn die {@link Einheit} arbeitet, wenn nicht <code>false</code>.
+	 * 
+	 * @return <code>true</code>, wenn die {@link Einheit} arbeitet, wenn nicht <code>false</code>.
+	 */
+	boolean arbeitet();
+	
+	/**
+	 * Signalisiert der {@link Einheit} mit dem arbeiten aufzuhören.<br>
+	 * Wenn die {@link Einheit} gar nicht gearbeitet hat wird eine {@link IllegalStateException} geworfen.
+	 * 
+	 * @throws IllegalStateException
+	 *             Wenn die {@link Einheit} gar nicht gearbeitet hat
+	 */
+	void stoppeArbeiten() throws IllegalStateException;
 	
 	/**
 	 * signalisiert der {@link Einheit} dass ein neuer Zug begonnen hat.<br>

@@ -1,6 +1,9 @@
 package de.hechler.patrick.sc.objects;
 
+import de.hechler.patrick.sc.enums.GebäudeEnum;
 
-public abstract class GebäudeObj {
+public interface GebäudeObj {
+	
+	GebäudeEnum gebäudeEnum();
 	
 }

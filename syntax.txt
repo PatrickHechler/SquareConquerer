@@ -229,13 +229,13 @@ INTERVALL: {
 SPEZIES: {
 	KONSTANTEN: {
 		(geschwindigkeit=ZAHL),
-		(fortpflanzungsproduktmöglichkeiten=(SPEZIES*, SPEZIES, ZAHL)*),
+		(fortpflanzungsproduktmöglichkeiten=(SPEZIES*, (SPEZIES, ZAHL)+)*),
 		(weiterentwickeln=(SPEZIES,INTERVALL)?),
 		(arbeitsverweigerungen=GEBÄUDE*),
 	}
 	menschM={
 		(geschwindigkeit=5),
-		(fortpflanzungsproduktmöglichkeiten=(menschW, menschM, 1),(menschW, menschW, 1),(menschW, menschM, 1),(menschW, menschW, 1),(menschW, menschM, 1),(menschW, menschW, 1),(menschW, menschM, 2),(menschW, menschW, 2)),
+		(fortpflanzungsproduktmöglichkeiten=(menschW, menschM, 1),(menschW, menschW, 1),(menschW, menschM, 1),(menschW, menschW, 1),(menschW, menschM, 1),(menschW, menschW, 1),(menschW, (menschW, 1),(menschM,1)),(menschW, (menschW, 1),(menschM,1)),(menschW, menschM, 2),(menschW, menschW, 2)),
 	}
 	menschMkind={
 		(geschwindigkeit=2),
@@ -248,7 +248,7 @@ SPEZIES: {
 	}
 	menschW={
 		(geschwindigkeit=5),
-		(fortpflanzungsproduktmöglichkeiten=(menschM, menschM, 1),(menschM, menschW, 1),(menschM, menschM, 1),(menschM, menschW, 1),(menschM, menschM, 1),(menschM, menschW, 1),(menschM, menschM, 2),(menschM, menschW, 2)),
+		(fortpflanzungsproduktmöglichkeiten=(menschM, menschM, 1),(menschM, menschW, 1),(menschM, menschM, 1),(menschM, menschW, 1),(menschM, menschM, 1),(menschM, menschW, 1),(menschM, (menschW, 1),(menschM,1)),(menschM, (menschW, 1),(menschM,1)),(menschM, menschM, 2),(menschM, menschW, 2)),
 	}
 	menschWkind={
 		(geschwindigkeit=2),

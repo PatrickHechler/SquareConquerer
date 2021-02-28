@@ -10,6 +10,7 @@ import de.hechler.patrick.sc.enums.Richtung;
 import de.hechler.patrick.sc.fehler.UnbewegbarException;
 import de.hechler.patrick.sc.fehler.UngültigeBewegungException;
 import de.hechler.patrick.sc.objects.Einheit;
+import de.hechler.patrick.sc.objects.Karte;
 import de.hechler.patrick.sc.objects.Position;
 import de.hechler.patrick.sc.zeugs.EinheitenFactory;
 
@@ -32,6 +33,7 @@ public class Mensch implements Einheit {
 		BEWEGBAR = Collections.unmodifiableMap(zw);
 	}
 	
+	private boolean          arbeitet;
 	private final boolean    mann;
 	private int              ges;
 	private int              verb;
@@ -90,6 +92,7 @@ public class Mensch implements Einheit {
 	
 	@Override
 	public void bewege(Richtung richtung) throws UnbewegbarException, IllegalStateException, UngültigeBewegungException {
+		if (arbeitet || getragen) throw new IllegalStateException("arbeitet=" + arbeitet + " getragen=" + getragen);
 		if (verb - (tragen == null ? 1 : 2) < 0) {
 			throw new IllegalStateException("kann nicht so weit laufen!");
 		}
@@ -106,7 +109,9 @@ public class Mensch implements Einheit {
 	
 	@Override
 	public void trage(Einheit einheit) throws UnsupportedOperationException, IllegalStateException {
-		if (tragen != null || getragen) throw new IllegalStateException("trage bereits eine einheit: " + tragen);
+		if (tragen != null) throw new IllegalStateException("trage bereits eine einheit: " + tragen);
+		if (getragen) throw new IllegalStateException("werde getragen!");
+		if (arbeitet) throw new IllegalStateException("arbeite gerade!");
 		einheit.werdeGetragen();
 		tragen = einheit;
 	}
@@ -114,6 +119,8 @@ public class Mensch implements Einheit {
 	@Override
 	public void werdeGetragen() throws UnsupportedOperationException, IllegalStateException {
 		if (getragen) throw new IllegalStateException("werde bereits getragen");
+		if (arbeitet) throw new IllegalStateException("i am working!");
+		if (tragen != null) throw new IllegalStateException("tragen != null: " + tragen);
 		getragen = true;
 	}
 	
@@ -174,6 +181,28 @@ public class Mensch implements Einheit {
 	@Override
 	public EinheitenFactory <?> entwickleMit() {
 		return null;
+	}
+	
+	@Override
+	public void arbeite(Karte karte) throws UnsupportedOperationException, IllegalStateException {
+		if (arbeitet) {
+			throw new IllegalStateException("already working!");
+		}
+		karte.insideOfBorders(pos);
+	}
+	
+	@Override
+	public void stoppeArbeiten() throws IllegalStateException {
+		if (arbeitet) {
+			arbeitet = false;
+		} else {
+			throw new IllegalStateException("does not work!");
+		}
+	}
+	
+	@Override
+	public boolean arbeitet() {
+		return arbeitet;
 	}
 	
 }
