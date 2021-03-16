@@ -38,8 +38,10 @@ public interface Position extends Comparable <Position>, Cloneable {
 	 * 
 	 * @param dir
 	 *            the {@link Direction} to bee moved
+	 * @throws UnsupportedOperationException
+	 *             if this {@link Position} is not changeable or movable
 	 */
-	void move(Direction dir);
+	void move(Direction dir) throws UnsupportedOperationException;
 	
 	/**
 	 * Creates a new {@link Position} and moves the new {@link Position} one {@link Field} to the {@link Direction} {@code dir}
@@ -49,11 +51,7 @@ public interface Position extends Comparable <Position>, Cloneable {
 	 * @return the moved and created {@link Position}
 	 * @implNote it has to behave exactly as <code>pos.{@link #clone()}.{@link #move(Direction)}</code>
 	 */
-	default Position newCreateMove(Direction dir) {
-		Position pos = clone();
-		pos.move(dir);
-		return pos;
-	}
+	Position newCreateMove(Direction dir);
 	
 	Position clone();
 	
