@@ -45,10 +45,21 @@ public interface Entity {
 	int totalActions();
 	
 	/**
+	 * uses one action, so the return-value from {@link #remainingActions()} will be lowered by {@code 1}.
+	 * @throws IllegalStateException if there are no actions left to use.
+	 */
+	void useAction()throws IllegalStateException;
+	
+	/**
 	 * tells this {@link Entity}, to start a new turn, so the {@link #remainingActions()} will be reseted after this call
 	 */
 	void newTurn();
 	
+	/**
+	 * returns the {@link Type} of this {@link Entity}
+	 * 
+	 * @return the {@link Type} of this {@link Entity}
+	 */
 	Type type();
 	
 }

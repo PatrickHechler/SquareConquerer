@@ -9,7 +9,9 @@ public enum Grounds {
 	
 	mountain,
 	
-	flat,;
+	flat,
+	
+	;
 	
 	public char character() {
 		switch (this) {

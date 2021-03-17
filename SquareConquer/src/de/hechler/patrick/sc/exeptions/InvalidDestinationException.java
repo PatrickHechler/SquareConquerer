@@ -36,8 +36,8 @@ public class InvalidDestinationException extends RuntimeException {
 		super("The direction '" + dir + "' is invalid, you would land on: '" + invalid + "', but valid is only: '" + valid + "'");
 	}
 	
-	public InvalidDestinationException(Field position, Direction dir, Grounds invalid, Collection <Grounds> valid) {
-		super("The direction '" + dir + "' fronm the field '" + position + "' is invalid, you would land on: '" + invalid + "', but valid is only: '" + valid + "'");
+	public InvalidDestinationException(Field destination, Direction dir, Grounds invalid, Collection <Grounds> valid) {
+		super("The direction '" + dir + "' from the position "+destination.position().newCreateMove(dir.reverse())+" to the field '" + destination + "' is invalid, you would land on: '" + invalid + "', but valid is only: '" + valid + "'");
 	}
 	
 }

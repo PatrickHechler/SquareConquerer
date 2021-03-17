@@ -12,31 +12,35 @@ import de.hechler.patrick.sc.interfaces.Position;
 import de.hechler.patrick.sc.utils.objects.EnumSet;
 
 
-public class SimpleUnit implements MovableEntity {
+public class Unit implements MovableEntity {
 	
-	private final Set <Grounds> canExsist;
+	public final Set <Grounds> canExsist;
 	
-	private Position  pos;
+	public final Type type;
 	
-	private int totalActions;
-	private int remainingActions;
+	protected Position pos;
+	
+	protected int totalActions;
+	protected int remainingActions;
 	
 	
-	public SimpleUnit(Position pos, Collection <Grounds> canExsistOn, int totalActions) {
+	public Unit(Position pos, Collection <Grounds> canExsistOn, int totalActions, Type type) {
 		this.pos = new NicePosition(pos);
 		EnumSet <Grounds> ceo = new EnumSet <>(Grounds.class);
 		ceo.addAll(canExsistOn);
 		this.canExsist = Collections.unmodifiableSet(ceo);
 		this.totalActions = totalActions;
+		this.type = type;
 	}
 	
-	public SimpleUnit(int x, int y, Collection <Grounds> canExsistOn, int totalActions, int remainingActions) {
+	public Unit(int x, int y, Collection <Grounds> canExsistOn, int totalActions, int remainingActions, Type type) {
 		this.pos = new NicePosition(x, y);
 		EnumSet <Grounds> ceo = new EnumSet <>(Grounds.class);
 		ceo.addAll(canExsistOn);
 		this.canExsist = Collections.unmodifiableSet(ceo);
 		this.totalActions = totalActions;
 		this.remainingActions = remainingActions;
+		this.type = type;
 	}
 	
 	@Override
@@ -65,6 +69,11 @@ public class SimpleUnit implements MovableEntity {
 	}
 	
 	@Override
+	public void setPosition(Position pos) {
+		this.pos = new NicePosition(pos);
+	}
+	
+	@Override
 	public void move(Position dest) {
 		if (remainingActions <= 0) {
 			throw new IllegalStateException("no more actions: total=" + totalActions + " remaining=" + remainingActions);
@@ -80,11 +89,23 @@ public class SimpleUnit implements MovableEntity {
 		}
 		remainingActions -- ;
 		pos.move(dir);
+		
+	}
+	
+	@Override
+	public void useAction() throws IllegalStateException {
+		if (remainingActions <= 0) throw new IllegalStateException("no more actions left!");
+		remainingActions -- ;
 	}
 	
 	@Override
 	public Type type() {
-		return Type.simple;
+		return type;
+	}
+	
+	@Override
+	public final boolean isMovable() {
+		return true;
 	}
 	
 }

@@ -29,4 +29,12 @@ public interface MovableEntity extends Entity {
 	 */
 	void move(Direction dir) throws IllegalStateException;
 	
+	/**
+	 * This method teleports the {@link Entity} direct to the {@link Position} {@code pos}
+	 * 
+	 * @param pos
+	 *            The {@link Position} to bee teleported
+	 */
+	void setPosition(Position pos);
+	
 }

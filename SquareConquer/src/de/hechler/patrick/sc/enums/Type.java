@@ -9,6 +9,8 @@ public enum Type {
 	
 	builder,
 	
+	boat,
+	
 	
 	house, houseMelee, houseBow, houseBuilder,
 	
