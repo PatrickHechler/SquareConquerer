@@ -1,20 +1,19 @@
 package de.hechler.patrick.sc.objects;
 
-import java.util.Objects;
-
 import de.hechler.patrick.sc.enums.Direction;
 import de.hechler.patrick.sc.exeptions.InvalidDestinationException;
+import de.hechler.patrick.sc.interfaces.Entity;
 import de.hechler.patrick.sc.interfaces.Field;
 import de.hechler.patrick.sc.interfaces.MovableEntity;
 import de.hechler.patrick.sc.interfaces.Position;
 
-public class Map {
+public class World {
 	
 	private final Field[][] map;
 	
 	
 	
-	public Map(int xCnt, int yCnt) {
+	public World(int xCnt, int yCnt) {
 		map = new Field[xCnt][yCnt];
 	}
 	
@@ -46,8 +45,31 @@ public class Map {
 		return map[pos.getX()][pos.getY()];
 	}
 	
-	public void setField(Position pos, Field field) throws NullPointerException {
-		map[pos.getX()][pos.getY()] = Objects.requireNonNull(field, "a null field is forbidden!");
+	/**
+	 * adds the {@link Field} to this {@link World} on the {@link Position} of the {@link Field} {@code field}
+	 * 
+	 * @param field
+	 *            the {@link Field} to be added
+	 */
+	public void overrideField(Field field) {
+		map[field.getXPos()][field.getYPos()] = field;
+	}
+	
+	public int getXCnt() {
+		return map.length;
+	}
+	
+	public int getYCnt() {
+		return map[0].length;
+	}
+	
+	public void newTurn() {
+		for (Field[] fields : map) {
+			for (Field f : fields) {
+				Entity e = f.getEntity();
+				if (e != null) e.newTurn();
+			}
+		}
 	}
 	
 }

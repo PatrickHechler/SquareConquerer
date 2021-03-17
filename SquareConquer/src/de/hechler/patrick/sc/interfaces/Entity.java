@@ -3,6 +3,7 @@ package de.hechler.patrick.sc.interfaces;
 import java.util.Set;
 
 import de.hechler.patrick.sc.enums.Grounds;
+import de.hechler.patrick.sc.enums.Type;
 
 public interface Entity {
 	
@@ -14,15 +15,9 @@ public interface Entity {
 	Position position();
 	
 	/**
-	 * returns the {@link Field} on which this {@link Entity} stays at the moment
-	 * 
-	 * @return the {@link Field} on which this {@link Entity} stays at the moment
-	 */
-	Field field();
-	
-	/**
 	 * returns <code>true</code>, if this {@link Position} has the ability to move. <br>
-	 * if this {@link Entity} is movable, it should be an {@code instanceof} {@link MovableEntity}.
+	 * if this {@link Entity} is movable, it should be an {@code instanceof} {@link MovableEntity}. <br>
+	 * if this {@link Entity} is not movable, it should be an {@code instanceof} {@link UnmovableEntity}.
 	 * 
 	 * @return <code>true</code>, if this {@link Position} has the ability to move
 	 */
@@ -43,8 +38,17 @@ public interface Entity {
 	int remainingActions();
 	
 	/**
+	 * returns the total actions of this {@link Entity}, which it gets when a turn starts
+	 * 
+	 * @return the remaining actions of this {@link Entity}
+	 */
+	int totalActions();
+	
+	/**
 	 * tells this {@link Entity}, to start a new turn, so the {@link #remainingActions()} will be reseted after this call
 	 */
 	void newTurn();
+	
+	Type type();
 	
 }

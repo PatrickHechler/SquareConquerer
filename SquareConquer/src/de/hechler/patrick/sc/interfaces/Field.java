@@ -6,6 +6,10 @@ public interface Field {
 	
 	Position position();
 	
+	int getXPos();
+	
+	int getYPos();
+	
 	Grounds ground();
 	
 	boolean hasEntity();

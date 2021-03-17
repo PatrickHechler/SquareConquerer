@@ -16,6 +16,11 @@ public class NicePosition implements Position {
 		this.y = y;
 	}
 	
+	public NicePosition(Position pos) {
+		this.x = pos.getX();
+		this.y = pos.getY();
+	}
+	
 	
 	
 	@Override

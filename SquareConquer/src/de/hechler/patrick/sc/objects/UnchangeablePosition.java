@@ -62,4 +62,22 @@ public class UnchangeablePosition implements Position {
 		}
 	}
 	
+	@Override
+	public int hashCode() {
+		int xP = this.x * 79;
+		int yP = this.y * 97;
+		return xP ^ yP;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+		UnchangeablePosition other = (UnchangeablePosition) obj;
+		if (x != other.x) return false;
+		if (y != other.y) return false;
+		return true;
+	}
+	
 }

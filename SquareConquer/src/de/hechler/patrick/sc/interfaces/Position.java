@@ -28,9 +28,9 @@ public interface Position extends Comparable <Position>, Cloneable {
 	}
 	
 	default int distance(Position to) {
-		int xd = getX() - to.getX();
-		int yd = getY() - to.getY();
-		return Math.abs(xd) + Math.abs(yd);
+		int my = getX() + getY();
+		int other = to.getX() + to.getY();
+		return Math.abs(my - other);
 	}
 	
 	/**
@@ -54,5 +54,22 @@ public interface Position extends Comparable <Position>, Cloneable {
 	Position newCreateMove(Direction dir);
 	
 	Position clone();
+	
+	/**
+	 * creates an {@link String} representing this {@link Position}. <br>
+	 * this {@link String} must be formatted like <code>( X_POS | Y_POS )</code>. The whitespace might be left away or added, but it must not be '\r' or '\n'! <br>
+	 * <code>pos.toPosStr().replaceAll(" \t", "").equals("(" + pos.getX() + "|" + pos.getY() + ")")</code> must return <code>true</code>!
+	 * 
+	 * 
+	 * @return creates an {@link String} representing this {@link Position}.
+	 * 
+	 */
+	default String toPosStr() {
+		return '(' + getX() + " | " + getY() + ')';
+	}
+	
+	default boolean equals(Position pos) {
+		return pos.getX() == getX() && pos.getY() == getY();
+	}
 	
 }

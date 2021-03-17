@@ -1,4 +1,4 @@
-package de.hechler.patrick.sc.objects.utils;
+package de.hechler.patrick.sc.utils.objects;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
@@ -87,6 +87,14 @@ public class EnumSet <E extends Enum <?>> implements Set <E> {
 		} else return false;
 	}
 	
+	public boolean add(int oridinal) {
+		if ( !finder[oridinal]) {
+			finder[oridinal] = true;
+			modifycations ++ ;
+			return true;
+		} else return false;
+	}
+	
 	@Override
 	public boolean remove(Object o) {
 		try {
@@ -98,6 +106,15 @@ public class EnumSet <E extends Enum <?>> implements Set <E> {
 				return true;
 			}
 		} catch (ClassCastException e) {
+		}
+		return false;
+	}
+	
+	public boolean remove(int oridinal) {
+		if (finder[oridinal]) {
+			finder[oridinal] = false;
+			modifycations ++ ;
+			return true;
 		}
 		return false;
 	}
