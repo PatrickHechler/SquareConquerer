@@ -1,5 +1,6 @@
 package de.hechler.patrick.sc.objects;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -97,12 +98,44 @@ public class StorageBuilding extends Building {
 		}
 	}
 	
-	protected class Int {
+	/**
+	 * returns an unmodifiable version of the {@link #store}
+	 * 
+	 * @return an unmodifiable version of the {@link #store}
+	 */
+	public Map <Resources, Int> getStore() {
+		return Collections.unmodifiableMap(store);
+	}
+	
+	protected class Int extends Number {
 		
-		int value;
+		/** UID */
+		private static final long serialVersionUID = -4869900778040743043L;
+		
+		public int value;
 		
 		public Int(int value) {
 			this.value = value;
+		}
+		
+		@Override
+		public int intValue() {
+			return value;
+		}
+		
+		@Override
+		public long longValue() {
+			return (long) value;
+		}
+		
+		@Override
+		public float floatValue() {
+			return (float) value;
+		}
+		
+		@Override
+		public double doubleValue() {
+			return (double) value;
 		}
 		
 	}

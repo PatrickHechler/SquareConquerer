@@ -43,6 +43,16 @@ public class Unit implements MovableEntity {
 		this.type = type;
 	}
 	
+	public Unit(MovableEntity copyExeptType, Type type) {
+		this.type = type;
+		this.pos = copyExeptType.position();
+		this.totalActions = copyExeptType.totalActions();
+		this.remainingActions = copyExeptType.remainingActions();
+		EnumSet <Grounds> ceo = new EnumSet <>(Grounds.class);
+		ceo.addAll(copyExeptType.canExsitOn());
+		this.canExsist = Collections.unmodifiableSet(ceo);
+	}
+	
 	@Override
 	public Position position() {
 		return new PositionListener(pos);

@@ -18,6 +18,4 @@ public enum Type {
 	
 	spring, farm, mine,
 	
-	
-	
 }

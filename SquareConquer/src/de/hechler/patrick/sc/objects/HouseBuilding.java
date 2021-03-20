@@ -11,6 +11,7 @@ import de.hechler.patrick.sc.exeptions.InvalidDestinationException;
 import de.hechler.patrick.sc.interfaces.Field;
 import de.hechler.patrick.sc.interfaces.MovableEntity;
 import de.hechler.patrick.sc.interfaces.Position;
+import de.hechler.patrick.sc.utils.factory.EntityFactory;
 
 public class HouseBuilding extends Building {
 	
@@ -65,11 +66,62 @@ public class HouseBuilding extends Building {
 	public void goOut(MovableEntity entity, World world, Direction dir) {
 		UnchangeablePosition newPos = pos.newCreateMove(dir);
 		Field nf = world.getField(newPos);
-		if (!entity.canExsitOn().contains(nf.ground())) {
+		if ( !entity.canExsitOn().contains(nf.ground())) {
 			throw new InvalidDestinationException(nf, dir, nf.ground(), entity.canExsitOn());
 		}
 		entity.useAction();
 		entity.setPosition(newPos);
+	}
+	
+	public void produce() {
+		if (remainingActions <= 0) {
+			throw new IllegalStateException("no more actions");
+		}
+		remainingActions -- ;
+		switch (type) {
+		case house:
+			if (inside.size() >= capacity) {
+				throw new IllegalStateException("already full");
+			}
+			MovableEntity created = (MovableEntity) EntityFactory.create(pos, Type.simple, null);
+			inside.add(created);
+			return;
+		case houseBow:
+			for (MovableEntity me : inside) {
+				if (me.type() == Type.simple && me.remainingActions() > 0) {
+					MovableEntity u = EntityFactory.create(me, Type.bow);
+					u.useAction();
+					inside.remove(me);
+					inside.add(u);
+					return;
+				}
+			}
+			throw new IllegalStateException("contained no simple unit");
+		case houseBuilder:
+			for (MovableEntity me : inside) {
+				if (me.type() == Type.simple && me.remainingActions() > 0) {
+					MovableEntity u = EntityFactory.create(me, Type.builder);
+					u.useAction();
+					inside.remove(me);
+					inside.add(u);
+					return;
+				}
+			}
+			throw new IllegalStateException("contained no simple unit");
+		case houseMelee:
+			for (MovableEntity me : inside) {
+				if (me.type() == Type.simple && me.remainingActions() > 0) {
+					MovableEntity u = EntityFactory.create(me, Type.meele);
+					u.useAction();
+					inside.remove(me);
+					inside.add(u);
+					return;
+				}
+			}
+			throw new IllegalStateException("contained no simple unit");
+		default:
+			throw new IllegalStateException("unknown type: " + type);
+		}
 	}
 	
 }

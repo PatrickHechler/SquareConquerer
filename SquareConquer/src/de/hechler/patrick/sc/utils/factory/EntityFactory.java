@@ -5,6 +5,7 @@ import de.hechler.patrick.sc.enums.Type;
 import de.hechler.patrick.sc.exeptions.CreationException;
 import de.hechler.patrick.sc.interfaces.Entity;
 import de.hechler.patrick.sc.interfaces.Field;
+import de.hechler.patrick.sc.interfaces.MovableEntity;
 import de.hechler.patrick.sc.interfaces.Position;
 import de.hechler.patrick.sc.objects.HouseBuilding;
 import de.hechler.patrick.sc.objects.ProducingBuilding;
@@ -56,6 +57,11 @@ public class EntityFactory {
 		} else if (f.getEntity() != null) {
 			throw new CreationException("field'" + f + "' on pos'" + pos + "' is not empty: " + f.getEntity());
 		}
+		Entity e = create(pos, type, storage);
+		f.setEntity(e);
+	}
+	
+	public static Entity create(Position pos, Type type, StorageCreateParam storage) {
 		Entity e;
 		switch (type) {
 		case simple:
@@ -98,7 +104,7 @@ public class EntityFactory {
 		default:
 			throw new CreationException("unknown type: " + type);
 		}
-		f.setEntity(e);
+		return e;
 	}
 	
 	public static class StorageCreateParam {
@@ -116,6 +122,10 @@ public class EntityFactory {
 			this.capacity = capacity;
 		}
 		
+	}
+	
+	public static Unit create(MovableEntity me, Type type) {
+		return new Unit(me, type);
 	}
 	
 }

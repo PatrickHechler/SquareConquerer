@@ -6,5 +6,5 @@ public interface UnmovableEntity extends Entity {
 	default boolean isMovable() {
 		return false;
 	}
-	
+
 }

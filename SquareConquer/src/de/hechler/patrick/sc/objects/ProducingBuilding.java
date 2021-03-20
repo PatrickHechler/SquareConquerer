@@ -35,11 +35,38 @@ public class ProducingBuilding extends StorageBuilding {
 		this(new UnchangeablePosition(pos), canExsistOn, type, totalActions, interval, producing, producingCnt, capacity);
 	}
 	
+	/**
+	 * returns the interval, in which this {@link ProducingBuilding} is producing {@link Resources}
+	 * 
+	 * @return the interval, in which this {@link ProducingBuilding} is producing {@link Resources}
+	 */
+	public int getInterval() {
+		return interval;
+	}
+	
+	/**
+	 * returns a relativ turn count, which was gets every producing reseted
+	 * 
+	 * @return a relativ turn count, which was gets every producing reseted
+	 */
+	public int getTurnCount() {
+		return count;
+	}
+	
+	/**
+	 * returns the number of {@link Resources} produced every interval
+	 * 
+	 * @return the number of {@link Resources} produced every interval
+	 */
+	public int getProducingCnt() {
+		return producingCnt;
+	}
+	
 	@Override
 	public void newTurn() {
 		count ++ ;
 		if (count >= interval) {
-			count = 0;
+			count -= interval;
 			store.get(producing).value += producingCnt;
 		}
 		super.newTurn();
