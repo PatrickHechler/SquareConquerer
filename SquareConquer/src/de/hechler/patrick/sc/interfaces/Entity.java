@@ -46,9 +46,11 @@ public interface Entity {
 	
 	/**
 	 * uses one action, so the return-value from {@link #remainingActions()} will be lowered by {@code 1}.
-	 * @throws IllegalStateException if there are no actions left to use.
+	 * 
+	 * @throws IllegalStateException
+	 *             if there are no actions left to use.
 	 */
-	void useAction()throws IllegalStateException;
+	void useAction() throws IllegalStateException;
 	
 	/**
 	 * tells this {@link Entity}, to start a new turn, so the {@link #remainingActions()} will be reseted after this call
@@ -61,5 +63,13 @@ public interface Entity {
 	 * @return the {@link Type} of this {@link Entity}
 	 */
 	Type type();
+	
+	
+	/**
+	 * returns the sight of this {@link Entity} in {@link Field}s
+	 * 
+	 * @return the sight of this {@link Entity} in {@link Field}s
+	 */
+	int sight();
 	
 }

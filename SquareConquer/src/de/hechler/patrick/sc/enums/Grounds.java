@@ -11,6 +11,8 @@ public enum Grounds {
 	
 	flat,
 	
+	unknown
+	
 	;
 	
 	public char character() {
@@ -21,6 +23,8 @@ public enum Grounds {
 			return 'M';
 		case water:
 			return 'W';
+		case unknown:
+			throw new RuntimeException("the ground 'unknown' does not support this operation!");
 		}
 		throw new RuntimeException("unknown Ground: name=" + this.name() + " toString -> '" + this + "'");
 	}
