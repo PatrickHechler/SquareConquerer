@@ -4,6 +4,8 @@ import de.hechler.patrick.sc.enums.Grounds;
 
 public interface Field {
 	
+	boolean isMemory();
+	
 	Position position();
 	
 	int getXPos();

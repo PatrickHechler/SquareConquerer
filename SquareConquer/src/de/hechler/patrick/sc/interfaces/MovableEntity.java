@@ -1,6 +1,7 @@
 package de.hechler.patrick.sc.interfaces;
 
 import de.hechler.patrick.sc.enums.Direction;
+import de.hechler.patrick.sc.objects.Game;
 
 public interface MovableEntity extends Entity {
 	
@@ -8,6 +9,14 @@ public interface MovableEntity extends Entity {
 	default boolean isMovable() {
 		return true;
 	}
+	
+	/**
+	 * returns the ID of the owner<br>
+	 * an owner ID is an randomly generated number, which is only given to one {@link Player} per {@link Game}
+	 * 
+	 * @return the ID of the owner
+	 */
+	int owner();
 	
 	/**
 	 * moves this {@link Entity} and lowers the numbers of remaining actions for this turn by the {@link Position#distance(Position)} of the starting {@link Position} and the destiny {@link Position}.

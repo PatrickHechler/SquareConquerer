@@ -9,9 +9,10 @@ import de.hechler.patrick.sc.utils.objects.EnumSet;
 
 public class Units {
 	
-	private static final Set <Grounds> WATER             = set(Grounds.water);
-	private static final Set <Grounds> FLAT              = set(Grounds.flat);
-	private static final Set <Grounds> MOUNTAIN_AND_FLAT = set(Grounds.mountain, Grounds.flat);
+	private static final Set <Grounds> WATER           = set(Grounds.water);
+	private static final Set <Grounds> FLAT_AND_FOREST = set(Grounds.flat, Grounds.forest);
+	private static final Set <Grounds> FOREST          = set(Grounds.forest);
+	private static final Set <Grounds> ALL_EXEPT_WATER = set(Grounds.mountain, Grounds.flat, Grounds.forest);
 	
 	private static final Set <Grounds> set(Grounds... grounds) {
 		Set <Grounds> res = new EnumSet <Grounds>(Grounds.class);
@@ -38,12 +39,13 @@ public class Units {
 		case houseMelee:
 		case spring:
 		case storage:
-			return ground == Grounds.flat;
+			return ground == Grounds.flat || ground == Grounds.forest;
 		case mine:
 			return ground != Grounds.water;
-		default:
-			throw new RuntimeException("unknown entytyType: entity=" + entity);
+		case woodFarm:
+			return ground == Grounds.forest;
 		}
+		throw new RuntimeException("unknown entytyType: entity=" + entity);
 	}
 	
 	public static Set <Grounds> canExistOn(Type entity) {
@@ -61,9 +63,11 @@ public class Units {
 		case simple:
 		case spring:
 		case storage:
-			return FLAT;
+			return FLAT_AND_FOREST;
 		case mine:
-			return MOUNTAIN_AND_FLAT;
+			return ALL_EXEPT_WATER;
+		case woodFarm:
+			return FOREST;
 		}
 		throw new RuntimeException("unknown Type: " + entity);
 	}

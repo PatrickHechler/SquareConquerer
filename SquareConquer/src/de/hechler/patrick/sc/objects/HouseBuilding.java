@@ -8,6 +8,7 @@ import de.hechler.patrick.sc.enums.Direction;
 import de.hechler.patrick.sc.enums.Grounds;
 import de.hechler.patrick.sc.enums.Type;
 import de.hechler.patrick.sc.exeptions.InvalidDestinationException;
+import de.hechler.patrick.sc.interfaces.Entity;
 import de.hechler.patrick.sc.interfaces.Field;
 import de.hechler.patrick.sc.interfaces.MovableEntity;
 import de.hechler.patrick.sc.interfaces.Position;
@@ -15,8 +16,7 @@ import de.hechler.patrick.sc.utils.factory.EntityFactory;
 
 public class HouseBuilding extends Building {
 	
-	protected int capacity;
-	
+	protected int                 capacity;
 	protected Set <MovableEntity> inside;
 	
 	
@@ -34,7 +34,7 @@ public class HouseBuilding extends Building {
 	}
 	
 	public HouseBuilding(UnchangeablePosition pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remainingActions, int capacity) {
-		super(pos, canExsistOn, type, totalActions, remainingActions);
+		super(0, pos, canExsistOn, type, totalActions, remainingActions);
 		this.capacity = capacity;
 		this.inside = new HashSet <MovableEntity>();
 	}
@@ -73,7 +73,7 @@ public class HouseBuilding extends Building {
 		entity.setPosition(newPos);
 	}
 	
-	public void produce() {
+	public void produce(int owner) {
 		if (remainingActions <= 0) {
 			throw new IllegalStateException("no more actions");
 		}
@@ -83,7 +83,7 @@ public class HouseBuilding extends Building {
 			if (inside.size() >= capacity) {
 				throw new IllegalStateException("already full");
 			}
-			MovableEntity created = (MovableEntity) EntityFactory.create(pos, Type.simple, null);
+			MovableEntity created = (MovableEntity) EntityFactory.create(owner, pos, Type.simple, null);
 			inside.add(created);
 			return;
 		case houseBow:
@@ -122,6 +122,19 @@ public class HouseBuilding extends Building {
 		default:
 			throw new IllegalStateException("unknown type: " + type);
 		}
+	}
+	
+	/**
+	 * The {@link #sight()} of an {@link HouseBuilding} is defined as the maximum {@link Entity#sight()} of all {@link MovableEntity}s inside it subtracted with 1. An {@link HouseBuilding} can also
+	 * have a minimum sight, which is used, when it is higher then the {@link #sight()} of all {@link MovableEntity}s inside it.
+	 */
+	@Override
+	public int sight() {
+		int sight = this.sight;
+		for (MovableEntity me : inside) {
+			sight = Math.max(sight, me.sight() - 1);
+		}
+		return sight;
 	}
 	
 }

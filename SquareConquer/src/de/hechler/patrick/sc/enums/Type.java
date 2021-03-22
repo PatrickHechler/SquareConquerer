@@ -18,7 +18,7 @@ public enum Type {
 	
 	storage,
 	
-	spring, farm, mine,;
+	spring, farm, mine, woodFarm;
 	
 	public static Map <String, Type> names() {
 		Map <String, Type> res = new HashMap <>();

@@ -5,6 +5,6 @@ public enum Resources {
 	
 	eat, drink,
 	
-	metal,
+	metal, wood,
 
 }

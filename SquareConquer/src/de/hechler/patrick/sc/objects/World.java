@@ -1,6 +1,7 @@
 package de.hechler.patrick.sc.objects;
 
 import de.hechler.patrick.sc.enums.Direction;
+import de.hechler.patrick.sc.enums.Type;
 import de.hechler.patrick.sc.exeptions.InvalidDestinationException;
 import de.hechler.patrick.sc.interfaces.Entity;
 import de.hechler.patrick.sc.interfaces.Field;
@@ -18,6 +19,100 @@ public class World {
 	}
 	
 	
+	/**
+	 * Attacks the {@code defender} with the {@code attacker}.<br>
+	 * Only one of the will get {@link Entity#getDamage(int)}, so even the attacker can get destroyed as cause of this call.
+	 * 
+	 * @param attacker
+	 *            the attacking {@link MovableEntity}
+	 * @param defender
+	 *            the defending {@link Entity}
+	 */
+	public void attack(MovableEntity attacker, Entity defender) {
+		if (defender.isMovable()) {
+			if ( ((MovableEntity) defender).owner() == attacker.owner()) {
+				System.err.println("ID[" + attacker.owner() + "] is attacking its own units");
+			}
+		}
+		double am;
+		int dist = attacker.position().distance(defender.position());
+		switch (attacker.type()) {
+		case meele:
+			if (dist > 1) throw new IllegalStateException("too much distance");
+			am = 1.5;
+			break;
+		case boat:
+			if (dist > 3) throw new IllegalStateException("too much distance");
+			if (dist != 1) am = 1.125;
+			else am = 1.5;
+			break;
+		case bow:
+			if (dist > 3) throw new IllegalStateException("too much distance");
+			am = 1;
+			break;
+		case builder:
+			if (dist > 1) throw new IllegalStateException("too much distance");
+			am = 0.375;
+			break;
+		case simple:
+			if (dist > 1) throw new IllegalStateException("too much distance");
+			am = 0.125;
+			break;
+		default:
+			throw new RuntimeException("unknown type of the attacker: " + attacker.type());
+		}
+		double dm;
+		double zusatz = 0;
+		switch (defender.type()) {
+		case boat:
+			if (dist != 1) dm = 0.75;
+			else dm = 0.875;
+			break;
+		case bow:
+			dm = 0.5;
+			break;
+		case builder:
+			dm = 0.125;
+			break;
+		case house:
+		case houseBow:
+		case houseBuilder:
+		case houseMelee: {
+			dm = 0;
+			for (MovableEntity me : ((HouseBuilding) defender).inside) {
+				if (me.type() == Type.meele) zusatz += me.health() * 0.5;
+			}
+			break;
+		}
+		case meele:
+			if (dist == 1) dm = 1;
+			else dm = 0;
+			break;
+		case simple:
+			dm = 0.125;
+			break;
+		case farm:
+		case spring:
+		case storage:
+		case woodFarm:
+		case mine:
+			dm = 0;
+			break;
+		default:
+			throw new RuntimeException("unknown type of the defender: " + defender.type());
+		}
+		double attackPoints = (am * attacker.health()) - ( (dm * defender.health()) + zusatz);
+		Entity victim;
+		if (attackPoints > 0) {
+			victim = defender.getDamage((int) attackPoints) ? defender : null;
+		} else {
+			victim = attacker.getDamage((int) -attackPoints) ? attacker : null;
+		}
+		if (victim != null) {
+			Field f = getField(victim.position());
+			f.setEntity(null);
+		}
+	}
 	
 	public void move(MovableEntity entity, Direction dir) throws InvalidDestinationException {
 		Position pos = entity.position();

@@ -4,6 +4,8 @@ import java.util.Set;
 
 import de.hechler.patrick.sc.enums.Grounds;
 import de.hechler.patrick.sc.enums.Type;
+import de.hechler.patrick.sc.objects.Game;
+import de.hechler.patrick.sc.objects.World;
 
 public interface Entity {
 	
@@ -16,8 +18,8 @@ public interface Entity {
 	
 	/**
 	 * returns <code>true</code>, if this {@link Position} has the ability to move. <br>
-	 * if this {@link Entity} is movable, it should be an {@code instanceof} {@link MovableEntity}. <br>
-	 * if this {@link Entity} is not movable, it should be an {@code instanceof} {@link UnmovableEntity}.
+	 * if this {@link Entity} is movable, it has to be an {@code instanceof} {@link MovableEntity}. <br>
+	 * if this {@link Entity} is not movable, it has to be an {@code instanceof} {@link UnmovableEntity}.
 	 * 
 	 * @return <code>true</code>, if this {@link Position} has the ability to move
 	 */
@@ -71,5 +73,31 @@ public interface Entity {
 	 * @return the sight of this {@link Entity} in {@link Field}s
 	 */
 	int sight();
+	
+	/**
+	 * returns the {@link #health()} of this {@link Entity}.<br>
+	 * the {@link #health()} is a positive non zero number. When {@link #health()} comes under or to zero, the {@link Entity} gets removed from the {@link World}/{@link Game}
+	 * 
+	 * @return the {@link #health()} of this {@link Entity}
+	 */
+	int health();
+	
+	/**
+	 * subtracts the {@code damagePoints} from the {@link Entity}s {@link #health()}.<br>
+	 * if the {@link Entity} survives the attack, it will return <code>true</code>, if not <code>false</code>
+	 * 
+	 * @param damagePoints
+	 *            the number of damage
+	 * @return if the {@link Entity} survives
+	 */
+	boolean getDamage(int damagePoints);
+	
+	/**
+	 * adds the {@code healPoints} to this {@link Entity}s {@link #health()}.
+	 * 
+	 * @param healPoints
+	 *            the number of points to bee healed
+	 */
+	void getHealing(int healPoints);
 	
 }

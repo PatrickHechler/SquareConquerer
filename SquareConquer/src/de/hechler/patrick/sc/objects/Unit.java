@@ -15,32 +15,37 @@ import de.hechler.patrick.sc.utils.objects.EnumSet;
 public class Unit implements MovableEntity {
 	
 	public final Set <Grounds> canExsist;
+	public final int           owner;
 	
 	public final Type type;
 	
 	protected Position pos;
 	
+	protected int health;
 	protected int totalActions;
 	protected int remainingActions;
+	protected int sight;
 	
 	
-	public Unit(Position pos, Collection <Grounds> canExsistOn, int totalActions, Type type) {
-		this.pos = new NicePosition(pos);
-		EnumSet <Grounds> ceo = new EnumSet <>(Grounds.class);
-		ceo.addAll(canExsistOn);
-		this.canExsist = Collections.unmodifiableSet(ceo);
-		this.totalActions = totalActions;
-		this.type = type;
+	public Unit(int owner, Position pos, Collection <Grounds> canExsistOn, int totalActions, Type type, int sight) {
+		this(owner, new NicePosition(pos), canExsistOn, totalActions, 0, type, sight);
 	}
 	
-	public Unit(int x, int y, Collection <Grounds> canExsistOn, int totalActions, int remainingActions, Type type) {
-		this.pos = new NicePosition(x, y);
+	public Unit(int owner, int x, int y, Collection <Grounds> canExsistOn, int totalActions, int remainingActions, Type type, int sight) {
+		this(owner, new NicePosition(x, y), canExsistOn, totalActions, remainingActions, type, sight);
+	}
+	
+	protected Unit(int owner, NicePosition pos, Collection <Grounds> canExsistOn, int totalActions, int remainingActions, Type type, int sight) {
 		EnumSet <Grounds> ceo = new EnumSet <>(Grounds.class);
 		ceo.addAll(canExsistOn);
-		this.canExsist = Collections.unmodifiableSet(ceo);
+		canExsist = Collections.unmodifiableSet(ceo);
+		this.pos = pos;
 		this.totalActions = totalActions;
 		this.remainingActions = remainingActions;
 		this.type = type;
+		this.sight = sight;
+		this.owner = owner;
+		this.health = 20;
 	}
 	
 	public Unit(MovableEntity copyExeptType, Type type) {
@@ -51,6 +56,12 @@ public class Unit implements MovableEntity {
 		EnumSet <Grounds> ceo = new EnumSet <>(Grounds.class);
 		ceo.addAll(copyExeptType.canExsitOn());
 		this.canExsist = Collections.unmodifiableSet(ceo);
+		this.owner = copyExeptType.owner();
+	}
+	
+	@Override
+	public int owner() {
+		return owner;
 	}
 	
 	@Override
@@ -116,6 +127,27 @@ public class Unit implements MovableEntity {
 	@Override
 	public final boolean isMovable() {
 		return true;
+	}
+	
+	@Override
+	public int sight() {
+		return sight;
+	}
+	
+	@Override
+	public int health() {
+		return health;
+	}
+	
+	@Override
+	public boolean getDamage(int damagePoints) {
+		health -= damagePoints;
+		return health > 0;
+	}
+	
+	@Override
+	public void getHealing(int healPoints) {
+		health += healPoints;
 	}
 	
 }

@@ -28,9 +28,9 @@ public interface Position extends Comparable <Position>, Cloneable {
 	}
 	
 	default int distance(Position to) {
-		int my = getX() + getY();
-		int other = to.getX() + to.getY();
-		return Math.abs(my - other);
+		int x = Math.abs(getX() - to.getX());
+		int y = Math.abs(getY() - to.getY());
+		return x + y;
 	}
 	
 	/**

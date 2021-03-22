@@ -27,6 +27,22 @@ public class StorageBuilding extends Building {
 		this(pos, canExsistOn, type, totalActions, 0, map(storable), capacity);
 	}
 	
+	public StorageBuilding(Position pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remainingActions, Map <Resources, ? extends Number> store, int capacity) {
+		this(new UnchangeablePosition(pos), canExsistOn, type, totalActions, remainingActions, store, capacity);
+	}
+	
+	public StorageBuilding(UnchangeablePosition pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remaining, Map <Resources, ? extends Number> store, int capacity) {
+		this(0, pos, canExsistOn, type, totalActions, remaining);
+	}
+	
+	public StorageBuilding(int sight, Position pos, Set <Grounds> canExsistOn, Type type, int totalActions, int capacity, Resources... storable) {
+		this(sight, new UnchangeablePosition(pos), canExsistOn, type, totalActions, capacity);
+	}
+	
+	public StorageBuilding(int sight, UnchangeablePosition pos, Set <Grounds> canExsistOn, Type type, int totalActions, int capacity, Resources... storable) {
+		this(sight, pos, canExsistOn, type, totalActions, 0, map(storable), capacity);
+	}
+	
 	protected final static Map <Resources, ? extends Number> map(Resources[] storable) {
 		Map <Resources, Integer> map = new EnumMap <Resources, Integer>(Resources.class);
 		for (Resources r : storable) {
@@ -35,12 +51,12 @@ public class StorageBuilding extends Building {
 		return map;
 	}
 	
-	public StorageBuilding(Position pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remainingActions, Map <Resources, ? extends Number> store, int capacity) {
-		this(new UnchangeablePosition(pos), canExsistOn, type, totalActions, remainingActions, store, capacity);
+	public StorageBuilding(int sight, Position pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remainingActions, Map <Resources, ? extends Number> store, int capacity) {
+		this(sight, new UnchangeablePosition(pos), canExsistOn, type, totalActions, remainingActions, store, capacity);
 	}
 	
-	public StorageBuilding(UnchangeablePosition pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remaining, Map <Resources, ? extends Number> store, int capacity) {
-		super(pos, canExsistOn, type, totalActions, remaining);
+	public StorageBuilding(int sight, UnchangeablePosition pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remaining, Map <Resources, ? extends Number> store, int capacity) {
+		super(sight, pos, canExsistOn, type, totalActions, remaining);
 		this.capacity = capacity;
 		this.store = new EnumMap <Resources, StorageBuilding.Int>(Resources.class);
 		store.forEach((k, v) -> {

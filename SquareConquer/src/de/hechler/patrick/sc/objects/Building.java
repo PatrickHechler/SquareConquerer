@@ -13,8 +13,10 @@ public class Building implements UnmovableEntity {
 	public final Type                 type;
 	private final Set <Grounds>       ceo;
 	
+	protected int health;
 	protected int totalActions;
 	protected int remainingActions;
+	protected int sight;
 	
 	
 	
@@ -31,11 +33,29 @@ public class Building implements UnmovableEntity {
 	}
 	
 	public Building(UnchangeablePosition pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remainingActions) {
+		this(0, pos, canExsistOn, type, totalActions, remainingActions);
+	}
+	
+	public Building(int sight, Position pos, Set <Grounds> canExsistOn, Type type, int totalActions) {
+		this(sight, new UnchangeablePosition(pos), canExsistOn, type, totalActions);
+	}
+	
+	public Building(int sight, UnchangeablePosition pos, Set <Grounds> canExsistOn, Type type, int totalActions) {
+		this(sight, pos, canExsistOn, type, totalActions, 0);
+	}
+	
+	public Building(int sight, Position pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remainingActions) {
+		this(sight, new UnchangeablePosition(pos), canExsistOn, type, totalActions, remainingActions);
+	}
+	
+	public Building(int sight, UnchangeablePosition pos, Set <Grounds> canExsistOn, Type type, int totalActions, int remainingActions) {
+		this.sight = sight;
 		this.pos = pos;
 		this.ceo = canExsistOn;
 		this.type = type;
 		this.totalActions = totalActions;
 		this.remainingActions = remainingActions;
+		this.health = 40;
 	}
 	
 	
@@ -79,6 +99,27 @@ public class Building implements UnmovableEntity {
 	@Override
 	public final boolean isMovable() {
 		return false;
+	}
+	
+	@Override
+	public int sight() {
+		return sight;
+	}
+	
+	@Override
+	public int health() {
+		return health;
+	}
+	
+	@Override
+	public boolean getDamage(int damagePoints) {
+		health -= damagePoints;
+		return health > 0;
+	}
+	
+	@Override
+	public void getHealing(int healPoints) {
+		health += healPoints;
 	}
 	
 }

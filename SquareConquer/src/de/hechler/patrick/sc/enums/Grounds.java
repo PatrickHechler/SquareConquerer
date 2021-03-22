@@ -11,6 +11,8 @@ public enum Grounds {
 	
 	flat,
 	
+	forest,
+	
 	unknown
 	
 	;
@@ -23,6 +25,8 @@ public enum Grounds {
 			return 'M';
 		case water:
 			return 'W';
+		case forest:
+			return 'T';
 		case unknown:
 			throw new RuntimeException("the ground 'unknown' does not support this operation!");
 		}
@@ -37,6 +41,8 @@ public enum Grounds {
 			return mountain;
 		case 'W':
 			return water;
+		case 'T':
+			return forest;
 		}
 		throw new RuntimeException("unknown char: c='" + c + "'");
 	}
