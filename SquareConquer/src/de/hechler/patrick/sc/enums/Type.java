@@ -11,6 +11,8 @@ public enum Type {
 	
 	builder,
 	
+	carrier,
+	
 	boat,
 	
 	

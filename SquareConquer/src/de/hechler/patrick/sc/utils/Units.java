@@ -32,6 +32,7 @@ public class Units {
 		case builder:
 		case simple:
 		case meele:
+		case carrier:
 		case farm:
 		case house:
 		case houseBow:
@@ -57,6 +58,7 @@ public class Units {
 		case farm:
 		case house:
 		case houseBow:
+		case carrier:
 		case houseBuilder:
 		case houseMelee:
 		case meele:

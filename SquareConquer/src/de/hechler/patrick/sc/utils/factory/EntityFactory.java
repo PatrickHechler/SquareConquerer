@@ -7,6 +7,7 @@ import de.hechler.patrick.sc.interfaces.Entity;
 import de.hechler.patrick.sc.interfaces.Field;
 import de.hechler.patrick.sc.interfaces.MovableEntity;
 import de.hechler.patrick.sc.interfaces.Position;
+import de.hechler.patrick.sc.objects.CarriearUnit;
 import de.hechler.patrick.sc.objects.HouseBuilding;
 import de.hechler.patrick.sc.objects.ProducingBuilding;
 import de.hechler.patrick.sc.objects.StorageBuilding;
@@ -21,12 +22,15 @@ public class EntityFactory {
 	private static final int BOW_ACTIONS      = 3;
 	private static final int MEELE_ACTIONS    = 3;
 	private static final int BUILDER_ACTIONS  = 2;
+	private static final int CARRIER_ACTIONS  = 2;
 	
 	private static final int BOAT_SIGHT     = 6;
 	private static final int SIMPLE_U_SIGHT = 1;
 	private static final int BOW_SIGHT      = 4;
 	private static final int MEELE_SIGHT    = 2;
 	private static final int BUILDER_SIGHT  = 1;
+	private static final int CARRIER_SIGHT  = 1;
+	private static final int MAX_CARRIING   = 2;
 	
 	private static final int       FARM_ACTIONS       = 0;
 	private static final int       FARM_INTERVAL      = 10;
@@ -84,6 +88,9 @@ public class EntityFactory {
 			break;
 		case bow:
 			e = new Unit(owner, pos, Units.canExistOn(type), BOW_ACTIONS, type, BOW_SIGHT);
+			break;
+		case carrier:
+			e = new CarriearUnit(owner, MAX_CARRIING, pos, Units.canExistOn(type), CARRIER_ACTIONS, type, CARRIER_SIGHT);
 			break;
 		case meele:
 			e = new Unit(owner, pos, Units.canExistOn(type), MEELE_ACTIONS, type, MEELE_SIGHT);

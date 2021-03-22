@@ -1,6 +1,7 @@
 package de.hechler.patrick.sc.objects;
 
 import de.hechler.patrick.sc.enums.Direction;
+import de.hechler.patrick.sc.enums.Resources;
 import de.hechler.patrick.sc.enums.Type;
 import de.hechler.patrick.sc.exeptions.InvalidDestinationException;
 import de.hechler.patrick.sc.interfaces.Entity;
@@ -18,6 +19,29 @@ public class World {
 		map = new Field[xCnt][yCnt];
 	}
 	
+	
+	
+	public void fillCarrier(CarriearUnit carriear, StorageBuilding store, Resources resource) throws IllegalStateException {
+		if (carriear.isFull()) throw new IllegalStateException("carrier is full!");
+		if ( !carriear.isEmpty() && carriear.carries() != resource) throw new IllegalStateException("carrier carries wrong ressource!");
+		int cMaxCnt = carriear.freeCount(), sMaxCnt = store.contains(resource);
+		if (sMaxCnt < 0) throw new IllegalStateException("store does not contain this resource!");
+		int cnt = Math.min(cMaxCnt, sMaxCnt);
+		if (carriear.isEmpty()) {
+			carriear.carrie(resource);
+		}
+		carriear.add(cnt);
+		store.remove(resource, cnt);
+	}
+	
+	public void fillStore(StorageBuilding store, CarriearUnit carriear) {
+		if (carriear.isEmpty()) throw new IllegalStateException("carrier is empty!");
+		if (store.freeSpace() <= 0) throw new IllegalStateException("store is full!");
+		int cMaxCnt = carriear.count(), sMaxCnt = store.freeSpace();
+		int cnt = Math.min(cMaxCnt, sMaxCnt);
+		store.store(carriear.carries(), cnt);
+		carriear.remove(cnt);
+	}
 	
 	/**
 	 * Attacks the {@code defender} with the {@code attacker}.<br>
