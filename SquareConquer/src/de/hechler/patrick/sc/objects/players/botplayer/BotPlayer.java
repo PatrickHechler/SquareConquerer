@@ -93,7 +93,7 @@ import de.hechler.patrick.sc.objects.World;
  * </pre>
  * 
  * @author Patrick
- * @see <a href="https://github.com/PatrickHechler/SquareConquerer/BotPlan.txt"> BotPlan</a>
+ * @see <a href="https://github.com/PatrickHechler/SquareConquerer/blob/master/BotPlan.txt"> BotPlan</a>
  *
  */
 public class BotPlayer implements Player {
