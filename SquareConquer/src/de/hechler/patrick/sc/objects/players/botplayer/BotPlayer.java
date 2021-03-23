@@ -1,4 +1,6 @@
-package de.hechler.patrick.sc.objects.players;
+package de.hechler.patrick.sc.objects.players.botplayer;
+
+import java.util.Collections;
 
 import de.hechler.patrick.sc.interfaces.Player;
 import de.hechler.patrick.sc.objects.World;
@@ -91,7 +93,7 @@ import de.hechler.patrick.sc.objects.World;
  * </pre>
  * 
  * @author Patrick
- * @see https://github.com/PatrickHechler/SquareConquerer/BotPlan.txt
+ * @see <a href="https://github.com/PatrickHechler/SquareConquerer/BotPlan.txt"> BotPlan</a>
  *
  */
 public class BotPlayer implements Player {
@@ -99,7 +101,7 @@ public class BotPlayer implements Player {
 	@Override
 	public void makeTurn(World world, int myID) {
 		// TODO Auto-generated method stub
-		
+		// Collections
 	}
 	
 }
