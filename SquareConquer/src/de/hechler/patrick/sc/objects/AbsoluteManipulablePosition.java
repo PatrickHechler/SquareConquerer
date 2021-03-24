@@ -88,4 +88,15 @@ public class AbsoluteManipulablePosition implements Position {
 		}
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj != null && getClass() == obj.getClass()) return equals((Position) obj);
+		else return false;
+	}
+	
+	@Override
+	public boolean equals(Position pos) {
+		return x == pos.getX() && y == pos.getY();
+	}
+	
 }

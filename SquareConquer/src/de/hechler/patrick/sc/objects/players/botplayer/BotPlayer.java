@@ -1,7 +1,5 @@
 package de.hechler.patrick.sc.objects.players.botplayer;
 
-import java.util.Collections;
-
 import de.hechler.patrick.sc.interfaces.Player;
 import de.hechler.patrick.sc.objects.World;
 
@@ -9,7 +7,7 @@ import de.hechler.patrick.sc.objects.World;
  * <pre>
  * BOT:
  * 	\**
- * 	 * this area is owned completly by the bot
+ * 	 * this area is owned completely by the bot
  * 	 * the bot will only built there
  * 	 * it will use the buildings inside
  * 	 * it will try to expand the borders
@@ -20,8 +18,8 @@ import de.hechler.patrick.sc.objects.World;
  * 	 * all Units of the Bot will be there
  * 	 * the Bot may use a Building, if it is inside of this area, but not inside of 'myArea'
  * 	 * it will protect the boarders
- * 	 *     but the Buts Units will still be inside of the area
- * 	 *     espesally the boarders, which are near to enemy boarders
+ * 	 *     but the Bots Units will still be inside of the area
+ * 	 *     Especially the boarders, which are near to enemy boarders
  * 	 * it will try to expand the borders
  * 	 * if it can't hold the line it's Units will fall back
  * 	 *     it will eventually destroy buildings, so the enemy can not capture them
@@ -98,10 +96,33 @@ import de.hechler.patrick.sc.objects.World;
  */
 public class BotPlayer implements Player {
 	
+	/**
+	 * <pre>
+	* this area is owned completely by the bot
+	* the bot will only built there
+	* it will use the buildings inside
+	* it will try to expand the borders
+	 * </pre>
+	 */
+	private Object myArea;
+	/**
+	 * <pre>
+	* this area contains all Fields, which are inside of 'myArea'
+	* all Units of the Bot will be there
+	* the Bot may use a Building, if it is inside of this area, but not inside of 'myArea'
+	* it will protect the boarders
+	*     but the Bots Units will still be inside of the area
+	*     Especially the boarders, which are near to enemy boarders
+	* it will try to expand the borders
+	* if it can't hold the line it's Units will fall back
+	*     it will eventually destroy buildings, so the enemy can not capture them
+	 * </pre>
+	 */
+	private Object myOuterArea;
+	
 	@Override
 	public void makeTurn(World world, int myID) {
-		// TODO Auto-generated method stub
-		// Collections
+		
 	}
 	
 }
