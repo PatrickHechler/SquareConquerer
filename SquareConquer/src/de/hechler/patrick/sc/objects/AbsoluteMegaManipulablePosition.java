@@ -3,19 +3,19 @@ package de.hechler.patrick.sc.objects;
 import de.hechler.patrick.sc.enums.Direction;
 import de.hechler.patrick.sc.interfaces.Position;
 
-public class AbsoluteManipulablePosition implements Position {
+public class AbsoluteMegaManipulablePosition implements Position {
 	
-	private int x;
-	private int y;
+	public int x;
+	public int y;
 	
 	
 	
-	public AbsoluteManipulablePosition(int x, int y) {
+	public AbsoluteMegaManipulablePosition(int x, int y) {
 		this.x = x;
 		this.y = y;
 	}
 	
-	public AbsoluteManipulablePosition(Position pos) {
+	public AbsoluteMegaManipulablePosition(Position pos) {
 		this.x = pos.getX();
 		this.y = pos.getY();
 	}
@@ -73,18 +73,18 @@ public class AbsoluteManipulablePosition implements Position {
 	}
 	
 	@Override
-	public AbsoluteManipulablePosition newCreateMove(Direction dir) {
-		AbsoluteManipulablePosition acp = clone();
+	public AbsoluteMegaManipulablePosition newCreateMove(Direction dir) {
+		AbsoluteMegaManipulablePosition acp = clone();
 		acp.move(dir);
 		return acp;
 	}
 	
 	@Override
-	public AbsoluteManipulablePosition clone() {
+	public AbsoluteMegaManipulablePosition clone() {
 		try {
-			return (AbsoluteManipulablePosition) super.clone();
+			return (AbsoluteMegaManipulablePosition) super.clone();
 		} catch (CloneNotSupportedException e) {
-			return new AbsoluteManipulablePosition(x, y);
+			return new AbsoluteMegaManipulablePosition(x, y);
 		}
 	}
 	
@@ -97,13 +97,6 @@ public class AbsoluteManipulablePosition implements Position {
 	@Override
 	public boolean equals(Position pos) {
 		return x == pos.getX() && y == pos.getY();
-	}
-	
-	@Override
-	public int hashCode() {
-		int res = x * 73;
-		res ^= y * 73;
-		return res;
 	}
 	
 }

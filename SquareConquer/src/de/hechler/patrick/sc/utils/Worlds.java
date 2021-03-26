@@ -18,7 +18,7 @@ import de.hechler.patrick.sc.interfaces.Entity;
 import de.hechler.patrick.sc.interfaces.Field;
 import de.hechler.patrick.sc.interfaces.MovableEntity;
 import de.hechler.patrick.sc.interfaces.UnmovableEntity;
-import de.hechler.patrick.sc.objects.AbsoluteManipulablePosition;
+import de.hechler.patrick.sc.objects.AbsoluteMegaManipulablePosition;
 import de.hechler.patrick.sc.objects.FieldImpl;
 import de.hechler.patrick.sc.objects.HouseBuilding;
 import de.hechler.patrick.sc.objects.ProducingBuilding;
@@ -64,7 +64,7 @@ public class Worlds {
 			String save = sc.next();
 			if ( !"SMALL_SAVE".equalsIgnoreCase(save)) throw new RuntimeException("WRONG SAVE: expected 'SMALL_SAVE', but got '" + save + "'");
 		}
-		AbsoluteManipulablePosition acp = new AbsoluteManipulablePosition(0, 0);
+		AbsoluteMegaManipulablePosition acp = new AbsoluteMegaManipulablePosition(0, 0);
 		for (; acp.y < yCnt; acp.y ++ ) {
 			char[] chars = sc.nextLine().replaceAll("\\s", "").toCharArray();
 			for (acp.x = 0; acp.x < xCnt; acp.x ++ ) {
@@ -88,7 +88,7 @@ public class Worlds {
 		int yCnt = map.getYCnt();
 		out.println("MAP(" + xCnt + "|" + yCnt + ")");
 		out.println("SMALL_SAVE");
-		AbsoluteManipulablePosition acp = new AbsoluteManipulablePosition(0, 0);
+		AbsoluteMegaManipulablePosition acp = new AbsoluteMegaManipulablePosition(0, 0);
 		for (; acp.y < yCnt; acp.y ++ ) {
 			char[] chars = new char[xCnt];
 			for (acp.x = 0; acp.x < xCnt; acp.x ++ ) {
@@ -118,7 +118,7 @@ public class Worlds {
 		}
 		Map <String, Grounds> grounds = Grounds.names();
 		Map <String, Type> types = Type.names();
-		AbsoluteManipulablePosition amp = new AbsoluteManipulablePosition( -1, -1);
+		AbsoluteMegaManipulablePosition amp = new AbsoluteMegaManipulablePosition( -1, -1);
 		for (int y = 0; y < yCnt; y ++ ) {
 			for (int x = 0; x < xCnt; x ++ ) {
 				amp.x = -1;
@@ -332,7 +332,7 @@ public class Worlds {
 		int yCnt = map.getYCnt();
 		out.println("MAP (" + xCnt + "|" + yCnt + ")");
 		out.println("HUGE_SAVE");
-		AbsoluteManipulablePosition acp = new AbsoluteManipulablePosition(0, 0);
+		AbsoluteMegaManipulablePosition acp = new AbsoluteMegaManipulablePosition(0, 0);
 		for (; acp.y < yCnt; acp.y ++ ) {
 			for (acp.x = 0; acp.x < xCnt; acp.x ++ ) {
 				Field f = map.getField(acp);

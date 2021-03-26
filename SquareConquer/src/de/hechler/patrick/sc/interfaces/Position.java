@@ -23,8 +23,8 @@ public interface Position extends Comparable <Position>, Cloneable {
 	 */
 	@Override
 	default int compareTo(Position o) {
-		int res = getX() + getY() - o.getX() - o.getY();
-		return ( (res > 0) ? 1 : ( (res < 0) ? -1 : 0));
+		int cmp = getX() + getY() - o.getX() - o.getY();
+		return ( (cmp > 0) ? 1 : ( (cmp < 0) ? -1 : 0));
 	}
 	
 	default int distance(Position to) {

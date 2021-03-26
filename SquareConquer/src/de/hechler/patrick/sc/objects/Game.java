@@ -36,7 +36,7 @@ public class Game {
 		int xCnt = world.getXCnt();
 		int yCnt = world.getYCnt();
 		unknownWorld = new World(xCnt, yCnt);
-		AbsoluteManipulablePosition amp = new AbsoluteManipulablePosition(0, 0);
+		AbsoluteMegaManipulablePosition amp = new AbsoluteMegaManipulablePosition(0, 0);
 		for (; amp.x < xCnt; amp.x ++ ) {
 			for (amp.y = 0; amp.y < yCnt; amp.y ++ ) {
 				Field f = new FieldImpl(amp, Grounds.unknown);
@@ -51,7 +51,7 @@ public class Game {
 		int xCnt = world.getXCnt();
 		int yCnt = world.getYCnt();
 		World res = new World(xCnt, yCnt);
-		AbsoluteManipulablePosition amp = new AbsoluteManipulablePosition(0, 0);
+		AbsoluteMegaManipulablePosition amp = new AbsoluteMegaManipulablePosition(0, 0);
 		for (; amp.x < xCnt; amp.x ++ ) {
 			for (amp.y = 0; amp.y < yCnt; amp.y ++ ) {
 				res.overrideField(unknownWorld.getField(amp));
@@ -100,7 +100,7 @@ public class Game {
 	
 	private void assertFreeFields(Position pos, int radius) throws IllegalStateException {
 		final int x = pos.getX(), y = pos.getY(), xCnt = theWorld.getXCnt(), yCnt = theWorld.getYCnt();
-		AbsoluteManipulablePosition amp = new AbsoluteManipulablePosition(x, y);
+		AbsoluteMegaManipulablePosition amp = new AbsoluteMegaManipulablePosition(x, y);
 		for (; amp.x <= radius && amp.x < xCnt; amp.x ++ ) {
 			for (amp.y = y; amp.y + amp.x <= radius && amp.y < yCnt; amp.y ++ ) {
 				if (theWorld.getField(amp).hasEntity()) throw new IllegalStateException("not free: " + amp.toPosStr() + " asserted the fields around " + pos.toPosStr() + " with the radius " + radius
@@ -144,9 +144,9 @@ public class Game {
 	}
 	
 	private void newTurnSetup() {
-		AbsoluteManipulablePosition amp;
+		AbsoluteMegaManipulablePosition amp;
 		final int xCnt = theWorld.getXCnt(), yCnt = theWorld.getYCnt();
-		for (amp = new AbsoluteManipulablePosition(0, 0); amp.x < xCnt; amp.x ++ ) {
+		for (amp = new AbsoluteMegaManipulablePosition(0, 0); amp.x < xCnt; amp.x ++ ) {
 			for (amp.y = 0; amp.y < yCnt; amp.y ++ ) {
 				Field f = theWorld.getField(amp);
 				if (f.hasEntity()) {
@@ -158,9 +158,9 @@ public class Game {
 	
 	private void rebuildWorld(PAW paw) {
 		final int yStart = paw.world.getYCnt() - 1;
-		AbsoluteManipulablePosition amp;
+		AbsoluteMegaManipulablePosition amp;
 		List <Entity> entities = new ArrayList <Entity>();
-		for (amp = new AbsoluteManipulablePosition(paw.world.getXCnt() - 1, 0); amp.x >= 0; amp.x -- ) {
+		for (amp = new AbsoluteMegaManipulablePosition(paw.world.getXCnt() - 1, 0); amp.x >= 0; amp.x -- ) {
 			for (amp.y = yStart; amp.y >= 0; amp.y -- ) {
 				Field f = paw.world.getField(amp);
 				Entity e = f.getEntity();
@@ -178,7 +178,7 @@ public class Game {
 	
 	private void makeVisible(World target, Position pos, int sight) {
 		final int x = pos.getX(), y = pos.getY(), xCnt = target.getXCnt(), yCnt = target.getYCnt();
-		AbsoluteManipulablePosition amp = new AbsoluteManipulablePosition(x, y);
+		AbsoluteMegaManipulablePosition amp = new AbsoluteMegaManipulablePosition(x, y);
 		for (; amp.x <= sight && amp.x < xCnt; amp.x ++ ) {
 			for (amp.y = y; amp.y + amp.x <= sight && amp.y < yCnt; amp.y ++ ) {
 				target.overrideField(theWorld.getField(amp));

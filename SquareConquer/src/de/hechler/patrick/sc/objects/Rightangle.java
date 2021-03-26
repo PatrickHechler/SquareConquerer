@@ -11,8 +11,8 @@ import de.hechler.patrick.sc.interfaces.Position;
 
 public class Rightangle extends AbsoluteManipulablePosition implements Set <Position> {
 	
-	public int xCnt;
-	public int yCnt;
+	private int xCnt;
+	private int yCnt;
 	
 	
 	
@@ -60,10 +60,10 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 		if (o instanceof Position) {
 			Position pos = (Position) o;
 			final int x = pos.getX(), y = pos.getY();
-			if (x < this.x) return false;
-			if (y < this.y) return false;
-			if (x >= this.x + this.xCnt) return false;
-			if (y >= this.y + this.yCnt) return false;
+			if (x < super.getX()) return false;
+			if (y < super.getY()) return false;
+			if (x >= super.getX() + this.xCnt) return false;
+			if (y >= super.getY() + this.yCnt) return false;
 			return true;
 		}
 		return false;
@@ -71,10 +71,10 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 	
 	public boolean contains(Position pos) {
 		final int x = pos.getX(), y = pos.getY();
-		if (x < this.x) return false;
-		if (y < this.y) return false;
-		if (x >= this.x + this.xCnt) return false;
-		if (y >= this.y + this.yCnt) return false;
+		if (x < super.getX()) return false;
+		if (y < super.getY()) return false;
+		if (x >= super.getX() + this.xCnt) return false;
+		if (y >= super.getY() + this.yCnt) return false;
 		return true;
 	}
 	
@@ -99,7 +99,7 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 						throw new NoSuchElementException("all iterated!");
 					}
 				}
-				return new UnchangeablePosition(x + Rightangle.this.x, y ++ + Rightangle.this.y);
+				return new UnchangeablePosition(x + Rightangle.super.getX(), y ++ + Rightangle.super.getY());
 			}
 			
 		};
@@ -110,7 +110,7 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 		Object[] res = new Object[yCnt * xCnt];
 		for (int xx = 0, i = 0; xx < xCnt; xx ++ ) {
 			for (int yy = 0; yy < xCnt; yy ++ , i ++ ) {
-				res[i] = new UnchangeablePosition(this.x + xx, this.y + yy);
+				res[i] = new UnchangeablePosition(super.getX() + xx, super.getY() + yy);
 			}
 		}
 		return res;
@@ -129,35 +129,42 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 			Position[] arr = (Position[]) a;
 			for (int xx = 0, i = 0; xx < xCnt; xx ++ ) {
 				for (int yy = 0; yy < xCnt; yy ++ , i ++ ) {
-					arr[i] = new NicePosition(this.x + xx, this.y + yy);// Does not really matter what for an Position-Impl
+					arr[i] = new NicePosition(super.getX() + xx, super.getY() + yy);// Does not really matter what for an Position-Impl
 				}
 			}
-		} else if (NicePosition.class.isAssignableFrom(comp)) {
+		} else if (NicePosition.class == comp) {
 			NicePosition[] arr = (NicePosition[]) a;
 			for (int xx = 0, i = 0; xx < xCnt; xx ++ ) {
 				for (int yy = 0; yy < xCnt; yy ++ , i ++ ) {
-					arr[i] = new NicePosition(this.x + xx, this.y + yy);
+					arr[i] = new NicePosition(super.getX() + xx, super.getY() + yy);
 				}
 			}
-		} else if (UnchangeablePosition.class.isAssignableFrom(comp)) {
+		} else if (UnchangeablePosition.class == comp) {
 			UnchangeablePosition[] arr = (UnchangeablePosition[]) a;
 			for (int xx = 0, i = 0; xx < xCnt; xx ++ ) {
 				for (int yy = 0; yy < xCnt; yy ++ , i ++ ) {
-					arr[i] = new UnchangeablePosition(this.x + xx, this.y + yy);
+					arr[i] = new UnchangeablePosition(super.getX() + xx, super.getY() + yy);
 				}
 			}
-		} else if (AbsoluteManipulablePosition.class.isAssignableFrom(comp)) {
+		} else if (AbsoluteManipulablePosition.class == comp) {
 			AbsoluteManipulablePosition[] arr = (AbsoluteManipulablePosition[]) a;
 			for (int xx = 0, i = 0; xx < xCnt; xx ++ ) {
 				for (int yy = 0; yy < xCnt; yy ++ , i ++ ) {
-					arr[i] = new AbsoluteManipulablePosition(this.x + xx, this.y + yy);
+					arr[i] = new AbsoluteManipulablePosition(super.getX() + xx, super.getY() + yy);
 				}
 			}
-		} else if (PositionListener.class.isAssignableFrom(comp)) {
+		} else if (PositionListener.class == comp) {
 			PositionListener[] arr = (PositionListener[]) a;
 			for (int xx = 0, i = 0; xx < xCnt; xx ++ ) {
 				for (int yy = 0; yy < xCnt; yy ++ , i ++ ) {
-					arr[i] = new PositionListener(new UnchangeablePosition(this.x + xx, this.y + yy));
+					arr[i] = new PositionListener(new UnchangeablePosition(super.getX() + xx, super.getY() + yy));
+				}
+			}
+		} else if (AbsoluteMegaManipulablePosition.class == comp) {
+			AbsoluteMegaManipulablePosition[] arr = (AbsoluteMegaManipulablePosition[]) a;
+			for (int xx = 0, i = 0; xx < xCnt; xx ++ ) {
+				for (int yy = 0; yy < xCnt; yy ++ , i ++ ) {
+					arr[i] = new AbsoluteMegaManipulablePosition(super.getX() + xx, super.getY() + yy);
 				}
 			}
 		} else {
@@ -180,9 +187,9 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 	public boolean containsAll(Collection <?> c) {
 		if (c instanceof Rightangle) {
 			Rightangle r = (Rightangle) c;
-			if (x > r.x) return false;
-			if (y > r.y) return false;
-			int xOff = x - r.x, yOff = y - r.y;
+			if (super.getX() > r.getX()) return false;
+			if (super.getX() > r.getX()) return false;
+			int xOff = super.getX() - r.getX(), yOff = super.getX() - r.getX();
 			int xNeedCount = xOff + r.xCnt, yNeedCount = yOff + r.yCnt;
 			if (xNeedCount > xCnt) return false;
 			if (yNeedCount > yCnt) return false;
@@ -212,11 +219,9 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 	
 	@Override
 	public void clear() {
-		x = y = yCnt = xCnt = 0;
-	}
-	
-	public Position maxPosition() {
-		return new UnchangeablePosition(x + xCnt - 1, y + yCnt - 1);
+		super.setX(0);
+		super.setY(0);
+		yCnt = xCnt = 0;
 	}
 	
 	@Override
@@ -227,6 +232,34 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 	
 	public boolean equals(Rightangle r) {
 		return super.equals(r) && r.xCnt == xCnt && r.yCnt == yCnt;
+	}
+	
+	// EDGES:
+	
+	public Position xMinYMax() {
+		return new UnchangeablePosition(super.getX(), super.getY() + yCnt - 1);
+	}
+	
+	public Position xMaxYMin() {
+		return new UnchangeablePosition(super.getX() + xCnt - 1, super.getY());
+	}
+	
+	public Position xMaxYMax() {
+		return new UnchangeablePosition(super.getX() + xCnt - 1, super.getY() + yCnt - 1);
+	}
+	
+	@Override
+	public Rightangle clone() {
+		try {
+			return (Rightangle) super.clone();
+		} catch (ClassCastException e) {
+			return new Rightangle(super.getX(), super.getY(), xCnt, yCnt);
+		}
+	}
+	
+	@Override
+	public int hashCode() {
+		return (27 * xCnt) ^ super.hashCode() ^ (53 * yCnt);
 	}
 	
 }
