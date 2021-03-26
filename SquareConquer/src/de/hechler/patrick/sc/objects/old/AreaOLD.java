@@ -1,4 +1,4 @@
-package de.hechler.patrick.sc.objects;
+package de.hechler.patrick.sc.objects.old;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,6 +11,9 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import de.hechler.patrick.sc.interfaces.Position;
+import de.hechler.patrick.sc.objects.NicePosition;
+import de.hechler.patrick.sc.objects.Rightangle;
+import de.hechler.patrick.sc.objects.UnchangeablePosition;
 
 @Deprecated(forRemoval = true)
 public class AreaOLD implements Set <Position> {

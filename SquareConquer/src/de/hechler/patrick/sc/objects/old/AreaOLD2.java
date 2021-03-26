@@ -1,4 +1,4 @@
-package de.hechler.patrick.sc.objects;
+package de.hechler.patrick.sc.objects.old;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,6 +12,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import de.hechler.patrick.sc.interfaces.Position;
+import de.hechler.patrick.sc.objects.AbsoluteManipulablePosition;
+import de.hechler.patrick.sc.objects.NicePosition;
+import de.hechler.patrick.sc.objects.PositionListener;
+import de.hechler.patrick.sc.objects.Rightangle;
+import de.hechler.patrick.sc.objects.UnchangeablePosition;
 
 @Deprecated(forRemoval = true)
 public class AreaOLD2 implements Set <Position>, Cloneable {
