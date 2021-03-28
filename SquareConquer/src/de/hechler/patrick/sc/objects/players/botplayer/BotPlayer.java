@@ -1144,14 +1144,15 @@ public class BotPlayer implements Player {
 	
 	private static class BuildingPool implements Set <Building> {
 		
-		private HousPool houses = new HousPool();
+		private HousPool myHouses = new HousPool();
 		
-		private Set <Building> ports     = new HashSet <Building>();
-		private Set <Building> storages  = new HashSet <Building>();
-		private Set <Building> springs   = new HashSet <Building>();
-		private Set <Building> farms     = new HashSet <Building>();
-		private Set <Building> mines     = new HashSet <Building>();
-		private Set <Building> woodFarms = new HashSet <Building>();
+		private Set <Building> myPorts          = new HashSet <Building>();
+		private Set <Building> myStorages       = new HashSet <Building>();
+		private Set <Building> mySprings        = new HashSet <Building>();
+		private Set <Building> myFarms          = new HashSet <Building>();
+		private Set <Building> myMines          = new HashSet <Building>();
+		private Set <Building> myWoodFarms      = new HashSet <Building>();
+		private Set <Building> myBuildingPlaces = new HashSet <Building>();
 		
 		private static class HousPool implements Set <HouseBuilding> {
 			
@@ -1300,16 +1301,16 @@ public class BotPlayer implements Player {
 					return mySmpleHouses.containsAll(p.mySmpleHouses);
 				} else if (c instanceof BuildingPool) {
 					BuildingPool p = (BuildingPool) c;
-					if ( !myBowHouses.containsAll(p.houses.myBowHouses)) return false;
-					if ( !myBuilderHouses.containsAll(p.houses.myBuilderHouses)) return false;
-					if ( !myMeeleHouses.containsAll(p.houses.myMeeleHouses)) return false;
-					return mySmpleHouses.containsAll(p.houses.mySmpleHouses);
+					if ( !myBowHouses.containsAll(p.myHouses.myBowHouses)) return false;
+					if ( !myBuilderHouses.containsAll(p.myHouses.myBuilderHouses)) return false;
+					if ( !myMeeleHouses.containsAll(p.myHouses.myMeeleHouses)) return false;
+					return mySmpleHouses.containsAll(p.myHouses.mySmpleHouses);
 				} else if (c instanceof EntityPool) {
 					EntityPool p = (EntityPool) c;
-					if ( !myBowHouses.containsAll(p.myBuildings.houses.myBowHouses)) return false;
-					if ( !myBuilderHouses.containsAll(p.myBuildings.houses.myBuilderHouses)) return false;
-					if ( !myMeeleHouses.containsAll(p.myBuildings.houses.myMeeleHouses)) return false;
-					return mySmpleHouses.containsAll(p.myBuildings.houses.mySmpleHouses);
+					if ( !myBowHouses.containsAll(p.myBuildings.myHouses.myBowHouses)) return false;
+					if ( !myBuilderHouses.containsAll(p.myBuildings.myHouses.myBuilderHouses)) return false;
+					if ( !myMeeleHouses.containsAll(p.myBuildings.myHouses.myMeeleHouses)) return false;
+					return mySmpleHouses.containsAll(p.myBuildings.myHouses.mySmpleHouses);
 				} else {
 					for (Object object : c) {
 						if ( !contains(object)) return false;
@@ -1326,17 +1327,17 @@ public class BotPlayer implements Player {
 			}
 			
 			public boolean containsAll(BuildingPool p) {
-				if ( !myBowHouses.containsAll(p.houses.myBowHouses)) return false;
-				if ( !myBuilderHouses.containsAll(p.houses.myBuilderHouses)) return false;
-				if ( !myMeeleHouses.containsAll(p.houses.myMeeleHouses)) return false;
-				return mySmpleHouses.containsAll(p.houses.mySmpleHouses);
+				if ( !myBowHouses.containsAll(p.myHouses.myBowHouses)) return false;
+				if ( !myBuilderHouses.containsAll(p.myHouses.myBuilderHouses)) return false;
+				if ( !myMeeleHouses.containsAll(p.myHouses.myMeeleHouses)) return false;
+				return mySmpleHouses.containsAll(p.myHouses.mySmpleHouses);
 			}
 			
 			public boolean containsAll(EntityPool p) {
-				if ( !myBowHouses.containsAll(p.myBuildings.houses.myBowHouses)) return false;
-				if ( !myBuilderHouses.containsAll(p.myBuildings.houses.myBuilderHouses)) return false;
-				if ( !myMeeleHouses.containsAll(p.myBuildings.houses.myMeeleHouses)) return false;
-				return mySmpleHouses.containsAll(p.myBuildings.houses.mySmpleHouses);
+				if ( !myBowHouses.containsAll(p.myBuildings.myHouses.myBowHouses)) return false;
+				if ( !myBuilderHouses.containsAll(p.myBuildings.myHouses.myBuilderHouses)) return false;
+				if ( !myMeeleHouses.containsAll(p.myBuildings.myHouses.myMeeleHouses)) return false;
+				return mySmpleHouses.containsAll(p.myBuildings.myHouses.mySmpleHouses);
 			}
 			
 			@Override
@@ -1364,112 +1365,546 @@ public class BotPlayer implements Player {
 			}
 			
 			@Override
-			public boolean retainAll(Collection <?> c) {//TODO continue here
+			public boolean retainAll(Collection <?> c) {
+				boolean res;
 				if (c instanceof HousPool) {
-					
+					HousPool p = (HousPool) c;
+					res = myBowHouses.retainAll(p.myBowHouses);
+					res |= myBuilderHouses.retainAll(p.myBuilderHouses);
+					res |= myMeeleHouses.retainAll(p.myMeeleHouses);
+					res |= mySmpleHouses.retainAll(p.mySmpleHouses);
 				} else if (c instanceof BuildingPool) {
-					
+					BuildingPool p = (BuildingPool) c;
+					res = myBowHouses.retainAll(p.myHouses.myBowHouses);
+					res |= myBuilderHouses.retainAll(p.myHouses.myBuilderHouses);
+					res |= myMeeleHouses.retainAll(p.myHouses.myMeeleHouses);
+					res |= mySmpleHouses.retainAll(p.myHouses.mySmpleHouses);
 				} else if (c instanceof EntityPool) {
-					
+					EntityPool p = (EntityPool) c;
+					res = myBowHouses.retainAll(p.myBuildings.myHouses.myBowHouses);
+					res |= myBuilderHouses.retainAll(p.myBuildings.myHouses.myBuilderHouses);
+					res |= myMeeleHouses.retainAll(p.myBuildings.myHouses.myMeeleHouses);
+					res |= mySmpleHouses.retainAll(p.myBuildings.myHouses.mySmpleHouses);
 				} else {
-					
+					if ( ! (c instanceof Set)) c = new HashSet <>(c);
+					List <HouseBuilding> bow = new ArrayList <HouseBuilding>(), build = new ArrayList <HouseBuilding>(), meele = new ArrayList <HouseBuilding>(), simple = new ArrayList <HouseBuilding>();
+					final Collection <?> col = c;
+					myBowHouses.forEach(h -> {
+						if ( !col.contains(h)) bow.add(h);
+					});
+					myBuilderHouses.forEach(h -> {
+						if ( !col.contains(h)) build.add(h);
+					});
+					myMeeleHouses.forEach(h -> {
+						if ( !col.contains(h)) meele.add(h);
+					});
+					mySmpleHouses.forEach(h -> {
+						if ( !col.contains(h)) simple.add(h);
+					});
+					bow.forEach(h -> remove(h));
+					build.forEach(h -> remove(h));
+					meele.forEach(h -> remove(h));
+					simple.forEach(h -> remove(h));
+					res = bow.isEmpty();
+					res |= build.isEmpty();
+					res |= meele.isEmpty();
+					res |= simple.isEmpty();
 				}
-				throw new RuntimeException("not done yet!");
+				return res;
+			}
+			
+			public boolean retainAll(HousPool p) {
+				boolean res = myBowHouses.retainAll(p.myBowHouses);
+				res |= myBuilderHouses.retainAll(p.myBuilderHouses);
+				res |= myMeeleHouses.retainAll(p.myMeeleHouses);
+				return res | mySmpleHouses.retainAll(p.mySmpleHouses);
+			}
+			
+			public boolean retainAll(BuildingPool p) {
+				boolean res = myBowHouses.retainAll(p.myHouses.myBowHouses);
+				res |= myBuilderHouses.retainAll(p.myHouses.myBuilderHouses);
+				res |= myMeeleHouses.retainAll(p.myHouses.myMeeleHouses);
+				return res | mySmpleHouses.retainAll(p.myHouses.mySmpleHouses);
+			}
+			
+			public boolean retainAll(EntityPool p) {
+				boolean res = myBowHouses.retainAll(p.myBuildings.myHouses.myBowHouses);
+				res |= myBuilderHouses.retainAll(p.myBuildings.myHouses.myBuilderHouses);
+				res |= myMeeleHouses.retainAll(p.myBuildings.myHouses.myMeeleHouses);
+				return res | mySmpleHouses.retainAll(p.myBuildings.myHouses.mySmpleHouses);
 			}
 			
 			@Override
 			public boolean removeAll(Collection <?> c) {
-				// TODO Auto-generated method stub
-				return false;
+				boolean res;
+				if (c instanceof HousPool) {
+					HousPool p = (HousPool) c;
+					res = myBowHouses.removeAll(p.myBowHouses);
+					res |= myBuilderHouses.removeAll(p.myBuilderHouses);
+					res |= myMeeleHouses.removeAll(p.myMeeleHouses);
+					res |= mySmpleHouses.removeAll(p.mySmpleHouses);
+				} else if (c instanceof BuildingPool) {
+					BuildingPool p = (BuildingPool) c;
+					res = myBowHouses.removeAll(p.myHouses.myBowHouses);
+					res |= myBuilderHouses.removeAll(p.myHouses.myBuilderHouses);
+					res |= myMeeleHouses.removeAll(p.myHouses.myMeeleHouses);
+					res |= mySmpleHouses.removeAll(p.myHouses.mySmpleHouses);
+				} else if (c instanceof EntityPool) {
+					EntityPool p = (EntityPool) c;
+					res = myBowHouses.removeAll(p.myBuildings.myHouses.myBowHouses);
+					res |= myBuilderHouses.removeAll(p.myBuildings.myHouses.myBuilderHouses);
+					res |= myMeeleHouses.removeAll(p.myBuildings.myHouses.myMeeleHouses);
+					res |= mySmpleHouses.removeAll(p.myBuildings.myHouses.mySmpleHouses);
+				} else {
+					res = false;
+					for (Object object : c) {
+						res |= remove(object);
+					}
+				}
+				return res;
 			}
 			
 			@Override
 			public void clear() {
-				// TODO Auto-generated method stub
-				
+				myBowHouses.clear();
+				myBuilderHouses.clear();
+				myMeeleHouses.clear();
+				mySmpleHouses.clear();
 			}
 			
 		}
 		
 		@Override
 		public int size() {
-			// TODO Auto-generated method stub
-			return 0;
+			long s = (long) myFarms.size() + (long) myHouses.size() + (long) myMines.size() + (long) myPorts.size() + (long) mySprings.size() + (long) myStorages.size() + (long) myWoodFarms.size()
+					+ (long) myBuildingPlaces.size();
+			return (int) Math.min(s, Integer.MAX_VALUE);
 		}
 		
 		@Override
 		public boolean isEmpty() {
-			// TODO Auto-generated method stub
-			return false;
+			return myFarms.isEmpty() && myHouses.isEmpty() && myMines.isEmpty() && myPorts.isEmpty() && mySprings.isEmpty() && myStorages.isEmpty() && myWoodFarms.isEmpty() && myBuildingPlaces.isEmpty();
 		}
 		
 		@Override
 		public boolean contains(Object o) {
-			// TODO Auto-generated method stub
-			return false;
+			if (o instanceof Building) return contains((Building) o);
+			else return false;
+		}
+		
+		public boolean contains(Building o) {
+			switch (o.type) {
+			case buildplace:
+				return myBuildingPlaces.contains(o);
+			case farm:
+				return myFarms.contains(o);
+			case house:
+			case houseBow:
+			case houseBuilder:
+			case houseMelee:
+				return myHouses.contains(o);
+			case mine:
+				return myMines.contains(o);
+			case spring:
+				return mySprings.contains(o);
+			case storage:
+				return myStorages.contains(o);
+			case woodFarm:
+				return myWoodFarms.contains(o);
+			default:
+				return false;
+			}
 		}
 		
 		@Override
 		public Iterator <Building> iterator() {
-			// TODO Auto-generated method stub
-			return null;
+			return new Iterator <Building>() {
+				
+				int                           s = 0;
+				Iterator <? extends Building> i = myBuildingPlaces.iterator();
+				
+				@Override
+				public boolean hasNext() {
+					boolean n = i.hasNext();
+					if ( !n) switch (s) {
+					case 0:
+						s ++ ;
+						i = myFarms.iterator();
+						n = i.hasNext();
+						if (n) break;
+					case 1:
+						s ++ ;
+						i = myHouses.iterator();
+						n = i.hasNext();
+						if (n) break;
+					case 2:
+						s ++ ;
+						i = myMines.iterator();
+						n = i.hasNext();
+						if (n) break;
+					case 3:
+						s ++ ;
+						i = mySprings.iterator();
+						n = i.hasNext();
+						if (n) break;
+					case 4:
+						s ++ ;
+						i = myStorages.iterator();
+						n = i.hasNext();
+						if (n) break;
+					case 5:
+						s ++ ;
+						i = myWoodFarms.iterator();
+						n = i.hasNext();
+					}
+					return n;
+				}
+				
+				@Override
+				public Building next() {
+					hasNext();
+					return i.next();
+				}
+				
+			};
 		}
 		
 		@Override
 		public Object[] toArray() {
-			// TODO Auto-generated method stub
-			return null;
+			Object[] o = new Object[size()];
+			int i = 0;
+			for (Building object : this) {
+				o[i ++ ] = object;
+			}
+			return o;
 		}
 		
 		@Override
+		@SuppressWarnings("unchecked")
 		public <T> T[] toArray(T[] a) {
-			// TODO Auto-generated method stub
-			return null;
+			int s = size();
+			if (s != a.length) a = (T[]) Array.newInstance(a.getClass().getComponentType(), s);
+			Object[] o = a;
+			int i = 0;
+			for (Building object : this) {
+				o[i ++ ] = object;
+			}
+			return (T[]) a;
 		}
 		
 		@Override
 		public boolean add(Building e) {
-			// TODO Auto-generated method stub
-			return false;
+			switch (e.type) {
+			case buildplace:
+				return myBuildingPlaces.add(e);
+			case farm:
+				return myFarms.add(e);
+			case house:
+			case houseBow:
+			case houseBuilder:
+			case houseMelee:
+				return myHouses.add((HouseBuilding) e);
+			case mine:
+				return myMines.add(e);
+			case spring:
+				return mySprings.add(e);
+			case storage:
+				return myStorages.add(e);
+			case woodFarm:
+				return myWoodFarms.add(e);
+			default:
+				throw new IllegalArgumentException("illegal build type");
+			}
 		}
 		
 		@Override
 		public boolean remove(Object o) {
-			// TODO Auto-generated method stub
+			if (o instanceof Building) return remove((Building) o);
 			return false;
+		}
+		
+		public boolean remove(Building b) {
+			switch (b.type) {
+			case buildplace:
+				return myBuildingPlaces.remove(b);
+			case farm:
+				return myFarms.remove(b);
+			case house:
+			case houseBow:
+			case houseBuilder:
+			case houseMelee:
+				return myHouses.remove(b);
+			case mine:
+				return myMines.remove(b);
+			case spring:
+				return mySprings.remove(b);
+			case storage:
+				return myStorages.remove(b);
+			case woodFarm:
+				return myWoodFarms.remove(b);
+			default:
+				return false;
+			}
 		}
 		
 		@Override
 		public boolean containsAll(Collection <?> c) {
-			// TODO Auto-generated method stub
-			return false;
+			if (c instanceof BuildingPool) {
+				BuildingPool p = (BuildingPool) c;
+				if ( !myBuildingPlaces.containsAll(p.myBuildingPlaces)) return false;
+				if ( !myFarms.containsAll(p.myFarms)) return false;
+				if ( !myHouses.containsAll(p.myHouses)) return false;
+				if ( !myMines.containsAll(p.myMines)) return false;
+				if ( !myPorts.containsAll(p.myPorts)) return false;
+				if ( !mySprings.containsAll(p.mySprings)) return false;
+				if ( !myStorages.containsAll(p.myStorages)) return false;
+				return myWoodFarms.containsAll(p.myWoodFarms);
+			} else if (c instanceof HousPool) {
+				return myHouses.containsAll((HousPool) c);
+			} else if (c instanceof EntityPool) {
+				EntityPool p = (EntityPool) c;
+				if ( !myBuildingPlaces.containsAll(p.myBuildings.myBuildingPlaces)) return false;
+				if ( !myFarms.containsAll(p.myBuildings.myFarms)) return false;
+				if ( !myHouses.containsAll(p.myBuildings.myHouses)) return false;
+				if ( !myMines.containsAll(p.myBuildings.myMines)) return false;
+				if ( !myPorts.containsAll(p.myBuildings.myPorts)) return false;
+				if ( !mySprings.containsAll(p.myBuildings.mySprings)) return false;
+				if ( !myStorages.containsAll(p.myBuildings.myStorages)) return false;
+				return myWoodFarms.containsAll(p.myBuildings.myWoodFarms);
+			} else {
+				for (Object object : c) {
+					if ( !contains(object)) return false;
+				}
+				return true;
+			}
+		}
+		
+		public boolean containsAll(BuildingPool p) {
+			if ( !myBuildingPlaces.containsAll(p.myBuildingPlaces)) return false;
+			if ( !myFarms.containsAll(p.myFarms)) return false;
+			if ( !myHouses.containsAll(p.myHouses)) return false;
+			if ( !myMines.containsAll(p.myMines)) return false;
+			if ( !myPorts.containsAll(p.myPorts)) return false;
+			if ( !mySprings.containsAll(p.mySprings)) return false;
+			if ( !myStorages.containsAll(p.myStorages)) return false;
+			return myWoodFarms.containsAll(p.myWoodFarms);
+		}
+		
+		public boolean containsAll(HousPool c) {
+			return myHouses.containsAll(c);
+		}
+		
+		public boolean containsAll(EntityPool p) {
+			if ( !myBuildingPlaces.containsAll(p.myBuildings.myBuildingPlaces)) return false;
+			if ( !myFarms.containsAll(p.myBuildings.myFarms)) return false;
+			if ( !myHouses.containsAll(p.myBuildings.myHouses)) return false;
+			if ( !myMines.containsAll(p.myBuildings.myMines)) return false;
+			if ( !myPorts.containsAll(p.myBuildings.myPorts)) return false;
+			if ( !mySprings.containsAll(p.myBuildings.mySprings)) return false;
+			if ( !myStorages.containsAll(p.myBuildings.myStorages)) return false;
+			return myWoodFarms.containsAll(p.myBuildings.myWoodFarms);
 		}
 		
 		@Override
 		public boolean addAll(Collection <? extends Building> c) {
-			// TODO Auto-generated method stub
-			return false;
+			if (c instanceof BuildingPool) {
+				BuildingPool p = (BuildingPool) c;
+				boolean res = myBuildingPlaces.addAll(p.myBuildingPlaces);
+				res |= myFarms.addAll(p.myFarms);
+				res |= myHouses.addAll(p.myHouses);
+				res |= myMines.addAll(p.myMines);
+				res |= myPorts.addAll(p.myPorts);
+				res |= mySprings.addAll(p.mySprings);
+				res |= myStorages.addAll(p.myStorages);
+				return res | myWoodFarms.addAll(p.myWoodFarms);
+			} else if (c instanceof HousPool) {
+				return myHouses.addAll((HousPool) c);
+			} else {
+				boolean res = false;
+				for (Building building : c) {
+					res |= add(building);
+				}
+				return res;
+			}
+		}
+		
+		public boolean addAll(BuildingPool p) {
+			boolean res = myBuildingPlaces.addAll(p.myBuildingPlaces);
+			res |= myFarms.addAll(p.myFarms);
+			res |= myHouses.addAll(p.myHouses);
+			res |= myMines.addAll(p.myMines);
+			res |= myPorts.addAll(p.myPorts);
+			res |= mySprings.addAll(p.mySprings);
+			res |= myStorages.addAll(p.myStorages);
+			return res | myWoodFarms.addAll(p.myWoodFarms);
+		}
+		
+		public boolean addAll(HousPool p) {
+			return myHouses.addAll(p);
 		}
 		
 		@Override
 		public boolean retainAll(Collection <?> c) {
-			// TODO Auto-generated method stub
-			return false;
+			if (c instanceof BuildingPool) {
+				BuildingPool p = (BuildingPool) c;
+				boolean res = myBuildingPlaces.retainAll(p.myBuildingPlaces);
+				res |= myFarms.retainAll(p.myFarms);
+				res |= myHouses.retainAll(p.myHouses);
+				res |= myMines.retainAll(p.myMines);
+				res |= myPorts.retainAll(p.myPorts);
+				res |= mySprings.retainAll(p.mySprings);
+				res |= myStorages.retainAll(p.myStorages);
+				return res | myWoodFarms.retainAll(p.myWoodFarms);
+			} else if (c instanceof HousPool) {
+				return myHouses.retainAll((HousPool) c);
+			} else if (c instanceof EntityPool) {
+				EntityPool p = (EntityPool) c;
+				boolean res = myBuildingPlaces.retainAll(p.myBuildings.myBuildingPlaces);
+				res |= myFarms.retainAll(p.myBuildings.myFarms);
+				res |= myHouses.retainAll(p.myBuildings.myHouses);
+				res |= myMines.retainAll(p.myBuildings.myMines);
+				res |= myPorts.retainAll(p.myBuildings.myPorts);
+				res |= mySprings.retainAll(p.myBuildings.mySprings);
+				res |= myStorages.retainAll(p.myBuildings.myStorages);
+				return res | myWoodFarms.retainAll(p.myBuildings.myWoodFarms);
+			} else {
+				List <Object> builldingPlaces = new ArrayList <>(), farms = new ArrayList <>(), houses = new ArrayList <>(), mines = new ArrayList <>(), ports = new ArrayList <>(), springs = new ArrayList <>(),
+						storages = new ArrayList <>(), woodFarms = new ArrayList <>();
+				myBuildingPlaces.forEach(o -> {
+					if ( !c.contains(o)) builldingPlaces.add(o);
+				});
+				myFarms.forEach(o -> {
+					if ( !c.contains(o)) farms.add(o);
+				});
+				myHouses.forEach(o -> {
+					if ( !c.contains(o)) houses.add(o);
+				});
+				myMines.forEach(o -> {
+					if ( !c.contains(o)) mines.add(o);
+				});
+				myPorts.forEach(o -> {
+					if ( !c.contains(o)) ports.add(o);
+				});
+				mySprings.forEach(o -> {
+					if ( !c.contains(o)) springs.add(o);
+				});
+				myStorages.forEach(o -> {
+					if ( !c.contains(o)) storages.add(o);
+				});
+				myWoodFarms.forEach(o -> {
+					if ( !c.contains(o)) woodFarms.add(o);
+				});
+				builldingPlaces.forEach(o -> myBuildingPlaces.remove(o));
+				farms.forEach(o -> myFarms.remove(o));
+				houses.forEach(o -> myHouses.remove(o));
+				mines.forEach(o -> myMines.remove(o));
+				ports.forEach(o -> myPorts.remove(o));
+				springs.forEach(o -> mySprings.remove(o));
+				storages.forEach(o -> myStorages.remove(o));
+				woodFarms.forEach(o -> myWoodFarms.remove(o));
+				return ! (builldingPlaces.isEmpty() && farms.isEmpty() && houses.isEmpty() && mines.isEmpty() && ports.isEmpty() && springs.isEmpty() && storages.isEmpty() && woodFarms.isEmpty());
+			}
+		}
+		
+		public boolean retainAll(BuildingPool p) {
+			boolean res = myBuildingPlaces.retainAll(p.myBuildingPlaces);
+			res |= myFarms.retainAll(p.myFarms);
+			res |= myHouses.retainAll(p.myHouses);
+			res |= myMines.retainAll(p.myMines);
+			res |= myPorts.retainAll(p.myPorts);
+			res |= mySprings.retainAll(p.mySprings);
+			res |= myStorages.retainAll(p.myStorages);
+			return res | myWoodFarms.retainAll(p.myWoodFarms);
+		}
+		
+		public boolean retainAll(HousPool c) {
+			return myHouses.retainAll(c);
+		}
+		
+		public boolean retainAll(EntityPool p) {
+			boolean res = myBuildingPlaces.retainAll(p.myBuildings.myBuildingPlaces);
+			res |= myFarms.retainAll(p.myBuildings.myFarms);
+			res |= myHouses.retainAll(p.myBuildings.myHouses);
+			res |= myMines.retainAll(p.myBuildings.myMines);
+			res |= myPorts.retainAll(p.myBuildings.myPorts);
+			res |= mySprings.retainAll(p.myBuildings.mySprings);
+			res |= myStorages.retainAll(p.myBuildings.myStorages);
+			return res | myWoodFarms.retainAll(p.myBuildings.myWoodFarms);
 		}
 		
 		@Override
 		public boolean removeAll(Collection <?> c) {
-			// TODO Auto-generated method stub
-			return false;
+			if (c instanceof BuildingPool) {
+				BuildingPool p = (BuildingPool) c;
+				boolean res = myBuildingPlaces.removeAll(p.myBuildingPlaces);
+				res |= myFarms.removeAll(p.myFarms);
+				res |= myHouses.removeAll(p.myHouses);
+				res |= myMines.removeAll(p.myMines);
+				res |= myPorts.removeAll(p.myPorts);
+				res |= mySprings.removeAll(p.mySprings);
+				res |= myStorages.removeAll(p.myStorages);
+				return res | myWoodFarms.removeAll(p.myWoodFarms);
+			} else if (c instanceof HousPool) {
+				return myHouses.removeAll((HousPool) c);
+			} else if (c instanceof EntityPool) {
+				EntityPool p = (EntityPool) c;
+				boolean res = myBuildingPlaces.removeAll(p.myBuildings.myBuildingPlaces);
+				res |= myFarms.removeAll(p.myBuildings.myFarms);
+				res |= myHouses.removeAll(p.myBuildings.myHouses);
+				res |= myMines.removeAll(p.myBuildings.myMines);
+				res |= myPorts.removeAll(p.myBuildings.myPorts);
+				res |= mySprings.removeAll(p.myBuildings.mySprings);
+				res |= myStorages.removeAll(p.myBuildings.myStorages);
+				return res | myWoodFarms.removeAll(p.myBuildings.myWoodFarms);
+			} else {
+				boolean res = false;
+				for (Object object : c) {
+					res |= remove(object);
+				}
+				return res;
+			}
+		}
+		
+		public boolean removeAll(BuildingPool p) {
+			boolean res = myBuildingPlaces.removeAll(p.myBuildingPlaces);
+			res |= myFarms.removeAll(p.myFarms);
+			res |= myHouses.removeAll(p.myHouses);
+			res |= myMines.removeAll(p.myMines);
+			res |= myPorts.removeAll(p.myPorts);
+			res |= mySprings.removeAll(p.mySprings);
+			res |= myStorages.removeAll(p.myStorages);
+			return res | myWoodFarms.removeAll(p.myWoodFarms);
+		}
+		
+		public boolean removeAll(HousPool c) {
+			return myHouses.removeAll(c);
+		}
+		
+		public boolean removeAll(EntityPool p) {
+			boolean res = myBuildingPlaces.removeAll(p.myBuildings.myBuildingPlaces);
+			res |= myFarms.removeAll(p.myBuildings.myFarms);
+			res |= myHouses.removeAll(p.myBuildings.myHouses);
+			res |= myMines.removeAll(p.myBuildings.myMines);
+			res |= myPorts.removeAll(p.myBuildings.myPorts);
+			res |= mySprings.removeAll(p.myBuildings.mySprings);
+			res |= myStorages.removeAll(p.myBuildings.myStorages);
+			return res | myWoodFarms.removeAll(p.myBuildings.myWoodFarms);
 		}
 		
 		@Override
 		public void clear() {
-			// TODO Auto-generated method stub
-			
+			myBuildingPlaces.clear();
+			myFarms.clear();
+			myHouses.clear();
+			myMines.clear();
+			myPorts.clear();
+			mySprings.clear();
+			myStorages.clear();
+			myWoodFarms.clear();
 		}
 		
 	}
+	// TODO continue here
 	
 	public BotPlayer() {
 	}
