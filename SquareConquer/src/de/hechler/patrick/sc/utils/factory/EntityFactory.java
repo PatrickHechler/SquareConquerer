@@ -7,6 +7,7 @@ import de.hechler.patrick.sc.interfaces.Entity;
 import de.hechler.patrick.sc.interfaces.Field;
 import de.hechler.patrick.sc.interfaces.MovableEntity;
 import de.hechler.patrick.sc.interfaces.Position;
+import de.hechler.patrick.sc.objects.BuildPlace;
 import de.hechler.patrick.sc.objects.CarriearUnit;
 import de.hechler.patrick.sc.objects.HouseBuilding;
 import de.hechler.patrick.sc.objects.ProducingBuilding;
@@ -63,6 +64,8 @@ public class EntityFactory {
 	private static final Resources WOOD_FARM_PRODUCING     = Resources.wood;
 	
 	private static final int STORAGE_ACTIONS = 0;
+	
+	
 	
 	public static void create(int owner, World world, Position pos, Type type) throws CreationException {
 		create(owner, world, pos, type, null);
@@ -132,6 +135,17 @@ public class EntityFactory {
 			throw new CreationException("unknown type: " + type);
 		}
 		return e;
+	}
+	
+	public static void createBuildPlace(World world, Position pos, Type evolveTo, StorageCreateParam storage) throws CreationException {
+		Field f = world.getField(pos);
+		if ( !Units.canExistOn(evolveTo, f.ground())) {
+			throw new CreationException(evolveTo + " can't exist on the ground " + f.ground() + " pos=" + pos);
+		} else if (f.getEntity() != null) {
+			throw new CreationException("field'" + f + "' on pos'" + pos + "' is not empty: " + f.getEntity());
+		}
+		Entity e = new BuildPlace(pos, evolveTo, storage);
+		f.setEntity(e);
 	}
 	
 	public static class StorageCreateParam {

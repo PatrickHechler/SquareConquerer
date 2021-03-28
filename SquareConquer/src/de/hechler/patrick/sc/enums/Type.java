@@ -20,6 +20,8 @@ public enum Type {
 	
 	storage,
 	
+	buildplace,
+	
 	spring, farm, mine, woodFarm;
 	
 	public static Map <String, Type> names() {

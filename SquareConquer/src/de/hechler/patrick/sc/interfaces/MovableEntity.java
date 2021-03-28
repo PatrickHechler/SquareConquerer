@@ -12,7 +12,8 @@ public interface MovableEntity extends Entity {
 	
 	/**
 	 * returns the ID of the owner<br>
-	 * an owner ID is an randomly generated number, which is only given to one {@link Player} per {@link Game}
+	 * an owner ID is an randomly generated number, which is only given to one {@link Player} per {@link Game}<br>
+	 * the ID of a {@link Player} is never {@code -1}, if the ID of this {@link MovableEntity} is {@code -1}, this {@link MovableEntity} does not belong to a {@link Player}
 	 * 
 	 * @return the ID of the owner
 	 */

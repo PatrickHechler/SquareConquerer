@@ -46,6 +46,8 @@ public class Units {
 			return ground != Grounds.water;
 		case woodFarm:
 			return ground == Grounds.forest;
+		case buildplace:
+			throw new UnsupportedOperationException("buildplace does not support this operation!");
 		}
 		throw new RuntimeException("unknown entytyType: entity=" + entity);
 	}
@@ -72,6 +74,8 @@ public class Units {
 			return ALL_EXEPT_WATER;
 		case woodFarm:
 			return FOREST;
+		case buildplace:
+			throw new UnsupportedOperationException("buildplace does not support this operation!");
 		}
 		throw new RuntimeException("unknown Type: " + entity);
 	}

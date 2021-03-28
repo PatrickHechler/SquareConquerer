@@ -86,7 +86,7 @@ public class Game {
 		int id = rnd.nextInt();// Random generation of the Player-ID
 		World playersWorld = unknownWorld(theWorld);
 		PAW paw = new PAW(playersWorld, player, id);
-		while (players.contains(paw)) {
+		while (players.contains(paw) || id == -1) {
 			id ++ ;
 			paw = new PAW(playersWorld, player, id);
 		}
