@@ -65,10 +65,14 @@ public class World {
 			if (dist > 1) throw new IllegalStateException("too much distance");
 			am = 1.5;
 			break;
-		case boat:
+		case fightingBoat:
 			if (dist > 3) throw new IllegalStateException("too much distance");
 			if (dist != 1) am = 1.125;
 			else am = 1.5;
+			break;
+		case boat:
+			if (dist > 1) throw new IllegalStateException("too much distance");
+			am = 0.375;
 			break;
 		case bow:
 			if (dist > 3) throw new IllegalStateException("too much distance");
@@ -88,23 +92,25 @@ public class World {
 		double dm;
 		double zusatz = 0;
 		switch (defender.type()) {
-		case boat:
-			if (dist != 1) dm = 0.75;
-			else dm = 0.875;
+		case fightingBoat:
+			if (dist == 1) dm = 1;
+			else if (dist < 3) dm = 0.75;
+			else dm = 0;
 			break;
 		case bow:
 			dm = 0.5;
-			break;
-		case builder:
-			dm = 0.125;
 			break;
 		case house:
 		case houseBow:
 		case houseBuilder:
 		case houseMelee: {
 			dm = 0;
-			for (MovableEntity me : ((HouseBuilding) defender).inside) {
-				if (me.type() == Type.meele) zusatz += me.health() * 0.5;
+			if (dist == 1) {
+				for (MovableEntity me : ((HouseBuilding) defender).inside) {
+					if (me.type() == Type.meele) {
+						zusatz += me.health() * 0.5;
+					}
+				}
 			}
 			break;
 		}
@@ -112,6 +118,8 @@ public class World {
 			if (dist == 1) dm = 1;
 			else dm = 0;
 			break;
+		case boat:
+		case builder:
 		case simple:
 			dm = 0.125;
 			break;

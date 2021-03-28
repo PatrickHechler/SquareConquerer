@@ -17,20 +17,22 @@ import de.hechler.patrick.sc.utils.Units;
 
 public class EntityFactory {
 	
-	private static final int BOAT_ACTIONS     = 5;
-	private static final int SIMPLE_U_ACTIONS = 4;
-	private static final int BOW_ACTIONS      = 3;
-	private static final int MEELE_ACTIONS    = 3;
-	private static final int BUILDER_ACTIONS  = 2;
-	private static final int CARRIER_ACTIONS  = 2;
+	private static final int FIGHT_BOAT_ACTIONS = 5;
+	private static final int BOAT_ACTIONS       = 3;
+	private static final int SIMPLE_U_ACTIONS   = 4;
+	private static final int BOW_ACTIONS        = 3;
+	private static final int MEELE_ACTIONS      = 3;
+	private static final int BUILDER_ACTIONS    = 2;
+	private static final int CARRIER_ACTIONS    = 2;
 	
-	private static final int BOAT_SIGHT     = 6;
-	private static final int SIMPLE_U_SIGHT = 1;
-	private static final int BOW_SIGHT      = 4;
-	private static final int MEELE_SIGHT    = 2;
-	private static final int BUILDER_SIGHT  = 1;
-	private static final int CARRIER_SIGHT  = 1;
-	private static final int MAX_CARRIING   = 2;
+	private static final int BOAT_SIGHT       = 4;
+	private static final int FIGHT_BOAT_SIGHT = 6;
+	private static final int SIMPLE_U_SIGHT   = 1;
+	private static final int BOW_SIGHT        = 4;
+	private static final int MEELE_SIGHT      = 2;
+	private static final int BUILDER_SIGHT    = 1;
+	private static final int CARRIER_SIGHT    = 1;
+	private static final int MAX_CARRIING     = 2;
 	
 	private static final int       FARM_ACTIONS       = 0;
 	private static final int       FARM_INTERVAL      = 10;
@@ -82,6 +84,9 @@ public class EntityFactory {
 		switch (type) {
 		case simple:
 			e = new Unit(owner, pos, Units.canExistOn(type), SIMPLE_U_ACTIONS, type, SIMPLE_U_SIGHT);
+			break;
+		case fightingBoat:
+			e = new Unit(owner, pos, Units.canExistOn(type), FIGHT_BOAT_ACTIONS, type, FIGHT_BOAT_SIGHT);
 			break;
 		case boat:
 			e = new Unit(owner, pos, Units.canExistOn(type), BOAT_ACTIONS, type, BOAT_SIGHT);

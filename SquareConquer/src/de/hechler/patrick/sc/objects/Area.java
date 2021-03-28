@@ -20,10 +20,6 @@ public class Area extends Rightangle {
 		inside = new boolean[xCnt][yCnt];
 	}
 	
-	public Area() {
-		this(0, 0, 0, 0);
-	}
-	
 	
 	
 	@Override

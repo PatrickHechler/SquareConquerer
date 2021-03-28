@@ -27,6 +27,7 @@ public class Units {
 	public static boolean canExistOn(Type entity, Grounds ground) {
 		switch (entity) {
 		case boat:
+		case fightingBoat:
 			return ground == Grounds.water;
 		case bow:
 		case builder:
@@ -52,6 +53,7 @@ public class Units {
 	public static Set <Grounds> canExistOn(Type entity) {
 		switch (entity) {
 		case boat:
+		case fightingBoat:
 			return WATER;
 		case bow:
 		case builder:

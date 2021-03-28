@@ -4,6 +4,8 @@ import de.hechler.patrick.sc.objects.World;
 
 public interface Player {
 	
-	void makeTurn(World world, final int myID);
+	void init(final World world, final int myID);
+	
+	void makeTurn();
 	
 }

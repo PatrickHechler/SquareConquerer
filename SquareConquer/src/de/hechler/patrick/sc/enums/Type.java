@@ -13,7 +13,7 @@ public enum Type {
 	
 	carrier,
 	
-	boat,
+	boat, fightingBoat,
 	
 	
 	house, houseMelee, houseBow, houseBuilder,

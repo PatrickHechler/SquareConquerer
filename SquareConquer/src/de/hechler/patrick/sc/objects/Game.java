@@ -1,5 +1,7 @@
 package de.hechler.patrick.sc.objects;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,12 +32,12 @@ public class Game {
 	
 	public Game(World world) {
 		this.rnd = new Random();
-		this.players = new LinkedHashSet <Game.PAW>();
+		this.players = new LinkedHashSet <>();
 		this.init = true;
 		this.theWorld = world;
 		int xCnt = world.getXCnt();
 		int yCnt = world.getYCnt();
-		unknownWorld = new World(xCnt, yCnt);
+		this.unknownWorld = new World(xCnt, yCnt);
 		AbsoluteMegaManipulablePosition amp = new AbsoluteMegaManipulablePosition(0, 0);
 		for (; amp.x < xCnt; amp.x ++ ) {
 			for (amp.y = 0; amp.y < yCnt; amp.y ++ ) {
@@ -47,7 +49,7 @@ public class Game {
 	
 	
 	
-	private final World unknownWorld(World world) {
+	private World unknownWorld(World world) {
 		int xCnt = world.getXCnt();
 		int yCnt = world.getYCnt();
 		World res = new World(xCnt, yCnt);
@@ -66,18 +68,28 @@ public class Game {
 		Objects.requireNonNull(startPos, "i can not place a player on a null Positon!");
 		for (PAW paw : players) {
 			if (paw.player == player) {
-				System.err.println("WARN: the player '" + player + "' is already added, i will continue adding the player.");// if you want to test an bot by fighting against itself (every information
-																																// needed is given in the method makeTurn to the bot so i could be the
-																																// same Object)
+				System.err.println("try of double player clone");
+				Class <?> cls = player.getClass();
+				try {
+					Method m = cls.getMethod("clone");
+					Object obj = m.invoke(player);
+					if (obj instanceof Player) {
+						player = (Player) obj;
+					} else {
+						throw new ClassCastException("clone is no instance of player: orig='" + player + "', clone='" + obj + "'");
+					}
+				} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassCastException e) {
+					throw new IllegalArgumentException("double players are forbidden: '" + player + "'", e);
+				}
 			}
 		}
 		int id = rnd.nextInt();// Random generation of the Player-ID
-		PAW paw = new PAW(player, id);
+		World playersWorld = unknownWorld(theWorld);
+		PAW paw = new PAW(playersWorld, player, id);
 		while (players.contains(paw)) {
 			id ++ ;
-			paw = new PAW(player, id);
+			paw = new PAW(playersWorld, player, id);
 		}
-		paw.world = unknownWorld(theWorld);
 		Field startField = theWorld.getField(startPos);
 		if (startField.hasEntity()) throw new IllegalArgumentException("has olready an entity");
 		assertFreeFields(startPos, 1);
@@ -139,7 +151,7 @@ public class Game {
 		newTurnSetup();
 		for (PAW paw : players) {
 			rebuildWorld(paw);
-			paw.player.makeTurn(paw.world, paw.id);
+			paw.player.makeTurn();
 		}
 	}
 	
@@ -199,14 +211,15 @@ public class Game {
 	
 	private static class PAW {
 		
-		private PAW(Player player, int id) {
+		private PAW(World world, Player player, int id) {
+			this.world = world;
 			this.player = player;
 			this.id = id;
 		}
 		
-		final int id;
-		World     world;
-		Player    player;
+		final int   id;
+		final World world; // unneeded
+		Player      player;
 		
 		@Override
 		public int hashCode() {
@@ -215,10 +228,8 @@ public class Game {
 		
 		@Override
 		public boolean equals(Object obj) {
-			if (obj.getClass() == getClass()) {
-				return ((PAW) obj).id == id;
-			}
-			return false;
+			if (obj.getClass() != getClass()) return false;
+			else return ((PAW) obj).id == id;
 		}
 		
 	}
