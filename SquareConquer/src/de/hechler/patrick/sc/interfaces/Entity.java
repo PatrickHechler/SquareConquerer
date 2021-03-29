@@ -68,7 +68,9 @@ public interface Entity {
 	
 	
 	/**
-	 * returns the sight of this {@link Entity} in {@link Field}s
+	 * returns the sight of this {@link Entity} in {@link Field}s<br>
+	 * a sight of 1 means, that this {@link Entity} can only see itself, so the own {@link Position} count as well<br>
+	 * a sight of 2 means, that this {@link Entity} can see itself and the direct neighbor-{@link Field}s
 	 * 
 	 * @return the sight of this {@link Entity} in {@link Field}s
 	 */

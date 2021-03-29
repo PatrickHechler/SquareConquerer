@@ -3,9 +3,12 @@ package de.hechler.patrick.sc.objects.players.botplayer;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.hechler.patrick.sc.enums.Grounds;
 import de.hechler.patrick.sc.interfaces.Entity;
 import de.hechler.patrick.sc.interfaces.Field;
+import de.hechler.patrick.sc.interfaces.MovableEntity;
 import de.hechler.patrick.sc.interfaces.Player;
+import de.hechler.patrick.sc.interfaces.UnmovableEntity;
 import de.hechler.patrick.sc.objects.AbsoluteMegaManipulablePosition;
 import de.hechler.patrick.sc.objects.Area;
 import de.hechler.patrick.sc.objects.Building;
@@ -169,6 +172,8 @@ public class BotPlayer implements Player {
 	private class Enemy {
 		
 		Area       area;
+		Area       canSee;
+		Area       defientlyExplored;
 		EntityPool entitys;
 		
 		private Enemy(int xCnt, int yCnt) {
@@ -179,7 +184,6 @@ public class BotPlayer implements Player {
 	}
 	
 	
-	// TODO continue here
 	
 	public BotPlayer() {
 	}
@@ -208,15 +212,80 @@ public class BotPlayer implements Player {
 		this.myArea.clear();
 		this.myOuterArea.clear();
 		this.myEntitys.clear();
-		this.myEnemeys.clear();
 		this.unownedBuildings.clear();
-		// TODO continue here
+		this.myEnemeys.forEach((i, e) -> {
+			e.area.clear();
+			e.canSee.clear();
+			e.entitys.clear();
+		});;
 		final int xc = world.getXCnt(), yc = world.getYCnt();
-		for (AbsoluteMegaManipulablePosition ammp = new AbsoluteMegaManipulablePosition(0, 0); ammp.x < xc; ammp.x ++ ) {
-			for (ammp.y = 0; ammp.y < yc; ammp.y ++ ) {
+		for (AbsoluteMegaManipulablePosition pos = new AbsoluteMegaManipulablePosition(0, 0); pos.x < xc; pos.x ++ ) {
+			for (pos.y = 0; pos.y < yc; pos.y ++ ) {
+				Field f = world.getField(pos);
+				if (f.ground() == Grounds.unknown) continue;
+				Entity e = f.getEntity();
+				exploredArea.add(pos);
+				if (e == null) continue;
+				if (e.isMovable()) {
+					MovableEntity me = (MovableEntity) e;
+					final int owner = me.owner();
+					if (owner == myID) {
+						myEntitys.add(me);
+						knownArea.add(pos);
+					} else {
+						if (myEnemeys.containsKey(owner)) myEnemeys.put(owner, new Enemy(xc, yc));
+						Enemy enemy = myEnemeys.get(owner);
+						enemy.entitys.add(me);
+					}
+					exploredArea.addAll(pos, me.sight());
+					knownArea.addAll(pos, me.sight());
+					// TODO continue here
+				} else {
+					UnmovableEntity ue = (UnmovableEntity) e;
+					HOUSE: if (ue.type().isHouse()) {
+						HouseBuilding hb = (HouseBuilding) ue;
+						if (hb.inside().isEmpty()) break HOUSE;
+						final Int owner = new Int( -1);
+						final Int bool = new Int(0);
+						hb.inside().forEach(me -> {
+							if (bool.i == 0) {
+								bool.i = 1;
+								owner.i = me.owner();
+							} else {
+								if (me.owner() != owner.i) {
+									owner.i = -1;
+								}
+							}
+						});
+						if (owner.i == myID) {
+							myEntitys.add(hb);
+							knownArea.addAll(pos, hb.sight());
+							exploredArea.addAll(pos, hb.sight());
+						} else {
+							if (myEnemeys.containsKey(owner.i)) myEnemeys.put(owner.i, new Enemy(xc, yc));
+							Enemy enemy = myEnemeys.get(owner.i);
+							enemy.entitys.add(hb);
+							enemy.canSee.addAll(pos, hb.sight());
+							enemy.defientlyExplored.addAll(pos, hb.sight());
+						}
+						// TODO continue here
+						
+					}
+					// TODO continue here
+				}
 				
 			}
 		}
+	}
+	
+	private class Int {
+		
+		int i;
+		
+		public Int(int i) {
+			this.i = i;
+		}
+		
 	}
 	
 }

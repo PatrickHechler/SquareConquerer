@@ -32,4 +32,16 @@ public enum Type {
 		return res;
 	}
 	
+	public boolean isHouse() {
+		switch (this) {
+		case house:
+		case houseBow:
+		case houseBuilder:
+		case houseMelee:
+			return true;
+		default:
+			return false;
+		}
+	}
+	
 }
