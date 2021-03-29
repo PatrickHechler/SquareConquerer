@@ -200,7 +200,7 @@ public class BotPlayer implements Player {
 	
 	@Override
 	public void makeTurn() {
-		
+		//TODO continue here
 	}
 	
 }

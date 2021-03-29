@@ -128,12 +128,11 @@ public class Worlds {
 				Entity e = null;
 				switch (key.toLowerCase()) {
 				case KW_FIELD:
-					if ( !"=".equals(sc.next())) throw new InputMismatchException("expected '=' after FieldKeyWord");
-					{
-						String zw = sc.next();
-						amp.x = Integer.parseInt(zw.replaceFirst("^[ \t]*\\([ \\t]*([0-9]+)[ \\t]*\\|[ \\t]*([0-9]+)[ \\t]*\\)[ \\t]*\\)$", "$1"));
-						amp.y = Integer.parseInt(zw.replaceFirst("^[ \t]*\\([ \\t]*([0-9]+)[ \\t]*\\|[ \\t]*([0-9]+)[ \\t]*\\)[ \\t]*\\)$", "$2"));
-					}
+					if ( !"=".equals(sc.next())) throw new InputMismatchException("expected '=' after FieldKeyWord"); {
+					String zw = sc.next();
+					amp.x = Integer.parseInt(zw.replaceFirst("^[ \t]*\\([ \\t]*([0-9]+)[ \\t]*\\|[ \\t]*([0-9]+)[ \\t]*\\)[ \\t]*\\)$", "$1"));
+					amp.y = Integer.parseInt(zw.replaceFirst("^[ \t]*\\([ \\t]*([0-9]+)[ \\t]*\\|[ \\t]*([0-9]+)[ \\t]*\\)[ \\t]*\\)$", "$2"));
+				}
 					for (int i = 0; i < 2; i ++ ) {
 						key = sc.next();
 						boolean uedp = false;
@@ -407,6 +406,27 @@ public class Worlds {
 					}
 				}
 			}
+		}
+	}
+	
+	public void print(World world, PrintStream out) {
+		final int xc = world.getXCnt(), yc = world.getYCnt();
+		for (AbsoluteMegaManipulablePosition pos = new AbsoluteMegaManipulablePosition(0, 0); pos.y < yc; pos.y ++ ) {
+			StringBuilder str = new StringBuilder(xc);
+			for (pos.x = 0; pos.x < xc; pos.x ++ ) {
+				Field f = world.getField(pos);
+				if (f.ground() == Grounds.unknown) {
+					str.append('U');
+					continue;
+				}
+				Entity e = f.getEntity();
+				if (e == null) {
+					str.append(f.ground().character());
+					continue;
+				}
+				str.append(e.type().name().toLowerCase().charAt(0));
+			}
+			out.println(str);
 		}
 	}
 	
