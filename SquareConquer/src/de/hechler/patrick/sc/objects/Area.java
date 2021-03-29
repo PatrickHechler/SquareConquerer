@@ -154,12 +154,48 @@ public class Area extends Rightangle {
 	
 	public boolean addAll(Area a) {
 		boolean res = false;
-		final int xoff = super.getX() - a.getX(), yoff = super.getY() - a.getY(), negxoff = -xoff, negyoff = -xoff;
-		for (int x = negxoff, xsum = x + xoff; x < inside.length && xsum < a.inside.length; xsum = ++ x + xoff) {
-			for (int y = negyoff, ysum = y + yoff; y < inside[x].length && ysum < a.inside[xsum].length; ysum = ++ y + yoff) {
-				boolean old = inside[x][y];
-				inside[x][y] |= a.inside[xsum][ysum];
-				res |= old != inside[x][y];
+		final int ax = a.getX(), ay = a.getY(), axc = a.getxCnt(), ayc = a.getyCnt(), mx = super.getX(), my = super.getY(), mxoff = ax - mx, myoff = ay - my, axoff = mx - ax, ayoff = my - ay, axpxc = ax + axc,
+				aypyc = ay + ayc;
+		
+		for (int mix = mxoff, gx = ax, aix = axoff; mix < inside.length && aix < a.inside.length && gx < axpxc; mix ++ , gx ++ , aix ++ ) {
+			if (mix < 0 || aix < 0) continue;
+			for (int miy = myoff, gy = ay, aiy = ayoff; miy < inside[mix].length && aiy < a.inside[aix].length && gy < aypyc; miy ++ , gy ++ , aiy ++ ) {
+				if (miy < 0 || aiy < 0) continue;
+				if (inside[mix][miy]) continue;
+				inside[mix][miy] |= inside[aix][aiy];
+			}
+		}
+		
+		return res;
+	}
+	
+	public boolean addAll(final Position pos, final int radius) {
+		final int px = pos.getX(), py = pos.getY(), mx = super.getX(), my = super.getY(), xoff = px - mx, yoff = py - my;
+		boolean res = false;
+		for (int ix = xoff, rx = 0; rx < radius && ix < inside.length; ix ++ , rx ++ ) {
+			if (ix < 0) continue;
+			for (int iy = yoff, ry = 0; rx + ry < radius && iy < inside[ix].length; iy ++ , ry ++ ) {
+				if (iy < 0) continue;
+				res |= !inside[ix][iy];
+				inside[ix][iy] = true;
+			}
+			for (int iy = yoff, ry = 0; rx + ry < radius && iy >= 0; iy -- , ry ++ ) {
+				if (iy >= inside[ix].length) continue;
+				res |= !inside[ix][iy];
+				inside[ix][iy] = true;
+			}
+		}
+		for (int ix = xoff, rx = 0; rx < radius && ix >= 0; ix -- , rx ++ ) {
+			if (ix >= inside[ix].length) continue;
+			for (int iy = yoff, ry = 0; rx + ry < radius && iy < inside[ix].length; iy ++ , ry ++ ) {
+				if (iy < 0) continue;
+				res |= !inside[ix][iy];
+				inside[ix][iy] = true;
+			}
+			for (int iy = yoff, ry = 0; rx + ry < radius && iy >= 0; iy -- , ry ++ ) {
+				if (iy >= inside[ix].length) continue;
+				res |= !inside[ix][iy];
+				inside[ix][iy] = true;
 			}
 		}
 		return res;

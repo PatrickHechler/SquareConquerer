@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.hechler.patrick.sc.interfaces.Entity;
+import de.hechler.patrick.sc.interfaces.Field;
 import de.hechler.patrick.sc.interfaces.Player;
+import de.hechler.patrick.sc.objects.AbsoluteMegaManipulablePosition;
 import de.hechler.patrick.sc.objects.Area;
 import de.hechler.patrick.sc.objects.Building;
 import de.hechler.patrick.sc.objects.HouseBuilding;
@@ -107,6 +109,18 @@ import de.hechler.patrick.sc.objects.pools.EntityPool;
 public class BotPlayer implements Player {
 	
 	/**
+	 * here are all {@link Field}s saved, which are explored by this {@link BotPlayer}.<br>
+	 * the {@link BotPlayer} does not have to see them right now, so the {@link World} can contain {@link Field}, which are a memory ({@link Field#isMemory()}).
+	 * <code>{@link #exploredArea}containsAll({@link #knownArea})</code> will return <code>true</code>, because here are all {@link Field}s, which are in {@link #knownArea} and all {@link Field}s
+	 * which had once been seen.
+	 */
+	private Area exploredArea;
+	/**
+	 * here are all {@link Field}s, which the {@link BotPlayer} sees<br>
+	 * That mens, here are no Fields where {@link Field#isMemory()} returns <code>true</code><br>
+	 */
+	private Area knownArea;
+	/**
 	 * <pre>
 	* this {@link Area} is owned completely by the bot
 	* the bot will only built there
@@ -196,7 +210,13 @@ public class BotPlayer implements Player {
 		this.myEntitys.clear();
 		this.myEnemeys.clear();
 		this.unownedBuildings.clear();
-		//TODO continue here
+		// TODO continue here
+		final int xc = world.getXCnt(), yc = world.getYCnt();
+		for (AbsoluteMegaManipulablePosition ammp = new AbsoluteMegaManipulablePosition(0, 0); ammp.x < xc; ammp.x ++ ) {
+			for (ammp.y = 0; ammp.y < yc; ammp.y ++ ) {
+				
+			}
+		}
 	}
 	
 }
