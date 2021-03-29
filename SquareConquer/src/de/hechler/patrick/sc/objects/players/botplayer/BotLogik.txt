@@ -2,11 +2,11 @@ BOTLOGIK:
 	- enemys
 		-> state
 			::> start: peace
-			::> maby: pre-war
+			::> maybe: pre-war
 				=> enemy goes to far in own area
 				=> plan to attack the enemy
 					>> because there are no other known war/pre-war enemys
-					>> the own attacking army is good enugh for that enemy
+					>> the own attacking army is good enough for that enemy
 			::> then: war
 				=> after attacked by the enemy
 				=> after attacking the enemy
