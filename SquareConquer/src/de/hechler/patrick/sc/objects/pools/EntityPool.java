@@ -289,12 +289,20 @@ public class EntityPool implements Set <Entity>, Serializable {
 		return listen;
 	}
 	
-	public UnitPool units() {
+	public UnitPool unitsListner() {
 		return listener().myUnits;
 	}
 	
-	public BuildingPool buildings() {
+	public BuildingPool buildingsListener() {
 		return listener().myBuildings;
+	}
+	
+	public UnitPool units() {
+		return myUnits;
+	}
+	
+	public BuildingPool buildings() {
+		return myBuildings;
 	}
 	
 }

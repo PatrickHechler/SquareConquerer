@@ -505,8 +505,12 @@ public class BuildingPool implements Set <Building>, Serializable {
 		return listen;
 	}
 	
-	public HousPool houses() {
+	public HousPool housesListner() {
 		return listener().myHouses;
+	}
+	
+	public HousPool houses() {
+		return myHouses;
 	}
 	
 }

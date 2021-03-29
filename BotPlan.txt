@@ -1,4 +1,4 @@
-BOT:
+BOTPLAN:
 	/**
 	 * this area is owned completly by the bot
 	 * the bot will only built there

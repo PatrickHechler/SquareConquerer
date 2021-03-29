@@ -410,8 +410,12 @@ public class UnitPool implements Set <Unit>, Serializable {
 		return listen;
 	}
 
-	public FighterPool fighters() {
+	public FighterPool fightersListener() {
 		return listener().myFighters;
+	}
+	
+	public FighterPool fighters() {
+		return myFighters;
 	}
 	
 }
