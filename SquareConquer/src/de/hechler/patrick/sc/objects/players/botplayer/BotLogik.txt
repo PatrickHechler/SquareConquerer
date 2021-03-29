@@ -1,0 +1,27 @@
+BOTLOGIK:
+	- enemys
+		-> state
+			::> start: peace
+			::> maby: pre-war
+				=> enemy goes to far in own area
+				=> plan to attack the enemy
+					>> because there are no other known war/pre-war enemys
+					>> the own attacking army is good enugh for that enemy
+			::> then: war
+				=> after attacked by the enemy
+				=> after attacking the enemy
+	- state
+		-> until first enemy found
+			::> every explored Field is owned by the Bot
+			::> preparing of defending army
+		-> after first enemy found
+			::> smart owned Area
+			::> preparing of attaking army
+	- orders
+		-> move
+		-> build
+		-> attack
+			::> enemy <ID>
+			::> <Position>, <radius> (enemy <ID>)*
+		-> defend <Position>, <radius>
+		-> partrol <Position[]>
