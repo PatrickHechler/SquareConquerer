@@ -2,7 +2,11 @@ package de.hechler.patrick.sc.objects.ui;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -23,44 +27,45 @@ import de.hechler.patrick.sc.objects.World;
 import de.hechler.patrick.sc.utils.factory.EntityFactory;
 
 public class WorldWindow extends JFrame {
-
+	
 	/** UID */
 	private static final long serialVersionUID = 789464080026285409L;
-
-	private final World world;
-	private final Map<UnchangeablePosition, JButton> fields;
-
-	public WorldWindow(World world) {
-		super("World-Window (" + world.getXCnt() + "|" + world.getYCnt() + ")");
-		this.world = world;
-		this.fields = new HashMap<>();
+	
+	private final Map <UnchangeablePosition, JButton> fields;
+	private final List <PositionListener>             listen;
+	private boolean                                   debugWarns = true;
+	
+	public WorldWindow(int xc, int yc) {
+		super("World-Window (" + xc + "|" + yc + ")");
+		this.fields = new HashMap <>();
+		this.listen = new ArrayList <>();
 	}
-
+	
 	public static void main(String[] args) {
-		World world = new World(63, 37); // biggest window (1920*1200)
-		WorldWindow window = new WorldWindow(world).load(false);
+		World world = new World(60, 35); // biggest window (1920*1200)
+		WorldWindow window = new WorldWindow(world.getXCnt(), world.getYCnt()).load(world.getXCnt(), world.getYCnt(), false);
 		Random rnd = new Random();
 		Grounds[] g = Grounds.values();
-		for (int i = 0; i < world.getXCnt(); i++) {
-			for (int ii = 0; ii < world.getYCnt(); ii++) {
-				world.overrideField(new FieldImpl(i, ii, g[rnd.nextInt(g.length - 1)])); //unknown is the last
+		for (int i = 0; i < world.getXCnt(); i ++ ) {
+			for (int ii = 0; ii < world.getYCnt(); ii ++ ) {
+				world.overrideField(new FieldImpl(i, ii, g[rnd.nextInt(g.length - 1)])); // unknown is the last
 			}
 		}
-		window.update(true);
-		NicePosition pos = new NicePosition(0,0);
+		window.update(world, true);
+		NicePosition pos = new NicePosition(0, 0);
 		Entity e = EntityFactory.create(4, pos, de.hechler.patrick.sc.enums.Type.carrier, null);
 		world.getField(pos).setEntity(e);
 		pos.move(Direction.up);
 		e = EntityFactory.create(4, pos, de.hechler.patrick.sc.enums.Type.boat, null);
 		world.getField(pos).setEntity(e);
-		window.update(true);
+		window.update(world, true);
 	}
-
-	public WorldWindow load(boolean visible) {
+	
+	public WorldWindow load(int xc, int yc, boolean visible) {
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setLayout(null);
-
-		setBounds(0, 0, 15 + world.getXCnt() * 30, 40 + world.getYCnt() * 30);
+		
+		setBounds(0, 0, 15 + xc * 30, 40 + yc * 30);
 		setLocationRelativeTo(null);
 		setResizable(false);
 		
@@ -73,11 +78,11 @@ public class WorldWindow extends JFrame {
 		}
 		return this;
 	}
-
-	public void update(boolean visible) {
+	
+	public void update(World world, boolean visible) {
 		final int xc = world.getXCnt(), yc = world.getYCnt();
-		for (AbsoluteMegaManipulablePosition pos = new AbsoluteMegaManipulablePosition(0, 0); pos.x < xc; pos.x++) {
-			for (pos.y = 0; pos.y < yc; pos.y++) {
+		for (AbsoluteMegaManipulablePosition pos = new AbsoluteMegaManipulablePosition(0, 0); pos.x < xc; pos.x ++ ) {
+			for (pos.y = 0; pos.y < yc; pos.y ++ ) {
 				setValueAt(world.getField(pos), pos.x, pos.y);
 			}
 		}
@@ -89,12 +94,12 @@ public class WorldWindow extends JFrame {
 			setVisible(false);
 		}
 	}
-
+	
 	public void setValueAt(Field f, int x, int y) {
-		//System.out.println(f.position().toPosStr() + "  " + f.ground().name());// debug
+		// System.out.println(f.position().toPosStr() + " " + f.ground().name());// debug
 		final UnchangeablePosition pos = new UnchangeablePosition(x, y);
 		JButton b;
-		if (!fields.containsKey(pos)) {
+		if ( !fields.containsKey(pos)) {
 			b = new JButton();
 			b.setBounds(x * 30, y * 30, 30, 30);
 			b.addActionListener(p -> buttonPressed(pos));
@@ -106,23 +111,48 @@ public class WorldWindow extends JFrame {
 		b.setIcon(image);
 		b.setDisabledIcon(image);
 	}
-
+	
 	private void buttonPressed(UnchangeablePosition pos) {
-		// TODO Auto-generated method stub
+		if (listen.isEmpty()) warn("no listener, but Position" + pos.toPosStr() + " was pressed!");
+		listen.forEach(l -> l.positionPressed(pos));
 	}
-
+	
+	public static interface PositionListener {
+		
+		void positionPressed(UnchangeablePosition pressed);
+		
+	}
+	
 	private Icon getIcon(Field f) {
 		BufferedImage image = new BufferedImage(30, 30, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2d = image.createGraphics();
-		g2d.drawImage(new ImageIcon("../icons/" + f.ground().name() + ".png").getImage(), 0, 0, null);
+		String zw = "./icons/" + f.ground().name() + ".png";
+		if ( !Files.exists(Paths.get(zw))) zw = "../icons/" + f.ground().name() + ".png";
+		g2d.drawImage(new ImageIcon(zw).getImage(), 0, 0, null);
 		if (f.hasEntity()) {
-			g2d.drawImage(new ImageIcon("../icons/" + f.getEntity().type().name() + ".png").getImage(), 0, 0, null);
+			zw = "./icons/" + f.getEntity().type().name() + ".png";
+			if ( !Files.exists(Paths.get(zw))) zw = "../icons/" + f.getEntity().type().name() + ".png";
+			g2d.drawImage(new ImageIcon("./icons/" + f.getEntity().type().name() + ".png").getImage(), 0, 0, null);
 		}
 		g2d.dispose();
-//		ImageIcon icon = new ImageIcon();
-//		icon.setImage(image);
-//		return icon;
+		// ImageIcon icon = new ImageIcon();
+		// icon.setImage(image);
+		// return icon;
 		return new ImageIcon(image);
 	}
 	
+	private void warn(String warn) {
+		if ( !this.debugWarns) return;
+		System.err.println("WARNING: " + warn);
+	}
+	
+	public void setDebugWarns(boolean debugWarns) {
+		this.debugWarns = debugWarns;
+	}
+	
+	public void addListener(PositionListener listen) {
+		this.listen.add(listen);
+	}
+	
 }
+
