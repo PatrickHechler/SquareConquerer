@@ -65,7 +65,7 @@ public interface Position extends Comparable <Position>, Cloneable {
 	 * 
 	 */
 	default String toPosStr() {
-		return '(' + getX() + " | " + getY() + ')';
+		return "(" + getX() + " | " + getY() + ")";
 	}
 	
 	default boolean equals(Position pos) {
