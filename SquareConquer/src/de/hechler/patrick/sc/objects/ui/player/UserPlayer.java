@@ -81,6 +81,10 @@ public class UserPlayer implements Player {
 			System.out.println(a.getClass().getName());
 			System.out.println(a);
 		});
+		b.setBounds(0, 0, 0, 0);
+		b.setVisible(false);
+		b.setEnabled(true);
+		this.window.add(b);
 		this.window.getRootPane().setDefaultButton(b);
 		this.window.addKeyListener(new KeyAdapter() {//TODO does not react (don't print anything even a lineSeperator (so the methods do not get called))
 			
