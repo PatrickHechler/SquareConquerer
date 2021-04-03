@@ -266,27 +266,71 @@ class AreaTest {
 	}
 
 	@Test
-	@Disabled
-	void testSetxCnt() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	@Disabled
-	void testSetyCnt() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	@Disabled
 	void testIsEmpty() {
-		fail("Not yet implemented");
+		// empty area returns true
+		assertTrue(AREA_EMPTY.isEmpty());
+		
+		// all others returns false
+		assertFalse(AREA_FULL.isEmpty());
+		assertFalse(AREA_LEFT.isEmpty());
+		assertFalse(AREA_RIGHT.isEmpty());
+		assertFalse(AREA_TOP.isEmpty());
+		assertFalse(AREA_BOTTOM.isEmpty());
+		assertFalse(AREA_BOTTOMLEFT.isEmpty());
+		assertFalse(AREA_BOTTOMRIGHT.isEmpty());
+		assertFalse(AREA_TOPLEFT.isEmpty());
+		assertFalse(AREA_TOPRIGHT.isEmpty());
+		assertFalse(AREA_BORDER.isEmpty());
+		assertFalse(AREA_INNER.isEmpty());
+		assertFalse(AREA_SMILEY.isEmpty());
 	}
 
+
 	@Test
-	@Disabled
 	void testContainsObject() {
-		fail("Not yet implemented");
+		assertTrue(AREA_FULL.contains(AREA_INNER));
+		assertTrue(AREA_FULL.contains(AREA_BORDER));
+		assertTrue(AREA_FULL.contains(AREA_EMPTY));
+		assertTrue(AREA_FULL.contains(AREA_FULL));
+		assertTrue(AREA_FULL.contains(AREA_TOP));
+		assertTrue(AREA_FULL.contains(AREA_BOTTOM));
+		assertTrue(AREA_FULL.contains(AREA_LEFT));
+		assertTrue(AREA_FULL.contains(AREA_RIGHT));
+		assertTrue(AREA_FULL.contains(AREA_SMILEY));
+
+		assertFalse(AREA_EMPTY.contains(AREA_INNER));
+		assertFalse(AREA_EMPTY.contains(AREA_BORDER));
+		assertFalse(AREA_EMPTY.contains(AREA_FULL));
+		assertFalse(AREA_EMPTY.contains(AREA_SMILEY));
+		// empty area should contain empty area
+		assertTrue(AREA_EMPTY.contains(AREA_EMPTY));
+
+		assertTrue(AREA_TOP.contains(AREA_TOP));
+		// AREA_TOP does not contain AREA_BOTTOM and contains() should return false.
+		assertFalse(AREA_TOP.contains(AREA_BOTTOM));
+		assertFalse(AREA_TOP.contains(AREA_LEFT));
+		assertFalse(AREA_TOP.contains(AREA_RIGHT));
+
+		assertTrue(AREA_TOP.contains(AREA_TOPLEFT));
+		assertTrue(AREA_TOP.contains(AREA_TOPRIGHT));
+		assertFalse(AREA_TOP.contains(AREA_BOTTOMLEFT));
+		assertFalse(AREA_TOP.contains(AREA_BOTTOMRIGHT));
+
+		assertFalse(AREA_BOTTOM.contains(AREA_TOPLEFT));
+		assertFalse(AREA_BOTTOM.contains(AREA_TOPRIGHT));
+		assertTrue(AREA_BOTTOM.contains(AREA_BOTTOMLEFT));
+		assertTrue(AREA_BOTTOM.contains(AREA_BOTTOMRIGHT));
+
+		assertTrue(AREA_LEFT.contains(AREA_TOPLEFT));
+		assertFalse(AREA_LEFT.contains(AREA_TOPRIGHT));
+		assertTrue(AREA_LEFT.contains(AREA_BOTTOMLEFT));
+		assertFalse(AREA_LEFT.contains(AREA_BOTTOMRIGHT));
+
+		assertFalse(AREA_RIGHT.contains(AREA_TOPLEFT));
+		assertTrue(AREA_RIGHT.contains(AREA_TOPRIGHT));
+		assertFalse(AREA_RIGHT.contains(AREA_BOTTOMLEFT));
+		assertTrue(AREA_RIGHT.contains(AREA_BOTTOMRIGHT));
+
 	}
 
 	@Test
@@ -528,5 +572,18 @@ class AreaTest {
 	void testEqualsPosition() {
 		fail("Not yet implemented");
 	}
+
+	@Test
+	@Disabled
+	void testSetxCnt() {
+		fail("Not yet implemented");
+	}
+
+	@Test
+	@Disabled
+	void testSetyCnt() {
+		fail("Not yet implemented");
+	}
+
 
 }
