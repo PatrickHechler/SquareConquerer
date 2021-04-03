@@ -287,50 +287,9 @@ class AreaTest {
 
 
 	@Test
+	@Disabled
 	void testContainsObject() {
-		assertTrue(AREA_FULL.containsAll(AREA_INNER));
-		assertTrue(AREA_FULL.containsAll(AREA_BORDER));
-		assertTrue(AREA_FULL.containsAll(AREA_EMPTY));
-		assertTrue(AREA_FULL.containsAll(AREA_FULL));
-		assertTrue(AREA_FULL.containsAll(AREA_TOP));
-		assertTrue(AREA_FULL.containsAll(AREA_BOTTOM));
-		assertTrue(AREA_FULL.containsAll(AREA_LEFT));
-		assertTrue(AREA_FULL.containsAll(AREA_RIGHT));
-		assertTrue(AREA_FULL.containsAll(AREA_SMILEY));
-
-		assertFalse(AREA_EMPTY.containsAll(AREA_INNER));
-		assertFalse(AREA_EMPTY.containsAll(AREA_BORDER));
-		assertFalse(AREA_EMPTY.containsAll(AREA_FULL));
-		assertFalse(AREA_EMPTY.containsAll(AREA_SMILEY));
-		// empty area should contain empty area
-		assertTrue(AREA_EMPTY.containsAll(AREA_EMPTY));
-
-		assertTrue(AREA_TOP.containsAll(AREA_TOP));
-		// AREA_TOP does not contain AREA_BOTTOM and contains() should return false.
-		assertFalse(AREA_TOP.containsAll(AREA_BOTTOM));
-		assertFalse(AREA_TOP.containsAll(AREA_LEFT));
-		assertFalse(AREA_TOP.containsAll(AREA_RIGHT));
-
-		assertTrue(AREA_TOP.containsAll(AREA_TOPLEFT));
-		assertTrue(AREA_TOP.containsAll(AREA_TOPRIGHT));
-		assertFalse(AREA_TOP.containsAll(AREA_BOTTOMLEFT));
-		assertFalse(AREA_TOP.containsAll(AREA_BOTTOMRIGHT));
-
-		assertFalse(AREA_BOTTOM.containsAll(AREA_TOPLEFT));
-		assertFalse(AREA_BOTTOM.containsAll(AREA_TOPRIGHT));
-		assertTrue(AREA_BOTTOM.containsAll(AREA_BOTTOMLEFT));
-		assertTrue(AREA_BOTTOM.containsAll(AREA_BOTTOMRIGHT));
-
-		assertTrue(AREA_LEFT.containsAll(AREA_TOPLEFT));
-		assertFalse(AREA_LEFT.containsAll(AREA_TOPRIGHT));
-		assertTrue(AREA_LEFT.containsAll(AREA_BOTTOMLEFT));
-		assertFalse(AREA_LEFT.containsAll(AREA_BOTTOMRIGHT));
-
-		assertFalse(AREA_RIGHT.containsAll(AREA_TOPLEFT));
-		assertTrue(AREA_RIGHT.containsAll(AREA_TOPRIGHT));
-		assertFalse(AREA_RIGHT.containsAll(AREA_BOTTOMLEFT));
-		assertTrue(AREA_RIGHT.containsAll(AREA_BOTTOMRIGHT));
-
+		fail("Not yet implemented");
 	}
 
 	@Test
@@ -482,9 +441,49 @@ class AreaTest {
 	}
 
 	@Test
-	@Disabled
 	void testContainsAllArea() {
-		fail("Not yet implemented");
+		assertTrue(AREA_FULL.containsAll(AREA_INNER));
+		assertTrue(AREA_FULL.containsAll(AREA_BORDER));
+		assertTrue(AREA_FULL.containsAll(AREA_EMPTY));
+		assertTrue(AREA_FULL.containsAll(AREA_FULL));
+		assertTrue(AREA_FULL.containsAll(AREA_TOP));
+		assertTrue(AREA_FULL.containsAll(AREA_BOTTOM));
+		assertTrue(AREA_FULL.containsAll(AREA_LEFT));
+		assertTrue(AREA_FULL.containsAll(AREA_RIGHT));
+		assertTrue(AREA_FULL.containsAll(AREA_SMILEY));
+
+		assertFalse(AREA_EMPTY.containsAll(AREA_INNER));
+		assertFalse(AREA_EMPTY.containsAll(AREA_BORDER));
+		assertFalse(AREA_EMPTY.containsAll(AREA_FULL));
+		assertFalse(AREA_EMPTY.containsAll(AREA_SMILEY));
+		// empty area should contain empty area
+		assertTrue(AREA_EMPTY.containsAll(AREA_EMPTY));
+
+		assertTrue(AREA_TOP.containsAll(AREA_TOP));
+		// AREA_TOP does not contain AREA_BOTTOM and contains() should return false.
+		assertFalse(AREA_TOP.containsAll(AREA_BOTTOM));
+		assertFalse(AREA_TOP.containsAll(AREA_LEFT));
+		assertFalse(AREA_TOP.containsAll(AREA_RIGHT));
+
+		assertTrue(AREA_TOP.containsAll(AREA_TOPLEFT));
+		assertTrue(AREA_TOP.containsAll(AREA_TOPRIGHT));
+		assertFalse(AREA_TOP.containsAll(AREA_BOTTOMLEFT));
+		assertFalse(AREA_TOP.containsAll(AREA_BOTTOMRIGHT));
+
+		assertFalse(AREA_BOTTOM.containsAll(AREA_TOPLEFT));
+		assertFalse(AREA_BOTTOM.containsAll(AREA_TOPRIGHT));
+		assertTrue(AREA_BOTTOM.containsAll(AREA_BOTTOMLEFT));
+		assertTrue(AREA_BOTTOM.containsAll(AREA_BOTTOMRIGHT));
+
+		assertTrue(AREA_LEFT.containsAll(AREA_TOPLEFT));
+		assertFalse(AREA_LEFT.containsAll(AREA_TOPRIGHT));
+		assertTrue(AREA_LEFT.containsAll(AREA_BOTTOMLEFT));
+		assertFalse(AREA_LEFT.containsAll(AREA_BOTTOMRIGHT));
+
+		assertFalse(AREA_RIGHT.containsAll(AREA_TOPLEFT));
+		assertTrue(AREA_RIGHT.containsAll(AREA_TOPRIGHT));
+		assertFalse(AREA_RIGHT.containsAll(AREA_BOTTOMLEFT));
+		assertTrue(AREA_RIGHT.containsAll(AREA_BOTTOMRIGHT));
 	}
 
 	@Test
