@@ -334,9 +334,40 @@ class AreaTest {
 	}
 
 	@Test
-	@Disabled
 	void testContainsPosition() {
-		fail("Not yet implemented");
+		checkAllPositions(AREA_SMILEY, AREA_SMILEY_10_10);
+		checkAllPositions(AREA_FULL, AREA_FULL_10_10);
+		checkAllPositions(AREA_EMPTY, AREA_EMPTY_10_10);
+		checkAllPositions(AREA_LEFT, AREA_LEFT_10_10);
+		checkAllPositions(AREA_RIGHT, AREA_RIGHT_10_10);
+		checkAllPositions(AREA_TOP, AREA_TOP_10_10);
+		checkAllPositions(AREA_BOTTOM, AREA_BOTTOM_10_10);
+		checkAllPositions(AREA_BOTTOMLEFT, AREA_BOTTOMLEFT_10_10);
+		checkAllPositions(AREA_BOTTOMRIGHT, AREA_BOTTOMRIGHT_10_10);
+		checkAllPositions(AREA_TOPLEFT, AREA_TOPLEFT_10_10);
+		checkAllPositions(AREA_TOPRIGHT, AREA_TOPRIGHT_10_10);
+		checkAllPositions(AREA_BORDER, AREA_BORDER_10_10);
+		checkAllPositions(AREA_INNER, AREA_INNER_10_10);
+	}
+	
+	private void checkAllPositions(Area area, String areaString) {
+		int width = area.getxCnt();
+		int height = area.getyCnt();
+		assertEquals(areaString.length(), width*height);
+		AbsoluteManipulablePosition pos = new AbsoluteManipulablePosition(0, 0);
+		for (int y=0; y<height; y++) {
+			pos.setY(y);
+			for (int x=0; x<width; x++) {
+				pos.setX(x);
+				boolean posIsSet = areaString.charAt(y*width+x) == '#';
+				assertEquals(posIsSet, area.contains(pos));
+			}
+		}
+		for (int y=0; y<height; y++) {
+			for (int x=0; x<width; x++) {
+				
+			}
+		}
 	}
 
 	@Test
