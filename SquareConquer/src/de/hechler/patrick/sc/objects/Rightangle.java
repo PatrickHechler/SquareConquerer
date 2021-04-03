@@ -219,14 +219,12 @@ public class Rightangle extends AbsoluteManipulablePosition implements Set <Posi
 	
 	@Override
 	public void clear() {
-		super.setX(0);
-		super.setY(0);
 		yCnt = xCnt = 0;
 	}
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof Position) return super.equals((Position) obj);
+		if (obj instanceof Rightangle) return super.equals((Position) obj) && ((Rightangle) obj).xCnt == xCnt && ((Rightangle) obj).yCnt == yCnt;
 		return false;
 	}
 	

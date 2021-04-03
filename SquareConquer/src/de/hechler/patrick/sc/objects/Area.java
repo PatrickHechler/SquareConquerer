@@ -349,10 +349,8 @@ public class Area extends Rightangle {
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof Area) {
-			return equals((Area) obj);
-		}
-		return super.equals(obj);
+		if (obj instanceof Area) return equals((Area) obj);
+		else return false;
 	}
 	
 	public boolean equals(Area a) {
