@@ -371,6 +371,51 @@ class AreaTest {
 	}
 
 	@Test
+	void testEqualsArea() {
+		assertEquals(AREA_SMILEY, createAreaFromString(AREA_SMILEY_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_FULL, createAreaFromString(AREA_FULL_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_EMPTY, createAreaFromString(AREA_EMPTY_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_LEFT, createAreaFromString(AREA_LEFT_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_RIGHT, createAreaFromString(AREA_RIGHT_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_TOP, createAreaFromString(AREA_TOP_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_BOTTOM , createAreaFromString(AREA_BOTTOM_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_BOTTOMLEFT, createAreaFromString(AREA_BOTTOMLEFT_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_BOTTOMRIGHT, createAreaFromString(AREA_BOTTOMRIGHT_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_TOPLEFT, createAreaFromString(AREA_TOPLEFT_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_TOPRIGHT, createAreaFromString(AREA_TOPRIGHT_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_BORDER, createAreaFromString(AREA_BORDER_10_10, 0, 0, 10, 10));
+		assertEquals(AREA_INNER, createAreaFromString(AREA_INNER_10_10, 0, 0, 10, 10));
+
+		assertNotEquals(AREA_FULL, AREA_EMPTY);
+		assertNotEquals(AREA_EMPTY, AREA_FULL);
+		assertNotEquals(AREA_TOP, AREA_LEFT);
+		assertNotEquals(AREA_INNER, AREA_BORDER);
+		assertNotEquals(AREA_FULL, AREA_TOP);
+		assertNotEquals(AREA_FULL, AREA_BOTTOM);
+		assertNotEquals(AREA_FULL, AREA_LEFT);
+		assertNotEquals(AREA_FULL, AREA_RIGHT);
+		assertNotEquals(AREA_EMPTY, AREA_TOP);
+		assertNotEquals(AREA_EMPTY, AREA_BOTTOM);
+		assertNotEquals(AREA_EMPTY, AREA_LEFT);
+		assertNotEquals(AREA_EMPTY, AREA_RIGHT);
+		assertNotEquals(AREA_TOP, AREA_FULL);
+		assertNotEquals(AREA_BOTTOM, AREA_FULL);
+		assertNotEquals(AREA_LEFT, AREA_FULL);
+		assertNotEquals(AREA_RIGHT, AREA_FULL);
+		assertNotEquals(AREA_TOP, AREA_EMPTY);
+		assertNotEquals(AREA_BOTTOM, AREA_EMPTY);
+		assertNotEquals(AREA_LEFT, AREA_EMPTY);
+		assertNotEquals(AREA_RIGHT, AREA_EMPTY);
+		assertNotEquals(AREA_TOP, AREA_TOPLEFT);
+		assertNotEquals(AREA_TOP, AREA_TOPRIGHT);
+		assertNotEquals(AREA_TOPLEFT, AREA_TOP);
+		assertNotEquals(AREA_TOPRIGHT, AREA_TOP);
+
+	}
+
+	
+	
+	@Test
 	@Disabled
 	void testIterator() {
 		fail("Not yet implemented");
@@ -475,12 +520,6 @@ class AreaTest {
 	@Test
 	@Disabled
 	void testNewCreateMoveDirection() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	@Disabled
-	void testEqualsArea() {
 		fail("Not yet implemented");
 	}
 
