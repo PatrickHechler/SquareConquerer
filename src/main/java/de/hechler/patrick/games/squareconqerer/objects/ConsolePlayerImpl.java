@@ -174,6 +174,13 @@ public class ConsolePlayerImpl implements Player, Runnable {
 						out.println("you do not own this unit: owner='" + u.owner() + "' you='" + name + "' unit='" + u + "'");
 						break;
 					}
+					if (!b.usable(u)) {
+						out.println("the building says, that it is not usable under the current conditions or with the given entety!");
+						out.println("I will ignore this, because the conditions may change when the other actions are executed.");
+						out.println("note, that the first actions also get as fist executed (fist in first out).");
+						out.println("you should check your turn using 'valid'!");
+						out.println("if you don't want to do this you can remove this action using 'actions' and 'remact'.");
+					}
 					UsingEntetyAction act = new UsingEntetyAction(u);
 					t.addAction(act);
 					break;
@@ -196,6 +203,28 @@ public class ConsolePlayerImpl implements Player, Runnable {
 					}
 					BuildingFactory build = BuildingFactory.valueOf(str.toLowerCase());
 					BuildingEntetyAction act = new BuildingEntetyAction(u, build);
+					t.addAction(act);
+					break;
+				}
+				case "act": {
+					String str = sc.next();
+					int x = Integer.parseInt(str);
+					str = sc.next();
+					int y = Integer.parseInt(str);
+					Tile tile = ms.getTile(x, y);
+					Building u = tile.getBuild();
+					if (u == null) {
+						out.println("there is no building (x=" + x + ", y=" + y + ", tile=" + tile + ")");
+						break;
+					}
+					if (!u.actable(tile)) {
+						out.println("the building says, that it is not actable under the current conditions!");
+						out.println("I will ignore this, because the conditions may change when the other actions are executed.");
+						out.println("note, that the first actions also get as fist executed (fist in first out).");
+						out.println("you should check your turn using 'valid'!");
+						out.println("if you don't want to do this you can remove this action using 'actions' and 'remact'.");
+					}
+					Action act = new ActingBuildingAction(u, x, y);
 					t.addAction(act);
 					break;
 				}
@@ -249,6 +278,7 @@ public class ConsolePlayerImpl implements Player, Runnable {
 		out.println("\t'move' [X-COORDINATE] [Y-COORDINATE] [xup | xdown | yup | ydown] to move the entety of the coordinates to the given direction");
 		out.println("\t'use' [X-COORDINATE] [Y-COORDINATE] to use with the entety of the given coordinates the building at the same tile");
 		out.println("\t'build' [X-COORDINATE] [Y-COORDINATE] [BUILDING_NAME] to build with the entety of the given coordinates a building at the same tile");
+		out.println("\t'act' [X-COORDINATE] [Y-COORDINATE] to let a building act");
 		out.println("\t\t(the building will be created, but most buildings will need to be finished with the 'use' operation)");
 		out.println("\t'buildable' to print a list of all buildable buildings");
 		out.println("\t'selfkill' [X-COORDINATE] [Y-COORDINATE] to kill the entety of the coordinates. (only works on your own entetis)");

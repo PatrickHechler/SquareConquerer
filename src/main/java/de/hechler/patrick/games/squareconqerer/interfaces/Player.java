@@ -7,6 +7,9 @@ public interface Player {
 	
 	/**
 	 * sets the {@link PlayersSquare} of this Player
+	 * 
+	 * @param mySquare
+	 *            the new {@link PlayersSquare} of the {@link Player}
 	 */
 	void setMySquare(PlayersSquare mySquare);
 	
@@ -52,3 +55,4 @@ public interface Player {
 	void invalidTurn(TurnExecutionException tee);
 	
 }
+

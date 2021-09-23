@@ -1,16 +1,34 @@
 package de.hechler.patrick.games.squareconqerer.objects;
 
-import de.hechler.patrick.games.squareconqerer.interfaces.*;
+import java.util.Map;
+
+import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionRuntimeException;
+import de.hechler.patrick.games.squareconqerer.interfaces.Building;
+import de.hechler.patrick.games.squareconqerer.interfaces.Entety;
 
 
 public class Tile {
 	
 	private Building build;
 	private Entety unit;
+	private final int x;
+	private final int y;
 	
-	public Tile() {
+	public Tile(int x, int y) {
 		this.build = null;
 		this.unit = null;
+		this.x = x;
+		this.y = y;
+	}
+	
+	
+	
+	public int getX() {
+		return x;
+	}
+	
+	public int getY() {
+		return y;
 	}
 	
 	public Building getBuild() {
@@ -50,11 +68,21 @@ public class Tile {
 		return u;
 	}
 	
-	void copy(Tile from) {
+	void copy(Tile from, Map <Object, Object> mapping) {
 		assert build == null;
 		assert unit == null;
-		this.build = from.build;
-		this.unit = from.unit;
+		if (from.build != null) {
+			this.build = from.build.clone();
+			if (null != mapping.put(from.build, this.build)) {
+				throw new InternalError("mapped a object multilple times!");
+			}
+		}
+		if (from.unit != null) {
+			this.unit = from.unit.clone();
+			if (null != mapping.put(from.unit, this.unit)) {
+				throw new InternalError("mapped a object multilple times!");
+			}
+		}
 	}
 	
 }

@@ -14,7 +14,7 @@ import de.hechler.patrick.games.squareconqerer.interfaces.*;
  * 
  * even if on one devise with the two classes there is
  * 
- * the possiblility of a war cloud or something simmilar
+ * the possibility of a war cloud or something similar
  */
 public class PlayersSquare {
 	

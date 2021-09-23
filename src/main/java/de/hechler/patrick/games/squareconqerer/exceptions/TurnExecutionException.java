@@ -1,6 +1,13 @@
 package de.hechler.patrick.games.squareconqerer.exceptions;
 
+import de.hechler.patrick.games.squareconqerer.objects.TheSquare;
+import de.hechler.patrick.games.squareconqerer.objects.Turn;
 
+/**
+ * used if an error occurs during the {@link Turn} {@link TheSquare#execute(Turn) execution}
+ * 
+ * @author Patrick
+ */
 public class TurnExecutionException extends Exception {
 	
 	/** UID */

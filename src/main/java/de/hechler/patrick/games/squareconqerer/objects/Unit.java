@@ -2,7 +2,7 @@ package de.hechler.patrick.games.squareconqerer.objects;
 
 import de.hechler.patrick.games.squareconqerer.interfaces.*;
 
-public class Unit implements Entety {
+public class Unit implements Entety, Cloneable {
 	
 	public static final int MAX_LIVES = 5;
 	
@@ -78,6 +78,17 @@ public class Unit implements Entety {
 	public void heal(int strenght) {
 		if (strenght > 0) {
 			this.lives = Math.min(strenght + this.lives, MAX_LIVES);
+		}
+	}
+	
+	@Override
+	public Unit clone() {
+		try {
+			return (Unit) super.clone();
+		} catch (CloneNotSupportedException e) {
+			Unit u = new Unit(this.owner, this.x, this.y, this.ps);
+			u.lives = this.lives;
+			return u;
 		}
 	}
 	

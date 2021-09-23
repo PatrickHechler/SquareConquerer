@@ -9,7 +9,7 @@ import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionRuntimeEx
 /**
  * {@link TheSquare} is the ultimate playground.
  * 
- * {@link TheSquare} knows everything, which happanes on {@link TheSquare},
+ * {@link TheSquare} knows everything, which happens on {@link TheSquare},
  * 
  * while {@link PlayersSquare} may know only a part of this
  * 
@@ -27,7 +27,7 @@ public class TheSquare {
 		this.tiles = new Tile[xLen][yLen];
 		for (int xi = 0; xi < xLen; xi ++ ) {
 			for (int yi = 0; yi < yLen; yi ++ ) {
-				this.tiles[xi][yi] = new Tile();
+				this.tiles[xi][yi] = new Tile(xi, yi);
 			}
 		}
 		this.rnd = new Random();
@@ -87,15 +87,16 @@ public class TheSquare {
 	
 	public TurnExecutionException isValid(Turn t) {
 		Tile[][] tiles = new Tile[this.tiles.length][this.tiles[0].length];
+		Map <Object, Object> mapping = new HashMap <>();
 		for (int i = 0; i < tiles.length; i ++ ) {
 			for (int ii = 0; ii < tiles.length; ii ++ ) {
-				tiles[i][ii] = new Tile();
-				tiles[i][ii].copy(tiles[i][ii]);
+				tiles[i][ii] = new Tile(i, ii);
+				tiles[i][ii].copy(this.tiles[i][ii], mapping);
 			}
 		}
 		TheSquare copy = new TheSquare(tiles, rnd, players, playernums, playernum);
 		try {
-			copy.execute(t);
+			copy.execute(t, mapping);
 			return null;
 		} catch (TurnExecutionException te) {
 			return te;
@@ -103,14 +104,23 @@ public class TheSquare {
 	}
 	
 	void execute(Turn turn) throws TurnExecutionException {
+		execute(turn, null);
+	}
+	
+	private void execute(Turn turn, Map <Object, Object> mapping) throws TurnExecutionException {
 		Player player = turn.getPlayer();
 		List <Action> actions = turn.getActions();
-		Map <Entety, EntetyAction> unitacts = new LinkedHashMap <>();
-		{// order actions
+		{// check actions
+			Set <Object> acts = new LinkedHashSet <>();
 			for (Action action : actions) {
 				if (action instanceof EntetyAction) {
 					EntetyAction ea = (EntetyAction) action;
-					if (unitacts.put(ea.e, ea) != null) {
+					if ( !acts.add(ea.e)) {
+						throw new TurnExecutionException("multiple actions for one unit are not allowed!");
+					}
+				} else if (action instanceof BuildingAction) {
+					BuildingAction ba = (BuildingAction) action;
+					if ( !acts.add(ba.b)) {
 						throw new TurnExecutionException("multiple actions for one unit are not allowed!");
 					}
 				} else {
@@ -120,34 +130,62 @@ public class TheSquare {
 		}
 		{// execute actions
 			try {
-				unitacts.forEach((e, action) -> {
-					if (action instanceof MoveEntetyAction) {
-						MoveEntetyAction mov = (MoveEntetyAction) action;
-						moveUnit(mov.e, mov.dir, player);
-					} else if (action instanceof SelfKillEntetyAction) {
-						SelfKillEntetyAction kill = (SelfKillEntetyAction) action;
-						kill.e.selfkill();
-					} else if (action instanceof UsingEntetyAction) {
-						UsingEntetyAction use = (UsingEntetyAction) action;
-						Tile t = this.tiles[use.e.getX()][use.e.getY()];
-						Building build = t.getBuild();
-						build.use(e);
-					} else if (action instanceof BuildingEntetyAction) {
-						BuildingEntetyAction build = (BuildingEntetyAction) action;
-						Tile t = this.tiles[build.e.getX()][build.e.getY()];
-						if (t.getBuild() != null) {
-							throw new TurnExecutionRuntimeException("there is already a building, you can't buid two buildings in one place!");
+				for (Action action : actions) {
+					if (action instanceof EntetyAction) {
+						if (action instanceof MoveEntetyAction) {
+							MoveEntetyAction mov = (MoveEntetyAction) action;
+							moveUnit(map(mapping, mov), mov.dir, player);
+						} else if (action instanceof SelfKillEntetyAction) {
+							SelfKillEntetyAction kill = (SelfKillEntetyAction) action;
+							map(mapping, kill).selfkill();
+						} else if (action instanceof UsingEntetyAction) {
+							UsingEntetyAction use = (UsingEntetyAction) action;
+							Tile t = this.tiles[map(mapping, use).getX()][map(mapping, use).getY()];
+							Building build = t.getBuild();
+							try {
+								build.use(map(mapping, use));
+							} catch (TurnExecutionException e1) {
+								throw new TurnExecutionException(e1.getMessage(), e1);
+							}
+						} else if (action instanceof BuildingEntetyAction) {
+							BuildingEntetyAction build = (BuildingEntetyAction) action;
+							Tile t = this.tiles[map(mapping, build).getX()][map(mapping, build).getY()];
+							if (t.getBuild() != null) {
+								throw new TurnExecutionException("there is already a building, you can't buid two buildings in one place!");
+							}
+							Building b = build.build.create();
+							t.setBuild(b);
+						} else {
+							throw new InternalError("unknown action class: " + action.getClass().getName() + " of action: '" + action + "'");
 						}
-						Building b = build.build.create();
-						t.setBuild(b);
+					} else if (action instanceof BuildingAction) {
+						if (action instanceof ActingBuildingAction) {
+							ActingBuildingAction act = (ActingBuildingAction) action;
+							Tile t = tiles[act.x][act.y];
+							if (t.getBuild() != map(mapping, act)) {
+								throw new TurnExecutionException("the building is not on my tile[x=" + act.x + ",y" + act.y + "]! actionbuilding='" + map(mapping, act) + "' mybuilding='"
+										+ t.getBuild() + "' mytile='" + t + "'");
+							}
+							map(mapping, act).act(t);
+						} else {
+							throw new InternalError("unknown action class: " + action.getClass().getName() + " of action: '" + action + "'");
+						}
 					} else {
 						throw new InternalError("unknown action class: " + action.getClass().getName() + " of action: '" + action + "'");
 					}
-				});
+				}
 			} catch (RuntimeException re) {
 				throw new TurnExecutionException(re.getMessage(), re);
 			}
 		}
+	}
+	
+	private Entety map(Map <Object, Object> mapping, EntetyAction ea) {
+		return mapping == null ? ea.e : (Entety) mapping.get(ea.e);
+	}
+	
+	private Building map(Map <Object, Object> mapping, BuildingAction ba) {
+		return mapping == null ? ba.b : (Building) mapping.get(ba.b);
 	}
 	
 	private boolean moveUnit(Entety u, Direction dir, Player p) throws TurnExecutionRuntimeException {
@@ -197,6 +235,7 @@ public class TheSquare {
 		}
 	}
 	
+	@Override
 	public String toString() {
 		StringBuilder build = new StringBuilder();
 		this.playernums.forEach((p, n) -> {
@@ -208,17 +247,11 @@ public class TheSquare {
 			Arrays.fill(chars, ' ');
 			maxLen = new String(chars);
 		}
-		build.append("X:     ").append(maxLen.substring(3/* len of 'X: ' */));
-		for (int x = 0; x < this.tiles[0].length; x ++ ) {
-			String xstr = String.valueOf(x);
-			build.append(xstr).append("         ".substring(xstr.length()));
-		}
-		build.append('\n');
-		for (int y = 0; y < this.tiles.length; y ++ ) {
+		for (int y = this.tiles[0].length - 1; y >= 0; y -- ) {
 			String ystr = String.valueOf(y);
 			String twoWS = "  ";
 			build.append("Y=").append(maxLen.substring(ystr.length() + 3)).append(ystr).append(':');
-			for (int x = 0; x < this.tiles[0].length; x ++ ) {
+			for (int x = 0; x < this.tiles.length; x ++ ) {
 				Building b = this.tiles[x][y].getBuild();
 				if (b == null) {
 					build.append("[---|");
@@ -236,6 +269,12 @@ public class TheSquare {
 			}
 			build.append('\n');
 		}
+		build.append("X: ").append(maxLen.substring(3/* len of 'X: ' */));
+		for (int x = 0; x < this.tiles[0].length; x ++ ) {
+			String xstr = String.valueOf(x);
+			build.append("     ".substring(xstr.length())).append(xstr).append("    ");
+		}
+		build.append('\n');
 		return build.toString();
 	}
 	
