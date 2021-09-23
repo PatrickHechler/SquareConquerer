@@ -4,6 +4,7 @@ import java.util.*;
 import de.hechler.patrick.games.squareconqerer.interfaces.*;
 import de.hechler.patrick.games.squareconqerer.enums.*;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
+import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionRuntimeException;
 
 /**
  * {@link TheSquare} is the ultimate playground.
@@ -55,7 +56,7 @@ public class TheSquare {
 		} while (tiles[x][y].getUnit() != null);
 		PlayersSquare ps = new PlayersSquare(this, p);
 		Unit u = new Unit(p, x, y, ps);
-		this.tiles[x][y].setUnit(u);
+		this.tiles[x][y].setEntety(u);
 		this.players.put(p, new PlayerData(u, ps));
 		p.setMySquare(ps);
 		this.playernums.put(p, this.playernum ++ );
@@ -73,12 +74,12 @@ public class TheSquare {
 		return tiles[0].length;
 	}
 	
-	void died(Unit u) {
+	void died(Entety u) {
 		System.out.println("called on death");
 		Tile t = tiles[u.getX()][u.getY()];
 		if (t.getUnit() == u) {
 			System.out.println("unit still there, will remove it");
-			t.remUnit();
+			t.remEntety();
 		} else {
 			System.out.println("unit not there!");
 		}
@@ -103,13 +104,13 @@ public class TheSquare {
 	
 	void execute(Turn turn) throws TurnExecutionException {
 		Player player = turn.getPlayer();
-		List <MoveUnitAction> actions = turn.getActions();
-		Map <Unit, Action> unitacts = new HashMap <>();
+		List <MoveEntetyAction> actions = turn.getActions();
+		Map <Entety, EntetyAction> unitacts = new LinkedHashMap <>();
 		{// order actions
 			for (Action action : actions) {
-				if (action instanceof MoveUnitAction) {
-					MoveUnitAction mov = (MoveUnitAction) action;
-					if (unitacts.put(mov.u, mov) != null) {
+				if (action instanceof EntetyAction) {
+					EntetyAction ea = (EntetyAction) action;
+					if (unitacts.put(ea.e, ea) != null) {
 						throw new TurnExecutionException("multiple actions for one unit are not allowed!");
 					}
 				} else {
@@ -118,26 +119,33 @@ public class TheSquare {
 			}
 		}
 		{// execute actions
-			for (Action action : unitacts.values()) {
-				if (action instanceof MoveUnitAction) {
-					MoveUnitAction mov = (MoveUnitAction) action;
-					moveUnit(mov.u, mov.dir, player);
-				} else {
-					throw new InternalError("unknown action class: " + action.getClass().getName() + " of action: '" + action + "'");
-				}
+			try {
+				unitacts.forEach((e, action) -> {
+					if (action instanceof MoveEntetyAction) {
+						MoveEntetyAction mov = (MoveEntetyAction) action;
+						moveUnit(mov.e, mov.dir, player);
+					} else if (action instanceof SelfKillEntetyAction) {
+						SelfKillEntetyAction kill = (SelfKillEntetyAction) action;
+						kill.e.selfkill();
+					} else {
+						throw new InternalError("unknown action class: " + action.getClass().getName() + " of action: '" + action + "'");
+					}
+				});
+			} catch (TurnExecutionRuntimeException re) {
+				throw new TurnExecutionException(re.getMessage(), re);
 			}
 		}
 	}
 	
-	private boolean moveUnit(Unit u, Direction dir, Player p) throws TurnExecutionException {
+	private boolean moveUnit(Entety u, Direction dir, Player p) throws TurnExecutionRuntimeException {
 		try {
-			if (u.owner != p) {
-				throw new TurnExecutionException("this is not your unit! you='" + p + "' owner='" + u.owner + "' unit='" + u + "' you='" + p + "'");
+			if (u.owner() != p) {
+				throw new TurnExecutionRuntimeException("this is not your unit! you='" + p + "' owner='" + u.owner() + "' unit='" + u + "' you='" + p + "'");
 			}
 			int x = u.getX(), y = u.getY();
 			Tile src = tiles[x][y];
 			if (src.getUnit() != u) {
-				throw new TurnExecutionException("this is not the Unit you gave me! unit=" + src.getUnit() + " your=" + u + " x=" + x + " y=" + y);
+				throw new TurnExecutionRuntimeException("this is not the Unit you gave me! unit=" + src.getUnit() + " your=" + u + " x=" + x + " y=" + y);
 			}
 			switch (dir) {
 			case xup:
@@ -156,9 +164,9 @@ public class TheSquare {
 				throw new InternalError("unknwon direction: " + dir.name());
 			}
 			Tile dst = tiles[x][y];
-			Unit de = dst.getUnit();
+			Entety de = dst.getUnit();
 			if (de != null) {
-				if (u.owner == de.owner) {
+				if (u.owner() == de.owner()) {
 					System.err.println("you attack your own unit!");
 				}
 				if (de.attacked(u)) {
@@ -166,13 +174,13 @@ public class TheSquare {
 				}
 				return false;
 			} else {
-				Unit mov = src.remUnit();
-				dst.setUnit(mov);
+				Entety mov = src.remEntety();
+				dst.setEntety(mov);
 				mov.setXY(x, y);
 				return true;
 			}
 		} catch (RuntimeException re) {
-			throw new TurnExecutionException("there was something wrong: '" + re.getMessage() + "' class: " + re.getClass().getName(), re);
+			throw new TurnExecutionRuntimeException("there was something wrong: '" + re.getMessage() + "' class: " + re.getClass().getName(), re);
 		}
 	}
 	
@@ -199,11 +207,11 @@ public class TheSquare {
 			for (int x = 0; x < this.tiles[0].length; x ++ ) {
 				Building b = this.tiles[x][y].getBuild();
 				build.append('[').append(b == null ? '-' : 'B').append('|');
-				Unit u = this.tiles[x][y].getUnit();
+				Entety u = this.tiles[x][y].getUnit();
 				if (u == null) {
 					build.append("---");
 				} else {
-					build.append(u.lives()).append('P').append(this.playernums.get(u.owner));
+					build.append(u.lives()).append('P').append(this.playernums.get(u.owner()));
 				}
 				build.append(']');
 			}

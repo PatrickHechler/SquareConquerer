@@ -38,7 +38,7 @@ public class PlayersSquare {
 		return square.getYLen();
 	}
 	
-	void died(Unit u) {
+	void died(Entety u) {
 		square.died(u);
 	}
 	

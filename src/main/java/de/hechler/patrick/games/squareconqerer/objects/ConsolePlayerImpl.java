@@ -93,7 +93,7 @@ public class ConsolePlayerImpl implements Player, Runnable {
 				help();
 				break;
 			case "actions": {
-				List <MoveUnitAction> acts = t.getActions();
+				List <MoveEntetyAction> acts = t.getActions();
 				for (int i = 0; i < acts.size(); i ++ ) {
 					out.println("act[" + i + "]=" + acts.get(i));
 				}
@@ -116,18 +116,18 @@ public class ConsolePlayerImpl implements Player, Runnable {
 					str = sc.next();
 					int y = Integer.parseInt(str);
 					Tile tile = ms.getTile(x, y);
-					Unit u = tile.getUnit();
+					Entety u = tile.getUnit();
 					str = sc.next();
 					if (u == null) {
 						out.println("there is no unit (x=" + x + ", y=" + y + ", tile=" + tile + ")");
 						break;
 					}
-					if (u.owner != this) {
-						out.println("you do not own this unit: owner='" + u.owner + "' you='" + name + "' unit='" + u + "'");
+					if (u.owner() != this) {
+						out.println("you do not own this unit: owner='" + u.owner() + "' you='" + name + "' unit='" + u + "'");
 						break;
 					}
 					Direction dir = Direction.forName(str);
-					MoveUnitAction mov = new MoveUnitAction(dir, u);
+					MoveEntetyAction mov = new MoveEntetyAction(u, dir);
 					t.addAction(mov);
 				} catch (Exception e) {
 					out.println("number err: " + e.getMessage());

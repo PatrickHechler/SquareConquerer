@@ -2,7 +2,7 @@ package de.hechler.patrick.games.squareconqerer.objects;
 
 import de.hechler.patrick.games.squareconqerer.interfaces.*;
 
-public class Unit {
+public class Unit implements Entety {
 	
 	public static final int START_LIVES = 5;
 	
@@ -20,41 +20,57 @@ public class Unit {
 		this.ps = ps;
 	}
 	
-	public boolean attacked(Unit ignore) {
+	
+	
+	
+	@Override
+	public Player owner() {
+		return owner;
+	}
+	
+	@Override
+	public boolean attacked(Entety e) {
 		this.lives -- ;
 		if (this.lives <= 0) {
 			System.out.println("I died: I=" + this);
 			this.ps.died(this);
 		}
-		if (this.lives >= ignore.lives + 2) {
+		if (this.lives >= e.lives() + 2) {
 			return true;
 		} else {
 			return false;
 		}
 	}
 	
-	public void defended(Unit ignore) {
+	@Override
+	public void defended(Entety ignore) {
 		attacked(ignore);
 	}
 	
+	@Override
 	public void selfkill() {
-		System.out.println("I died: I=" + this);
+		System.out.println("I killed myself: I=" + this);
+		this.lives = -1;
 		this.ps.died(this);
 	}
 	
-	void setXY(int x, int y) {
+	@Override
+	public void setXY(int x, int y) {
 		this.x = x;
 		this.y = y;
 	}
 	
+	@Override
 	public int getX() {
 		return this.x;
 	}
 	
+	@Override
 	public int getY() {
 		return this.y;
 	}
 	
+	@Override
 	public int lives() {
 		return this.lives;
 	}

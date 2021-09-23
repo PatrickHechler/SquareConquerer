@@ -6,7 +6,7 @@ import de.hechler.patrick.games.squareconqerer.interfaces.*;
 public class Tile {
 	
 	private Building build;
-	private Unit unit;
+	private Entety unit;
 	
 	public Tile() {
 		this.build = null;
@@ -17,7 +17,7 @@ public class Tile {
 		return build;
 	}
 	
-	public Unit getUnit() {
+	public Entety getUnit() {
 		return unit;
 	}
 	
@@ -31,7 +31,7 @@ public class Tile {
 		this.build = build;
 	}
 	
-	void setUnit(Unit unit) {
+	void setEntety(Entety unit) {
 		if (this.unit != null) {
 			throw new IllegalStateException("I have already a entety! this.unit='" + this.unit + "', unit='" + unit + "'");
 		}
@@ -41,8 +41,8 @@ public class Tile {
 		this.unit = unit;
 	}
 	
-	Unit remUnit() {
-		Unit u = this.unit;
+	Entety remEntety() {
+		Entety u = this.unit;
 		if (u == null) {
 			throw new IllegalStateException("I have no unit!");
 		}
