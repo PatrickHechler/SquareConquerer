@@ -76,41 +76,109 @@ public class ConsolePlayerImpl implements Player, Runnable {
 		this.turn = null;
 		Turn t = new Turn(this);
 		while (true) {
-			String cmd = sc.next();
-			switch (cmd.toLowerCase()) {
-			case "square":
-				out.print(ms.squareString());
-				break;
-			case "end":
-				ms.isValid(t);
-				synchronized (this) {
-					this.onTurn = false;
-					this.turn = t.makeTurn();
-					this.notifyAll();
+			try {
+				String cmd = sc.next();
+				switch (cmd.toLowerCase()) {
+				case "square":
+					out.print(ms.squareString());
+					break;
+				case "end":
+					ms.isValid(t);
+					synchronized (this) {
+						this.onTurn = false;
+						this.turn = t.makeTurn();
+						this.notifyAll();
+					}
+					return;
+				case "help":
+					help();
+					break;
+				case "actions": {
+					List <Action> acts = t.getActions();
+					for (int i = 0; i < acts.size(); i ++ ) {
+						out.println("act[" + i + "]=" + acts.get(i));
+					}
+					break;
 				}
-				return;
-			case "help":
-				help();
-				break;
-			case "actions": {
-				List <MoveEntetyAction> acts = t.getActions();
-				for (int i = 0; i < acts.size(); i ++ ) {
-					out.println("act[" + i + "]=" + acts.get(i));
+				case "remact": {
+					String str = sc.next();
+					try {
+						int num = Integer.parseInt(str);
+						t.remove(num);
+					} catch (Exception e) {
+						out.println("number err: " + e.getMessage());
+					}
+					break;
 				}
-				break;
-			}
-			case "remact": {
-				String str = sc.next();
-				try {
-					int num = Integer.parseInt(str);
-					t.remove(num);
-				} catch (Exception e) {
-					out.println("number err: " + e.getMessage());
+				case "move": {
+					try {
+						String str = sc.next();
+						int x = Integer.parseInt(str);
+						str = sc.next();
+						int y = Integer.parseInt(str);
+						Tile tile = ms.getTile(x, y);
+						Entety u = tile.getUnit();
+						str = sc.next();
+						if (u == null) {
+							out.println("there is no unit (x=" + x + ", y=" + y + ", tile=" + tile + ")");
+							break;
+						}
+						if (u.owner() != this) {
+							out.println("you do not own this unit: owner='" + u.owner() + "' you='" + name + "' unit='" + u + "'");
+							break;
+						}
+						Direction dir = Direction.valueOf(str);
+						MoveEntetyAction mov = new MoveEntetyAction(u, dir);
+						t.addAction(mov);
+					} catch (Exception e) {
+						out.println("number err: " + e.getMessage());
+					}
+					break;
 				}
-				break;
-			}
-			case "move": {
-				try {
+				case "selfkill": {
+					String str = sc.next();
+					int x = Integer.parseInt(str);
+					str = sc.next();
+					int y = Integer.parseInt(str);
+					Tile tile = ms.getTile(x, y);
+					Entety u = tile.getUnit();
+					if (u == null) {
+						out.println("there is no unit (x=" + x + ", y=" + y + ", tile=" + tile + ")");
+						break;
+					}
+					if (u.owner() != this) {
+						out.println("you do not own this unit: owner='" + u.owner() + "' you='" + name + "' unit='" + u + "'");
+						break;
+					}
+					SelfKillEntetyAction selfkill = new SelfKillEntetyAction(u);
+					t.addAction(selfkill);
+					break;
+				}
+				case "use": {
+					String str = sc.next();
+					int x = Integer.parseInt(str);
+					str = sc.next();
+					int y = Integer.parseInt(str);
+					Tile tile = ms.getTile(x, y);
+					Entety u = tile.getUnit();
+					Building b = tile.getBuild();
+					if (b == null) {
+						out.println("there is no building (x=" + x + ", y=" + y + ", tile=" + tile + ")");
+						break;
+					}
+					if (u == null) {
+						out.println("there is no unit (x=" + x + ", y=" + y + ", tile=" + tile + ")");
+						break;
+					}
+					if (u.owner() != this) {
+						out.println("you do not own this unit: owner='" + u.owner() + "' you='" + name + "' unit='" + u + "'");
+						break;
+					}
+					UsingEntetyAction act = new UsingEntetyAction(u);
+					t.addAction(act);
+					break;
+				}
+				case "build": {
 					String str = sc.next();
 					int x = Integer.parseInt(str);
 					str = sc.next();
@@ -126,27 +194,36 @@ public class ConsolePlayerImpl implements Player, Runnable {
 						out.println("you do not own this unit: owner='" + u.owner() + "' you='" + name + "' unit='" + u + "'");
 						break;
 					}
-					Direction dir = Direction.forName(str);
-					MoveEntetyAction mov = new MoveEntetyAction(u, dir);
-					t.addAction(mov);
-				} catch (Exception e) {
-					out.println("number err: " + e.getMessage());
+					BuildingFactory build = BuildingFactory.valueOf(str.toLowerCase());
+					BuildingEntetyAction act = new BuildingEntetyAction(u, build);
+					t.addAction(act);
+					break;
 				}
-				break;
-			}
-			case "valid": {
-				TurnExecutionException exep = ms.isValid(t);
-				if (exep == null) {
-					out.println("the turn is valid!");
-				} else {
-					out.println("this turn is not valid:" + exep.getMessage());
+				case "buildable": {
+					out.println("buildable buildings are:");
+					for (BuildingFactory bf : BuildingFactory.values()) {
+						out.println(bf.name());
+					}
+					break;
 				}
-				break;
-			}
-			default:
-				out.println("unknown command: " + cmd);
-				help();
-				break;
+				case "valid": {
+					TurnExecutionException exep = ms.isValid(t);
+					if (exep == null) {
+						out.println("the turn is valid!");
+					} else {
+						out.println("this turn is not valid: " + exep.getMessage());
+					}
+					break;
+				}
+				default:
+					out.println("unknown command: " + cmd);
+					help();
+					break;
+				}
+			} catch (RuntimeException e) {
+				out.println("suprising exception: " + e);
+				e.printStackTrace();
+				out.println("I will ignore the old command and continue with new commands");
 			}
 		}
 	}
@@ -169,8 +246,12 @@ public class ConsolePlayerImpl implements Player, Runnable {
 		out.println("\t'square' to print the square");
 		out.println("\t'actions' to print the actions");
 		out.println("\t'remact' [ACTION-NUMBER] to remove the action with the given number (get by 'actions')");
-		out.println("\t'move' [X-COORDINATE] [Y-COORDINATE] [xup | xdown | yup | ydown] to move the unit of the coordinates to the given direction");
-		// TODO out.println("\t'build' [X-COORDINATE] [Y-COORDINATE] to build with the unit on the coordinates a building");
+		out.println("\t'move' [X-COORDINATE] [Y-COORDINATE] [xup | xdown | yup | ydown] to move the entety of the coordinates to the given direction");
+		out.println("\t'use' [X-COORDINATE] [Y-COORDINATE] to use with the entety of the given coordinates the building at the same tile");
+		out.println("\t'build' [X-COORDINATE] [Y-COORDINATE] [BUILDING_NAME] to build with the entety of the given coordinates a building at the same tile");
+		out.println("\t\t(the building will be created, but most buildings will need to be finished with the 'use' operation)");
+		out.println("\t'buildable' to print a list of all buildable buildings");
+		out.println("\t'selfkill' [X-COORDINATE] [Y-COORDINATE] to kill the entety of the coordinates. (only works on your own entetis)");
 	}
 	
 	@Override

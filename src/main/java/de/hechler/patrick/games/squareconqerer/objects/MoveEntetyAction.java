@@ -12,4 +12,9 @@ public class MoveEntetyAction extends EntetyAction {
 		this.dir = dir;
 	}
 	
+	@Override
+	public String toString() {
+		return "MoveEntety[entety=" + e + ", dir=" + dir + "]";
+	}
+	
 }

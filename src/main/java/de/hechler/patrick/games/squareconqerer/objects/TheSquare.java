@@ -104,7 +104,7 @@ public class TheSquare {
 	
 	void execute(Turn turn) throws TurnExecutionException {
 		Player player = turn.getPlayer();
-		List <MoveEntetyAction> actions = turn.getActions();
+		List <Action> actions = turn.getActions();
 		Map <Entety, EntetyAction> unitacts = new LinkedHashMap <>();
 		{// order actions
 			for (Action action : actions) {
@@ -127,11 +127,24 @@ public class TheSquare {
 					} else if (action instanceof SelfKillEntetyAction) {
 						SelfKillEntetyAction kill = (SelfKillEntetyAction) action;
 						kill.e.selfkill();
+					} else if (action instanceof UsingEntetyAction) {
+						UsingEntetyAction use = (UsingEntetyAction) action;
+						Tile t = this.tiles[use.e.getX()][use.e.getY()];
+						Building build = t.getBuild();
+						build.use(e);
+					} else if (action instanceof BuildingEntetyAction) {
+						BuildingEntetyAction build = (BuildingEntetyAction) action;
+						Tile t = this.tiles[build.e.getX()][build.e.getY()];
+						if (t.getBuild() != null) {
+							throw new TurnExecutionRuntimeException("there is already a building, you can't buid two buildings in one place!");
+						}
+						Building b = build.build.create();
+						t.setBuild(b);
 					} else {
 						throw new InternalError("unknown action class: " + action.getClass().getName() + " of action: '" + action + "'");
 					}
 				});
-			} catch (TurnExecutionRuntimeException re) {
+			} catch (RuntimeException re) {
 				throw new TurnExecutionException(re.getMessage(), re);
 			}
 		}
@@ -195,18 +208,24 @@ public class TheSquare {
 			Arrays.fill(chars, ' ');
 			maxLen = new String(chars);
 		}
-		build.append("X:   ").append(maxLen.substring(3/* len of 'X: ' */));
+		build.append("X:     ").append(maxLen.substring(3/* len of 'X: ' */));
 		for (int x = 0; x < this.tiles[0].length; x ++ ) {
 			String xstr = String.valueOf(x);
-			build.append(xstr).append("       ".substring(xstr.length()));
+			build.append(xstr).append("         ".substring(xstr.length()));
 		}
 		build.append('\n');
 		for (int y = 0; y < this.tiles.length; y ++ ) {
 			String ystr = String.valueOf(y);
+			String twoWS = "  ";
 			build.append("Y=").append(maxLen.substring(ystr.length() + 3)).append(ystr).append(':');
 			for (int x = 0; x < this.tiles[0].length; x ++ ) {
 				Building b = this.tiles[x][y].getBuild();
-				build.append('[').append(b == null ? '-' : 'B').append('|');
+				if (b == null) {
+					build.append("[---|");
+				} else {
+					String buildLenStr = String.valueOf(b.buildLen());
+					build.append('[').append(b.factory().letter()).append(buildLenStr).append(twoWS.substring(buildLenStr.length())).append('|');
+				}
 				Entety u = this.tiles[x][y].getUnit();
 				if (u == null) {
 					build.append("---");

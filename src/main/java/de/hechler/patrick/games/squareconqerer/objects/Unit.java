@@ -4,7 +4,7 @@ import de.hechler.patrick.games.squareconqerer.interfaces.*;
 
 public class Unit implements Entety {
 	
-	public static final int START_LIVES = 5;
+	public static final int MAX_LIVES = 5;
 	
 	public final Player owner;
 	private int lives;
@@ -14,12 +14,11 @@ public class Unit implements Entety {
 	
 	public Unit(Player owner, int x, int y, PlayersSquare ps) {
 		this.owner = owner;
-		this.lives = START_LIVES;
+		this.lives = MAX_LIVES;
 		this.x = x;
 		this.y = y;
 		this.ps = ps;
 	}
-	
 	
 	
 	
@@ -73,6 +72,13 @@ public class Unit implements Entety {
 	@Override
 	public int lives() {
 		return this.lives;
+	}
+	
+	@Override
+	public void heal(int strenght) {
+		if (strenght > 0) {
+			this.lives = Math.min(strenght + this.lives, MAX_LIVES);
+		}
 	}
 	
 	@Override

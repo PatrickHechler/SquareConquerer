@@ -2,15 +2,15 @@ package de.hechler.patrick.games.squareconqerer.objects;
 
 import de.hechler.patrick.games.squareconqerer.interfaces.Entety;
 
-public class SelfKillEntetyAction extends EntetyAction {
+public class UsingEntetyAction extends EntetyAction {
 	
-	public SelfKillEntetyAction(Entety e) {
+	public UsingEntetyAction(Entety e) {
 		super(e);
 	}
 	
 	@Override
 	public String toString() {
-		return "Selfkill[entety=" + super.e + "]";
+		return "UsingEntetyAction[entety=" + e + "]";
 	}
 	
 }

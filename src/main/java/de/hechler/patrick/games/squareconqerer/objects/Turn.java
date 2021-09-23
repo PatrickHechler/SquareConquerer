@@ -5,26 +5,26 @@ import java.util.*;
 
 public class Turn {
 	
-	private final List <MoveEntetyAction> actions;
+	private final List <Action> actions;
 	private final Player player;
 	
 	public Turn(Player player) {
 		this(player, new ArrayList <>());
 	}
 	
-	private Turn(Player player, List <MoveEntetyAction> actions) {
+	private Turn(Player player, List <Action> actions) {
 		this.player = player;
 		this.actions = actions;
 	}
 	
-	public void addAction(MoveEntetyAction act) {
+	public void addAction(Action act) {
 		this.actions.add(act);
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List <MoveEntetyAction> getActions() {
+	public List <Action> getActions() {
 		if (actions instanceof ArrayList <?>) {
-			return (ArrayList <MoveEntetyAction>) ((ArrayList <MoveEntetyAction>) this.actions).clone();
+			return (ArrayList <Action>) ((ArrayList <Action>) this.actions).clone();
 		} else {
 			return actions;// this is a product of mekeTurn() which returns an unmodifiable list, so no clone is needed
 		}

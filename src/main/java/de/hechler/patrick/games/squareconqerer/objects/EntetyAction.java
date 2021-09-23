@@ -6,7 +6,7 @@ public abstract class EntetyAction extends Action {
 	
 	final Entety e;
 
-	protected EntetyAction(Entety e) {
+	public EntetyAction(Entety e) {
 		this.e = e;
 	}
 	

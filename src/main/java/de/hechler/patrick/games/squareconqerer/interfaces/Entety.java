@@ -18,4 +18,6 @@ public interface Entety {
 	
 	int lives();
 	
+	void heal(int strenght);
+	
 }
