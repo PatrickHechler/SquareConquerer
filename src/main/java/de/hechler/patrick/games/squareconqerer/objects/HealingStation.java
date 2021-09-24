@@ -44,19 +44,18 @@ public class HealingStation implements Building, Cloneable {
 	}
 	
 	@Override
-	public HealingStation clone() {
-		try {
-			return (HealingStation) super.clone();
-		} catch (CloneNotSupportedException e) {
-			HealingStation hs = new HealingStation();
-			hs.build = this.build;
-			return hs;
-		}
+	public String toString() {
+		return "HealingStation[build=" + this.build + "]";
 	}
 	
 	@Override
-	public String toString() {
-		return "HealingStation[build=" + build + "]";
+	public Object snapshot() {
+		return Integer.valueOf(this.build);
+	}
+	
+	@Override
+	public void rollback(Object sn) {
+		this.build = ((Integer) sn).intValue();
 	}
 	
 }

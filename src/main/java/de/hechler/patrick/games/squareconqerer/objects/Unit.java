@@ -2,7 +2,7 @@ package de.hechler.patrick.games.squareconqerer.objects;
 
 import de.hechler.patrick.games.squareconqerer.interfaces.*;
 
-public class Unit implements Entety, Cloneable {
+public class Unit implements Entety {
 	
 	public static final int MAX_LIVES = 5;
 	
@@ -82,19 +82,38 @@ public class Unit implements Entety, Cloneable {
 	}
 	
 	@Override
-	public Unit clone() {
-		try {
-			return (Unit) super.clone();
-		} catch (CloneNotSupportedException e) {
-			Unit u = new Unit(this.owner, this.x, this.y, this.ps);
-			u.lives = this.lives;
-			return u;
-		}
+	public String toString() {
+		return "Unit[owner=" + owner + ", lives=" + lives + ", (x=" + x + "|y=" + y + ")]";
 	}
 	
 	@Override
-	public String toString() {
-		return "Unit[owner=" + owner + ", lives=" + lives + ", (x=" + x + "|y=" + y + ")]";
+	public Object snapshot() {
+		return new USnapshot(this.lives, this.ps, this.x, this.y);
+	}
+	
+	@Override
+	public void rollback(Object sn) {
+		USnapshot s = (USnapshot) sn;
+		this.lives = s.lives;
+		this.ps = s.ps;
+		this.x = s.x;
+		this.y = s.y;
+	}
+	
+	private static final class USnapshot {
+		
+		private final int lives;
+		private final PlayersSquare ps;
+		private final int x;
+		private final int y;
+		
+		public USnapshot(int lives, PlayersSquare ps, int x, int y) {
+			this.lives = lives;
+			this.ps = ps;
+			this.x = x;
+			this.y = y;
+		}
+		
 	}
 	
 }

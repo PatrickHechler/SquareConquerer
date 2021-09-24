@@ -1,6 +1,8 @@
 package de.hechler.patrick.games.squareconqerer.interfaces;
 
-public interface Entety {
+import de.hechler.patrick.zeugs.interfaces.Position2D;
+
+public interface Entety extends Position2D {
 	
 	Player owner();
 	
@@ -20,8 +22,10 @@ public interface Entety {
 	
 	void heal(int strenght);
 
-	Entety clone();
-	
 	String toString();
+	
+	Object snapshot();
+	
+	void rollback(Object sn);
 	
 }

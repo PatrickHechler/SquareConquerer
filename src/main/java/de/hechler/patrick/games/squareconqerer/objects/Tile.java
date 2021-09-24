@@ -1,8 +1,5 @@
 package de.hechler.patrick.games.squareconqerer.objects;
 
-import java.util.Map;
-
-import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionRuntimeException;
 import de.hechler.patrick.games.squareconqerer.interfaces.Building;
 import de.hechler.patrick.games.squareconqerer.interfaces.Entety;
 
@@ -35,7 +32,7 @@ public class Tile {
 		return build;
 	}
 	
-	public Entety getUnit() {
+	public Entety getEntety() {
 		return unit;
 	}
 	
@@ -59,30 +56,20 @@ public class Tile {
 		this.unit = unit;
 	}
 	
-	Entety remEntety() {
-		Entety u = this.unit;
-		if (u == null) {
-			throw new IllegalStateException("I have no unit!");
+	void remEntety(Entety check) {
+		Entety e = this.unit;
+		if (e != check) {
+			throw new IllegalStateException("I do not have this unit: my='" + e + "' given='" + check + "'");
 		}
 		this.unit = null;
-		return u;
 	}
 	
-	void copy(Tile from, Map <Object, Object> mapping) {
-		assert build == null;
-		assert unit == null;
-		if (from.build != null) {
-			this.build = from.build.clone();
-			if (null != mapping.put(from.build, this.build)) {
-				throw new InternalError("mapped a object multilple times!");
-			}
+	void remBuild(Building check) {
+		Building b = this.build;
+		if (b != check) {
+			throw new IllegalStateException("I do not have this building: my='" + b + "' given='" + check + "'");
 		}
-		if (from.unit != null) {
-			this.unit = from.unit.clone();
-			if (null != mapping.put(from.unit, this.unit)) {
-				throw new InternalError("mapped a object multilple times!");
-			}
-		}
+		this.build = null;
 	}
 	
 }

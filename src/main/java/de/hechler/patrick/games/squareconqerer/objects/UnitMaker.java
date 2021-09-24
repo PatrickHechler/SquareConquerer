@@ -53,15 +53,27 @@ public class UnitMaker implements Building, Cloneable {
 	}
 	
 	@Override
-	public UnitMaker clone() {
-		try {
-			return (UnitMaker) super.clone();
-		} catch (CloneNotSupportedException e) {
-			UnitMaker um = new UnitMaker();
-			um.build = this.build;
-			um.last = this.last;
-			return um;
+	public Object snapshot() {
+		return new UMSnapshot(this.last, this.build);
+	}
+	
+	@Override
+	public void rollback(Object sn) {
+		UMSnapshot s = (UMSnapshot) sn;
+		this.last = s.last;
+		this.build = s.build;
+	}
+	
+	private static final class UMSnapshot {
+		
+		private final Player last;
+		private final int build;
+		
+		public UMSnapshot(Player last, int build) {
+			this.last = last;
+			this.build = build;
 		}
+		
 	}
 	
 }

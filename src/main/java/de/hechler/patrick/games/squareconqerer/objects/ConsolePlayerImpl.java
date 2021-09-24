@@ -117,7 +117,7 @@ public class ConsolePlayerImpl implements Player, Runnable {
 						str = sc.next();
 						int y = Integer.parseInt(str);
 						Tile tile = ms.getTile(x, y);
-						Entety u = tile.getUnit();
+						Entety u = tile.getEntety();
 						str = sc.next();
 						if (u == null) {
 							out.println("there is no unit (x=" + x + ", y=" + y + ", tile=" + tile + ")");
@@ -141,7 +141,7 @@ public class ConsolePlayerImpl implements Player, Runnable {
 					str = sc.next();
 					int y = Integer.parseInt(str);
 					Tile tile = ms.getTile(x, y);
-					Entety u = tile.getUnit();
+					Entety u = tile.getEntety();
 					if (u == null) {
 						out.println("there is no unit (x=" + x + ", y=" + y + ", tile=" + tile + ")");
 						break;
@@ -160,7 +160,7 @@ public class ConsolePlayerImpl implements Player, Runnable {
 					str = sc.next();
 					int y = Integer.parseInt(str);
 					Tile tile = ms.getTile(x, y);
-					Entety u = tile.getUnit();
+					Entety u = tile.getEntety();
 					Building b = tile.getBuild();
 					if (b == null) {
 						out.println("there is no building (x=" + x + ", y=" + y + ", tile=" + tile + ")");
@@ -191,7 +191,7 @@ public class ConsolePlayerImpl implements Player, Runnable {
 					str = sc.next();
 					int y = Integer.parseInt(str);
 					Tile tile = ms.getTile(x, y);
-					Entety u = tile.getUnit();
+					Entety u = tile.getEntety();
 					str = sc.next();
 					if (u == null) {
 						out.println("there is no unit (x=" + x + ", y=" + y + ", tile=" + tile + ")");

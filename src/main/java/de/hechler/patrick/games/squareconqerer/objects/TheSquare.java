@@ -2,6 +2,8 @@ package de.hechler.patrick.games.squareconqerer.objects;
 
 import java.util.*;
 import de.hechler.patrick.games.squareconqerer.interfaces.*;
+import de.hechler.patrick.zeugs.interfaces.Position2D;
+import de.hechler.patrick.zeugs.objects.Position2DImpl;
 import de.hechler.patrick.games.squareconqerer.enums.*;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionRuntimeException;
@@ -21,6 +23,7 @@ public class TheSquare {
 	private final Random rnd;
 	private final Map <Player, PlayerData> players;
 	private final Map <Player, Integer> playernums;
+	private final Map <Building, Position2D> buildings;
 	private int playernum;
 	
 	public TheSquare(int xLen, int yLen) {
@@ -33,15 +36,8 @@ public class TheSquare {
 		this.rnd = new Random();
 		this.players = new HashMap <>();
 		this.playernums = new LinkedHashMap <>();
+		this.buildings = new HashMap <>();
 		this.playernum = 0;
-	}
-	
-	private TheSquare(Tile[][] tiles, Random rnd, Map <Player, PlayerData> players, Map <Player, Integer> playernums, int playernum) {
-		this.tiles = tiles;
-		this.rnd = rnd;
-		this.players = players;
-		this.playernums = playernums;
-		this.playernum = playernum;
 	}
 	
 	public void initPlayer(Player p) {
@@ -53,7 +49,7 @@ public class TheSquare {
 			// avoid the borders, so the player has some place
 			x = rnd.nextInt(tiles.length - 2) + 1;
 			y = rnd.nextInt(tiles[0].length - 2) + 1;
-		} while (tiles[x][y].getUnit() != null);
+		} while (tiles[x][y].getEntety() != null);
 		PlayersSquare ps = new PlayersSquare(this, p);
 		Unit u = new Unit(p, x, y, ps);
 		this.tiles[x][y].setEntety(u);
@@ -77,37 +73,89 @@ public class TheSquare {
 	void died(Entety u) {
 		System.out.println("called on death");
 		Tile t = tiles[u.getX()][u.getY()];
-		if (t.getUnit() == u) {
+		if (t.getEntety() != null) {
 			System.out.println("unit still there, will remove it");
-			t.remEntety();
+			t.remEntety(u);
 		} else {
 			System.out.println("unit not there!");
 		}
 	}
 	
 	public TurnExecutionException isValid(Turn t) {
-		Tile[][] tiles = new Tile[this.tiles.length][this.tiles[0].length];
-		Map <Object, Object> mapping = new HashMap <>();
-		for (int i = 0; i < tiles.length; i ++ ) {
-			for (int ii = 0; ii < tiles.length; ii ++ ) {
-				tiles[i][ii] = new Tile(i, ii);
-				tiles[i][ii].copy(this.tiles[i][ii], mapping);
-			}
-		}
-		TheSquare copy = new TheSquare(tiles, rnd, players, playernums, playernum);
+		Snapshot sn = snapshot();
+		TurnExecutionException te;
 		try {
-			copy.execute(t, mapping);
+			execute0(t);
+			te = null;
+		} catch (TurnExecutionException tee) {
+			te = tee;
+		}
+		rollback(sn);
+		return te;
+	}
+	
+	private void rollback(Snapshot sn) {
+		this.buildings.forEach((b,p) -> this.tiles[p.getX()][p.getY()].remBuild(b));
+		sn.buildings.forEach((b, s) -> {
+			this.buildings.put(b, s.pos);
+			b.rollback(s.sn);
+		});
+		this.players.forEach((p,pd) -> pd.units.forEach(e -> this.tiles[e.getX()][e.getY()].remEntety(e)));
+		sn.entetys.forEach((p, d) -> {
+			PlayerData pd = this.players.get(p);
+			d.forEach((e, s) -> {
+				pd.units.add(e);
+				this.tiles[s.pos.getX()][s.pos.getY()].setEntety(e);
+				e.rollback(s.sn);
+			});
+		});
+	}
+	
+	private Snapshot snapshot() {
+		Snapshot sn = new Snapshot();
+		this.buildings.forEach((b, p) -> sn.buildings.put(b, new Snapshot.SNObj(p, b.snapshot())));
+		this.players.forEach((p, d) -> {
+			Map <Entety, Snapshot.SNObj> m = new HashMap <>();
+			d.units.forEach(u -> {
+				Position2DImpl pos = new Position2DImpl(u.getX(), u.getY());
+				m.put(u, new Snapshot.SNObj(pos, u.snapshot()));
+			});
+		});
+		return sn;
+	}
+	
+	private static class Snapshot {
+		
+		final Map <Player, Map <Entety, SNObj>> entetys = new HashMap <>();
+		final Map <Building, SNObj> buildings = new HashMap <>();
+		
+		private static class SNObj {
+			
+			final Position2D pos;
+			final Object sn;
+			
+			
+			public SNObj(Position2D pos, Object sn) {
+				this.pos = pos;
+				this.sn = sn;
+			}
+			
+		}
+		
+	}
+	
+	TurnExecutionException execute(Turn turn) {
+		Snapshot sn = snapshot();
+		try {
+			execute0(turn);
 			return null;
-		} catch (TurnExecutionException te) {
-			return te;
+		} catch (TurnExecutionException e) {
+			rollback(sn);
+			return e;
 		}
 	}
 	
-	void execute(Turn turn) throws TurnExecutionException {
-		execute(turn, null);
-	}
-	
-	private void execute(Turn turn, Map <Object, Object> mapping) throws TurnExecutionException {
+	private void execute0(Turn turn) throws TurnExecutionException {
 		Player player = turn.getPlayer();
 		List <Action> actions = turn.getActions();
 		{// check actions
@@ -134,22 +182,22 @@ public class TheSquare {
 					if (action instanceof EntetyAction) {
 						if (action instanceof MoveEntetyAction) {
 							MoveEntetyAction mov = (MoveEntetyAction) action;
-							moveUnit(map(mapping, mov), mov.dir, player);
+							moveUnit(mov.e, mov.dir, player);
 						} else if (action instanceof SelfKillEntetyAction) {
 							SelfKillEntetyAction kill = (SelfKillEntetyAction) action;
-							map(mapping, kill).selfkill();
+							kill.e.selfkill();
 						} else if (action instanceof UsingEntetyAction) {
 							UsingEntetyAction use = (UsingEntetyAction) action;
-							Tile t = this.tiles[map(mapping, use).getX()][map(mapping, use).getY()];
+							Tile t = this.tiles[use.e.getX()][use.e.getY()];
 							Building build = t.getBuild();
 							try {
-								build.use(map(mapping, use));
+								build.use(use.e);
 							} catch (TurnExecutionException e1) {
 								throw new TurnExecutionException(e1.getMessage(), e1);
 							}
 						} else if (action instanceof BuildingEntetyAction) {
 							BuildingEntetyAction build = (BuildingEntetyAction) action;
-							Tile t = this.tiles[map(mapping, build).getX()][map(mapping, build).getY()];
+							Tile t = this.tiles[build.e.getX()][build.e.getY()];
 							if (t.getBuild() != null) {
 								throw new TurnExecutionException("there is already a building, you can't buid two buildings in one place!");
 							}
@@ -162,11 +210,11 @@ public class TheSquare {
 						if (action instanceof ActingBuildingAction) {
 							ActingBuildingAction act = (ActingBuildingAction) action;
 							Tile t = tiles[act.x][act.y];
-							if (t.getBuild() != map(mapping, act)) {
-								throw new TurnExecutionException("the building is not on my tile[x=" + act.x + ",y" + act.y + "]! actionbuilding='" + map(mapping, act) + "' mybuilding='"
+							if (t.getBuild() != act.b) {
+								throw new TurnExecutionException("the building is not on my tile[x=" + act.x + ",y" + act.y + "]! actionbuilding='" + act.b + "' mybuilding='"
 										+ t.getBuild() + "' mytile='" + t + "'");
 							}
-							map(mapping, act).act(t);
+							act.b.act(t);
 						} else {
 							throw new InternalError("unknown action class: " + action.getClass().getName() + " of action: '" + action + "'");
 						}
@@ -180,14 +228,6 @@ public class TheSquare {
 		}
 	}
 	
-	private Entety map(Map <Object, Object> mapping, EntetyAction ea) {
-		return mapping == null ? ea.e : (Entety) mapping.get(ea.e);
-	}
-	
-	private Building map(Map <Object, Object> mapping, BuildingAction ba) {
-		return mapping == null ? ba.b : (Building) mapping.get(ba.b);
-	}
-	
 	private boolean moveUnit(Entety u, Direction dir, Player p) throws TurnExecutionRuntimeException {
 		try {
 			if (u.owner() != p) {
@@ -195,8 +235,8 @@ public class TheSquare {
 			}
 			int x = u.getX(), y = u.getY();
 			Tile src = tiles[x][y];
-			if (src.getUnit() != u) {
-				throw new TurnExecutionRuntimeException("this is not the Unit you gave me! unit=" + src.getUnit() + " your=" + u + " x=" + x + " y=" + y);
+			if (src.getEntety() != u) {
+				throw new TurnExecutionRuntimeException("this is not the Unit you gave me! unit=" + src.getEntety() + " your=" + u + " x=" + x + " y=" + y);
 			}
 			switch (dir) {
 			case xup:
@@ -215,8 +255,9 @@ public class TheSquare {
 				throw new InternalError("unknwon direction: " + dir.name());
 			}
 			Tile dst = tiles[x][y];
-			Entety de = dst.getUnit();
+			Entety de = dst.getEntety();
 			if (de != null) {
+				assert u == src.getEntety();
 				if (u.owner() == de.owner()) {
 					System.err.println("you attack your own unit!");
 				}
@@ -225,9 +266,9 @@ public class TheSquare {
 				}
 				return false;
 			} else {
-				Entety mov = src.remEntety();
-				dst.setEntety(mov);
-				mov.setXY(x, y);
+				src.remEntety(u);
+				dst.setEntety(u);
+				u.setXY(x, y);
 				return true;
 			}
 		} catch (RuntimeException re) {
@@ -259,7 +300,7 @@ public class TheSquare {
 					String buildLenStr = String.valueOf(b.buildLen());
 					build.append('[').append(b.factory().letter()).append(buildLenStr).append(twoWS.substring(buildLenStr.length())).append('|');
 				}
-				Entety u = this.tiles[x][y].getUnit();
+				Entety u = this.tiles[x][y].getEntety();
 				if (u == null) {
 					build.append("---");
 				} else {
@@ -280,16 +321,13 @@ public class TheSquare {
 	
 	private static class PlayerData {
 		
-		private final Set <Unit> units;
-		@SuppressWarnings("unused")
-		private final Set <Building> builds;
+		private final Set <Entety> units;
 		@SuppressWarnings("unused")
 		private final PlayersSquare square;
 		
 		private PlayerData(Unit start, PlayersSquare ps) {
 			this.units = new HashSet <>();
 			this.units.add(start);
-			this.builds = new HashSet <>();
 			this.square = ps;
 		}
 		

@@ -17,9 +17,11 @@ public interface Building {
 	BuildingFactory factory();
 	
 	int buildLen();
-
-	Building clone();
 	
 	String toString();
+	
+	Object snapshot();
+	
+	void rollback(Object sn);
 	
 }
