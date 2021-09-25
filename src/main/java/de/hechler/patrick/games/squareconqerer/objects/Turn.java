@@ -21,6 +21,10 @@ public class Turn {
 		this.actions.add(act);
 	}
 	
+	public void addActions(Turn from) {
+		actions.addAll(from.actions);
+	}
+	
 	@SuppressWarnings("unchecked")
 	public List <Action> getActions() {
 		if (actions instanceof ArrayList <?>) {

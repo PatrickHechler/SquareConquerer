@@ -42,6 +42,8 @@ public class PlayersSquare {
 		square.died(u);
 	}
 	
+	
+	
 	@Override
 	public String toString() {
 		return "playersSquare[player={" + player + "}; square={\n" + square.toString() + "}]";
@@ -53,6 +55,10 @@ public class PlayersSquare {
 
 	public TurnExecutionException isValid(Turn t) {
 		return square.isValid(t);
+	}
+
+	public TurnExecutionException simulate(Turn t, Runnable r) {
+		return square.simulate(t, r);
 	}
 	
 }

@@ -1,5 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.objects;
 
+import java.util.function.BiConsumer;
+
 import de.hechler.patrick.games.squareconqerer.interfaces.Building;
 import de.hechler.patrick.games.squareconqerer.interfaces.Entety;
 
@@ -36,6 +38,11 @@ public class Tile {
 		return unit;
 	}
 	
+	//@formatter:off
+	static BiConsumer <Tile, Building> bc = (a, b) -> {};
+	static BiConsumer <Tile, Entety> ec = (a, b) -> {};
+	//@formatter:on
+	
 	void setBuild(Building build) {
 		if (this.build != null) {
 			throw new IllegalStateException("I have already a building! this.build='" + this.build + "', build='" + build + "'");
@@ -43,6 +50,7 @@ public class Tile {
 		if (build == null) {
 			throw new IllegalArgumentException("No null argument allowed!");
 		}
+		Tile.bc.accept(this, build);
 		this.build = build;
 	}
 	
@@ -53,6 +61,7 @@ public class Tile {
 		if (unit == null) {
 			throw new IllegalArgumentException("No null argument allowed!");
 		}
+		Tile.ec.accept(this, unit);
 		this.unit = unit;
 	}
 	

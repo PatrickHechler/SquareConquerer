@@ -9,14 +9,15 @@ import de.hechler.patrick.games.squareconqerer.interfaces.Player;
 
 public class UnitMaker implements Building, Cloneable {
 	
-	private int build = 5;
+	private int build = 4;
 	private Player last;
 	
 	@Override
 	public void use(Entety e) throws TurnExecutionException {
-		if (build > 0) {
-			build -- ;
+		if (e.owner() != last) {
 			last = e.owner();
+		} else if (build > 0) {
+			build -- ;
 		} else {
 			throw new TurnExecutionException("the unit maker does not allow using units when full builded!");
 		}
@@ -32,14 +33,14 @@ public class UnitMaker implements Building, Cloneable {
 		if (build > 0) {
 			throw new TurnExecutionException("the unit maker is not fully builded!");
 		} else {
-			t.setEntety(new Unit(last, t.getX(), t.getY(), last.getMySquare()));
+			t.setEntety(new Unit(last, t.getX(), t.getY()));
 			build = 3;
 		}
 	}
 	
 	@Override
 	public boolean actable(Tile pos) {
-		return build <= 0;
+		return build <= 0 && pos.getEntety() == null;
 	}
 	
 	@Override
@@ -74,6 +75,16 @@ public class UnitMaker implements Building, Cloneable {
 			this.build = build;
 		}
 		
+	}
+	
+	@Override
+	public char infoLetter() {
+		return last == null ? '-' : last.letter();
+	}
+	
+	@Override
+	public String toString() {
+		return "UnitMaker [build=" + build + ", last=" + last + "]";
 	}
 	
 }

@@ -6,22 +6,14 @@ public interface Entety extends Position2D {
 	
 	Player owner();
 	
-	boolean attacked(Entety e);
-	
-	void defended(Entety e);
-	
 	void selfkill();
-	
-	void setXY(int x, int y);
-	
-	int getX();
-	
-	int getY();
 	
 	int lives();
 	
+	void damage(int strengh);
+	
 	void heal(int strenght);
-
+	
 	String toString();
 	
 	Object snapshot();

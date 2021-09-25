@@ -54,5 +54,21 @@ public interface Player {
 	 */
 	void invalidTurn(TurnExecutionException tee);
 	
+	/**
+	 * returns the letter of this {@link Player} set by {@link #letter(char)}
+	 * 
+	 * @return the letter of this {@link Player} set by {@link #letter(char)}
+	 * @see #letter(char)
+	 */
+	char letter();
+	
+	/**
+	 * sets the letter of this {@link Player}
+	 * 
+	 * @param c
+	 *            the new letter of this {@link Player}
+	 */
+	void letter(char c);
+	
 }
 

@@ -5,27 +5,28 @@ import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException
 import de.hechler.patrick.games.squareconqerer.interfaces.Building;
 import de.hechler.patrick.games.squareconqerer.interfaces.Entety;
 
-public class HealingStation implements Building, Cloneable {
+
+public class ArrowTower implements Building {
 	
-	private int build = 2;
+	private int build = 3;
 	
 	@Override
-	public void use(Entety e) {
+	public void use(Entety e) throws TurnExecutionException {
 		if (build > 0) {
 			build -- ;
 		} else {
-			e.heal(1);
+			throw new TurnExecutionException("this building will be automaticly used if an entety gets attaced on this field!");
 		}
 	}
 	
 	@Override
 	public boolean usable(Entety e) {
-		return true;
+		return build > 0;
 	}
 	
 	@Override
 	public void act(Tile pos) throws TurnExecutionException {
-		throw new TurnExecutionException("a healing station can't act on it's own!");
+		throw new TurnExecutionException("this building can't act");
 	}
 	
 	@Override
@@ -35,17 +36,12 @@ public class HealingStation implements Building, Cloneable {
 	
 	@Override
 	public BuildingFactory factory() {
-		return BuildingFactory.healing_station;
+		return BuildingFactory.arrow_tower;
 	}
 	
 	@Override
 	public int buildLen() {
 		return build;
-	}
-	
-	@Override
-	public String toString() {
-		return "HealingStation[build=" + this.build + "]";
 	}
 	
 	@Override

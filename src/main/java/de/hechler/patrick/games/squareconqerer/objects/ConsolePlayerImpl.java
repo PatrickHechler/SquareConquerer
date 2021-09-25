@@ -16,23 +16,27 @@ public class ConsolePlayerImpl implements Player, Runnable {
 	private PlayersSquare ms;
 	private volatile boolean onTurn = false;
 	private volatile Turn turn = null;
+	private char letter;
+	private Turn last = new Turn(this);
+	private boolean createThreads;
 	
-	private ConsolePlayerImpl(String name, Scanner sc, PrintStream out) {
+	private ConsolePlayerImpl(String name, Scanner sc, PrintStream out, boolean createThreads) {
 		this.name = name;
 		this.sc = sc;
 		this.out = out;
+		this.createThreads = createThreads;
 	}
 	
 	public static ConsolePlayerImpl create() {
-		return create(ConsolePlayerImpl.scan, System.out);
+		return create(ConsolePlayerImpl.scan, System.out, false);
 	}
 	
-	public static ConsolePlayerImpl create(Scanner sc, PrintStream out) {
+	public static ConsolePlayerImpl create(Scanner sc, PrintStream out, boolean createThreads) {
 		out.print("enter your name: ");
 		String name = ConsolePlayerImpl.scan.nextLine();
 		out.println("your name is '" + name + "'");
 		out.println(name + " wait until it is your turn.");
-		return new ConsolePlayerImpl(name, scan, out);
+		return new ConsolePlayerImpl(name, scan, out, createThreads);
 	}
 	
 	
@@ -50,7 +54,11 @@ public class ConsolePlayerImpl implements Player, Runnable {
 	@Override
 	public void startTurn() {
 		onTurn = true;
-		new Thread(this).start();
+		if (createThreads) {
+			new Thread(this).start();
+		} else {
+			run();
+		}
 	}
 	
 	@Override
@@ -82,11 +90,21 @@ public class ConsolePlayerImpl implements Player, Runnable {
 				case "square":
 					out.print(ms.squareString());
 					break;
+				case "simulate": {
+					TurnExecutionException exep = ms.simulate(t, () -> out.print(ms.squareString()));
+					if (exep != null) {
+						exep.printStackTrace(out);
+					}
+					break;
+				}
+				case "redo":
+					t.addActions(this.last);
+					out.println("you chould check before you end your turn");
+					break;
 				case "end":
-					ms.isValid(t);
 					synchronized (this) {
 						this.onTurn = false;
-						this.turn = t.makeTurn();
+						this.last = this.turn = t.makeTurn();
 						this.notifyAll();
 					}
 					return;
@@ -108,6 +126,34 @@ public class ConsolePlayerImpl implements Player, Runnable {
 					} catch (Exception e) {
 						out.println("number err: " + e.getMessage());
 					}
+					break;
+				}
+				case "attack": {
+					String str = sc.next();
+					int ax = Integer.parseInt(str);
+					str = sc.next();
+					int ay = Integer.parseInt(str);
+					str = sc.next();
+					int dx = Integer.parseInt(str);
+					str = sc.next();
+					int dy = Integer.parseInt(str);
+					Tile tile = ms.getTile(ax, ay);
+					Entety a = tile.getEntety();
+					if (a == null) {
+						out.print("I couldd not find your attacking entity! x=" + ax + " y=" + ay);
+					}
+					tile = ms.getTile(dx, dy);
+					Entety d = tile.getEntety();
+					if (d == null) {
+						out.print("I couldd not find the defending entity! x=" + dx + " y=" + dy);
+					}
+					if (d.owner() == this) {
+						out.print("are you sure? do you relly want to attack your own entety?");
+						out.print("if this was a mistake you can remove this actions using 'actions' and 'remact'");
+					}
+					out.println("attacking distance: " + (Math.abs(ax - dx) + Math.abs(ay - dy)));
+					AttackEntetyAction act = new AttackEntetyAction(a, d);
+					t.addAction(act);
 					break;
 				}
 				case "move": {
@@ -174,7 +220,7 @@ public class ConsolePlayerImpl implements Player, Runnable {
 						out.println("you do not own this unit: owner='" + u.owner() + "' you='" + name + "' unit='" + u + "'");
 						break;
 					}
-					if (!b.usable(u)) {
+					if ( !b.usable(u)) {
 						out.println("the building says, that it is not usable under the current conditions or with the given entety!");
 						out.println("I will ignore this, because the conditions may change when the other actions are executed.");
 						out.println("note, that the first actions also get as fist executed (fist in first out).");
@@ -217,7 +263,7 @@ public class ConsolePlayerImpl implements Player, Runnable {
 						out.println("there is no building (x=" + x + ", y=" + y + ", tile=" + tile + ")");
 						break;
 					}
-					if (!u.actable(tile)) {
+					if ( !u.actable(tile)) {
 						out.println("the building says, that it is not actable under the current conditions!");
 						out.println("I will ignore this, because the conditions may change when the other actions are executed.");
 						out.println("note, that the first actions also get as fist executed (fist in first out).");
@@ -271,11 +317,17 @@ public class ConsolePlayerImpl implements Player, Runnable {
 		out.println("cmds: ");
 		out.println("\t'help' to print this");
 		out.println("\t'end' to end the turn");
+		out.println("\t'redo' to add the actions of the last turn to the actions of this turn");
 		out.println("\t'valid' to check if the current turn is valid (without executing it)");
 		out.println("\t'square' to print the square");
+		out.println("\t'simulate' to print the square inside of a simulation of the new turn (or a stack trace of the exception)");
 		out.println("\t'actions' to print the actions");
 		out.println("\t'remact' [ACTION-NUMBER] to remove the action with the given number (get by 'actions')");
 		out.println("\t'move' [X-COORDINATE] [Y-COORDINATE] [xup | xdown | yup | ydown] to move the entety of the coordinates to the given direction");
+		out.println("\t'attack' [MY-X] [MY-Y] [TARGET-X] [TARGET-Y] to attack with your entety on the myX/-Y coordinates the entety on the targetX/-Y coordinates");
+		out.println("\t\tby default the attack range is one distance=((myX-targetx)+(myY-targetY))");
+		out.println("\t\tnote, that the attacked entiyty may defend itself");
+		out.println("\t\twhen the target entety is yours the attack will still be valid");
 		out.println("\t'use' [X-COORDINATE] [Y-COORDINATE] to use with the entety of the given coordinates the building at the same tile");
 		out.println("\t'build' [X-COORDINATE] [Y-COORDINATE] [BUILDING_NAME] to build with the entety of the given coordinates a building at the same tile");
 		out.println("\t'act' [X-COORDINATE] [Y-COORDINATE] to let a building act");
@@ -287,6 +339,16 @@ public class ConsolePlayerImpl implements Player, Runnable {
 	@Override
 	public String toString() {
 		return name;
+	}
+	
+	@Override
+	public char letter() {
+		return letter;
+	}
+	
+	@Override
+	public void letter(char c) {
+		letter = c;
 	}
 	
 }

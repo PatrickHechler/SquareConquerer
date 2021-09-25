@@ -20,6 +20,8 @@ public interface Building {
 	
 	String toString();
 	
+	char infoLetter();
+	
 	Object snapshot();
 	
 	void rollback(Object sn);
