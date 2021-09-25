@@ -294,7 +294,7 @@ public class TheSquare {
 			if (attack.owner() != p) {
 				throw new TurnExecutionException("this is not your unit! you='" + p + "' owner='" + attack.owner() + "' unit='" + attack + "'");
 			}
-			if (attack.owner() == defend.owner()) {
+			if (p == defend.owner()) {
 				System.err.println("you attack your own unit!");
 			}
 			int ax = attack.getX(), ay = attack.getY(), dx = defend.getX(), dy = defend.getY();
