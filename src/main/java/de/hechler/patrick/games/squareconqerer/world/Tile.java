@@ -28,7 +28,11 @@ public sealed class Tile permits RemoteTile {
 	public Icon icon(int width, int height) {
 		if (icon == null || icon.getIconWidth() != width || icon.getIconHeight() != height) {
 			BufferedImage img = EnumImages.immage(type, resource);
-			icon = new ImageIcon(img.getScaledInstance(width, height, Image.SCALE_FAST));
+			if (img.getWidth() != width || img.getHeight() != height) {
+				icon = new ImageIcon(img.getScaledInstance(width, height, Image.SCALE_FAST));
+			} else {
+				icon = new ImageIcon(img);
+			}
 		}
 		return icon;
 	}

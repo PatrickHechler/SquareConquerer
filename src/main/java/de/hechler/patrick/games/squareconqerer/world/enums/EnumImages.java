@@ -11,7 +11,23 @@ import de.hechler.patrick.games.squareconqerer.Settings;
 
 public class EnumImages {
 	
+	private static BufferedImage[][] imgs;
+	
 	public static BufferedImage immage(TileType tile, ResourceType res) {
+		if (imgs == null) {
+			imgs = new BufferedImage[TileType.count()][];
+		}
+		int to = tile.ordinal();
+		BufferedImage[] arr = imgs[to];
+		if (arr == null) {
+			arr = new BufferedImage[ResourceType.count()];
+			imgs[to] = arr;
+		}
+		int ro = res.ordinal();
+		BufferedImage result = arr[ro];
+		if (result != null) {
+			return result;
+		}
 		boolean       shr = Settings.highResolution();
 		BufferedImage img = immage(shr, tile);
 		BufferedImage b   = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
@@ -20,6 +36,7 @@ public class EnumImages {
 		BufferedImage ri = immage(shr, res);
 		g.drawImage(ri, 0, 0, null);
 		g.dispose();
+		arr[ro] = b;
 		return b;
 	}
 	

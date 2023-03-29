@@ -15,8 +15,8 @@ public class DefaultUserPlacer implements UserPlacer {
 	}
 	
 	@Override
-	public UserWorld apply(User t) {
-		return new UserWorld(world, t);
+	public UserWorld apply(User t, int usrModCnt) {
+		return new UserWorld(world, t, usrModCnt);
 	}
-	
+
 }

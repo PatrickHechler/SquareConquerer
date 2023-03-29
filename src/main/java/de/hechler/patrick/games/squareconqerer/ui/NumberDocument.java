@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer.gui;
+package de.hechler.patrick.games.squareconqerer.ui;
 
 import java.util.ConcurrentModificationException;
 import java.util.regex.Matcher;

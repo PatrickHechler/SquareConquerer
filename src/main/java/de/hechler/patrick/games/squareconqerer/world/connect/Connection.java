@@ -1,5 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.world.connect;
 
+import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
+
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
@@ -25,7 +27,7 @@ import javax.crypto.CipherOutputStream;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
-import de.hechler.patrick.games.squareconqerer.interfaces.ThrowConsumer;
+import de.hechler.patrick.games.squareconqerer.interfaces.ThrowBiConsumer;
 import de.hechler.patrick.games.squareconqerer.objects.IgnoreCloseInputStream;
 import de.hechler.patrick.games.squareconqerer.objects.IgnoreCloseOutputStream;
 import de.hechler.patrick.games.squareconqerer.objects.InvalidInputStream;
@@ -38,11 +40,13 @@ public class Connection implements Closeable {
 	public final User          usr;
 	private final InputStream  in;
 	private final OutputStream out;
+	private final int          modCnt;
 	
-	private Connection(User usr, InputStream in, OutputStream out) {
-		this.usr = usr;
-		this.in  = in;
-		this.out = out;
+	private Connection(User usr, InputStream in, OutputStream out, int modCnt) {
+		this.usr    = usr;
+		this.in     = in;
+		this.out    = out;
+		this.modCnt = modCnt;
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				close();
@@ -62,12 +66,19 @@ public class Connection implements Closeable {
 			readArr(in, salt);
 			byte[] initVec = new byte[16];
 			readArr(in, initVec);
-			CipherInputStream cin = usr.decrypt(in, salt, initVec);
+			CipherInputStream cin = null;
 			try {
+				int mc;
+				synchronized (usr) {
+					cin = usr.decrypt(in, salt, initVec);
+					mc  = usr.modifyCount();
+				}
 				readInt(cin, ClientConnect.FS_CONECT);
-				return new Connection(usr, cin, InvalidOutputStream.INSTANCE);
+				return new Connection(usr, cin, InvalidOutputStream.INSTANCE, mc);
 			} catch (Throwable t) {
-				cin.close();
+				if (cin != null) {
+					cin.close();
+				}
 				throw t;
 			}
 		}
@@ -80,42 +91,43 @@ public class Connection implements Closeable {
 			byte[] initVec = new byte[16];
 			usr.fillRandom(initVec);
 			out.write(initVec);
-			CipherOutputStream cout = usr.encrypt(out, salt, initVec);
+			CipherOutputStream cout = null;
 			try {
+				int mc;
+				synchronized (usr) {
+					cout = usr.encrypt(out, salt, initVec);
+					mc   = usr.modifyCount();
+				}
 				writeInt(cout, ClientConnect.FS_CONECT);
-				return new Connection(usr, InvalidInputStream.INSTANCE, cout);
+				return new Connection(usr, InvalidInputStream.INSTANCE, cout, mc);
 			} catch (Throwable t) {
-				cout.close();
+				if (cout != null) {
+					cout.close();
+				}
 				throw t;
 			}
 		}
 		
 	}
 	
-	public Connection acceptReadOnly(InputStream in) throws IOException {
-		return OneWayAccept.acceptReadOnly(in, usr);
-	}
-	
-	public Connection acceptWriteOnly(OutputStream out) throws IOException {
-		return OneWayAccept.acceptWriteOnly(out, usr);
-	}
-	
 	public static class ServerAccept {
 		
 		private ServerAccept() {}
 		
-		public static void accept(ThrowConsumer<Connection, IOException> action, RootUser root, char[] serverPW) throws IOException {
+		public static void accept(ThrowBiConsumer<Connection, Socket, IOException> action, RootUser root, char[] serverPW) throws IOException {
 			accept(DEFAULT_PORT, action, root, serverPW);
 		}
 		
-		public static void accept(int port, ThrowConsumer<Connection, IOException> action, RootUser root, char[] serverPW) throws IOException {
+		public static void accept(int port, ThrowBiConsumer<Connection, Socket, IOException> action, RootUser root, char[] serverPW)
+				throws IOException {
 			try (ServerSocket ss = new ServerSocket(port)) {
 				System.err.println("[Connect.ServerAccept]: accept connections at " + ss.getInetAddress() + " : " + ss.getLocalPort());
 				accept(ss, root, action, serverPW);
 			}
 		}
 		
-		public static void accept(ServerSocket ss, RootUser root, ThrowConsumer<Connection, IOException> action, char[] serverPW) throws IOException {
+		public static void accept(ServerSocket ss, RootUser root, ThrowBiConsumer<Connection, Socket, IOException> action, char[] serverPW)
+				throws IOException {
 			List<Socket> soks = new ArrayList<>();
 			IOException  err;
 			try {
@@ -124,9 +136,9 @@ public class Connection implements Closeable {
 					try {
 						Socket sok = ss.accept();
 						soks.add(sok);
-						Thread.startVirtualThread(() -> {
+						threadBuilder().start(() -> {
 							try {
-								action.accept(accept(sok, root, serverPW));
+								action.accept(accept(sok, root, serverPW), sok);
 							} catch (IOException e) {
 								try {
 									sok.close();
@@ -163,7 +175,13 @@ public class Connection implements Closeable {
 		public static Connection accept(Socket sok, RootUser root, char[] serverPW) throws IOException {
 			InputStream  in  = sok.getInputStream();
 			OutputStream out = sok.getOutputStream();
-			return accept(in, out, root, serverPW);
+			try {
+				return accept(in, out, root, serverPW);
+			} catch (Throwable t) {
+				in.close();
+				out.close();
+				throw t;
+			}
 		}
 		
 		public static Connection accept(InputStream in, OutputStream out, RootUser root, char[] serverPW) throws IOException {
@@ -204,15 +222,25 @@ public class Connection implements Closeable {
 				out.close();
 				return null;
 			}
-			CipherInputStream  cin  = usr.decrypt(in, salt, initVec);
-			CipherOutputStream cout = usr.encrypt(out, salt, initVec);
+			CipherInputStream  cin  = null;
+			CipherOutputStream cout = null;
 			try {
+				int mc;
+				synchronized (usr) {
+					cin  = usr.decrypt(in, salt, initVec);
+					cout = usr.encrypt(out, salt, initVec);
+					mc   = usr.modifyCount();
+				}
 				writeInt(cout, ClientConnect.FS_CONECT);
 				readInt(cin, ClientConnect.FC_CONECT);
-				return new Connection(usr, cin, cout);
+				return new Connection(usr, cin, cout, mc);
 			} catch (Throwable t) {
-				cin.close();
-				cout.close();
+				if (cin != null) {
+					cin.close();
+				}
+				if (cout != null) {
+					cout.close();
+				}
 				throw t;
 			}
 		}
@@ -247,9 +275,10 @@ public class Connection implements Closeable {
 				byte[] pwUTF8 = new byte[readInt(tcin)];
 				readArr(tcin, pwUTF8);
 				CharBuffer buf = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(pwUTF8));
+				for (int i = 0; i < pwUTF8.length; i++) { pwUTF8[i] = 0; }
 				pw = new char[buf.limit()];
 				buf.get(pw);
-				for (int i = 0; i < pwUTF8.length; i++) { pwUTF8[i] = 0; } for (int i = 0; i < pw.length; i++) { buf.put(i, '\0'); }
+				for (int i = 0; i < pw.length; i++) { buf.put(i, '\0'); }
 				root.fillRandom(initVecHalf);
 				tcout.write(initVecHalf);
 				System.arraycopy(initVecHalf, 0, initVec, 0, 8);
@@ -268,7 +297,7 @@ public class Connection implements Closeable {
 				User   usr  = root.add(name, pw);
 				writeInt(cout, ClientConnect.FS_CONECT);
 				readInt(cin, ClientConnect.FC_CONECT);
-				return new Connection(usr, cin, cout);
+				return new Connection(usr, cin, cout, User.startModCnt());
 			} catch (Throwable t) {
 				cin.close();
 				cout.close();
@@ -408,18 +437,28 @@ public class Connection implements Closeable {
 				tcin.close(); // close the cipher, but not the backing stream
 				tcout.close();
 			}
-			CipherInputStream  cin  = usr.decrypt(in, salt, initVec);
-			CipherOutputStream cout = usr.encrypt(out, salt, initVec);
+			CipherInputStream  cin  = null;
+			CipherOutputStream cout = null;
 			try {
+				int mc;
+				synchronized (usr) {
+					cin  = usr.decrypt(in, salt, initVec);
+					cout = usr.encrypt(out, salt, initVec);
+					mc   = usr.modifyCount();
+				}
 				readInt(cin, SUB_NEW);
 				writeInt(cout, SUB_NEW);
 				writeString(cout, usr.name());
 				readInt(cin, FS_CONECT);
 				writeInt(cout, FC_CONECT);
-				return new Connection(usr, cin, cout);
+				return new Connection(usr, cin, cout, mc);
 			} catch (Throwable t) {
-				cin.close();
-				cout.close();
+				if (cin != null) {
+					cin.close();
+				}
+				if (cout != null) {
+					cout.close();
+				}
 				throw t;
 			}
 		}
@@ -464,19 +503,33 @@ public class Connection implements Closeable {
 			byte[] userArr = usr.name().getBytes(StandardCharsets.UTF_8);
 			writeInt(out, userArr.length);
 			out.write(userArr);
-			CipherInputStream  cin  = usr.decrypt(in, salt, initVec);
-			CipherOutputStream cout = usr.encrypt(out, salt, initVec);
+			CipherInputStream  cin  = null;
+			CipherOutputStream cout = null;
 			try {
+				int mc;
+				synchronized (usr) {
+					cin  = usr.decrypt(in, salt, initVec);
+					cout = usr.encrypt(out, salt, initVec);
+					mc   = usr.modifyCount();
+				}
 				readInt(cin, FS_CONECT);
 				writeInt(cout, FC_CONECT);
-				return new Connection(usr, cin, cout);
+				return new Connection(usr, cin, cout, mc);
 			} catch (Throwable t) {
-				cin.close();
-				cout.close();
+				if (cin != null) {
+					cin.close();
+				}
+				if (cout != null) {
+					cout.close();
+				}
 				throw t;
 			}
 		}
 		
+	}
+	
+	public int modCnt() {
+		return modCnt;
 	}
 	
 	public int readInt() throws IOException {

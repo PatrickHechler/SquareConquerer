@@ -90,4 +90,8 @@ public class Settings {
 		setProp(ICON_SIZE, value);
 	}
 	
+	public static Thread.Builder threadBuilder() {
+		return Thread.ofVirtual();
+	}
+	
 }

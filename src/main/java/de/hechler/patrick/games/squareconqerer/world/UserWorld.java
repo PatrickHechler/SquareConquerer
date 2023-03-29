@@ -6,12 +6,13 @@ public class UserWorld implements World {
 	
 	private final World world;
 	private final User  usr;
-	private final int   modCnt;
+	public final int    modCnt;
 	
-	public UserWorld(World world, User usr) {
+	public UserWorld(World world, User usr, int modCnt) {
 		this.world  = world;
 		this.usr    = usr;
-		this.modCnt = usr.modCnt();
+		this.modCnt = modCnt;
+		usr.checkModCnt(modCnt);
 	}
 	
 	@Override

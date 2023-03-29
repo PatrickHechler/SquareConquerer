@@ -1,4 +1,6 @@
-package de.hechler.patrick.games.squareconqerer.gui;
+package de.hechler.patrick.games.squareconqerer.ui;
+
+import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
 import java.awt.ComponentOrientation;
 import java.awt.Dialog.ModalityType;
@@ -37,6 +39,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.ToolTipManager;
 import javax.swing.WindowConstants;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
@@ -55,8 +58,6 @@ import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
 
 public class SquareConquererGUI {
 	
-	private static final Thread.Builder THREAD_BUILDER = Thread.ofPlatform();
-	
 	private World world;
 	
 	private JFrame      frame;
@@ -73,10 +74,20 @@ public class SquareConquererGUI {
 		this.world = world;
 	}
 	
+	public void load(boolean initialVisible, Thread t) {
+		if (frame != null) {
+			throw new IllegalStateException("already loaded");
+		} // I don't need a second method for that
+		if (ensureGUIThread(() -> load(initialVisible))) {
+			return;
+		}
+		serverThread = t;
+		load(initialVisible);
+	}
+	
 	public void load(boolean initialVisible) {
 		if (frame != null) {
-			frame.setVisible(initialVisible);
-			return;
+			throw new IllegalStateException("already loaded");
 		} // I don't need a second method for that
 		if (ensureGUIThread(() -> load(initialVisible))) {
 			return;
@@ -201,7 +212,7 @@ public class SquareConquererGUI {
 					return;
 				}
 				
-				THREAD_BUILDER.start(() -> {
+				threadBuilder().start(() -> {
 					root.remove(root.get(name));
 					SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(frame, "the user '" + name + "' was successfully deleted",
 							"user DELETED", JOptionPane.INFORMATION_MESSAGE));
@@ -283,7 +294,7 @@ public class SquareConquererGUI {
 			serverThread = null;
 			st.interrupt();
 			serverMenu.remove(closeItem);
-			THREAD_BUILDER.start(() -> {
+			threadBuilder().start(() -> {
 				try {
 					st.join();
 				} catch (InterruptedException e1) {
@@ -330,12 +341,15 @@ public class SquareConquererGUI {
 				try {
 					int          port = portDoc.getNumber();
 					ServerSocket ss   = new ServerSocket(port);
-					serverThread = THREAD_BUILDER.start(() -> {
+					serverThread = threadBuilder().start(() -> {
 						try {
 							RootWorld rw   = (RootWorld) world;
 							RootUser  root = rw.user();
-							Connection.ServerAccept.accept(ss, root, conn -> {
-								UserWorld userWorld = rw.of(conn.usr);
+							Connection.ServerAccept.accept(ss, root, (conn, sok) -> {
+								threadBuilder().start(
+										() -> JOptionPane.showMessageDialog(frame, "'" + conn.usr.name() + "' logged in from " + sok.getInetAddress(),
+												"remote log in", JOptionPane.INFORMATION_MESSAGE));
+								UserWorld userWorld = rw.of(conn.usr, conn.modCnt());
 								OpenWorld openWorld = new OpenWorld(conn, userWorld);
 								openWorld.execute();
 							}, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
@@ -393,7 +407,7 @@ public class SquareConquererGUI {
 			int result = fc.showOpenDialog(frame);
 			if (result == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
-				THREAD_BUILDER.start(() -> {
+				threadBuilder().start(() -> {
 					User usr = world.user();
 					try (FileInputStream in = new FileInputStream(file); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 						RootUser root = usr.rootClone();
@@ -465,6 +479,8 @@ public class SquareConquererGUI {
 	}
 	
 	private void reload(Runnable ufh, boolean reaload) {
+		ToolTipManager.sharedInstance().setInitialDelay(500);
+		
 		JPanel panel = new JPanel();
 		int    mul   = Settings.iconSize();
 		int    xlen  = world.xlen();
@@ -655,7 +671,7 @@ public class SquareConquererGUI {
 	
 	private static boolean ensureNotGUIThread(Runnable r) {
 		if (SwingUtilities.isEventDispatchThread()) {
-			THREAD_BUILDER.start(r);
+			threadBuilder().start(r);
 			return true;
 		}
 		return false;

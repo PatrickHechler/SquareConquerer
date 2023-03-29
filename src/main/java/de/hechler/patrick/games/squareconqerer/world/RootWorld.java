@@ -46,13 +46,18 @@ public class RootWorld implements World {
 		return tiles[x][y];
 	}
 	
-	public UserWorld of(User usr) {
+	public synchronized UserWorld of(User usr, int usrModCnt) {
 		if (usr == root) {
 			throw new IllegalArgumentException("the root has no user world");
 		} else if (usr != root.get(usr.name())) {
 			throw new AssertionError("the user is not from my root");
 		} else {
-			return subWorlds.computeIfAbsent(usr, placer);
+			return subWorlds.compute(usr, (u, uw) -> {
+				if (uw != null && u.modifyCount() == uw.modCnt) {
+					return uw;
+				}
+				return placer.apply(usr, usrModCnt);
+			});
 		}
 	}
 	
@@ -90,6 +95,12 @@ public class RootWorld implements World {
 			}
 			this.usr   = usr;
 			this.tiles = new Tile[xlen][ylen];
+			this.rnd   = rnd;
+		}
+		
+		private Builder(RootUser usr, Tile[][] tiles, Random rnd) {
+			this.usr   = usr;
+			this.tiles = tiles;
 			this.rnd   = rnd;
 		}
 		
@@ -134,6 +145,26 @@ public class RootWorld implements World {
 		
 		@Override
 		public Tile tile(int x, int y) {
+			if (tiles[x][y] == null) {
+				tiles[x][y] = new Tile(TileType.NOT_EXPLORED, ResourceType.NONE);
+			}
+			return tiles[x][y];
+		}
+		
+		/**
+		 * returns the tile at the given position
+		 * <p>
+		 * the difference between {@link #tile(int, int)} and {@link #get(int, int)} is,
+		 * that this method returns <code>null</code>, if the tile is not set, while
+		 * {@link #tile(int, int)} creates a new non explored tile without resource in
+		 * this case
+		 * 
+		 * @param x the x coordinate
+		 * @param y the y coordinate
+		 * 
+		 * @return
+		 */
+		public Tile get(int x, int y) {
 			return tiles[x][y];
 		}
 		
@@ -166,15 +197,19 @@ public class RootWorld implements World {
 			tiles[x][y] = new Tile(t, r);
 		}
 		
-		public RootWorld create() {
+		public void set(int x, int y, Tile t) {
+			tiles[x][y] = t;
+		}
+		
+		public RootWorld create() throws IllegalStateException, NullPointerException {
 			return create(usr, this.tiles);
 		}
 		
-		public static RootWorld create(RootUser root, Tile[][] tiles) {
+		public static RootWorld create(RootUser root, Tile[][] tiles) throws IllegalStateException, NullPointerException {
 			return create(root, tiles, null);
 		}
 		
-		public static RootWorld create(RootUser root, Tile[][] tiles, UserPlacer placer) {
+		public static RootWorld create(RootUser root, Tile[][] tiles, UserPlacer placer) throws IllegalStateException, NullPointerException {
 			Tile[][] copy = tiles.clone();
 			for (int x = 0; x < copy.length; x++) {
 				Tile[] ts = copy[x].clone();
@@ -195,6 +230,20 @@ public class RootWorld implements World {
 				}
 			}
 			return new RootWorld(root, copy, placer);
+		}
+		
+		public static Builder createBuilder(RootUser root, Tile[][] tiles) {
+			return createBuilder(root, tiles, new Random());
+		}
+		
+		public static Builder createBuilder(RootUser root, Tile[][] tiles, Random rnd) {
+			Tile[][] copy = tiles.clone();
+			for (int x = 0; x < copy.length; x++) {
+				if (copy[x].length != copy[0].length) {
+					throw new IllegalStateException("the world has the have an rectangular form!");
+				} // only enforce an rectangular form for the builder
+			}
+			return new Builder(root, tiles, rnd);
 		}
 		
 	}

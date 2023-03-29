@@ -74,6 +74,10 @@ public class RemoteWorld implements World {
 		return ylen;
 	}
 	
+	public boolean loadedBounds() {
+		return xlen != 0;
+	}
+	
 	@Override
 	public Tile tile(int x, int y) {
 		if (x < 0 || y < 0) {

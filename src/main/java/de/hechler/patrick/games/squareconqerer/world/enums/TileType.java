@@ -29,6 +29,10 @@ public enum TileType {
 		return VALS[oridinal];
 	}
 	
+	public static int count() {
+		return VALS.length;
+	}
+	
 	volatile BufferedImage resource;
 	volatile boolean       resolution;
 	

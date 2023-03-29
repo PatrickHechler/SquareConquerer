@@ -39,6 +39,14 @@ public sealed class User implements Closeable {
 		this.s = s;
 	}
 	
+	public static int startModCnt() {
+		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != Connection.ServerAccept.class) {
+			throw new UnsupportedOperationException("this is an intern method");
+		}
+		return 0;
+	}
+	
 	/**
 	 * this is an intern method, calling it from any extern class will result in an
 	 * {@link UnsupportedOperationException}
@@ -50,16 +58,21 @@ public sealed class User implements Closeable {
 	public synchronized char[] pw() throws UnsupportedOperationException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ClientConnect.class) {
-			throw new UnsupportedOperationException("the password needs to be protected!");
+			throw new UnsupportedOperationException("this is an intern method");
 		}
 		return s._pw;
 	}
 	
-	public synchronized int modCnt() {
+	public synchronized int modifyCount() throws UnsupportedOperationException {
+		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != Connection.ServerAccept.class && caller != Connection.OneWayAccept.class && caller != RootWorld.class
+				&& caller != Connection.ClientConnect.class) {
+			throw new UnsupportedOperationException("this is an intern method");
+		}
 		return modCnt;
 	}
 	
-	public synchronized void checkModCnt(int cnt) {
+	public synchronized void checkModCnt(int cnt) throws UnsupportedOperationException {
 		if (modCnt != cnt) {
 			throw new IllegalStateException("this user has been set to invalid (changed password/deleted/whatever)");
 		}
@@ -69,6 +82,13 @@ public sealed class User implements Closeable {
 	
 	public synchronized RootUser rootClone() {
 		Secret0 s0 = new Secret0(RootWorld.ROOT_NAME, s._pw.clone());
+		return new RootUser(s0);
+	}
+	
+	public synchronized RootUser makeRoot() {
+		Secret0 s0 = new Secret0(RootWorld.ROOT_NAME, s._pw);
+		this.s = null;
+		this.modCnt++;
 		return new RootUser(s0);
 	}
 	
@@ -146,6 +166,7 @@ public sealed class User implements Closeable {
 	
 	public static final class RootUser extends User {
 		
+		private volatile int               maxUsers   = Integer.MAX_VALUE;
 		private volatile Map<String, User> otherUsers = new HashMap<>();
 		
 		public RootUser(Secret0 s) {
@@ -168,6 +189,17 @@ public sealed class User implements Closeable {
 			otherUsers = null;
 		}
 		
+		public synchronized void maxUsers(int maxUsers) {
+			if (maxUsers < 0) {
+				throw new IllegalArgumentException("negative number for max users");
+			}
+			this.maxUsers = maxUsers;
+		}
+		
+		public synchronized int maxUsers() {
+			return this.maxUsers;
+		}
+		
 		public synchronized User get(String user) {
 			User usr = otherUsers.get(user);
 			if (usr != null) {
@@ -180,8 +212,11 @@ public sealed class User implements Closeable {
 		}
 		
 		public synchronized User add(String user, char[] pw) {
-			Map<String, User> ou  = otherUsers;
-			User              usr = ou.get(user);
+			Map<String, User> ou = otherUsers;
+			if (maxUsers - 1 <= ou.size()) {
+				throw new IllegalStateException("max amount of users reached");
+			}
+			User usr = ou.get(user);
 			if (usr != null || RootWorld.ROOT_NAME.equals(user)) {
 				throw new IllegalArgumentException("there is already an user with that name");
 			}
@@ -285,7 +320,9 @@ public sealed class User implements Closeable {
 	
 	private static record Secret0(String name, char[] _pw) {
 		
-		private Secret0 {
+		private Secret0
+		
+		{
 			if (name == null || _pw == null) {
 				throw new NullPointerException("user or pw is null");
 			}
