@@ -16,6 +16,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.ToolTipManager;
 import javax.swing.WindowConstants;
 
 import de.hechler.patrick.games.squareconqerer.User;
@@ -29,6 +30,8 @@ import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
 public class SquareConquererStart {
 	
 	public static void main(String[] args) {
+		ToolTipManager.sharedInstance().setInitialDelay(500);
+		
 		JFrame frame = new JFrame("Square Conquerer");
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		JPanel panel = new JPanel();

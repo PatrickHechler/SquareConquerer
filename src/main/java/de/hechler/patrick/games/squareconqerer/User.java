@@ -39,7 +39,23 @@ public sealed class User implements Closeable {
 		this.s = s;
 	}
 	
-	public int modCnt() {
+	/**
+	 * this is an intern method, calling it from any extern class will result in an
+	 * {@link UnsupportedOperationException}
+	 * 
+	 * @return the password array of this user
+	 * 
+	 * @throws UnsupportedOperationException if the caller is not valid
+	 */
+	public synchronized char[] pw() throws UnsupportedOperationException {
+		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != Connection.ClientConnect.class) {
+			throw new UnsupportedOperationException("the password needs to be protected!");
+		}
+		return s._pw;
+	}
+	
+	public synchronized int modCnt() {
 		return modCnt;
 	}
 	
@@ -269,12 +285,10 @@ public sealed class User implements Closeable {
 	
 	private static record Secret0(String name, char[] _pw) {
 		
-		private Secret0(String name, char[] _pw) {
+		private Secret0 {
 			if (name == null || _pw == null) {
 				throw new NullPointerException("user or pw is null");
 			}
-			this.name = name;
-			this._pw  = _pw;
 		}
 		
 		@SuppressWarnings({ "static-method", "unused" })

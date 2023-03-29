@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.ClosedByInterruptException;
@@ -118,21 +119,28 @@ public class Connection implements Closeable {
 			List<Socket> soks = new ArrayList<>();
 			IOException  err;
 			try {
+				ss.setSoTimeout(250);
 				while (true) {
-					Socket sok = ss.accept();
-					soks.add(sok);
-					Thread.startVirtualThread(() -> {
-						try {
-							action.accept(accept(sok, root, serverPW));
-						} catch (IOException e) {
+					try {
+						Socket sok = ss.accept();
+						soks.add(sok);
+						Thread.startVirtualThread(() -> {
 							try {
-								sok.close();
-							} catch (IOException e1) {
-								e1.printStackTrace();
+								action.accept(accept(sok, root, serverPW));
+							} catch (IOException e) {
+								try {
+									sok.close();
+								} catch (IOException e1) {
+									e1.printStackTrace();
+								}
+								e.printStackTrace();
 							}
-							e.printStackTrace();
+						});
+					} catch (SocketTimeoutException timeout) {
+						if (Thread.interrupted()) {
+							throw new ClosedByInterruptException();
 						}
-					});
+					}
 				}
 			} catch (ClosedByInterruptException | EOFException e) {
 				err = e;
@@ -232,20 +240,20 @@ public class Connection implements Closeable {
 				readInt(tcin, ClientConnect.C_CONECT);
 				writeInt(tcout, ClientConnect.S_CONECT);
 				root.fillRandom(saltHalf);
-				out.write(saltHalf);
+				tcout.write(saltHalf);
 				System.arraycopy(saltHalf, 0, salt, 0, 32);
-				readArr(in, saltHalf);
-				System.arraycopy(saltHalf, 0, salt, 21, 32);
+				readArr(tcin, saltHalf);
+				System.arraycopy(saltHalf, 0, salt, 32, 32);
 				byte[] pwUTF8 = new byte[readInt(tcin)];
 				readArr(tcin, pwUTF8);
 				CharBuffer buf = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(pwUTF8));
 				pw = new char[buf.limit()];
 				buf.get(pw);
-				for (int i = 0; i < pw.length; i++) { buf.put(i, '\0'); }
+				for (int i = 0; i < pwUTF8.length; i++) { pwUTF8[i] = 0; } for (int i = 0; i < pw.length; i++) { buf.put(i, '\0'); }
 				root.fillRandom(initVecHalf);
-				out.write(initVecHalf);
+				tcout.write(initVecHalf);
 				System.arraycopy(initVecHalf, 0, initVec, 0, 8);
-				readArr(in, initVecHalf);
+				readArr(tcin, initVecHalf);
 				System.arraycopy(initVecHalf, 0, initVec, 8, 8);
 			} finally {
 				tcin.close();
@@ -378,7 +386,7 @@ public class Connection implements Closeable {
 				usr.fillRandom(saltHalf);
 				tcout.write(saltHalf);
 				System.arraycopy(saltHalf, 0, salt, 32, 32);
-				ByteBuffer buf = StandardCharsets.UTF_8.encode(CharBuffer.wrap(serverPW));
+				ByteBuffer buf = StandardCharsets.UTF_8.encode(CharBuffer.wrap(usr.pw()));
 				int        len = buf.limit();
 				writeInt(tcout, len);
 				if (buf.hasArray()) {
@@ -454,10 +462,7 @@ public class Connection implements Closeable {
 			out.write(initVecHalf);
 			System.arraycopy(initVecHalf, 0, initVec, 8, 8);
 			byte[] userArr = usr.name().getBytes(StandardCharsets.UTF_8);
-			if (userArr.length > 0xFF) {
-				throw new IllegalArgumentException("username is too long: max 255 UTF-8 encoded bytes (len=" + userArr.length + ')');
-			}
-			out.write(userArr.length);
+			writeInt(out, userArr.length);
 			out.write(userArr);
 			CipherInputStream  cin  = usr.decrypt(in, salt, initVec);
 			CipherOutputStream cout = usr.encrypt(out, salt, initVec);

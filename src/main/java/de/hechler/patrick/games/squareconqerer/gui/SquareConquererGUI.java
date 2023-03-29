@@ -10,7 +10,6 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -38,7 +37,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.ToolTipManager;
 import javax.swing.WindowConstants;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
@@ -77,13 +75,12 @@ public class SquareConquererGUI {
 	
 	public void load(boolean initialVisible) {
 		if (frame != null) {
+			frame.setVisible(initialVisible);
 			return;
 		} // I don't need a second method for that
 		if (ensureGUIThread(() -> load(initialVisible))) {
 			return;
 		}
-		
-		ToolTipManager.sharedInstance().setInitialDelay(1000);
 		
 		frame = new JFrame(world.user().name());
 		initMenu();
@@ -343,7 +340,7 @@ public class SquareConquererGUI {
 								openWorld.execute();
 							}, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
 						} catch (IOException err) {
-							if (err instanceof ClosedByInterruptException || err instanceof EOFException || Thread.interrupted()) {
+							if (err instanceof ClosedByInterruptException || Thread.interrupted()) {
 								return;
 							}
 							JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(),
@@ -352,7 +349,7 @@ public class SquareConquererGUI {
 					});
 					serverMenu.remove(openItem);
 					serverMenu.add(closeItem, 0);
-					JOptionPane.showMessageDialog(frame, "server started successfully on port " + ss.getLocalPort(), "Server Started",
+					JOptionPane.showMessageDialog(frame, "server started on port " + ss.getLocalPort(), "Server Started",
 							JOptionPane.INFORMATION_MESSAGE);
 				} catch (Exception err) {
 					JOptionPane.showMessageDialog(dialog, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
