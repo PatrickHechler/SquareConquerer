@@ -600,21 +600,7 @@ public class SquareConquererGUI {
 				Tile          t    = world.tile(x, y);
 				final Icon    icon = t.icon(size, size);
 				StringBuilder b    = new StringBuilder();
-				b.append("<html>ground: ").append(switch (t.type) {
-				case NOT_EXPLORED -> "not yet explored";
-				case WATER_DEEP -> "Deep Water/Ocean";
-				case WATER_NORMAL -> "Water";
-				case SAND -> "Sand";
-				case SAND_HILL -> "Sand Hills";
-				case GRASS -> "Grassland";
-				case GRASS_HILL -> "Grassland with Hills";
-				case FOREST -> "Forest";
-				case FOREST_HILL -> "Forest Hills";
-				case SWAMP -> "Swampland";
-				case SWAMP_HILL -> "Swamp Hills";
-				case MOUNTAIN -> "Mountains";
-				default -> throw new AssertionError(t.type.name());
-				});
+				b.append("<html>ground: ").append(t.type);
 				switch (t.resource) {
 				case GOLD -> b.append("<br>resource: Gold Ore");
 				case IRON -> b.append("<br>resource: Iron Ore");

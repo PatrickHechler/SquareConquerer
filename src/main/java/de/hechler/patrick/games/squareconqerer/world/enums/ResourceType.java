@@ -27,4 +27,15 @@ public enum ResourceType {
 	volatile BufferedImage resource;
 	volatile boolean       resolution;
 	
+	@Override
+	public String toString() {
+		return switch (this) {
+		case NONE -> "none";
+		case GOLD -> "Gold Ore";
+		case IRON -> "Iron Ore";
+		case COAL -> "Coal Ore";
+		default -> throw new AssertionError(name());
+		};
+	}
+	
 }

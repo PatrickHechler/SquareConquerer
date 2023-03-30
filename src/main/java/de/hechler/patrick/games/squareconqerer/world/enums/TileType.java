@@ -181,4 +181,23 @@ public enum TileType {
 		};
 	}
 	
+	@Override
+	public String toString() {
+		return switch (this) {
+		case NOT_EXPLORED -> "not yet explored";
+		case WATER_DEEP -> "Deep Water/Ocean";
+		case WATER_NORMAL -> "Water";
+		case SAND -> "Sand";
+		case SAND_HILL -> "Sand Hills";
+		case GRASS -> "Grassland";
+		case GRASS_HILL -> "Grassland with Hills";
+		case FOREST -> "Forest";
+		case FOREST_HILL -> "Forest Hills";
+		case SWAMP -> "Swampland";
+		case SWAMP_HILL -> "Swamp Hills";
+		case MOUNTAIN -> "Mountains";
+		default -> throw new AssertionError(name());
+		};
+	}
+	
 }

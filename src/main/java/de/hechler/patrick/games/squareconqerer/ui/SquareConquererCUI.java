@@ -5,6 +5,7 @@ import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 import java.io.Console;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -23,18 +24,24 @@ import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.world.connect.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
+import de.hechler.patrick.games.squareconqerer.world.enums.ResourceType;
+import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
 
 public class SquareConquererCUI implements Runnable {
 	
 	private static final String HELP = "help";
 	
-	// TODO more commands
-	private static final String CMD_HELP    = HELP;
-	private static final String CMD_VERSION = "version";
-	private static final String CMD_STATUS  = "status";
+	private static final String CMD_HELP     = HELP;
+	private static final String CMD_VERSION  = "version";
+	private static final String CMD_STATUS   = "status";
+	private static final String CMD_USERNAME = "username";
+	private static final String CMD_WORLD    = "world";
+	private static final String CMD_SERVER   = "server";
+	private static final String CMD_SETPW    = "setpw";
+	private static final String CMD_SERVERPW = "serverpw";
 	
 	private static final Pattern PTRN_ARG       = Pattern.compile("([^\\s\\\\'\"]+|'[^']*'|\"[^\"]*\")+");
-	private static final Pattern PTRN_STR   = Pattern.compile("'([^']*|\\\\.)*'|\"([^\"]*|\\\\.)*\"");
+	private static final Pattern PTRN_STR       = Pattern.compile("[^\\\\]('([^'\\\\]*|\\\\.)*'|\"([^\"\\\\]*|\\\\.)*\")");
 	private static final Pattern PTRN_BACKSLASH = Pattern.compile("\\\\(.)");
 	
 	private static List<String> arguments(String line) {
@@ -49,8 +56,8 @@ public class SquareConquererCUI implements Runnable {
 				if (b == null) {
 					b = new StringBuilder();
 				}
-				b.append(arg, off, strMatcher.start());
-				String str = arg.substring(strMatcher.start() + 1, strMatcher.end() - 1);
+				b.append(arg, off, strMatcher.start() + 1);
+				String str = arg.substring(strMatcher.start() + 2, strMatcher.end() - 1);
 				b.append(str);
 				off = strMatcher.end();
 			}
@@ -65,7 +72,8 @@ public class SquareConquererCUI implements Runnable {
 		return args;
 	}
 	
-	private final Con c;
+	private final Con     c;
+	private final boolean interactive;
 	
 	private User   usr;
 	private World  world;
@@ -78,16 +86,44 @@ public class SquareConquererCUI implements Runnable {
 	public SquareConquererCUI() {
 		Console console = System.console();
 		if (console != null) {
-			this.c = new ConsoleCon(console);
+			this.c           = new ConsoleCon(console);
+			this.interactive = true;
 		} else {
-			this.c = new IOCon(new Scanner(System.in), System.out);
+			this.c           = new IOCon(new Scanner(System.in), System.out);
+			this.interactive = false;
 		}
+	}
+	
+	public SquareConquererCUI(Con c) {
+		this(c, c instanceof ConsoleCon);
+	}
+	
+	public SquareConquererCUI(Con c, boolean interactive) {
+		if (c == null) {
+			throw new NullPointerException("Con c is null");
+		}
+		this.c           = c;
+		this.interactive = interactive;
 	}
 	
 	public void setWorld(World world, Thread serverThread) {
 		this.world        = world;
 		this.serverThread = serverThread;
 		this.usr          = world.user();
+		if (serverThread != null) {
+			threadBuilder().start(() -> {
+				while (serverThread.isAlive()) {
+					try {
+						serverThread.join();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				if (this.serverThread == serverThread) {
+					this.serverThread = null;
+				}
+			});
+		}
 	}
 	
 	public void setUsr(User usr) { this.usr = usr; }
@@ -121,15 +157,15 @@ public class SquareConquererCUI implements Runnable {
 	
 	@Override
 	public void run() {
-		boolean first = true;
+		boolean greet = interactive;
 		while (true) {
 			doTasks();
-			if (first && c instanceof ConsoleCon) { // no need to greet scripts
+			if (greet) { // no need to greet scripts
 				c.writeLine("Welcome to the Square Conquerer Console");
 				c.writeLine("if you don't know what to do use the '" + HELP + "' command");
-				first = false;
+				greet = false;
 			}
-			String line = c.readLine(prompt()).trim();
+			String line = (interactive ? c.readLine(prompt()) : c.readLine()).trim();
 			if (line.isEmpty()) {
 				continue;
 			}
@@ -138,12 +174,699 @@ public class SquareConquererCUI implements Runnable {
 				c.writeLine("stange, there is nothing");
 				continue;
 			}
-			switch (args.get(0).toLowerCase()) {
-			case CMD_HELP -> cmdHelp(args);
-			case CMD_VERSION -> cmdVersion(args);
-			case CMD_STATUS -> cmdStatus(args);
-			default -> c.writeLine("unknown command: '" + args.get(0) + "'");
+			exec(args);
+		}
+	}
+	
+	private void exec(List<String> args) {
+		switch (args.get(0).toLowerCase()) {
+		case CMD_HELP -> cmdHelp(args);
+		case CMD_VERSION -> cmdVersion(args);
+		case CMD_STATUS -> cmdStatus(args);
+		case CMD_USERNAME -> cmdUsername(args);
+		case CMD_WORLD -> cmdWorld(args);
+		case CMD_SERVER -> cmdServer(args);
+		case CMD_SETPW -> cmdSetPW(args);
+		case CMD_SERVERPW -> cmdServerPW(args);
+		default -> c.writeLine("unknown command: '" + args.get(0) + "'");
+		}
+	}
+	
+	private void cmdServerPW(List<String> args) {
+		if (args.size() == 1) {
+			switch (ask("do you want to [s]et" + (serverPW != null ? "/[r]emove" : "") + " the server password or do [n]othing? ",
+					serverPW != null ? "srn" : "sn")) {
+			case 's' -> serverPW = c.readPassword("enter now the new server password: ");
+			case 'r' -> serverPW = null;
+			case 'n' -> {/**/}
+			default -> throw new AssertionError("illegal return value from ask");
 			}
+			return;
+		}
+	}
+	
+	private void cmdSetPW(List<String> args) {
+	}
+	
+	private void cmdServer(List<String> args) {
+		if (args.size() == 1) {
+			cmdServerNoArgs();
+			return;
+		}
+		for (int i = 0; i < args.size(); i++) {
+			switch (args.get(i).toLowerCase()) {
+			case HELP -> {
+				c.writeLine("server help:");
+				c.writeLine("base commands:");
+				c.writeLine("  status: print an message indicating if you are running a server/are connected to a server or nothing of it");
+				c.writeLine("remote server commands:");
+				c.writeLine("  connect <SERVER_ADDRESS>: connect to the given server");
+				c.writeLine("  disconnect: disconnect from the server you are currently connected to");
+				c.writeLine("your server commands:");
+				c.writeLine("  start [PORT]: start your own server");
+				c.writeLine("    you need to have an root world loaded");
+				c.writeLine("    use minus ('-') instead of PORT to use the defaul port " + Connection.DEFAULT_PORT);
+				c.writeLine("  stop: stop your own server");
+			}
+			case "status" -> {
+				if (serverThread != null) {
+					c.writeLine("the server thread is currently running");
+				} else if (world instanceof RemoteWorld) {
+					c.writeLine("your loaded world is a remote world");
+				} else {
+					c.writeLine("it seems that there is no server running and your world does not seem to be connected to some server");
+				}
+			}
+			// c.writeLine(" connect <SERVER_ADDRESS>: connect to the given server");
+			case "connect" -> {
+				if (++i >= args.size()) {
+					c.writeLine("there are not enugh arguments for the connect argument");
+					return;
+				}
+				if (usr == null) {
+					c.writeLine("you are not logged in, retry after you logged in (look at " + CMD_SETPW + " and " + CMD_USERNAME + ')');
+					return;
+				}
+				String addr = args.get(i);
+				int li = 
+			}
+			// c.writeLine(" disconnect: disconnect from the server you are currently
+			// connected to");
+			case "disconnect" -> {
+				
+			}
+			// c.writeLine(" start: start your own server");
+			// c.writeLine(" you need to have an root world loaded");
+			case "start" -> {
+				
+			}
+			// c.writeLine(" stop: stop your own server");
+			case "stop" -> {
+				
+			}
+			default -> c.writeLine("unknown argument: " + args.get(i));
+			}
+		}
+	}
+	
+	private void cmdServerNoArgs() {
+		Thread st = serverThread;
+		if (st != null) {
+			c.writeLine("the server is currently running");
+			if (ask("dou you want to [c]lose the server [n]othing?", "cn") == 'c') {
+				st.interrupt();
+				try {
+					st.join(1000L);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				if (st.isAlive()) {
+					c.writeLine("I told the server thread to stop");
+				} else {
+					c.writeLine("stopped the server, all remote connections should be closed now");
+				}
+			}
+		} else if (world instanceof RemoteWorld rw) {
+			c.writeLine("you are currently connected to a server");
+			if (ask("dou you want to [d]isconnect or do [n]othing?", "dn") == 'd') {
+				World nw = null;
+				if (ask("dou you want to contain your current world in build mode? ([y]es|[n]o)", "yn") == 'y') {
+					int               xlen = rw.xlen();
+					int               ylen = rw.ylen();
+					RootWorld.Builder b    = new RootWorld.Builder(usr.rootClone(), xlen, ylen);
+					for (int x = 0; x < xlen; x++) {
+						for (int y = 0; y < ylen; y++) {
+							b.set(x, y, world.tile(x, y));
+						}
+					}
+					nw = b;
+				}
+				try {
+					rw.close();
+					c.writeLine("closed old world successfully");
+				} catch (IOException e) {
+					c.writeLine("error while closing: (proceed anyway, do not retry) " + e.toString());
+				}
+				world = nw;
+			}
+		} else if (usr == null) {
+			c.writeLine("you are not logged in, retry after you logged in (take a look at the " + CMD_SETPW + " and " + CMD_USERNAME + " commands)");
+		} else {
+			switch (ask("do you want to [c]onnect to a server" + (world instanceof RootWorld ? ", [s]tart a server" : "") + " or do [n]othing?",
+					world instanceof RootWorld ? "csn" : "cn")) {
+			case 'c' -> {
+				if (world != null && ask("if you proceed you current world will be discarded. ([p]rocced/[c]ancel)? ", "pc") == 'c') {
+					return;
+				}
+				String host = c.readLine("type now the serverhost: ").trim();
+				int    port = Connection.DEFAULT_PORT;
+				int    li   = host.lastIndexOf(':');
+				if (li != -1 && li - 1 == host.lastIndexOf(']') && host.charAt(0) == '[') {
+					try {
+						port = Integer.parseInt(host.substring(li + 1));
+						host = host.substring(1, li - 1);
+					} catch (NumberFormatException e) {
+						c.writeLine("error while parsing the port: " + e.toString());
+						return;
+					}
+				}
+				Connection conn;
+				try {
+					char[] sp = serverPW;
+					if (sp != null) {
+						serverPW = null;
+						conn     = Connection.ClientConnect.connectNew(host, port, usr, sp);
+					} else {
+						conn = Connection.ClientConnect.connect(host, port, usr);
+					}
+					world = new RemoteWorld(conn);
+					c.writeLine("connected successful to " + host + " (at port " + port + ')');
+				} catch (IOException e) {
+					c.writeLine("error: " + e.toString());
+				}
+			}
+			case 's' -> {
+				RootWorld rw      = (RootWorld) world;
+				String    portStr = c.readLine("enter now the port on which the server should listen (default is " + Connection.DEFAULT_PORT + "): ")
+						.trim();
+				int       port    = portStr.isEmpty() ? Connection.DEFAULT_PORT : Integer.parseInt(portStr);
+				char[]    sp      = serverPW;
+				serverPW = null;
+				threadBuilder().start(() -> {
+					try {
+						Connection.ServerAccept.accept(port, (conn, sok) -> {
+							c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
+							UserWorld uw = rw.of(usr, conn.modCnt());
+							OpenWorld ow = new OpenWorld(conn, uw);
+							ow.execute();
+						}, rw.user(), sp);
+					} catch (IOException e) {
+						c.writeLine("error on server thread: " + e.toString());
+					}
+				});
+				c.writeLine("started server");
+			}
+			case 'n' -> {/**/}
+			default -> throw new AssertionError("illegal return value from ask");
+			}
+		}
+	}
+	
+	private void cmdWorld(List<String> args) {
+		if (args.size() == 1) {
+			cmdWorldNoArgs();
+			return;
+		}
+		for (int i = 1; i < args.size(); i++) {
+			switch (args.get(i).toLowerCase()) {
+			case HELP -> {
+				c.writeLine(CMD_WORLD + " help: change or display the world");
+				c.writeLine("base commands: (those work always)");
+				c.writeLine("  " + HELP + ": print this message");
+				c.writeLine("  load <SAVE_FILE>: load other users and world from the file");
+				c.writeLine("    the loaded world will be in build mode");
+				c.writeLine("    if there is no user this operation will fail");
+				c.writeLine("    if the user is currently not root, it will be after this operation");
+				c.writeLine("    if the user already is root, all subusers will be deleted");
+				c.writeLine("simple commands: (work, when there is an world)");
+				c.writeLine("  print or print.types: print all tile types of the world");
+				c.writeLine("  print.resources: print all resources of the world");
+				c.writeLine("  tile <X> <Y>: print the tile at the given coordinates");
+				c.writeLine("  to-build: convert the world to a build world");
+				c.writeLine("  save <FILE>: save the current world to the given file");
+				c.writeLine("  save-force <FILE>: like save, but do not ask if the file already exist");
+				c.writeLine("build world commands: (world needs to be in build mode)");
+				c.writeLine("  build: convert the world to a root world");
+				c.writeLine("  tile.type <TYPE> <X> <Y>: set the type of the given tile");
+				c.writeLine("    valid TYPE values: water sand grass forest swamp mountain not-explored");
+				c.writeLine("    [sand grass forest swamp] accept the '+hill' suffix");
+				c.writeLine("    [water] accepts the '+deep' suffix");
+				c.writeLine("    all types except of not-explored accept the '+normal' suffix, which is just an alias for no suffix");
+				c.writeLine("    if there is only a suffix given it will replace the current suffix (if this is valid)");
+				c.writeLine("  tile.resource <RESOURCE> <X> <Y>: set the resource of the given tile");
+				c.writeLine("    valid RESOURCE values: none gold iron coal");
+				c.writeLine("  fill-random: all tiles with type not-explored with random values");
+				c.writeLine("    note that the potential existing resource values of these types will be randomly overwritten");
+			}
+			case "load" -> {
+				if (++i >= args.size()) {
+					c.writeLine("not enugh args for the load argument");
+					return;
+				}
+				Path p = Path.of(args.get(i));
+				if (!Files.exists(p)) {
+					c.writeLine("the file does not exist");
+					return;
+				}
+				if (!Files.isRegularFile(p)) {
+					c.writeLine("the path does not refer to a regular file");
+					return;
+				}
+				if (usr == null) {
+					c.writeLine("there is no user logged in");
+					return;
+				}
+				if (!(usr instanceof RootUser root) || !root.names().isEmpty()) {
+					c.writeLine("changed to root user");
+				}
+				usr      = usr.makeRoot();
+				username = null;
+				try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
+					((RootUser) usr).load(conn);
+					Tile[][] tiles = RemoteWorld.readWorld(conn, null, false);
+					world = RootWorld.Builder.createBuilder((RootUser) usr, tiles);
+					c.writeLine("loaded world and users successfully from the file");
+				} catch (IOException e) {
+					c.writeLine("error: " + e.toString());
+				}
+			}
+			case "print", "print.types" -> cmdWorldAllTilesType();
+			case "print.resources" -> cmdWorldAllTilesResources();
+			case "tile" -> {
+				i += 2;
+				if (i >= args.size()) {
+					c.writeLine("not enugh arguments for the tile argument");
+					return;
+				}
+				if (world == null) {
+					c.writeLine("there is no world, so I can not print a tile from the world");
+					return;
+				}
+				int x = Integer.parseInt(args.get(i - 1));
+				int y = Integer.parseInt(args.get(i));
+				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
+					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					return;
+				}
+				writeTile(x, y);
+			}
+			case "to-build" -> {
+				if (world == null) {
+					c.writeLine("there is no world, so I can't convert it");
+					return;
+				}
+				World old = world;
+				if (old instanceof RemoteWorld rw) {
+					if (!rw.getWorld()) {
+						rw.getWorld(true);
+						rw.needUpdate();
+					} // ensure the complete world is loaded
+					rw.tile(0, 0); // so the old user can be deleted (makeRoot)
+				}
+				int xlen = old.xlen();
+				int ylen = old.ylen();
+				usr = usr.makeRoot();
+				RootWorld.Builder b = new RootWorld.Builder((RootUser) usr, xlen, ylen);
+				for (int x = 0; x < xlen; x++) {
+					for (int y = 0; y < ylen; y++) {
+						b.set(x, y, old.tile(x, y));
+					}
+				}
+				world = b;
+				c.writeLine("successfully converted the current world to a build world");
+			}
+			case "save", "save-force" -> {
+				if (++i >= args.size()) {
+					c.writeLine("not enugh arguments for the save argument");
+					return;
+				}
+				if (world == null) {
+					c.writeLine("there is no world I can save");
+					return;
+				}
+				Path p = Path.of(args.get(i));
+				if (!"save-force".equals(args.get(i)) && Files.exists(p)
+						&& ask("the save file already exists, proceed? ([p]roceed|[c]ancel)", "pc") == 'c') {
+					break;
+				}
+				try (OutputStream out = Files.newOutputStream(p); Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, usr)) {
+					if (usr instanceof RootUser ru) {
+						ru.save(conn);
+					} else {
+						try (RootUser tmp = RootUser.create(new char[0])) {
+							tmp.save(conn);
+						}
+					}
+					OpenWorld.sendWorld(world, conn, false);
+					c.writeLine("saved wolrd and users in the given file");
+				} catch (IOException e) {
+					c.writeLine("error while saving: " + e.toString());
+				}
+			}
+			case "build" -> {
+				if (world == null) {
+					c.writeLine("there is no world, so I can't build it");
+					return;
+				}
+				if (!(world instanceof RootWorld.Builder b)) {
+					c.writeLine("the world is no build world, I can only build build worlds");
+					return;
+				}
+				try {
+					world = b.create();
+					c.writeLine("builded the current world");
+				} catch (IllegalStateException | NullPointerException e) {
+					c.writeLine("the build failed: " + e.toString());
+				}
+			}
+			case "tile.type" -> {
+				i += 3;
+				if (i >= args.size()) {
+					c.writeLine("not enugh arguments for the tile.type argument");
+					return;
+				}
+				if (world == null) {
+					c.writeLine("there is no world, so I can't modify it");
+					return;
+				}
+				if (!(world instanceof RootWorld.Builder b)) {
+					c.writeLine("the world is no build world, I can only modify build worlds");
+					return;
+				}
+				int x = Integer.parseInt(args.get(i - 1));
+				int y = Integer.parseInt(args.get(i));
+				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
+					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					return;
+				}
+				TileType type = switch (args.get(i - 2).toLowerCase()) {
+				case "water", "water+normal" -> TileType.WATER_NORMAL;
+				case "sand", "sand+normal" -> TileType.SAND;
+				case "grass", "grass+normal" -> TileType.GRASS;
+				case "forest", "forest+normal" -> TileType.FOREST;
+				case "swamp", "swamp+normal" -> TileType.SWAMP;
+				case "mountain", "mountain+normal" -> TileType.MOUNTAIN;
+				case "+normal" -> {
+					Tile old = b.get(x, y);
+					if (old == null || old.type == null || old.type == TileType.NOT_EXPLORED) {
+						c.writeLine("the current type does not accept the +normal suffix");
+						yield null;
+					}
+					yield switch (old.type) {
+					case FOREST, FOREST_HILL -> TileType.FOREST;
+					case GRASS, GRASS_HILL -> TileType.GRASS;
+					case MOUNTAIN -> TileType.MOUNTAIN;
+					case SAND, SAND_HILL -> TileType.SAND;
+					case SWAMP, SWAMP_HILL -> TileType.SWAMP;
+					case WATER_NORMAL, WATER_DEEP -> TileType.WATER_NORMAL;
+					default -> throw new AssertionError("unknown tile type: " + old.type.name());
+					};
+				}
+				case "water+deep" -> TileType.WATER_DEEP;
+				case "+deep" -> {
+					Tile old = b.get(x, y);
+					if (old == null || old.type == null || !old.type.isWater()) {
+						c.writeLine("the current type does not accept the +deep suffix");
+						yield null;
+					}
+					yield TileType.WATER_DEEP;
+				}
+				case "sand+hill" -> TileType.SAND_HILL;
+				case "grass+hill" -> TileType.GRASS_HILL;
+				case "forest+hill" -> TileType.FOREST_HILL;
+				case "swamp+hill" -> TileType.SWAMP_HILL;
+				case "+hill" -> {
+					Tile old = b.get(x, y);
+					if (old == null || old.type == null || !old.type.isHill() && !old.type.isFlat()) {
+						c.writeLine("the current type does not accept the +hill suffix");
+						yield null;
+					}
+					yield switch (old.type) {
+					case FOREST, FOREST_HILL -> TileType.FOREST_HILL;
+					case GRASS, GRASS_HILL -> TileType.GRASS_HILL;
+					case SAND, SAND_HILL -> TileType.SAND_HILL;
+					case SWAMP, SWAMP_HILL -> TileType.SWAMP_HILL;
+					default -> throw new AssertionError("unknown tile type: " + old.type.name());
+					};
+				}
+				default -> {
+					c.writeLine("unknown type: '" + args.get(i - 2) + '\'');
+					yield null;
+				}
+				};
+				if (type != null) {
+					b.set(x, y, type);
+				}
+			}
+			case "tile.resource" -> {
+				i += 3;
+				if (i >= args.size()) {
+					c.writeLine("not enugh arguments for the tile.type argument");
+					return;
+				}
+				if (world == null) {
+					c.writeLine("there is no world, so I can't modify it");
+					return;
+				}
+				if (!(world instanceof RootWorld.Builder b)) {
+					c.writeLine("the world is no build world, I can only modify build worlds");
+					return;
+				}
+				int x = Integer.parseInt(args.get(i - 1));
+				int y = Integer.parseInt(args.get(i));
+				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
+					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					return;
+				}
+				ResourceType res = switch (args.get(i - 2).toLowerCase()) {
+				case "none" -> ResourceType.NONE;
+				case "gold" -> ResourceType.GOLD;
+				case "iron" -> ResourceType.IRON;
+				case "coal" -> ResourceType.COAL;
+				default -> {
+					c.writeLine("unknown type: '" + args.get(i - 2) + '\'');
+					yield null;
+				}
+				};
+				if (res != null) {
+					b.set(x, y, res);
+				}
+			}
+			case "fill-random" -> {
+				if (world == null) {
+					c.writeLine("there is no world, so I can't modify it");
+					return;
+				}
+				if (!(world instanceof RootWorld.Builder b)) {
+					c.writeLine("the world is no build world, I can only modify build worlds");
+					return;
+				}
+				b.fillRandom();
+			}
+			default -> c.writeLine("unknown argument: '" + args.get(i) + '\'');
+			}
+		}
+	}
+	
+	private void cmdWorldNoArgs() {
+		if (world == null || ask("[c]hange or [d]isplay the current world? ", "cd") == 'c') {
+			if (ask("[l]oad from file or create [n]ew world", "ln") == 'l') {
+				cmdWorldInteractiveLoad();
+			} else {
+				rootLogin(usr == null);
+				int xlen = readNumber("enter now the X-Length (Width) if the World", 1, Integer.MAX_VALUE);
+				if (xlen > 0) {
+					int ylen = readNumber("enter now the Y-Length (Height) if the World", 1, Integer.MAX_VALUE);
+					if (ylen > 0) {
+						world = new RootWorld.Builder((RootUser) usr, xlen, ylen);
+						c.writeLine("created new world");
+						if (ask("fill world with random tiles? ([y]es|[n]o): ", "yn") == 'y') {
+							((RootWorld.Builder) world).fillRandom();
+							c.writeLine("filled world with random tiles");
+							if (ask("build world? ([y]es|[n]o): ", "yn") == 'y') {
+								world = ((RootWorld.Builder) world).create();
+								c.writeLine("world builded");
+							}
+						}
+					}
+				}
+			}
+		} else if (ask("display the [c]omplete world or only a [t]ile", "ct") == 'c') {
+			cmdWorldAllTilesType();
+		} else {
+			int x = readNumber("enter now the X-coordinate of the tile", 0, world.xlen());
+			if (x >= 0) {
+				int y = readNumber("enter now the Y-coordinate of the tile", 0, world.ylen());
+				if (y >= 0) {
+					writeTile(x, y);
+				}
+			}
+		}
+	}
+	
+	private void writeTile(int x, int y) {
+		Tile tile = world.tile(x, y);
+		c.writeLine("Tile: (" + x + '|' + y + ')');
+		c.writeLine("  Type: " + tile.type);
+		c.writeLine("  Resource: " + tile.resource);
+	}
+	
+	private void cmdWorldInteractiveLoad() {
+		boolean askPW = usr == null;
+		do {
+			Path p;
+			do {
+				p = Path.of(c.readLine("enter now the file, which should be loaded: "));
+			} while (retry(!Files.exists(p) || !Files.isRegularFile(p)));
+			if (!Files.exists(p) || !Files.isRegularFile(p)) {
+				break;
+			}
+			rootLogin(askPW);
+			try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
+				((RootUser) usr).load(conn);
+				Tile[][] tiles = RemoteWorld.readWorld(conn, null, false);
+				c.writeLine("loaded from file, build now the world");
+				try {
+					world = RootWorld.Builder.create((RootUser) usr, tiles);
+				} catch (IllegalStateException e) {
+					c.writeLine("build failed: " + e.toString());
+					c.writeLine("world stays in build mode now");
+				}
+			} catch (IOException e) {
+				c.writeLine("error: " + e.toString());
+			}
+		} while (retry(true));
+	}
+	
+	private void rootLogin(boolean askPW) {
+		if (askPW) {
+			char[] pw = c.readPassword("enter now the password");
+			if (usr != null && !(usr instanceof RootUser)) {
+				username = "";
+			}
+			usr = RootUser.create(pw);
+			if (username != null) {
+				username = null;
+				c.writeLine("changed to root user");
+			}
+		} else {
+			usr = usr.makeRoot();
+		}
+	}
+	
+	private void cmdWorldAllTilesResources() {
+		if (world == null) {
+			c.writeLine("there is no world I can print");
+			return;
+		}
+		c.writeLine(" : no resource");
+		c.writeLine("G: gold ore");
+		c.writeLine("I: iron ore");
+		c.writeLine("C: coal ore");
+		int xlen = world.xlen();
+		int ylen = world.ylen();
+		c.writeLine("world (" + xlen + '|' + ylen + "):");
+		for (int y = 0; y < ylen; y++) {
+			StringBuilder b = new StringBuilder(xlen);
+			for (int x = 0; x < xlen; x++) {
+				Tile t = world.tile(x, y);
+				b.append(switch (t.resource) {
+				case NONE -> ' ';
+				case GOLD -> 'G';
+				case IRON -> 'I';
+				case COAL -> 'C';
+				default -> throw new AssertionError("unknown tile resource: " + t.resource.name());
+				});
+			}
+			c.writeLine(b.toString());
+		}
+	}
+	
+	private void cmdWorldAllTilesType() {
+		if (world == null) {
+			c.writeLine("there is no world I can print");
+			return;
+		}
+		c.writeLine("#: not explored");
+		c.writeLine("w: water");
+		c.writeLine("W: water deep");
+		c.writeLine("b: sand");
+		c.writeLine("B: sand hill");
+		c.writeLine("g: grass");
+		c.writeLine("G: grass hill");
+		c.writeLine("f: forest");
+		c.writeLine("F: forest hill");
+		c.writeLine("s: swamp");
+		c.writeLine("S: swamp hill");
+		c.writeLine("m: mountain");
+		int xlen = world.xlen();
+		int ylen = world.ylen();
+		c.writeLine("world (" + xlen + '|' + ylen + "):");
+		for (int y = 0; y < ylen; y++) {
+			StringBuilder b = new StringBuilder(xlen);
+			for (int x = 0; x < xlen; x++) {
+				Tile t = world.tile(x, y);
+				b.append(switch (t.type) {
+				case NOT_EXPLORED -> '#';
+				case WATER_NORMAL -> 'w';
+				case WATER_DEEP -> 'W';
+				case SAND -> 'b';
+				case SAND_HILL -> 'B';
+				case GRASS -> 'g';
+				case GRASS_HILL -> 'G';
+				case FOREST -> 'f';
+				case FOREST_HILL -> 'F';
+				case SWAMP -> 's';
+				case SWAMP_HILL -> 'S';
+				case MOUNTAIN -> 'm';
+				default -> throw new AssertionError("unknown tile type: " + t.type.name());
+				});
+			}
+			c.writeLine(b.toString());
+		}
+	}
+	
+	private void cmdUsername(List<String> args) {
+		if (args.size() == 1) {
+			cmdUsernameNoArgs();
+			return;
+		}
+		for (int i = 1; i < args.size(); i++) {
+			switch (args.get(i).toLowerCase()) {
+			case HELP -> {
+				c.writeLine(CMD_USERNAME + " help: set or get your username");
+				c.writeLine(HELP + ": print this message");
+				c.writeLine("set <USERNAME>: set the new username");
+				c.writeLine("get: print the current username");
+				c.writeLine("without arguments, print the current username and then prompt for a new username");
+			}
+			case "set" -> {
+				i++;
+				if (i >= args.size()) {
+					c.writeLine("not enugh arguments for the set arg");
+					return;
+				}
+				String cur = args.get(i);
+				if (usr == null) {
+					username = RootWorld.ROOT_NAME.equals(cur) ? null : cur;
+				} else if (RootWorld.ROOT_NAME.equals(cur)) {
+					usr = usr.makeRoot();
+				} else {
+					usr = usr.changeName(cur);
+				}
+			}
+			case "get" -> {
+				String cur = usr == null ? username : usr.name();
+				cur = cur == null ? RootWorld.ROOT_NAME : cur;
+				c.writeLine(cur);
+			}
+			default -> c.writeLine("unknown argument: '" + args.get(i) + '\'');
+			}
+		}
+	}
+	
+	private void cmdUsernameNoArgs() {
+		String cur = usr == null ? username : usr.name();
+		if (cur != null) {
+			c.writeLine("your current username is '" + cur + '\'');
+		}
+		cur = c.readLine("enter your new username: ");
+		if (usr == null) {
+			username = RootWorld.ROOT_NAME.equals(cur) ? null : cur;
+		} else if (RootWorld.ROOT_NAME.equals(cur)) {
+			usr = usr.makeRoot();
+		} else {
+			usr = usr.changeName(cur);
 		}
 	}
 	
@@ -155,7 +878,7 @@ public class SquareConquererCUI implements Runnable {
 			cmdStatusServerPW();
 		} else {
 			for (int i = 1; i < args.size(); i++) {
-				switch (args.get(i)) {
+				switch (args.get(i).toLowerCase()) {
 				case HELP -> {
 					c.writeLine("Status command: help");
 					c.writeLine("without arguments, write all status types");
@@ -267,7 +990,7 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdVersion(List<String> args) {
 		if (args.size() == 1) {
 			c.writeLine("Square Conquerer Console version: " + SquareConquererStart.VERSION_STRING);
-		} else if (args.size() == 2 && HELP.equals(args.get(1))) {
+		} else if (args.size() == 2 && HELP.equalsIgnoreCase(args.get(1))) {
 			c.writeLine("without args, I only write some version information and I can not do much more");
 			c.writeLine("with one argument, I write this message, when the argumentis the " + HELP + " argument");
 			c.writeLine("In all other cases I print an error message");
@@ -287,20 +1010,44 @@ public class SquareConquererCUI implements Runnable {
 			c.writeLine("    print version information");
 			c.writeLine("  " + CMD_STATUS);
 			c.writeLine("    print status information");
+			c.writeLine("  " + CMD_USERNAME);
+			c.writeLine("    set your username");
+			c.writeLine("  " + CMD_WORLD);
+			c.writeLine("    change or display the world");
+			c.writeLine("  " + CMD_SERVER);
+			c.writeLine("    connect to a server or start/stop your server");
+			c.writeLine("  " + CMD_SETPW);
+			c.writeLine("    change the password (your or someone others, it doesn't matter)");
+			c.writeLine("  " + CMD_SERVERPW);
+			c.writeLine("    set the server password");
+			c.writeLine("");
 			c.writeLine("General:");
 			c.writeLine("  all comands support the " + HELP + " argument");
 			c.writeLine("  If you want further information for a specific command, ask the command");
 			c.writeLine("  or use " + CMD_HELP + " <command>");
+			c.writeLine("");
+			c.writeLine("  passwords will never be accepted in the arguments");
 		}
 		case 2 -> {
-			switch (args.get(1).toLowerCase()) {
-			case CMD_HELP -> c.writeLine("print a general help message or the help message of the argument");
-			case CMD_VERSION -> cmdVersion(args.subList(1, 2));
-			case CMD_STATUS -> cmdStatus(args.subList(1, 2));
-			default -> c.writeLine("I don't know this command (" + args.get(1) + ")");
+			if (CMD_HELP.equalsIgnoreCase(args.get(1))) {
+				c.writeLine("print a general help message or the help message of the argument");
+			} else {
+				args.set(0, args.get(1));
+				args.set(1, HELP);
+				exec(args);
 			}
 		}
 		default -> c.writeLine("either give me the name of an command as argument or no argument");
+		}
+	}
+	
+	private char ask(String prompt, String validChars) {
+		while (true) {
+			String line = c.readLine(prompt).trim();
+			if (line.isEmpty()) continue;
+			char character = line.charAt(0);
+			if (validChars.indexOf(character) == -1) continue;
+			return character;
 		}
 	}
 	
@@ -395,6 +1142,8 @@ public class SquareConquererCUI implements Runnable {
 					}, (RootUser) usr, serverPW);
 				} catch (IOException e) {
 					c.writeLine("error: " + e.toString());
+				} finally {
+					serverThread = null;
 				}
 			});
 			c.writeLine("the server should now accept connections");
@@ -402,9 +1151,9 @@ public class SquareConquererCUI implements Runnable {
 	}
 	
 	private void subTaskStartServerNewWorld() {
-		int xlen = readPositiveNumber("enter now the X-length of the world (Width): ");
+		int xlen = readNumber("enter now the X-length of the world (Width): ", 1, Integer.MAX_VALUE);
 		if (xlen > 0) {
-			int ylen = readPositiveNumber("enter now the Y-length of the world (Height): ");
+			int ylen = readNumber("enter now the Y-length of the world (Height): ", 1, Integer.MAX_VALUE);
 			if (ylen > 0) {
 				RootWorld.Builder b = new RootWorld.Builder((RootUser) usr, xlen, ylen);
 				b.fillRandom();
@@ -459,23 +1208,28 @@ public class SquareConquererCUI implements Runnable {
 		} while (retry(loadFile(loadFile)));
 	}
 	
-	private int readPositiveNumber(String prompt) {
-		int xlen = -1;
+	private int readNumber(String prompt, int min, int max) {
+		int val = -1;
 		do {
 			String line = c.readLine(prompt);
 			try {
-				xlen = Integer.parseInt(line);
+				val = Integer.parseInt(line);
 			} catch (NumberFormatException e) {
 				c.writeLine("error: " + e.toString());
 			}
-		} while (retry(xlen <= 0));
-		return xlen;
+		} while (retry(val < min || val > max,
+				"the minimum number is " + min + (max != Integer.MAX_VALUE ? " and the maximum number is " + max : "")));
+		return val;
 	}
 	
 	private boolean retry(boolean failed) {
+		return retry(failed, "retry? ([y]es|[n]o)");
+	}
+	
+	private boolean retry(boolean failed, String errorPrompt) {
 		if (!failed) return false;
 		while (true) {
-			String line = c.readLine("retry? ([y]es|[n]o)").trim();
+			String line = c.readLine(errorPrompt).trim();
 			if (line.isEmpty()) continue;
 			switch (line.charAt(0)) {
 			case 'y', 'Y':

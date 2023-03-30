@@ -80,6 +80,11 @@ public sealed class User implements Closeable {
 	
 	public String name() { return s.name; }
 	
+	public synchronized User changeName(String name) {
+		Secret0 s0 = new Secret0(name, s._pw.clone());
+		return new User(s0);
+	}
+	
 	public synchronized RootUser rootClone() {
 		Secret0 s0 = new Secret0(RootWorld.ROOT_NAME, s._pw.clone());
 		return new RootUser(s0);
@@ -161,7 +166,9 @@ public sealed class User implements Closeable {
 	}
 	
 	public static User create(String name, char[] pw) {
-		return new User(new Secret0(name, pw));
+		User usr = new User(new Secret0(name, pw));
+		Runtime.getRuntime().addShutdownHook(new Thread(usr::close));
+		return usr;
 	}
 	
 	public static final class RootUser extends User {
@@ -176,6 +183,13 @@ public sealed class User implements Closeable {
 		
 		public static RootUser create(char[] pw) {
 			return new RootUser(new Secret0(RootWorld.ROOT_NAME, pw));
+		}
+		
+		@Override
+		public synchronized RootUser makeRoot() {
+			RootUser result = super.makeRoot();
+			close();
+			return result;
 		}
 		
 		@Override

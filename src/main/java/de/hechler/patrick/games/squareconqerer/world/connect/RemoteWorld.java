@@ -1,5 +1,6 @@
 package de.hechler.patrick.games.squareconqerer.world.connect;
 
+import java.io.Closeable;
 import java.io.IOError;
 import java.io.IOException;
 
@@ -10,7 +11,7 @@ import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.enums.ResourceType;
 import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
 
-public class RemoteWorld implements World {
+public class RemoteWorld implements World, Closeable {
 	
 	private final Connection conn;
 	private int              xlen;
@@ -33,6 +34,8 @@ public class RemoteWorld implements World {
 	 * @param getWorld the new value of {@link #getWorld}
 	 */
 	public void getWorld(boolean getWorld) { this.getWorld = getWorld; }
+	
+	public boolean getWorld() { return this.getWorld; }
 	
 	public void needUpdate() { this.needUpdate = System.currentTimeMillis(); }
 	
@@ -165,6 +168,11 @@ public class RemoteWorld implements World {
 		TileType     tt       = TileType.of(typeOrid);
 		ResourceType rt       = ResourceType.of(resOrid);
 		tiles[x][y] = new RemoteTile(tt, rt);
+	}
+	
+	@Override
+	public void close() throws IOException {
+		conn.close();
 	}
 	
 }
