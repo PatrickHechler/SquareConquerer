@@ -46,21 +46,23 @@ public class SquareConquererStart {
 	public static final int     VERSION_MAJOR    = 2;
 	public static final int     VERSION_MINOR    = 0;
 	public static final int     VERSION_FIX      = 0;
-	public static final boolean VERSION_SNAPSHOT = true;
+	public static final boolean VERSION_SNAPSHOT = false;
 	public static final String  VERSION_STRING   = VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_FIX + (VERSION_SNAPSHOT ? "-SNAPSHOT" : "");
 	
-	private static int     port       = -1;
-	private static boolean gui        = true;
-	private static boolean console    = false;
-	private static String  host       = null;
-	private static boolean server     = false;
-	private static String  name       = null;
-	private static char[]  pw         = null;
-	private static char[]  serverpw   = null;
-	private static Path    worldFile  = null;
-	private static boolean emptyWorld = false;
-	private static int     xlen       = -1;
-	private static int     ylen       = -1;
+	private static int     port           = -1;
+	private static boolean gui            = true;
+	private static boolean console        = false;
+	private static boolean consoleInter   = false;
+	private static boolean consoleNoInter = false;
+	private static String  host           = null;
+	private static boolean server         = false;
+	private static String  name           = null;
+	private static char[]  pw             = null;
+	private static char[]  serverpw       = null;
+	private static Path    worldFile      = null;
+	private static boolean emptyWorld     = false;
+	private static int     xlen           = -1;
+	private static int     ylen           = -1;
 	
 	public static void main(String[] args) {
 		for (int i = 0; i < args.length; i++) {
@@ -70,6 +72,8 @@ public class SquareConquererStart {
 			case "--gui" -> argGui();
 			case "--no-gui" -> argNoGui();
 			case "--console" -> argConsole();
+			case "--console-interactive" -> argConsoleInteractive();
+			case "--console-no-interactive" -> argConsoleNoInteractive();
 			case "--no-console" -> argNoConsole();
 			case "--name" -> argName(args, ++i);
 			case "--name-file" -> argNameFile(args, ++i);
@@ -238,6 +242,9 @@ public class SquareConquererStart {
 				} else if (server) {
 					cui.startConnect(host, p);
 				}
+			}
+			if (consoleInter || consoleNoInter) {
+				cui.setInteractive(consoleInter);
 			}
 			cui.run();
 		}
@@ -466,9 +473,13 @@ public class SquareConquererStart {
 		name = args[i];
 	}
 	
-	private static void argNoConsole() { console = false; }
+	private static void argNoConsole() { console = false; consoleInter = false; consoleNoInter = false; }
 	
-	private static void argConsole() { console = true; }
+	private static void argConsole() { console = true; consoleInter = false; consoleNoInter = false; }
+	
+	private static void argConsoleInteractive() { console = true; consoleInter = true; consoleNoInter = false; }
+	
+	private static void argConsoleNoInteractive() { console = true; consoleInter = false; consoleNoInter = true; }
 	
 	private static void argNoGui() { gui = false; }
 	
@@ -495,6 +506,10 @@ public class SquareConquererStart {
 		System.out.println("    --console");
 		System.out.println("        to start an user interface using the stdin/stdout streams");
 		System.out.println("        overwrites previous --no-console");
+		System.out.println("    --console-interactive");
+		System.out.println("      like --console, but set the console to interactive mode");
+		System.out.println("    --console-no-interactive");
+		System.out.println("      like --console, but set the console to non interactive mode");
 		System.out.println("    --no-console");
 		System.out.println("        to start not an user interface using the stdin/stdout streams");
 		System.out.println("        overwrites previous --console");

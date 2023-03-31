@@ -80,9 +80,32 @@ public sealed class User implements Closeable {
 	
 	public String name() { return s.name; }
 	
+	public synchronized void changePassword(char[] pw) {
+		Secret0 os   = s;
+		String  name = os.name;
+		char[]  opw  = os._pw;
+		for (int i = 0; i < opw.length; i++) { opw[i] = '\0'; }
+		this.modCnt++;
+		this.s = new Secret0(name, pw);
+	}
+	
 	public synchronized User changeName(String name) {
-		Secret0 s0 = new Secret0(name, s._pw.clone());
-		return new User(s0);
+		Secret0 s0 = new Secret0(name, s._pw);
+		if (RootWorld.ROOT_NAME.equals(name)) {
+			if (this instanceof RootUser) {
+				return this;
+			}
+			this.s = null;
+			close();
+			return new RootUser(s0);
+		} else if (this instanceof RootUser) {
+			s = null;
+			close();
+			return new User(s0);
+		} else {
+			this.s = s0;
+			return this;
+		}
 	}
 	
 	public synchronized RootUser rootClone() {
@@ -90,10 +113,17 @@ public sealed class User implements Closeable {
 		return new RootUser(s0);
 	}
 	
+	/**
+	 * this method will create a new root user with the password of this user and then close this user
+	 * <p>
+	 * this is not the same as {@link #changeName(String)}, because even if this
+	 * user is already root, it will be replaced by a new root user
+	 */
 	public synchronized RootUser makeRoot() {
 		Secret0 s0 = new Secret0(RootWorld.ROOT_NAME, s._pw);
 		this.s = null;
 		this.modCnt++;
+		close();
 		return new RootUser(s0);
 	}
 	
@@ -166,6 +196,9 @@ public sealed class User implements Closeable {
 	}
 	
 	public static User create(String name, char[] pw) {
+		if (RootWorld.ROOT_NAME.equals(name)) {
+			return RootUser.create(pw);
+		}
 		User usr = new User(new Secret0(name, pw));
 		Runtime.getRuntime().addShutdownHook(new Thread(usr::close));
 		return usr;
@@ -250,11 +283,10 @@ public sealed class User implements Closeable {
 		}
 		
 		public synchronized void changePW(User usr, char[] newPW) {
+			if (get(usr.s.name) != usr) {
+				throw new AssertionError("I can only change the password of my users!");
+			}
 			synchronized (usr) {
-				Map<String, User> ot = otherUsers;
-				if (ot.get(usr.name()) != usr) {
-					throw new AssertionError("I can only change the password of my users!");
-				}
 				Secret0 oldSecret = usr.s;
 				char[]  oldPW     = oldSecret._pw;
 				usr.s = new Secret0(oldSecret.name, newPW);

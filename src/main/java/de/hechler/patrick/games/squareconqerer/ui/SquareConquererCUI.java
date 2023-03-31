@@ -39,6 +39,7 @@ public class SquareConquererCUI implements Runnable {
 	private static final String CMD_SERVER   = "server";
 	private static final String CMD_SETPW    = "setpw";
 	private static final String CMD_SERVERPW = "serverpw";
+	private static final String CMD_QUIT     = "quit";
 	
 	private static final Pattern PTRN_ARG       = Pattern.compile("([^\\s\\\\'\"]+|'[^']*'|\"[^\"]*\")+");
 	private static final Pattern PTRN_STR       = Pattern.compile("[^\\\\]('([^'\\\\]*|\\\\.)*'|\"([^\"\\\\]*|\\\\.)*\")");
@@ -72,12 +73,13 @@ public class SquareConquererCUI implements Runnable {
 		return args;
 	}
 	
-	private final Con     c;
-	private final boolean interactive;
+	private final Con c;
+	private boolean   interactive;
+	
+	private volatile Thread serverThread;
 	
 	private User   usr;
 	private World  world;
-	private Thread serverThread;
 	private String username;
 	private char[] serverPW;
 	
@@ -105,6 +107,8 @@ public class SquareConquererCUI implements Runnable {
 		this.c           = c;
 		this.interactive = interactive;
 	}
+	
+	public void setInteractive(boolean interactive) { this.interactive = interactive; }
 	
 	public void setWorld(World world, Thread serverThread) {
 		this.world        = world;
@@ -179,16 +183,46 @@ public class SquareConquererCUI implements Runnable {
 	}
 	
 	private void exec(List<String> args) {
-		switch (args.get(0).toLowerCase()) {
-		case CMD_HELP -> cmdHelp(args);
-		case CMD_VERSION -> cmdVersion(args);
-		case CMD_STATUS -> cmdStatus(args);
-		case CMD_USERNAME -> cmdUsername(args);
-		case CMD_WORLD -> cmdWorld(args);
-		case CMD_SERVER -> cmdServer(args);
-		case CMD_SETPW -> cmdSetPW(args);
-		case CMD_SERVERPW -> cmdServerPW(args);
-		default -> c.writeLine("unknown command: '" + args.get(0) + "'");
+		try {
+			switch (args.get(0).toLowerCase()) {
+			case CMD_HELP -> cmdHelp(args);
+			case CMD_VERSION -> cmdVersion(args);
+			case CMD_STATUS -> cmdStatus(args);
+			case CMD_USERNAME -> cmdUsername(args);
+			case CMD_WORLD -> cmdWorld(args);
+			case CMD_SERVER -> cmdServer(args);
+			case CMD_SETPW -> cmdSetPW(args);
+			case CMD_SERVERPW -> cmdServerPW(args);
+			case CMD_QUIT -> cmdQuit(args);
+			default -> c.writeLine("unknown command: '" + args.get(0) + "'");
+			}
+		} catch (RuntimeException e) {
+			c.writeLine("error while executing the command: " + e.toString());
+		}
+	}
+	
+	private void cmdQuit(List<String> args) {
+		if (args.size() == 1) {
+			if (interactive) {
+				c.writeLine("goodbye");
+			}
+			System.exit(0);
+		}
+		for (int i = 1; i < args.size(); i++) {
+			if (HELP.equalsIgnoreCase(args.get(i))) {
+				c.writeLine("quit help:");
+				c.writeLine("no args: terminates this program with the exit value 0");
+				c.writeLine("help: print this message");
+				c.writeLine("<NUMBER>: terminates this program with the given exit value");
+				c.writeLine("anything else: terminates this program with the exit value 1");
+			} else {
+				try {
+					System.exit(Integer.parseInt(args.get(i)));
+				} catch (NumberFormatException e) {
+					c.writeLine("error while parsing exit number: " + e.toString());
+					System.exit(1);
+				}
+			}
 		}
 	}
 	
@@ -203,9 +237,120 @@ public class SquareConquererCUI implements Runnable {
 			}
 			return;
 		}
+		for (int i = 1; i < args.size(); i++) {
+			switch (args.get(i).toLowerCase()) {
+			case HELP -> {
+				c.writeLine("server password help:");
+				c.writeLine("status: print an message indicating if there is currently a server password set");
+				c.writeLine("set: prompt for the new server password");
+				c.writeLine("remove: remove and clear the current server password");
+				c.writeLine("remove-no-fail: same as remove, but do not show an error message if there is no server password");
+			}
+			case "status" -> {
+				if (serverPW != null) {
+					c.writeLine("I hava a server password set");
+				} else {
+					c.writeLine("I don't have a server password set");
+				}
+			}
+			case "set" -> {
+				if (++i >= args.size()) {
+					c.writeLine("not enugh arguments for the set arg");
+					return;
+				}
+				serverPW = c.readPassword("enter the new server password");
+				c.writeLine("the server password was updated");
+			}
+			case "remove" -> {
+				if (serverPW == null) {
+					c.writeLine("there is no server password I could remove");
+					return;
+				}
+				serverPW = null;
+			}
+			case "remove-no-fail" -> serverPW = null;
+			default -> c.writeLine("unknown argument: " + args.get(i));
+			}
+		}
 	}
 	
 	private void cmdSetPW(List<String> args) {
+		if (args.size() == 1) {
+			switch (ask("set [y]our password" + (usr instanceof RootUser ? ", [s]omeones password" : "") + " or do [n]othing? ",
+					usr instanceof RootUser ? "ysn" : "yn")) {
+			case 'y' -> setMyPW();
+			case 's' -> {
+				String name = c.readLine("enter now the username of the given user: ");
+				User   user = ((RootUser) usr).get(name);
+				if (user == null) {
+					c.writeLine("the user '" + name + "' could not be found");
+					return;
+				}
+				char[] npw = c.readPassword("enter now the new password of the user: ");
+				((RootUser) usr).changePW(user, npw);
+				c.writeLine("the password of the user '" + name + "' changed");
+			}
+			case 'n' -> {/**/}
+			default -> throw new AssertionError("illegal return value from ask");
+			}
+			return;
+		}
+		for (int i = 1; i < args.size(); i++) {
+			switch (args.get(i).toLowerCase()) {
+			case HELP -> {
+				c.writeLine("setpw help:");
+				c.writeLine("without args: prompt whoses password should be changed and then change the password");
+				c.writeLine("args:");
+				c.writeLine(HELP + ": print this message");
+				c.writeLine("set/of <USERNAME>: prompt for the new password of USERNAME");
+				c.writeLine("me: prompt for your new password");
+				c.writeLine("  note, that if you are connected to an server, that connection will become invalid");
+				c.writeLine("<USERNAME>: prompt for the new password of USERNAME");
+				c.writeLine("  note, that if the username is 'set' or 'me' they are triggered instead");
+			}
+			case "set", "of" -> {
+				if (++i >= args.size()) {
+					c.writeLine("there are not enugh arguments for the set/of argument");
+					return;
+				}
+				setPW(args.get(i));
+			}
+			case "me" -> setMyPW();
+			default -> setPW(args.get(i));
+			}
+		}
+	}
+	
+	private void setPW(String arg) {
+		if (arg.equals(username) || arg.equals(usr == null ? RootWorld.ROOT_NAME : usr.name())) {
+			setMyPW();
+		} else if (!(usr instanceof RootUser root)) {
+			c.writeLine("this is not your username and you are not root");
+		} else {
+			setOtherPW(arg, root);
+		}
+	}
+	
+	private void setOtherPW(String name, RootUser root) {
+		User user = root.get(name);
+		if (user == null) {
+			c.writeLine("the user '" + name + "' could not be found");
+		}
+		char[] npw = c.readPassword("enter now the new password of the user: ");
+		((RootUser) usr).changePW(user, npw);
+		c.writeLine("the password of the user '" + name + "' changed");
+	}
+	
+	private void setMyPW() {
+		char[] pw = c.readPassword("enter your new password: ");
+		if (username != null) {
+			usr = User.create(username, pw);
+		} else if (usr == null) {
+			usr = RootUser.create(pw);
+		} else {
+			usr.changePassword(pw);
+		}
+		c.writeLine("your password was changed");
 	}
 	
 	private void cmdServer(List<String> args) {
@@ -213,7 +358,7 @@ public class SquareConquererCUI implements Runnable {
 			cmdServerNoArgs();
 			return;
 		}
-		for (int i = 0; i < args.size(); i++) {
+		for (int i = 1; i < args.size(); i++) {
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
 				c.writeLine("server help:");
@@ -224,8 +369,9 @@ public class SquareConquererCUI implements Runnable {
 				c.writeLine("  disconnect: disconnect from the server you are currently connected to");
 				c.writeLine("your server commands:");
 				c.writeLine("  start [PORT]: start your own server");
-				c.writeLine("    you need to have an root world loaded");
 				c.writeLine("    use minus ('-') instead of PORT to use the defaul port " + Connection.DEFAULT_PORT);
+				c.writeLine("    if the loaded world is no root world, accepted connections will not get an user world, but the direct world");
+				c.writeLine("    you need to be logged in as root");
 				c.writeLine("  stop: stop your own server");
 			}
 			case "status" -> {
@@ -237,7 +383,6 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("it seems that there is no server running and your world does not seem to be connected to some server");
 				}
 			}
-			// c.writeLine(" connect <SERVER_ADDRESS>: connect to the given server");
 			case "connect" -> {
 				if (++i >= args.size()) {
 					c.writeLine("there are not enugh arguments for the connect argument");
@@ -247,22 +392,108 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("you are not logged in, retry after you logged in (look at " + CMD_SETPW + " and " + CMD_USERNAME + ')');
 					return;
 				}
+				int    port = Connection.DEFAULT_PORT;
 				String addr = args.get(i);
-				int li = 
+				int    li   = addr.lastIndexOf(':');
+				if (li != -1 && li - 1 == addr.lastIndexOf(']') && addr.charAt(0) == '[') {
+					try {
+						port = Integer.parseInt(addr.substring(li + 1));
+						addr = addr.substring(1, li - 1);
+					} catch (NumberFormatException e) {
+						c.writeLine("could not parse the port: " + e.toString());
+						return;
+					}
+				}
+				try {
+					Connection conn;
+					if (serverPW != null) {
+						conn = Connection.ClientConnect.connectNew(addr, port, usr, serverPW);
+					} else {
+						conn = Connection.ClientConnect.connect(addr, port, usr);
+					}
+					world = new RemoteWorld(conn);
+				} catch (IOException e) {
+					c.writeLine("error while connecting: " + e.toString());
+					return;
+				}
 			}
-			// c.writeLine(" disconnect: disconnect from the server you are currently
-			// connected to");
 			case "disconnect" -> {
-				
+				if (!(world instanceof RemoteWorld rw)) {
+					c.writeLine("I don't know any server connection");
+					return;
+				}
+				world = null;
+				try {
+					rw.close();
+					c.writeLine("closed old remote world successfully");
+				} catch (IOException e) {
+					c.writeLine("error while closing: (proceed anyway, do not retry) " + e.toString());
+				}
 			}
-			// c.writeLine(" start: start your own server");
-			// c.writeLine(" you need to have an root world loaded");
 			case "start" -> {
-				
+				if (++i >= args.size()) {
+					c.writeLine("there are not enugh arguments for the start argument");
+					return;
+				}
+				if (serverThread != null) {
+					c.writeLine("I am already running an server");
+					return;
+				}
+				if (world == null) {
+					c.writeLine("there is no world loaded");
+					return;
+				}
+				if (!(usr instanceof RootUser root)) {
+					c.writeLine("you are not logged in as root");
+					return;
+				}
+				try {
+					int    port = "-".equals(args.get(i)) ? Connection.DEFAULT_PORT : Integer.parseInt(args.get(i));
+					char[] spw  = serverPW;
+					serverPW = null;
+					World myWorld = world;
+					serverThread = threadBuilder().start(() -> {
+						try {
+							Connection.ServerAccept.accept(port, (conn, sok) -> {
+								c.writeLine("the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress());
+								World w;
+								if (myWorld instanceof RootWorld rw) {
+									w = new UserWorld(rw, root, conn.modCnt());
+								} else {
+									w = myWorld;
+								}
+								OpenWorld ow = new OpenWorld(conn, w);
+								ow.execute();
+							}, root, spw);
+						} catch (IOException e) {
+							c.writeLine("error at the server thread: " + e.toString());
+						} finally {
+							serverThread = null;
+						}
+					});
+					c.writeLine("started the server thread");
+				} catch (NumberFormatException e) {
+					c.writeLine("error parsing the port: " + e.toString());
+					return;
+				}
 			}
-			// c.writeLine(" stop: stop your own server");
 			case "stop" -> {
-				
+				Thread st = serverThread;
+				if (st == null) {
+					c.writeLine("there seems to be no server running");
+					return;
+				}
+				st.interrupt();
+				try {
+					st.join(1000L);
+				} catch (InterruptedException e) {
+					c.writeLine("I was interrupted: " + e.toString());
+				}
+				if (st.isAlive()) {
+					c.writeLine("I told the server thread to stop");
+				} else {
+					c.writeLine("the server stopped");
+				}
 			}
 			default -> c.writeLine("unknown argument: " + args.get(i));
 			}
@@ -864,7 +1095,9 @@ public class SquareConquererCUI implements Runnable {
 		if (usr == null) {
 			username = RootWorld.ROOT_NAME.equals(cur) ? null : cur;
 		} else if (RootWorld.ROOT_NAME.equals(cur)) {
-			usr = usr.makeRoot();
+			if (!(usr instanceof RootUser)) {
+				usr = usr.makeRoot();
+			}
 		} else {
 			usr = usr.changeName(cur);
 		}
@@ -1020,6 +1253,8 @@ public class SquareConquererCUI implements Runnable {
 			c.writeLine("    change the password (your or someone others, it doesn't matter)");
 			c.writeLine("  " + CMD_SERVERPW);
 			c.writeLine("    set the server password");
+			c.writeLine("  " + CMD_QUIT);
+			c.writeLine("    quit this program");
 			c.writeLine("");
 			c.writeLine("General:");
 			c.writeLine("  all comands support the " + HELP + " argument");
@@ -1057,7 +1292,7 @@ public class SquareConquererCUI implements Runnable {
 		} else if (username != null) {
 			return "(" + username + "): ";
 		} else {
-			return "(---): ";
+			return "(" + RootWorld.ROOT_NAME + "): ";
 		}
 	}
 	
@@ -1067,14 +1302,19 @@ public class SquareConquererCUI implements Runnable {
 			if (task == null) {
 				continue;
 			}
-			if (task instanceof Path loadFile) {
-				doTaskLoadFile(loadFile);
-			} else if (task instanceof StartServerTask sst) {
-				doTaskStartServer(sst);
-			} else if (task instanceof ConnectToServerTask cst) {
-				doTaskConnectToServer(cst);
-			} else {
-				throw new AssertionError("task has an unknown class: " + task.getClass().getName());
+			try {
+				if (task instanceof Path loadFile) {
+					doTaskLoadFile(loadFile);
+				} else if (task instanceof StartServerTask sst) {
+					doTaskStartServer(sst);
+				} else if (task instanceof ConnectToServerTask cst) {
+					doTaskConnectToServer(cst);
+				} else {
+					throw new AssertionError("task has an unknown class: " + task.getClass().getName());
+				}
+			} catch (RuntimeException e) {
+				System.err.println("error while executing task");
+				e.printStackTrace();
 			}
 		}
 	}
