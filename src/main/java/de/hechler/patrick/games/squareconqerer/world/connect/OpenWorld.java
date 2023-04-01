@@ -1,6 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.world.connect;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 
 import de.hechler.patrick.games.squareconqerer.interfaces.Executable;
 import de.hechler.patrick.games.squareconqerer.world.Tile;
@@ -116,6 +117,8 @@ public class OpenWorld implements Executable<IOException> {
 	static final int SUB_GET_WORLD_3             = 0xA9250E35;
 	static final int FIN_GET_WORLD               = 0x030F4D21;
 	
+	static final int NOTIFY_NEXT_TURN = 0xE30212DB;
+	
 	private final Connection conn;
 	private final World      world;
 	
@@ -124,46 +127,97 @@ public class OpenWorld implements Executable<IOException> {
 		this.world = world;
 	}
 	
+	private volatile Thread busy;
+	
+	private void nextTurn() {
+		try {
+			block(250);
+			try {
+				conn.writeInt(NOTIFY_NEXT_TURN);
+			} catch (SocketTimeoutException e) {//
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} finally {
+			unblock();
+		}
+	}
+	
 	@Override
 	public void execute() throws IOException {
+		conn.setTimeout(250);
+		Runnable ntl = this::nextTurn;
+		world.addNextTurnListener(ntl);
 		try {
 			while (true) {
-				long val0 = conn.readInt0();
-				if (val0 == -1L) {
-					return;
-				}
-				int val = (int) val0;
-				switch (val) {
-				case CMD_GET_SIZE -> {
-					conn.writeInt(world.xlen());
-					conn.writeInt(world.ylen());
-				}
-				case CMD_GET_TILE -> {
-					int  x = val;
-					int  y = val;
-					Tile t;
-					try {
-						t = world.tile(x, y);
-					} catch (IndexOutOfBoundsException e) {
-						conn.writeInt(-1);
-						continue;
+				try {
+					block(0);
+					long val0 = conn.readInt0();
+					if (val0 == -1L) {
+						return;
 					}
-					conn.writeInt(GET_TILE_NO_UNIT_NO_BUILD);
-					conn.writeInt(t.type.ordinal());
-					conn.writeInt(t.resource.ordinal());
-				}
-				case CMD_GET_WORLD -> {
-					sendWorld(world, conn, true);
-				}
-				default -> {
-					System.err.println("[OpenWorld]: read invalid data, close connection (" + world.user().name() + ")");
-					return;
-				}
+					int val = (int) val0;
+					switch (val) {
+					case CMD_GET_SIZE -> {
+						conn.writeInt(world.xlen());
+						conn.writeInt(world.ylen());
+					}
+					case CMD_GET_TILE -> {
+						int  x = val;
+						int  y = val;
+						Tile t;
+						try {
+							t = world.tile(x, y);
+						} catch (IndexOutOfBoundsException e) {
+							conn.writeInt(-1);
+							continue;
+						}
+						conn.writeInt(GET_TILE_NO_UNIT_NO_BUILD);
+						conn.writeInt(t.type.ordinal());
+						conn.writeInt(t.resource.ordinal());
+					}
+					case CMD_GET_WORLD -> sendWorld(world, conn, true);
+					default -> {
+						System.err.println("[OpenWorld]: read invalid data, close connection (" + world.user().name() + ")");
+						return;
+					}
+					}
+				} catch (SocketTimeoutException e) {//
+				} finally {
+					unblock();
 				}
 			}
 		} finally {
+			world.removeNextTurnListener(ntl);
 			conn.close();
 		}
+	}
+	
+	private void unblock() {
+		synchronized (this) {
+			if (busy != Thread.currentThread()) {
+				throw new AssertionError("I am not the busy thread");
+			}
+			busy = null;
+			notifyAll();
+		}
+	}
+	
+	private void block(int timeout) {
+		synchronized (this) {
+			while (busy != null) {
+				if (busy == Thread.currentThread()) {
+					throw new AssertionError("deadlock detected");
+				}
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			busy = Thread.currentThread();
+		}
+		conn.setTimeout(timeout);
 	}
 	
 	public static void sendWorld(World world, Connection conn, boolean alsoRead) throws IOException {

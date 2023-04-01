@@ -13,17 +13,17 @@ public class EnumImages {
 	
 	private static BufferedImage[][] imgs;
 	
-	public static BufferedImage immage(TileType tile, ResourceType res) {
+	public static BufferedImage immage(TileType tile, OreResourceType res) {
 		if (imgs == null) {
 			imgs = new BufferedImage[TileType.count()][];
 		}
-		int to = tile.ordinal();
+		int             to  = tile.ordinal();
 		BufferedImage[] arr = imgs[to];
 		if (arr == null) {
-			arr = new BufferedImage[ResourceType.count()];
+			arr      = new BufferedImage[OreResourceType.count()];
 			imgs[to] = arr;
 		}
-		int ro = res.ordinal();
+		int           ro     = res.ordinal();
 		BufferedImage result = arr[ro];
 		if (result != null) {
 			return result;
@@ -40,35 +40,23 @@ public class EnumImages {
 		return b;
 	}
 	
-	public static BufferedImage immage(TileType tile) {
-		return immage(Settings.highResolution(), tile);
+	public static BufferedImage immage(ImageableEnum e) {
+		return immage(Settings.highResolution(), e);
 	}
 	
-	public static BufferedImage immage(ResourceType res) {
-		return immage(Settings.highResolution(), res);
-	}
-	
-	private static BufferedImage immage(boolean shr, TileType tile) {
-		BufferedImage r = tile.resource;
-		if (r == null || tile.resolution != shr) {
-			r               = loadImg(tile, shr, r);
-			tile.resolution = shr;
-			tile.resource   = r;
+	private static BufferedImage immage(boolean shr, ImageableEnum tile) {
+		synchronized (tile) {
+			BufferedImage r = tile.resource();
+			if (r == null || tile.resolution() != shr) {
+				r = loadImg((Enum<?>) tile, shr);
+				tile.resolution(shr);
+				tile.resource(r);
+			}
+			return r;
 		}
-		return r;
 	}
 	
-	private static BufferedImage immage(boolean shr, ResourceType res) {
-		BufferedImage r = res.resource;
-		if (r == null || res.resolution != shr) {
-			r              = loadImg(res, shr, r);
-			res.resolution = shr;
-			res.resource   = r;
-		}
-		return r;
-	}
-	
-	private static BufferedImage loadImg(Enum<?> e, boolean shr, BufferedImage r) throws IOError {
+	private static BufferedImage loadImg(Enum<?> e, boolean shr) throws IOError {
 		Class<?> cls = e.getClass();
 		try {
 			if (shr) {

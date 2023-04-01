@@ -15,6 +15,7 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.hechler.patrick.games.squareconqerer.Settings;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
@@ -24,7 +25,7 @@ import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.world.connect.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
-import de.hechler.patrick.games.squareconqerer.world.enums.ResourceType;
+import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
 
 public class SquareConquererCUI implements Runnable {
@@ -204,7 +205,7 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdQuit(List<String> args) {
 		if (args.size() == 1) {
 			if (interactive) {
-				c.writeLine("goodbye");
+				c.writeLine("goodbye, exit now with 0");
 			}
 			System.exit(0);
 		}
@@ -217,9 +218,12 @@ public class SquareConquererCUI implements Runnable {
 				c.writeLine("anything else: terminates this program with the exit value 1");
 			} else {
 				try {
-					System.exit(Integer.parseInt(args.get(i)));
+					int e = Integer.parseInt(args.get(i));
+					c.writeLine("goodbye, exit now with " + e);
+					System.exit(e);
 				} catch (NumberFormatException e) {
 					c.writeLine("error while parsing exit number: " + e.toString());
+					c.writeLine("goodbye, exit now with 1");
 					System.exit(1);
 				}
 			}
@@ -322,7 +326,7 @@ public class SquareConquererCUI implements Runnable {
 	}
 	
 	private void setPW(String arg) {
-		if (arg.equals(username) || arg.equals(usr == null ? RootWorld.ROOT_NAME : usr.name())) {
+		if (arg.equals(username) || arg.equals(usr == null ? RootUser.ROOT_NAME : usr.name())) {
 			setMyPW();
 		} else if (!(usr instanceof RootUser root)) {
 			c.writeLine("this is not your username and you are not root");
@@ -664,7 +668,7 @@ public class SquareConquererCUI implements Runnable {
 				username = null;
 				try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 					((RootUser) usr).load(conn);
-					Tile[][] tiles = RemoteWorld.readWorld(conn, null, false);
+					Tile[][] tiles = RemoteWorld.readWorld(conn);
 					world = RootWorld.Builder.createBuilder((RootUser) usr, tiles);
 					c.writeLine("loaded world and users successfully from the file");
 				} catch (IOException e) {
@@ -859,11 +863,11 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
 					return;
 				}
-				ResourceType res = switch (args.get(i - 2).toLowerCase()) {
-				case "none" -> ResourceType.NONE;
-				case "gold" -> ResourceType.GOLD;
-				case "iron" -> ResourceType.IRON;
-				case "coal" -> ResourceType.COAL;
+				OreResourceType res = switch (args.get(i - 2).toLowerCase()) {
+				case "none" -> OreResourceType.NONE;
+				case "gold" -> OreResourceType.GOLD_ORE;
+				case "iron" -> OreResourceType.IRON_ORE;
+				case "coal" -> OreResourceType.COAL_ORE;
 				default -> {
 					c.writeLine("unknown type: '" + args.get(i - 2) + '\'');
 					yield null;
@@ -945,7 +949,7 @@ public class SquareConquererCUI implements Runnable {
 			rootLogin(askPW);
 			try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 				((RootUser) usr).load(conn);
-				Tile[][] tiles = RemoteWorld.readWorld(conn, null, false);
+				Tile[][] tiles = RemoteWorld.readWorld(conn);
 				c.writeLine("loaded from file, build now the world");
 				try {
 					world = RootWorld.Builder.create((RootUser) usr, tiles);
@@ -993,9 +997,9 @@ public class SquareConquererCUI implements Runnable {
 				Tile t = world.tile(x, y);
 				b.append(switch (t.resource) {
 				case NONE -> ' ';
-				case GOLD -> 'G';
-				case IRON -> 'I';
-				case COAL -> 'C';
+				case GOLD_ORE -> 'G';
+				case IRON_ORE -> 'I';
+				case COAL_ORE -> 'C';
 				default -> throw new AssertionError("unknown tile resource: " + t.resource.name());
 				});
 			}
@@ -1069,8 +1073,8 @@ public class SquareConquererCUI implements Runnable {
 				}
 				String cur = args.get(i);
 				if (usr == null) {
-					username = RootWorld.ROOT_NAME.equals(cur) ? null : cur;
-				} else if (RootWorld.ROOT_NAME.equals(cur)) {
+					username = RootUser.ROOT_NAME.equals(cur) ? null : cur;
+				} else if (RootUser.ROOT_NAME.equals(cur)) {
 					usr = usr.makeRoot();
 				} else {
 					usr = usr.changeName(cur);
@@ -1078,7 +1082,7 @@ public class SquareConquererCUI implements Runnable {
 			}
 			case "get" -> {
 				String cur = usr == null ? username : usr.name();
-				cur = cur == null ? RootWorld.ROOT_NAME : cur;
+				cur = cur == null ? RootUser.ROOT_NAME : cur;
 				c.writeLine(cur);
 			}
 			default -> c.writeLine("unknown argument: '" + args.get(i) + '\'');
@@ -1093,8 +1097,8 @@ public class SquareConquererCUI implements Runnable {
 		}
 		cur = c.readLine("enter your new username: ");
 		if (usr == null) {
-			username = RootWorld.ROOT_NAME.equals(cur) ? null : cur;
-		} else if (RootWorld.ROOT_NAME.equals(cur)) {
+			username = RootUser.ROOT_NAME.equals(cur) ? null : cur;
+		} else if (RootUser.ROOT_NAME.equals(cur)) {
 			if (!(usr instanceof RootUser)) {
 				usr = usr.makeRoot();
 			}
@@ -1222,7 +1226,7 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdVersion(List<String> args) {
 		if (args.size() == 1) {
-			c.writeLine("Square Conquerer Console version: " + SquareConquererStart.VERSION_STRING);
+			c.writeLine("Square Conquerer Console version: " + Settings.VERSION_STRING);
 		} else if (args.size() == 2 && HELP.equalsIgnoreCase(args.get(1))) {
 			c.writeLine("without args, I only write some version information and I can not do much more");
 			c.writeLine("with one argument, I write this message, when the argumentis the " + HELP + " argument");
@@ -1235,7 +1239,7 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdHelp(List<String> args) {
 		switch (args.size()) {
 		case 1 -> {
-			c.writeLine("Square Conquerer Console " + SquareConquererStart.VERSION_STRING + " help:");
+			c.writeLine("Square Conquerer Console " + Settings.VERSION_STRING + " help:");
 			c.writeLine("Commands:");
 			c.writeLine("  " + CMD_HELP);
 			c.writeLine("    print this message");
@@ -1292,7 +1296,7 @@ public class SquareConquererCUI implements Runnable {
 		} else if (username != null) {
 			return "(" + username + "): ";
 		} else {
-			return "(" + RootWorld.ROOT_NAME + "): ";
+			return "(" + RootUser.ROOT_NAME + "): ";
 		}
 	}
 	
@@ -1435,7 +1439,7 @@ public class SquareConquererCUI implements Runnable {
 			if (askUsr) {
 				c.writeLine("load now the file '" + loadFile + "'");
 				char[] pw = c.readPassword("enter the password: ");
-				if (username != null && !RootWorld.ROOT_NAME.equals(username)) {
+				if (username != null && !RootUser.ROOT_NAME.equals(username)) {
 					c.writeLine("changed to root user");
 				}
 				usr = RootUser.create(pw);
@@ -1486,7 +1490,7 @@ public class SquareConquererCUI implements Runnable {
 			Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr);
 			RootUser   root = (RootUser) usr;
 			root.load(conn);
-			Tile[][] tiles = RemoteWorld.readWorld(conn, null, false);
+			Tile[][] tiles = RemoteWorld.readWorld(conn);
 			world = RootWorld.Builder.createBuilder(root, tiles);
 			try {
 				world = ((RootWorld.Builder) world).create();

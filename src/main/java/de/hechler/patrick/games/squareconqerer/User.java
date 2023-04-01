@@ -91,7 +91,7 @@ public sealed class User implements Closeable {
 	
 	public synchronized User changeName(String name) {
 		Secret0 s0 = new Secret0(name, s._pw);
-		if (RootWorld.ROOT_NAME.equals(name)) {
+		if (RootUser.ROOT_NAME.equals(name)) {
 			if (this instanceof RootUser) {
 				return this;
 			}
@@ -109,7 +109,7 @@ public sealed class User implements Closeable {
 	}
 	
 	public synchronized RootUser rootClone() {
-		Secret0 s0 = new Secret0(RootWorld.ROOT_NAME, s._pw.clone());
+		Secret0 s0 = new Secret0(RootUser.ROOT_NAME, s._pw.clone());
 		return new RootUser(s0);
 	}
 	
@@ -120,7 +120,7 @@ public sealed class User implements Closeable {
 	 * user is already root, it will be replaced by a new root user
 	 */
 	public synchronized RootUser makeRoot() {
-		Secret0 s0 = new Secret0(RootWorld.ROOT_NAME, s._pw);
+		Secret0 s0 = new Secret0(RootUser.ROOT_NAME, s._pw);
 		this.s = null;
 		this.modCnt++;
 		close();
@@ -182,6 +182,10 @@ public sealed class User implements Closeable {
 		RND.nextBytes(bytes);
 	}
 	
+	public int randomInt() {
+		return RND.nextInt();
+	}
+	
 	@Override
 	public synchronized void close() {
 		char[] pw;
@@ -196,7 +200,7 @@ public sealed class User implements Closeable {
 	}
 	
 	public static User create(String name, char[] pw) {
-		if (RootWorld.ROOT_NAME.equals(name)) {
+		if (RootUser.ROOT_NAME.equals(name)) {
 			return RootUser.create(pw);
 		}
 		User usr = new User(new Secret0(name, pw));
@@ -205,6 +209,8 @@ public sealed class User implements Closeable {
 	}
 	
 	public static final class RootUser extends User {
+
+		public static final String ROOT_NAME = "root";
 		
 		private volatile int               maxUsers   = Integer.MAX_VALUE;
 		private volatile Map<String, User> otherUsers = new HashMap<>();
@@ -215,7 +221,7 @@ public sealed class User implements Closeable {
 		}
 		
 		public static RootUser create(char[] pw) {
-			return new RootUser(new Secret0(RootWorld.ROOT_NAME, pw));
+			return new RootUser(new Secret0(ROOT_NAME, pw));
 		}
 		
 		@Override
@@ -251,7 +257,7 @@ public sealed class User implements Closeable {
 			User usr = otherUsers.get(user);
 			if (usr != null) {
 				return usr;
-			} else if (RootWorld.ROOT_NAME.equals(user)) {
+			} else if (RootUser.ROOT_NAME.equals(user)) {
 				return this;
 			} else {
 				return null;
@@ -264,7 +270,7 @@ public sealed class User implements Closeable {
 				throw new IllegalStateException("max amount of users reached");
 			}
 			User usr = ou.get(user);
-			if (usr != null || RootWorld.ROOT_NAME.equals(user)) {
+			if (usr != null || RootUser.ROOT_NAME.equals(user)) {
 				throw new IllegalArgumentException("there is already an user with that name");
 			}
 			usr = new User(new Secret0(user, pw));

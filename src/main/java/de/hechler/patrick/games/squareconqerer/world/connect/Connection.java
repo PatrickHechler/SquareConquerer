@@ -4,12 +4,14 @@ import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
 import java.io.Closeable;
 import java.io.EOFException;
+import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -20,6 +22,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 
 import javax.crypto.CipherInputStream;
@@ -40,13 +43,15 @@ public class Connection implements Closeable {
 	public final User          usr;
 	private final InputStream  in;
 	private final OutputStream out;
+	private final IntConsumer  setTimeout;
 	private final int          modCnt;
 	
-	private Connection(User usr, InputStream in, OutputStream out, int modCnt) {
-		this.usr    = usr;
-		this.in     = in;
-		this.out    = out;
-		this.modCnt = modCnt;
+	private Connection(User usr, InputStream in, OutputStream out, IntConsumer setTimeout, int modCnt) {
+		this.usr        = usr;
+		this.in         = in;
+		this.out        = out;
+		this.setTimeout = setTimeout;
+		this.modCnt     = modCnt;
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				close();
@@ -74,7 +79,7 @@ public class Connection implements Closeable {
 					mc  = usr.modifyCount();
 				}
 				readInt(cin, ClientConnect.FS_CONECT);
-				return new Connection(usr, cin, InvalidOutputStream.INSTANCE, mc);
+				return new Connection(usr, cin, InvalidOutputStream.INSTANCE, null, mc);
 			} catch (Throwable t) {
 				if (cin != null) {
 					cin.close();
@@ -99,7 +104,7 @@ public class Connection implements Closeable {
 					mc   = usr.modifyCount();
 				}
 				writeInt(cout, ClientConnect.FS_CONECT);
-				return new Connection(usr, InvalidInputStream.INSTANCE, cout, mc);
+				return new Connection(usr, InvalidInputStream.INSTANCE, cout, null, mc);
 			} catch (Throwable t) {
 				if (cout != null) {
 					cout.close();
@@ -176,7 +181,13 @@ public class Connection implements Closeable {
 			InputStream  in  = sok.getInputStream();
 			OutputStream out = sok.getOutputStream();
 			try {
-				return accept(in, out, root, serverPW);
+				return accept(in, out, to -> {
+					try {
+						sok.setSoTimeout(to);
+					} catch (SocketException e) {
+						throw new IOError(e);
+					}
+				}, root, serverPW);
 			} catch (Throwable t) {
 				in.close();
 				out.close();
@@ -184,14 +195,14 @@ public class Connection implements Closeable {
 			}
 		}
 		
-		public static Connection accept(InputStream in, OutputStream out, RootUser root, char[] serverPW) throws IOException {
+		public static Connection accept(InputStream in, OutputStream out, IntConsumer setTimeout, RootUser root, char[] serverPW) throws IOException {
 			if (readInt(in, ClientConnect.C_CONECT, ClientConnect.C_NEW) != ClientConnect.C_CONECT) {
 				if (serverPW == null) {
 					in.close();
 					out.close();
 					return null;
 				}
-				return acceptNew(in, out, root, serverPW);
+				return acceptNew(in, out, setTimeout, root, serverPW);
 			}
 			writeInt(out, ClientConnect.S_CONECT);
 			byte[]       salt     = new byte[64];
@@ -233,7 +244,7 @@ public class Connection implements Closeable {
 				}
 				writeInt(cout, ClientConnect.FS_CONECT);
 				readInt(cin, ClientConnect.FC_CONECT);
-				return new Connection(usr, cin, cout, mc);
+				return new Connection(usr, cin, cout, setTimeout, mc);
 			} catch (Throwable t) {
 				if (cin != null) {
 					cin.close();
@@ -245,7 +256,8 @@ public class Connection implements Closeable {
 			}
 		}
 		
-		private static Connection acceptNew(InputStream in, OutputStream out, RootUser root, char[] serverPW) throws IOException {
+		private static Connection acceptNew(InputStream in, OutputStream out, IntConsumer setTimeout, RootUser root, char[] serverPW)
+				throws IOException {
 			writeInt(out, ClientConnect.S_NEW);
 			byte[] salt     = new byte[64];
 			byte[] saltHalf = new byte[32];
@@ -297,7 +309,7 @@ public class Connection implements Closeable {
 				User   usr  = root.add(name, pw);
 				writeInt(cout, ClientConnect.FS_CONECT);
 				readInt(cin, ClientConnect.FC_CONECT);
-				return new Connection(usr, cin, cout, User.startModCnt());
+				return new Connection(usr, cin, cout, setTimeout, User.startModCnt());
 			} catch (Throwable t) {
 				cin.close();
 				cout.close();
@@ -381,10 +393,16 @@ public class Connection implements Closeable {
 		}
 		
 		public static Connection connectNew(Socket sok, User usr, char[] serverPW) throws IOException {
-			return connectNew(sok.getInputStream(), sok.getOutputStream(), usr, serverPW);
+			return connectNew(sok.getInputStream(), sok.getOutputStream(), to -> {
+				try {
+					sok.setSoTimeout(to);
+				} catch (SocketException e) {
+					throw new IOError(e);
+				}
+			}, usr, serverPW);
 		}
 		
-		public static Connection connectNew(InputStream in, OutputStream out, User usr, char[] serverPW) throws IOException {
+		public static Connection connectNew(InputStream in, OutputStream out, IntConsumer setTimeout, User usr, char[] serverPW) throws IOException {
 			if (serverPW == null) {
 				throw new NullPointerException("serverPW is null");
 			}
@@ -451,7 +469,7 @@ public class Connection implements Closeable {
 				writeString(cout, usr.name());
 				readInt(cin, FS_CONECT);
 				writeInt(cout, FC_CONECT);
-				return new Connection(usr, cin, cout, mc);
+				return new Connection(usr, cin, cout, setTimeout, mc);
 			} catch (Throwable t) {
 				if (cin != null) {
 					cin.close();
@@ -480,10 +498,16 @@ public class Connection implements Closeable {
 		}
 		
 		public static Connection connect(Socket sok, User usr) throws IOException {
-			return connect(sok.getInputStream(), sok.getOutputStream(), usr);
+			return connect(sok.getInputStream(), sok.getOutputStream(), to -> {
+				try {
+					sok.setSoTimeout(to);
+				} catch (SocketException e) {
+					throw new IOError(e);
+				}
+			}, usr);
 		}
 		
-		public static Connection connect(InputStream in, OutputStream out, User usr) throws IOException {
+		public static Connection connect(InputStream in, OutputStream out, IntConsumer setTimeout, User usr) throws IOException {
 			writeInt(out, C_CONECT);
 			readInt(in, S_CONECT);
 			byte[] salt     = new byte[64];
@@ -514,7 +538,7 @@ public class Connection implements Closeable {
 				}
 				readInt(cin, FS_CONECT);
 				writeInt(cout, FC_CONECT);
-				return new Connection(usr, cin, cout, mc);
+				return new Connection(usr, cin, cout, setTimeout, mc);
 			} catch (Throwable t) {
 				if (cin != null) {
 					cin.close();
@@ -526,6 +550,13 @@ public class Connection implements Closeable {
 			}
 		}
 		
+	}
+	
+	public void setTimeout(int timeout) {
+		if (setTimeout == null) {
+			throw new UnsupportedOperationException("no timeout supported");
+		}
+		setTimeout.accept(timeout);
 	}
 	
 	public int modCnt() {

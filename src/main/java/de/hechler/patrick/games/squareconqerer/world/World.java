@@ -11,5 +11,9 @@ public interface World {
 	int ylen();
 	
 	Tile tile(int x, int y);
-
+	
+	void addNextTurnListener(Runnable listener);
+	
+	void removeNextTurnListener(Runnable listener);
+	
 }

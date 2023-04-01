@@ -11,6 +11,12 @@ import java.util.Properties;
 
 public class Settings {
 	
+	public static final int     VERSION_MAJOR    = 3;
+	public static final int     VERSION_MINOR    = 0;
+	public static final int     VERSION_FIX      = 0;
+	public static final boolean VERSION_SNAPSHOT = true;
+	public static final String  VERSION_STRING   = VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_FIX + (VERSION_SNAPSHOT ? "-SNAPSHOT" : "");
+
 	private Settings() {}
 	
 	private static final Path       PATH  = Path.of("square-conquerer.properties");

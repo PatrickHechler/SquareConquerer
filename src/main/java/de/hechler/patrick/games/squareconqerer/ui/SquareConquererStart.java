@@ -1,6 +1,6 @@
 package de.hechler.patrick.games.squareconqerer.ui;
 
-import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
+import static de.hechler.patrick.games.squareconqerer.Settings.*;
 
 import java.awt.GridLayout;
 import java.awt.event.ActionListener;
@@ -42,12 +42,6 @@ import de.hechler.patrick.games.squareconqerer.world.connect.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
 
 public class SquareConquererStart {
-	
-	public static final int     VERSION_MAJOR    = 2;
-	public static final int     VERSION_MINOR    = 0;
-	public static final int     VERSION_FIX      = 0;
-	public static final boolean VERSION_SNAPSHOT = false;
-	public static final String  VERSION_STRING   = VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_FIX + (VERSION_SNAPSHOT ? "-SNAPSHOT" : "");
 	
 	private static int     port           = -1;
 	private static boolean gui            = true;
@@ -100,7 +94,7 @@ public class SquareConquererStart {
 				try (InputStream in = Files.newInputStream(worldFile, StandardOpenOption.READ);
 						Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
 					root.load(conn);
-					Tile[][] tiles = RemoteWorld.readWorld(conn, null, false);
+					Tile[][] tiles = RemoteWorld.readWorld(conn);
 					world = RootWorld.Builder.create(root, tiles);
 				} catch (IOException e) {
 					for (int i = 0; pw != null && i < pw.length; i++) { pw[i] = '\0'; }
@@ -780,7 +774,7 @@ public class SquareConquererStart {
 		try (FileInputStream in = new FileInputStream(selectdFile.getText()); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
 			Tile[][] tiles;
 			root.load(conn);
-			tiles = RemoteWorld.readWorld(conn, null, false);
+			tiles = RemoteWorld.readWorld(conn);
 			return RootWorld.Builder.create(root, tiles);
 		} catch (Throwable t) {
 			root.close();

@@ -2,16 +2,22 @@ package de.hechler.patrick.games.squareconqerer.ui;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
+import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,7 +27,10 @@ import java.net.ServerSocket;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
 
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -40,7 +49,14 @@ import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.border.Border;
+import javax.swing.plaf.BorderUIResource;
+import javax.swing.plaf.BorderUIResource.CompoundBorderUIResource;
+import javax.swing.plaf.basic.BasicBorders;
+import javax.swing.plaf.basic.BasicBorders.MarginBorder;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
@@ -93,8 +109,7 @@ public class SquareConquererGUI {
 			return;
 		}
 		
-		frame = new JFrame(world.user().name());
-		initMenu();
+		frame = new JFrame(world.getClass().getSimpleName() + ": " + world.user().name());
 		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
 			
@@ -113,13 +128,14 @@ public class SquareConquererGUI {
 		frame.setVisible(initialVisible);
 	}
 	
-	private void initMenu() {
+	private JMenuBar initMenu() {
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(menuGeneral());
 		if (world instanceof RootWorld) {
 			menuBar.add(menuServer());
 		}
 		frame.setJMenuBar(menuBar);
+		return menuBar;
 	}
 	
 	private JMenu menuServer() {
@@ -166,7 +182,7 @@ public class SquareConquererGUI {
 			JButton change = new JButton("change password");
 			panel.add(change);
 			
-			combo.addItem(RootWorld.ROOT_NAME);
+			combo.addItem(RootUser.ROOT_NAME);
 			RootUser root = ((RootWorld) world).user();
 			root.names().forEach(combo::addItem);
 			
@@ -414,7 +430,7 @@ public class SquareConquererGUI {
 						Tile[][] tiles;
 						try {
 							root.load(conn);
-							tiles = RemoteWorld.readWorld(conn, null, false);
+							tiles = RemoteWorld.readWorld(conn);
 						} catch (Throwable t) {
 							root.close();
 							throw t;
@@ -481,10 +497,12 @@ public class SquareConquererGUI {
 	private void reload(Runnable ufh, boolean reaload) {
 		ToolTipManager.sharedInstance().setInitialDelay(500);
 		
-		JPanel panel = new JPanel();
-		int    mul   = Settings.iconSize();
-		int    xlen  = world.xlen();
-		int    ylen  = world.ylen();
+		JMenuBar  menu  = initMenu();
+		JPanel    panel = new JPanel();
+		int       mul   = Settings.iconSize();
+		int       xlen  = world.xlen();
+		int       ylen  = world.ylen();
+		Dimension d     = new Dimension(mul, mul);
 		panel.setLayout(new GridLayout(xlen, ylen, 0, 0));
 		panel.setPreferredSize(new Dimension(xlen * mul, ylen * mul));
 		panel.applyComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
@@ -494,15 +512,29 @@ public class SquareConquererGUI {
 		scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
 		frame.setContentPane(scrollPane);
 		btns = new JButton[xlen][ylen];
-		Dimension d = new Dimension(mul, mul);
 		for (int y = 0; y < ylen; y++) {
 			for (int x = 0; x < xlen; x++) {
-				btns[x][y] = new JButton();
-				panel.add(btns[x][y]);
-				btns[x][y].setPreferredSize(d);
+				final JButton btn = new JButton();
+				btns[x][y] = btn;
+				panel.add(btn);
+				btn.setPreferredSize(d);
+				btn.setBorderPainted(false);
 				final int fx = x;
 				final int fy = y;
-				btns[x][y].addActionListener(e -> pressed(fx, fy));
+				btn.addActionListener(e -> pressed(fx, fy));
+				btn.addMouseListener(new MouseAdapter() {
+					
+					@Override
+					public void mouseExited(MouseEvent e) {
+						btn.setBorderPainted(false);
+					}
+					
+					@Override
+					public void mouseEntered(MouseEvent e) {
+						btn.setBorderPainted(true);
+					}
+					
+				});
 			}
 		}
 		btns[0][0].addComponentListener(new ComponentAdapter() {
@@ -520,7 +552,170 @@ public class SquareConquererGUI {
 		Rectangle bounds = frame.getGraphicsConfiguration().getBounds();
 		Dimension dim    = new Dimension(Math.min(frame.getWidth(), bounds.width), Math.min(frame.getHeight(), bounds.height));
 		frame.setSize(dim);
+		if (!(world.user() instanceof RootUser)) {
+			JButton finishTurn;
+			try {
+				BufferedImage img   = ImageIO.read(getClass().getResource("/img/FINISH_TURN.png"));
+				ImageIcon     icon0 = new ImageIcon(img.getScaledInstance((mul >>> 1) + (mul >>> 2), (mul >>> 1) + (mul >>> 2), Image.SCALE_SMOOTH));
+				final JButton ft    = new JButton(icon0);
+				ft.setDisabledIcon(icon0);
+				ft.addComponentListener(new ComponentAdapter() {
+					
+					int curw = mul;
+					
+					@Override
+					public void componentResized(ComponentEvent e) {
+						int w   = ft.getWidth();
+						int h   = ft.getHeight();
+						int min = Math.min(w, h);
+						if (min == curw) {
+							return;
+						}
+						ImageIcon icon = new ImageIcon(img.getScaledInstance(min, min, Image.SCALE_SMOOTH));
+						ft.setIcon(icon);
+						ft.setDisabledIcon(icon);
+					}
+					
+				});
+				ft.setSize((mul >>> 1) + (mul >>> 2), (mul >>> 1) + (mul >>> 2));
+				finishTurn = ft;
+			} catch (IOException e) {
+				e.printStackTrace();
+				finishTurn = new JButton("FINISH TURN");
+			}
+			final JButton ft = finishTurn;
+			JPanel        p  = new JPanel();
+			p.setLayout(null);
+			p.add(ft);
+			frame.setGlassPane(p);
+			p.setBounds(0, 0, scrollPane.getWidth(), scrollPane.getHeight() + menu.getHeight());
+			p.setVisible(true);
+			p.setOpaque(false);
+			ft.setOpaque(false);
+			ft.setFocusPainted(false);
+			ft.setBorderPainted(false);
+			ft.setContentAreaFilled(false);
+			ft.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+			scrollPane.addComponentListener(new ComponentAdapter() {
+				
+				@Override
+				public void componentResized(ComponentEvent e) {
+					p.setBounds(0, 0, scrollPane.getWidth(), scrollPane.getHeight() + menu.getHeight());
+					ft.setLocation(scrollPane.getWidth() - scrollPane.getVerticalScrollBar().getWidth() - ft.getWidth(),
+							menu.getHeight() + scrollPane.getHeight() - scrollPane.getHorizontalScrollBar().getHeight() - ft.getHeight());
+				}
+				
+			});
+			MouseAdapter val = new MouseAdapter() {
+				
+				JButton lastbtn;
+				
+				@Override
+				public void mouseMoved(MouseEvent e) {
+					if (ignore(ft, e)) {
+						Component comp = panel.findComponentAt(ft.getX() + e.getX(), ft.getY() + e.getY() - menu.getHeight());
+						if (comp != lastbtn && lastbtn != null) {
+							lastbtn.setBorderPainted(false);
+						} else if (comp == lastbtn) {
+							return;
+						}
+						if (comp instanceof JButton btn) {
+							lastbtn = btn;
+							btn.setBorderPainted(true);
+							MouseEvent event = new MouseEvent(btn, MouseEvent.MOUSE_ENTERED, e.getWhen(), e.getModifiersEx(),
+									ft.getX() + e.getX() - btn.getX(), ft.getY() + e.getY() - btn.getY(), e.getXOnScreen(), e.getYOnScreen(),
+									e.getClickCount(), e.isPopupTrigger(), e.getButton());
+							btn.dispatchEvent(event); // send mouse enter event, so the button displays the correct border
+						} // no need to send an mouse leave event (I only let the mouse hover border print
+					} else if (lastbtn != null) { // or non border at all)
+						lastbtn.setBorderPainted(false);
+						lastbtn = null;
+					}
+				}
+				
+				@Override
+				public void mouseExited(MouseEvent e) {
+					if (lastbtn != null) {
+						lastbtn.setBorderPainted(false);
+						lastbtn = null;
+					}
+				}
+				
+				@Override
+				public void mouseEntered(MouseEvent e) {
+					lastbtn = null;
+					mouseMoved(e);
+				}
+				
+			};
+			ft.addMouseMotionListener(val);
+			ft.addMouseListener(val);
+			btns[0][0].addMouseListener(new MouseAdapter() {
+				
+				@Override
+				public void mouseEntered(MouseEvent e) {
+					System.out.println("mouse event");
+					SwingUtilities.invokeLater(() -> {
+						System.out.println(btns[0][0].getBorder().getClass());
+						System.out.println(btns[0][0].getBorder());
+						javax.swing.plaf.BorderUIResource.CompoundBorderUIResource res = (CompoundBorderUIResource) btns[0][0].getBorder();
+						System.out.println(res.getInsideBorder());
+					});
+					UIDefaults table        = UIManager.getLookAndFeelDefaults();
+					Border     buttonBorder = new BorderUIResource.CompoundBorderUIResource(
+							new BasicBorders.ButtonBorder(table.getColor("Button.shadow"), table.getColor("Button.darkShadow"),
+									table.getColor("Button.light"), table.getColor("Button.highlight")),
+							new MarginBorder());
+					System.out.println(buttonBorder);
+				}
+				
+			});
+			ft.addMouseListener(new MouseAdapter() {
+				
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					finishMouseClick(panel, ft, e);
+				}
+				
+			});
+			ft.addActionListener(this::finishAction);
+		}
 		update(ufh);
+	}
+	
+	private boolean skipAction;
+	
+	private void finishMouseClick(JPanel panel, JButton ft, MouseEvent e) {
+		if (ignore(ft, e)) {
+			Component comp = panel.findComponentAt(ft.getX() + e.getX(), ft.getY() + e.getY() - frame.getJMenuBar().getHeight());
+			if (comp instanceof JButton btn) {
+				btn.doClick(1);
+				skipAction = true;
+			}
+		}
+	}
+	
+	private static boolean ignore(JButton ft, MouseEvent e) {
+		int    midx  = ft.getWidth() >>> 1;
+		int    midy  = ft.getHeight() >>> 1;
+		int    x     = e.getX();
+		int    y     = e.getY();
+		int    diffx = Math.abs(midx - x);
+		int    diffy = Math.abs(midy - y);
+		double dist  = Math.sqrt(diffx * diffx + diffy * diffy);
+		return dist > (62d * 64d) / (Math.min(ft.getWidth(), ft.getHeight()));
+	}
+	
+	private void finishAction(ActionEvent e) {
+		if (skipAction) {
+			skipAction = false;
+			return;
+		}
+		int chosen = JOptionPane.showConfirmDialog(frame, "finish your turn", "finish", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+		if (chosen != JOptionPane.YES_OPTION) {
+			return;
+		}
+		// TODO finish turn
 	}
 	
 	public void visible(boolean b) {
@@ -602,9 +797,9 @@ public class SquareConquererGUI {
 				StringBuilder b    = new StringBuilder();
 				b.append("<html>ground: ").append(t.type);
 				switch (t.resource) {
-				case GOLD -> b.append("<br>resource: Gold Ore");
-				case IRON -> b.append("<br>resource: Iron Ore");
-				case COAL -> b.append("<br>resource: Coal Ore");
+				case GOLD_ORE -> b.append("<br>resource: Gold Ore");
+				case IRON_ORE -> b.append("<br>resource: Iron Ore");
+				case COAL_ORE -> b.append("<br>resource: Coal Ore");
 				case NONE -> {/**/}
 				default -> throw new AssertionError(t.resource.name());
 				}
@@ -628,6 +823,7 @@ public class SquareConquererGUI {
 	}
 	
 	private void pressed(int x, int y) {
+		System.out.println("pressed: " + x + " " + y);
 		Tile t    = world.tile(x, y);
 		int  size = iconSize();
 		Icon icon = t.icon(size, size);

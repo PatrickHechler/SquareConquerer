@@ -1,24 +1,40 @@
 package de.hechler.patrick.games.squareconqerer.world;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
-import de.hechler.patrick.games.squareconqerer.world.enums.ResourceType;
+import de.hechler.patrick.games.squareconqerer.enums.Direction;
+import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
+import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
+import de.hechler.patrick.games.squareconqerer.world.entity.Building;
+import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
+import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
+import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
 import de.hechler.patrick.games.squareconqerer.world.interfaces.UserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.placer.DefaultUserPlacer;
+import de.hechler.patrick.games.squareconqerer.world.turn.CarryTurn;
+import de.hechler.patrick.games.squareconqerer.world.turn.EntityTurn;
+import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
+import de.hechler.patrick.games.squareconqerer.world.turn.StoreTurn;
+import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 public class RootWorld implements World {
-	
-	public static final String ROOT_NAME = "root";
 	
 	private final RootUser             root;
 	private final Tile[][]             tiles;
 	private final UserPlacer           placer;
-	private final Map<User, UserWorld> subWorlds = new HashMap<>();
+	private final Map<User, UserWorld> subWorlds          = new HashMap<>();
+	private final List<Runnable>       nextTurnListeneres = new LinkedList<>();
+	private final Map<User, Turn>      userTurns          = new LinkedHashMap<>();
 	
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
 		this.root   = root;
@@ -46,6 +62,116 @@ public class RootWorld implements World {
 		return tiles[x][y];
 	}
 	
+	@Override
+	public synchronized void addNextTurnListener(Runnable listener) {
+		nextTurnListeneres.add(listener);
+	}
+	
+	@Override
+	public synchronized void removeNextTurnListener(Runnable listener) {
+		nextTurnListeneres.remove(listener);
+	}
+	
+	public synchronized void finishUserTurn(Turn turn) {
+		if (!subWorlds.containsKey(turn.usr)) {
+			throw new AssertionError("this user is invalid");
+		}
+		userTurns.put(turn.usr, turn);
+		if (userTurns.size() >= root.names().size()) {
+			executeTurn();
+		}
+	}
+	
+	private void executeTurn() { // do the turns in the order the users finished
+		for (Turn userturn : userTurns.values()) {
+			for (Entry<Entity, EntityTurn> entry : randomOrder(userturn.turns().entrySet())) {
+				User usr = userturn.usr;
+				try {
+					Entity e = entry.getKey();
+					if (e.owner() != usr) {
+						throw new TurnExecutionException(usr, ErrorType.UNKNOWN);
+					}
+					Tile t = tiles[e.x()][e.y()];
+					executeEntityTurn(entry, usr, e, t);
+				} catch (TurnExecutionException e) {
+					System.err.println("error while executing the turn for the user '" + e.usr + "': " + e.type);
+					e.printStackTrace();
+				} catch (Exception e) {
+					System.err.println("error while executing the turn for the user '" + usr + '\'');
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	@SuppressWarnings("preview")
+	private void executeEntityTurn(Entry<Entity, EntityTurn> entry, User usr, Entity e, Tile t) throws TurnExecutionException {
+		switch (entry.getValue()) {
+		case MoveTurn mt -> {
+			checkHasUnit(usr, e, t);
+			Unit            u    = (Unit) e;
+			List<Direction> dirs = mt.dirs();
+			if (u.moveRange() < dirs.size()) {
+				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+			}
+			for (Direction dir : dirs) {
+				int x = e.x();
+				int y = e.y();
+				if (tiles[x + dir.xadd][y + dir.yadd].unit() != null) {
+					throw new TurnExecutionException(usr, ErrorType.BLOCKED_WAY);
+				}
+				u.xy(x + dir.xadd, y + dir.yadd);
+				tiles[x][y].unit(null);
+				tiles[x + dir.xadd][y + dir.yadd].unit(u);
+			}
+		}
+		case CarryTurn ct -> {
+			checkHasUnit(usr, e, t);
+			Building b = t.building();
+			if (b == null) {
+				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+			}
+			if (!(e instanceof Unit u)) {
+				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+			}
+			b.giveRes(u, ct.res(), ct.amount());
+		}
+		case StoreTurn st -> {
+			checkHasUnit(usr, e, t);
+			Building b = t.building();
+			if (b == null) {
+				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+			}
+			if (!(e instanceof Unit u)) {
+				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+			}
+			b.store(u, st.amount());
+		}
+		default -> throw new AssertionError("unknown entity turn type: " + entry.getValue().getClass());
+		}
+	}
+	
+	private static void checkHasUnit(User usr, Entity e, Tile t) throws TurnExecutionException {
+		if (t.unit() != e) {
+			throw new TurnExecutionException(usr, ErrorType.UNKNOWN);
+		}
+	}
+	
+	private Entry<Entity, EntityTurn>[] randomOrder(Set<Entry<Entity, EntityTurn>> turns) {
+		@SuppressWarnings("unchecked") // do the entity turns in random order
+		Entry<Entity, EntityTurn>[] arr = turns.toArray((Entry<Entity, EntityTurn>[]) new Entry[turns.size()]);
+		for (int i = 0; i < arr.length; i++) {
+			int val = root.randomInt();
+			val &= 0x7FFFFFFF;
+			val %= arr.length - i;
+			val += i;
+			Entry<Entity, EntityTurn> e = arr[val];
+			arr[val] = arr[i];
+			arr[i]   = e;
+		}
+		return arr;
+	}
+	
 	public synchronized UserWorld of(User usr, int usrModCnt) {
 		if (usr == root) {
 			throw new IllegalArgumentException("the root has no user world");
@@ -63,8 +189,8 @@ public class RootWorld implements World {
 	
 	public static class Builder implements World {
 		
-		private static final ResourceType[] RES = ResourceType.values();
-		private static final TileType[]     TYPES;
+		private static final OreResourceType[] RES = OreResourceType.values();
+		private static final TileType[]        TYPES;
 		
 		static {
 			TileType[] v   = TileType.values();
@@ -114,8 +240,8 @@ public class RootWorld implements World {
 					if (ts[i] != null) {
 						continue;
 					}
-					TileType     t = TYPES[1 + rnd.nextInt(TYPES.length - 1)]; // skip not explored
-					ResourceType r = ResourceType.NONE;
+					TileType        t = TYPES[rnd.nextInt(TYPES.length)]; // skip not explored
+					OreResourceType r = OreResourceType.NONE;
 					if ((rnd.nextInt() & resourceMask) == 0) {
 						r = RES[rnd.nextInt(RES.length)];
 					}
@@ -146,7 +272,7 @@ public class RootWorld implements World {
 		@Override
 		public Tile tile(int x, int y) {
 			if (tiles[x][y] == null) {
-				tiles[x][y] = new Tile(TileType.NOT_EXPLORED, ResourceType.NONE);
+				tiles[x][y] = new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE);
 			}
 			return tiles[x][y];
 		}
@@ -170,13 +296,13 @@ public class RootWorld implements World {
 		
 		public void set(int x, int y, TileType t) {
 			if (tiles[x][y] == null) {
-				tiles[x][y] = new Tile(t, ResourceType.NONE);
+				tiles[x][y] = new Tile(t, OreResourceType.NONE);
 			} else {
 				tiles[x][y] = new Tile(t, tiles[x][y].resource);
 			}
 		}
 		
-		public void set(int x, int y, ResourceType r) {
+		public void set(int x, int y, OreResourceType r) {
 			if (tiles[x][y] == null) {
 				throw new NullPointerException("the tile does not already exist");
 			} else {
@@ -184,7 +310,7 @@ public class RootWorld implements World {
 			}
 		}
 		
-		public void set(int x, int y, TileType t, ResourceType r) {
+		public void set(int x, int y, TileType t, OreResourceType r) {
 			if (t == null) {
 				throw new NullPointerException("type is null");
 			}
@@ -245,6 +371,12 @@ public class RootWorld implements World {
 			}
 			return new Builder(root, tiles, rnd);
 		}
+		
+		@Override
+		public void addNextTurnListener(Runnable listener) {/* I don't support turns */}
+		
+		@Override
+		public void removeNextTurnListener(Runnable listener) {/* I don't support turns */}
 		
 	}
 	

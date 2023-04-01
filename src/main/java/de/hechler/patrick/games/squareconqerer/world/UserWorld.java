@@ -39,4 +39,10 @@ public class UserWorld implements World {
 		return world.tile(x, y);
 	}
 	
+	@Override
+	public void addNextTurnListener(Runnable listener) { world.addNextTurnListener(listener); }
+	
+	@Override
+	public void removeNextTurnListener(Runnable listener) { world.removeNextTurnListener(listener); }
+	
 }
