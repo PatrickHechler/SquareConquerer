@@ -4,6 +4,7 @@ package de.hechler.patrick.games.squareconqerer.exceptions.enums;
 public enum ErrorType {
 	BLOCKED_WAY(0xDD41CD00),
 	INVALID_TURN(0x6E826655),
+	NOT_STARTED(0x70098916),
 	UNKNOWN(0x9922EA84)
 	;
 	

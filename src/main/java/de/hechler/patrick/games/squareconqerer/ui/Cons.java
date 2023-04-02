@@ -1,7 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.ui;
 
 
-public interface Con {
+public interface Cons {
 	
 	char[] readPassword();
 	

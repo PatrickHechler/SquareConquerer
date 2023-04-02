@@ -7,12 +7,12 @@ public final class RemoteTile extends Tile {
 	
 	public final long created;
 	
-	public RemoteTile(TileType type, OreResourceType resource) {
-		this(System.currentTimeMillis(), type, resource);
+	public RemoteTile(TileType type, OreResourceType resource, boolean visible) {
+		this(System.currentTimeMillis(), type, resource, visible);
 	}
 	
-	public RemoteTile(long time, TileType type, OreResourceType resource) {
-		super(type, resource);
+	public RemoteTile(long time, TileType type, OreResourceType resource, boolean visible) {
+		super(type, resource, visible);
 		created = time;
 	}
 	

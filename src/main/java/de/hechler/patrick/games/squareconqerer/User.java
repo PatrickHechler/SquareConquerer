@@ -12,9 +12,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.crypto.Cipher;
@@ -114,7 +112,8 @@ public sealed class User implements Closeable {
 	}
 	
 	/**
-	 * this method will create a new root user with the password of this user and then close this user
+	 * this method will create a new root user with the password of this user and
+	 * then close this user
 	 * <p>
 	 * this is not the same as {@link #changeName(String)}, because even if this
 	 * user is already root, it will be replaced by a new root user
@@ -208,20 +207,37 @@ public sealed class User implements Closeable {
 		return usr;
 	}
 	
+	public static User nopw(String name) {
+		Secret0 s = new Secret0(name, null);
+		if (RootUser.ROOT_NAME.equals(name)) {
+			return new RootUser(s);
+		} else {
+			return new User(s);
+		}
+	}
+	
 	public static final class RootUser extends User {
-
+		
 		public static final String ROOT_NAME = "root";
 		
 		private volatile int               maxUsers   = Integer.MAX_VALUE;
 		private volatile Map<String, User> otherUsers = new HashMap<>();
 		
+		private volatile boolean noNew;
+		
 		public RootUser(Secret0 s) {
 			super(s);
-			Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+			if (s._pw != null) {
+				Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+			}
 		}
 		
 		public static RootUser create(char[] pw) {
 			return new RootUser(new Secret0(ROOT_NAME, pw));
+		}
+		
+		public static RootUser nopw() {
+			return new RootUser(new Secret0(ROOT_NAME, null));
 		}
 		
 		@Override
@@ -253,6 +269,10 @@ public sealed class User implements Closeable {
 			return this.maxUsers;
 		}
 		
+		public synchronized void allowNewUsers(boolean allow) {
+			this.noNew = !allow;
+		}
+		
 		public synchronized User get(String user) {
 			User usr = otherUsers.get(user);
 			if (usr != null) {
@@ -265,6 +285,9 @@ public sealed class User implements Closeable {
 		}
 		
 		public synchronized User add(String user, char[] pw) {
+			if (noNew) {
+				throw new IllegalStateException("no new users allowed");
+			}
 			Map<String, User> ou = otherUsers;
 			if (maxUsers - 1 <= ou.size()) {
 				throw new IllegalStateException("max amount of users reached");
@@ -364,8 +387,11 @@ public sealed class User implements Closeable {
 			conn.readInt(FIN_SAVE);
 		}
 		
-		public synchronized List<String> names() {
-			return new ArrayList<>(otherUsers.keySet());
+		public synchronized Map<String, User> users() {
+			HashMap<String, User> res = new HashMap<>(otherUsers.size() + 1);
+			res.putAll(otherUsers);
+			res.put(ROOT_NAME, this);
+			return res;
 		}
 		
 	}

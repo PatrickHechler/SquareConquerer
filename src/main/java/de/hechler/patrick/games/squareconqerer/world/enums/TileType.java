@@ -2,7 +2,7 @@ package de.hechler.patrick.games.squareconqerer.world.enums;
 
 import java.awt.image.BufferedImage;
 
-public enum TileType implements ImageableEnum {
+public enum TileType implements ImageableObj {
 	
 	/**
 	 * this type is used for tiles which are not yet visible to the player
@@ -43,6 +43,8 @@ public enum TileType implements ImageableEnum {
 	@Override public boolean resolution() { return resolution; }
 	
 	@Override public void resolution(boolean nval) { this.resolution = nval; }
+	
+	@Override public boolean multipleResolutions() { return true; }
 	
 	/**
 	 * returns <code>true</code> if this is a water tile

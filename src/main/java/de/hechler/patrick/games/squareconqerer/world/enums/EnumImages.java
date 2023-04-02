@@ -11,6 +11,8 @@ import de.hechler.patrick.games.squareconqerer.Settings;
 
 public class EnumImages {
 	
+	private EnumImages() { }
+	
 	private static BufferedImage[][] imgs;
 	
 	public static BufferedImage immage(TileType tile, OreResourceType res) {
@@ -40,26 +42,28 @@ public class EnumImages {
 		return b;
 	}
 	
-	public static BufferedImage immage(ImageableEnum e) {
-		return immage(Settings.highResolution(), e);
+	public static BufferedImage immage(ImageableObj obj) {
+		return immage(Settings.highResolution(), obj);
 	}
 	
-	private static BufferedImage immage(boolean shr, ImageableEnum tile) {
-		synchronized (tile) {
-			BufferedImage r = tile.resource();
-			if (r == null || tile.resolution() != shr) {
-				r = loadImg((Enum<?>) tile, shr);
-				tile.resolution(shr);
-				tile.resource(r);
+	private static BufferedImage immage(boolean shr, ImageableObj obj) {
+		synchronized (obj) {
+			BufferedImage r = obj.resource();
+			if (r == null || obj.resolution() != shr) {
+				r = loadImg(obj, shr);
+				obj.resolution(shr);
+				obj.resource(r);
 			}
 			return r;
 		}
 	}
 	
-	private static BufferedImage loadImg(Enum<?> e, boolean shr) throws IOError {
+	private static BufferedImage loadImg(ImageableObj e, boolean shr) throws IOError {
 		Class<?> cls = e.getClass();
 		try {
-			if (shr) {
+			if (!e.multipleResolutions()) {
+				return ImageIO.read(cls.getResource("/img/" + cls.getSimpleName() + "/" + e.name() + ".png"));
+			} else if (shr) {
 				return ImageIO.read(cls.getResource("/img/" + cls.getSimpleName() + "/" + e.name() + "-high_res.png"));
 			} else {
 				return ImageIO.read(cls.getResource("/img/" + cls.getSimpleName() + "/" + e.name() + "-low_res.png"));

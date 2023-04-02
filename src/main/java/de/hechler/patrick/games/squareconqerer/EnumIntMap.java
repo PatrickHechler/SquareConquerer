@@ -22,6 +22,11 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		this.arr = new int[cls.getEnumConstants().length];
 	}
 	
+	private EnumIntMap(Class<T> cls, int[] arr) {
+		this.cls = cls;
+		this.arr = arr;
+	}
+	
 	/**
 	 * return the current value
 	 * 
@@ -382,6 +387,10 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			throw new UnsupportedOperationException("clear");
 		}
 		
+	}
+
+	public EnumIntMap<T> copy() {
+		return new EnumIntMap<>(cls, arr.clone());
 	}
 	
 }

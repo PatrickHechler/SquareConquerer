@@ -4,11 +4,13 @@ import java.awt.image.BufferedImage;
 
 import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
 
-public enum ProducableResourceType implements ImageableEnum, Resource {
+public enum ProducableResourceType implements ImageableObj, Resource {
 	
 	GOLD, IRON, STEEL, WOOD, STONE, GLASS
 	
 	;
+	
+	public static final int NUMBER = 0x461D8706;
 	
 	private static final ProducableResourceType[] VALS = values();
 	
@@ -30,5 +32,7 @@ public enum ProducableResourceType implements ImageableEnum, Resource {
 	@Override public boolean resolution() { return resolution; }
 	
 	@Override public void resolution(boolean nval) { this.resolution = nval; }
+	
+	@Override public boolean multipleResolutions() { return true; }
 	
 }

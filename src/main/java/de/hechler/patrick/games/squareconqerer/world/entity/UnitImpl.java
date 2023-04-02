@@ -1,6 +1,9 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
+import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
+import de.hechler.patrick.games.squareconqerer.world.Tile;
 import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
 
 public abstract sealed class UnitImpl extends EntityImpl implements Unit permits Carrier {
@@ -9,15 +12,29 @@ public abstract sealed class UnitImpl extends EntityImpl implements Unit permits
 	protected int       carryAmount;
 	protected final int carryMaxAmount;
 	
-	protected UnitImpl(int x, int y, User usr, int maxlives, int carrymaxAmount) {
-		super(x, y, usr, maxlives);
-		this.carryMaxAmount = carrymaxAmount;
+	protected UnitImpl(int x, int y, User usr, int maxlives, int viewRange, int carryMaxAmount) {
+		super(x, y, usr, maxlives, maxlives, viewRange);
+		this.carryMaxAmount = carryMaxAmount;
+	}
+	
+	protected UnitImpl(int x, int y, User usr, int maxlives, int lives, int viewRange, int carryMaxAmount, int carryAmount, Resource res) {
+		super(x, y, usr, maxlives, lives, viewRange);
+		this.carryMaxAmount = carryMaxAmount;
+		this.carryAmount    = carryAmount;
+		this.carryResource  = res;
 	}
 	
 	@Override
-	public void xy(int newx, int newy) {
+	public void changePos(int newx, int newy, Tile checkCanTile) throws TurnExecutionException {
+		checkValid(checkCanTile);
 		super.x = newx;
 		super.y = newy;
+	}
+	
+	protected void checkValid(Tile checkCanTile) throws TurnExecutionException {
+		if (!checkCanTile.type.isLand()) {
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		}
 	}
 	
 	@Override
@@ -36,27 +53,27 @@ public abstract sealed class UnitImpl extends EntityImpl implements Unit permits
 	}
 	
 	@Override
-	public void carry(Resource res, int amount) {
+	public void carry(Resource res, int amount) throws TurnExecutionException {
 		if (amount < 0) {
-			throw new IllegalArgumentException("amount is negative");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		if (res == null) {
-			throw new NullPointerException("resource is null");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		if (res != this.carryResource && this.carryResource != null) {
-			throw new IllegalStateException("I currently carry a different resource");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		this.carryResource = res;
-		this.carryAmount += amount;
+		this.carryResource  = res;
+		this.carryAmount   += amount;
 	}
 	
 	@Override
-	public void uncarry(int amount) {
+	public void uncarry(int amount) throws TurnExecutionException {
 		if (amount <= 0) {
-			throw new IllegalArgumentException("amount is not strict positive");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		if (this.carryAmount < amount) {
-			throw new IllegalArgumentException("I carry less, than I should uncarry");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		this.carryAmount -= amount;
 		if (this.carryAmount == 0) {

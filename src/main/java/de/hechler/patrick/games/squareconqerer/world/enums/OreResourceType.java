@@ -4,7 +4,7 @@ import java.awt.image.BufferedImage;
 
 import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
 
-public enum OreResourceType implements ImageableEnum, Resource {
+public enum OreResourceType implements ImageableObj, Resource {
 	
 	NONE,
 	
@@ -15,6 +15,8 @@ public enum OreResourceType implements ImageableEnum, Resource {
 	COAL_ORE,
 	
 	;
+	
+	public static final int NUMBER = 0x6A58EEA4;
 	
 	private static final OreResourceType[] VALS = values();
 	
@@ -36,6 +38,8 @@ public enum OreResourceType implements ImageableEnum, Resource {
 	@Override public boolean resolution() { return resolution; }
 	
 	@Override public void resolution(boolean nval) { this.resolution = nval; }
+	
+	@Override public boolean multipleResolutions() { return true; }
 	
 	@Override
 	public String toString() {

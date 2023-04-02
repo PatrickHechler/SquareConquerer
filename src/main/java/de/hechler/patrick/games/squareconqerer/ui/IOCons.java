@@ -3,12 +3,12 @@ package de.hechler.patrick.games.squareconqerer.ui;
 import java.io.PrintStream;
 import java.util.Scanner;
 
-public class IOCon implements Con {
+public class IOCons implements Cons {
 	
 	private final Scanner     in;
 	private final PrintStream out;
 	
-	public IOCon(Scanner in, PrintStream out) { this.in = in; this.out = out; }
+	public IOCons(Scanner in, PrintStream out) { this.in = in; this.out = out; }
 	
 	@Override
 	public char[] readPassword() {

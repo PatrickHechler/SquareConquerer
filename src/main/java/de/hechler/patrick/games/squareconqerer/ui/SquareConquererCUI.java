@@ -74,7 +74,7 @@ public class SquareConquererCUI implements Runnable {
 		return args;
 	}
 	
-	private final Con c;
+	private final Cons c;
 	private boolean   interactive;
 	
 	private volatile Thread serverThread;
@@ -89,19 +89,19 @@ public class SquareConquererCUI implements Runnable {
 	public SquareConquererCUI() {
 		Console console = System.console();
 		if (console != null) {
-			this.c           = new ConsoleCon(console);
+			this.c           = new ConsoleCons(console);
 			this.interactive = true;
 		} else {
-			this.c           = new IOCon(new Scanner(System.in), System.out);
+			this.c           = new IOCons(new Scanner(System.in), System.out);
 			this.interactive = false;
 		}
 	}
 	
-	public SquareConquererCUI(Con c) {
-		this(c, c instanceof ConsoleCon);
+	public SquareConquererCUI(Cons c) {
+		this(c, c instanceof ConsoleCons);
 	}
 	
-	public SquareConquererCUI(Con c, boolean interactive) {
+	public SquareConquererCUI(Cons c, boolean interactive) {
 		if (c == null) {
 			throw new NullPointerException("Con c is null");
 		}
@@ -661,14 +661,14 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("there is no user logged in");
 					return;
 				}
-				if (!(usr instanceof RootUser root) || !root.names().isEmpty()) {
+				if (!(usr instanceof RootUser root) || !root.users().isEmpty()) {
 					c.writeLine("changed to root user");
 				}
 				usr      = usr.makeRoot();
 				username = null;
 				try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 					((RootUser) usr).load(conn);
-					Tile[][] tiles = RemoteWorld.readWorld(conn);
+					Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser)usr).users());
 					world = RootWorld.Builder.createBuilder((RootUser) usr, tiles);
 					c.writeLine("loaded world and users successfully from the file");
 				} catch (IOException e) {
@@ -742,7 +742,7 @@ public class SquareConquererCUI implements Runnable {
 							tmp.save(conn);
 						}
 					}
-					OpenWorld.sendWorld(world, conn, false);
+					OpenWorld.saveWorld(world, conn);
 					c.writeLine("saved wolrd and users in the given file");
 				} catch (IOException e) {
 					c.writeLine("error while saving: " + e.toString());
@@ -949,7 +949,7 @@ public class SquareConquererCUI implements Runnable {
 			rootLogin(askPW);
 			try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 				((RootUser) usr).load(conn);
-				Tile[][] tiles = RemoteWorld.readWorld(conn);
+				Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) usr).users());
 				c.writeLine("loaded from file, build now the world");
 				try {
 					world = RootWorld.Builder.create((RootUser) usr, tiles);
@@ -1490,7 +1490,7 @@ public class SquareConquererCUI implements Runnable {
 			Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr);
 			RootUser   root = (RootUser) usr;
 			root.load(conn);
-			Tile[][] tiles = RemoteWorld.readWorld(conn);
+			Tile[][] tiles = RemoteWorld.loadWorld(conn, root.users());
 			world = RootWorld.Builder.createBuilder(root, tiles);
 			try {
 				world = ((RootWorld.Builder) world).create();

@@ -1,5 +1,8 @@
 package de.hechler.patrick.games.squareconqerer.world;
 
+import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -35,6 +38,7 @@ public class RootWorld implements World {
 	private final Map<User, UserWorld> subWorlds          = new HashMap<>();
 	private final List<Runnable>       nextTurnListeneres = new LinkedList<>();
 	private final Map<User, Turn>      userTurns          = new LinkedHashMap<>();
+	private volatile boolean           started            = false;
 	
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
 		this.root   = root;
@@ -62,6 +66,34 @@ public class RootWorld implements World {
 		return tiles[x][y];
 	}
 	
+	private void executeNTL() {
+		for (Runnable r : nextTurnListeneres) {
+			r.run();
+		}
+	}
+	
+	public boolean running() {
+		return started;
+	}
+	
+	public synchronized void start() {
+		if (started) {
+			throw new IllegalStateException("the game already started");
+		}
+		started = true;
+		root.allowNewUsers(false);
+		threadBuilder().start(this::executeNTL);
+	}
+	
+	public synchronized void stop() {
+		if (!started) {
+			throw new IllegalStateException("the game is not started");
+		}
+		started = false;
+		root.allowNewUsers(true);
+		threadBuilder().start(this::executeNTL);
+	}
+	
 	@Override
 	public synchronized void addNextTurnListener(Runnable listener) {
 		nextTurnListeneres.add(listener);
@@ -72,29 +104,36 @@ public class RootWorld implements World {
 		nextTurnListeneres.remove(listener);
 	}
 	
-	public synchronized void finishUserTurn(Turn turn) {
-		if (!subWorlds.containsKey(turn.usr)) {
+	@Override
+	public synchronized void finish(Turn t) {
+		if (t.usr == root) {
+			throw new UnsupportedOperationException("the root can not execute turns");
+		}
+		if (!started) {
+			throw new IllegalStateException("not started");
+		}
+		if (!subWorlds.containsKey(t.usr)) {
 			throw new AssertionError("this user is invalid");
 		}
-		userTurns.put(turn.usr, turn);
-		if (userTurns.size() >= root.names().size()) {
-			executeTurn();
+		userTurns.put(t.usr, t);
+		if (userTurns.size() >= root.users().keySet().size()) {
+			threadBuilder().start(this::executeTurn);
 		}
 	}
 	
 	private void executeTurn() { // do the turns in the order the users finished
-		for (Turn userturn : userTurns.values()) {
+		for (Turn userturn : userTurns.values()) { // and the entity turns in random order
 			for (Entry<Entity, EntityTurn> entry : randomOrder(userturn.turns().entrySet())) {
 				User usr = userturn.usr;
 				try {
 					Entity e = entry.getKey();
 					if (e.owner() != usr) {
-						throw new TurnExecutionException(usr, ErrorType.UNKNOWN);
+						throw new TurnExecutionException(ErrorType.UNKNOWN);
 					}
 					Tile t = tiles[e.x()][e.y()];
-					executeEntityTurn(entry, usr, e, t);
+					executeEntityTurn(entry, e, t);
 				} catch (TurnExecutionException e) {
-					System.err.println("error while executing the turn for the user '" + e.usr + "': " + e.type);
+					System.err.println("error while executing the turn for the user '" + usr + "': " + e.type);
 					e.printStackTrace();
 				} catch (Exception e) {
 					System.err.println("error while executing the turn for the user '" + usr + '\'');
@@ -102,48 +141,50 @@ public class RootWorld implements World {
 				}
 			}
 		}
+		executeNTL();
 	}
 	
 	@SuppressWarnings("preview")
-	private void executeEntityTurn(Entry<Entity, EntityTurn> entry, User usr, Entity e, Tile t) throws TurnExecutionException {
+	private void executeEntityTurn(Entry<Entity, EntityTurn> entry, Entity e, Tile t) throws TurnExecutionException {
 		switch (entry.getValue()) {
 		case MoveTurn mt -> {
-			checkHasUnit(usr, e, t);
+			checkHasUnit(e, t);
 			Unit            u    = (Unit) e;
 			List<Direction> dirs = mt.dirs();
 			if (u.moveRange() < dirs.size()) {
-				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 			for (Direction dir : dirs) {
-				int x = e.x();
-				int y = e.y();
-				if (tiles[x + dir.xadd][y + dir.yadd].unit() != null) {
-					throw new TurnExecutionException(usr, ErrorType.BLOCKED_WAY);
+				int  x       = e.x();
+				int  y       = e.y();
+				Tile newTile = tiles[x + dir.xadd][y + dir.yadd];
+				if (newTile.unit() != null) {
+					throw new TurnExecutionException(ErrorType.BLOCKED_WAY);
 				}
-				u.xy(x + dir.xadd, y + dir.yadd);
+				u.changePos(x + dir.xadd, y + dir.yadd, newTile);
 				tiles[x][y].unit(null);
-				tiles[x + dir.xadd][y + dir.yadd].unit(u);
+				newTile.unit(u);
 			}
 		}
 		case CarryTurn ct -> {
-			checkHasUnit(usr, e, t);
+			checkHasUnit(e, t);
 			Building b = t.building();
 			if (b == null) {
-				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 			if (!(e instanceof Unit u)) {
-				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 			b.giveRes(u, ct.res(), ct.amount());
 		}
 		case StoreTurn st -> {
-			checkHasUnit(usr, e, t);
+			checkHasUnit(e, t);
 			Building b = t.building();
 			if (b == null) {
-				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 			if (!(e instanceof Unit u)) {
-				throw new TurnExecutionException(usr, ErrorType.INVALID_TURN);
+				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 			b.store(u, st.amount());
 		}
@@ -151,16 +192,16 @@ public class RootWorld implements World {
 		}
 	}
 	
-	private static void checkHasUnit(User usr, Entity e, Tile t) throws TurnExecutionException {
+	private static void checkHasUnit(Entity e, Tile t) throws TurnExecutionException {
 		if (t.unit() != e) {
-			throw new TurnExecutionException(usr, ErrorType.UNKNOWN);
+			throw new TurnExecutionException(ErrorType.UNKNOWN);
 		}
 	}
 	
 	private Entry<Entity, EntityTurn>[] randomOrder(Set<Entry<Entity, EntityTurn>> turns) {
 		@SuppressWarnings("unchecked") // do the entity turns in random order
 		Entry<Entity, EntityTurn>[] arr = turns.toArray((Entry<Entity, EntityTurn>[]) new Entry[turns.size()]);
-		for (int i = 0; i < arr.length; i++) {
+		for (int i = 0; i < arr.length - 1; i++) {
 			int val = root.randomInt();
 			val &= 0x7FFFFFFF;
 			val %= arr.length - i;
@@ -187,6 +228,11 @@ public class RootWorld implements World {
 		}
 	}
 	
+	@Override
+	public Map<User, List<Entity>> entities() {
+		return entities(tiles);
+	}
+	
 	public static class Builder implements World {
 		
 		private static final OreResourceType[] RES = OreResourceType.values();
@@ -199,9 +245,10 @@ public class RootWorld implements World {
 			System.arraycopy(v, 1, TYPES, 0, len);
 		}
 		
+		private List<Runnable> nextTurnListeners = new ArrayList<>();
 		private final Tile[][] tiles;
 		private final Random   rnd;
-		private final RootUser usr;
+		private final RootUser root;
 		
 		private int resourceMask = 7;
 		
@@ -219,15 +266,21 @@ public class RootWorld implements World {
 			if (usr == null) {
 				throw new NullPointerException("usr is null");
 			}
-			this.usr   = usr;
+			this.root  = usr;
 			this.tiles = new Tile[xlen][ylen];
 			this.rnd   = rnd;
 		}
 		
 		private Builder(RootUser usr, Tile[][] tiles, Random rnd) {
-			this.usr   = usr;
+			this.root  = usr;
 			this.tiles = tiles;
 			this.rnd   = rnd;
+		}
+		
+		private void executeNTL() {
+			for (Runnable r : nextTurnListeners) {
+				r.run();
+			}
 		}
 		
 		public void fillRandom() {
@@ -237,7 +290,7 @@ public class RootWorld implements World {
 		public void fillTotallyRandom() {
 			for (Tile[] ts : tiles) {
 				for (int i = 0; i < ts.length; i++) {
-					if (ts[i] != null) {
+					if (ts[i] != null && ts[i].type != TileType.NOT_EXPLORED) {
 						continue;
 					}
 					TileType        t = TYPES[rnd.nextInt(TYPES.length)]; // skip not explored
@@ -245,9 +298,10 @@ public class RootWorld implements World {
 					if ((rnd.nextInt() & resourceMask) == 0) {
 						r = RES[rnd.nextInt(RES.length)];
 					}
-					ts[i] = new Tile(t, r);
+					ts[i] = new Tile(t, r, true);
 				}
 			}
+			executeNTL();
 		}
 		
 		public void resourceMask(int resourceMask) { this.resourceMask = resourceMask; }
@@ -256,7 +310,7 @@ public class RootWorld implements World {
 		
 		@Override
 		public RootUser user() {
-			return usr;
+			return root;
 		}
 		
 		@Override
@@ -272,7 +326,7 @@ public class RootWorld implements World {
 		@Override
 		public Tile tile(int x, int y) {
 			if (tiles[x][y] == null) {
-				tiles[x][y] = new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE);
+				tiles[x][y] = new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE, true);
 			}
 			return tiles[x][y];
 		}
@@ -296,18 +350,20 @@ public class RootWorld implements World {
 		
 		public void set(int x, int y, TileType t) {
 			if (tiles[x][y] == null) {
-				tiles[x][y] = new Tile(t, OreResourceType.NONE);
+				tiles[x][y] = new Tile(t, OreResourceType.NONE, true);
 			} else {
-				tiles[x][y] = new Tile(t, tiles[x][y].resource);
+				tiles[x][y] = new Tile(t, tiles[x][y].resource, true);
 			}
+			executeNTL();
 		}
 		
 		public void set(int x, int y, OreResourceType r) {
 			if (tiles[x][y] == null) {
 				throw new NullPointerException("the tile does not already exist");
 			} else {
-				tiles[x][y] = new Tile(tiles[x][y].type, r);
+				tiles[x][y] = new Tile(tiles[x][y].type, r, true);
 			}
+			executeNTL();
 		}
 		
 		public void set(int x, int y, TileType t, OreResourceType r) {
@@ -320,19 +376,43 @@ public class RootWorld implements World {
 			if (r == null) {
 				throw new NullPointerException("resource is null");
 			}
-			tiles[x][y] = new Tile(t, r);
+			tiles[x][y] = new Tile(t, r, true);
+			executeNTL();
 		}
 		
 		public void set(int x, int y, Tile t) {
 			tiles[x][y] = t;
+			executeNTL();
 		}
 		
 		public RootWorld create() throws IllegalStateException, NullPointerException {
-			return create(usr, this.tiles);
+			return create(root, this.tiles);
 		}
 		
 		public static RootWorld create(RootUser root, Tile[][] tiles) throws IllegalStateException, NullPointerException {
 			return create(root, tiles, null);
+		}
+		
+		public boolean buildable() {
+			for (int x = 0; x < tiles.length; x++) {
+				Tile[] ts = tiles[x].clone();
+				if (ts.length != tiles[0].length) {
+					return false;
+				}
+				for (int y = 0; y < ts.length; y++) {
+					Tile t = ts[y];
+					if (t == null) {
+						return false;
+					}
+					if (t.type == null || t.resource == null) {
+						return false;
+					}
+					if (t.type == TileType.NOT_EXPLORED) {
+						return false;
+					}
+				}
+			}
+			return true;
 		}
 		
 		public static RootWorld create(RootUser root, Tile[][] tiles, UserPlacer placer) throws IllegalStateException, NullPointerException {
@@ -373,11 +453,51 @@ public class RootWorld implements World {
 		}
 		
 		@Override
-		public void addNextTurnListener(Runnable listener) {/* I don't support turns */}
+		public void addNextTurnListener(Runnable listener) { nextTurnListeners.add(listener); }
 		
 		@Override
-		public void removeNextTurnListener(Runnable listener) {/* I don't support turns */}
+		public void removeNextTurnListener(Runnable listener) { nextTurnListeners.remove(listener); }
 		
+		@Override
+		public Map<User, List<Entity>> entities() {
+			return RootWorld.entities(tiles);
+		}
+		
+		@Override
+		public void finish(Turn t) {
+			throw new UnsupportedOperationException("this is an build world");
+		}
+		
+		public void set(int x, int y, Building build) {
+			tile(x, y).build(build);
+		}
+		
+		public void set(int x, int y, Unit unit) {
+			tile(x, y).unit(unit);
+		}
+		
+	}
+	
+	private static Map<User, List<Entity>> entities(Tile[][] tiles) {
+		Map<User, List<Entity>> result = new HashMap<>();
+		for (int x = 0; x < tiles.length; x++) {
+			Tile[] ts = tiles[x];
+			for (int y = 0; y < ts.length; y++) {
+				Tile t = ts[y];
+				if (t == null) {
+					continue;
+				}
+				add(result, t.unit());
+				add(result, t.building());
+			}
+		}
+		return result;
+	}
+	
+	private static void add(Map<User, List<Entity>> result, Entity u) {
+		if (u != null) {
+			result.computeIfAbsent(u.owner(), usr -> new ArrayList<>()).add(u);
+		}
 	}
 	
 }

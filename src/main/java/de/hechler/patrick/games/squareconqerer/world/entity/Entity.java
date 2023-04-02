@@ -14,4 +14,8 @@ public sealed interface Entity permits Unit, Building, EntityImpl {
 	
 	int maxLives();
 	
+	int viewRange();
+	
+	Entity copy();
+	
 }

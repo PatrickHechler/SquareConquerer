@@ -1,6 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.ui;
 
-import static de.hechler.patrick.games.squareconqerer.Settings.*;
+import static de.hechler.patrick.games.squareconqerer.Settings.VERSION_STRING;
+import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
 import java.awt.GridLayout;
 import java.awt.event.ActionListener;
@@ -94,7 +95,7 @@ public class SquareConquererStart {
 				try (InputStream in = Files.newInputStream(worldFile, StandardOpenOption.READ);
 						Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
 					root.load(conn);
-					Tile[][] tiles = RemoteWorld.readWorld(conn);
+					Tile[][] tiles = RemoteWorld.loadWorld(conn, root.users());
 					world = RootWorld.Builder.create(root, tiles);
 				} catch (IOException e) {
 					for (int i = 0; pw != null && i < pw.length; i++) { pw[i] = '\0'; }
@@ -761,12 +762,8 @@ public class SquareConquererStart {
 	}
 	
 	private static World createNewWorld(JPasswordField pw, NumberDocument xlenDoc, NumberDocument ylenDoc) {
-		World             world;
 		RootUser          root = RootUser.create(pw.getPassword());
-		RootWorld.Builder b    = new RootWorld.Builder(root, Math.max(1, xlenDoc.getNumber()), Math.max(1, ylenDoc.getNumber()));
-		b.fillRandom();
-		world = b.create();
-		return world;
+		return new RootWorld.Builder(root, Math.max(1, xlenDoc.getNumber()), Math.max(1, ylenDoc.getNumber()));
 	}
 	
 	private static World loadWorldFromFile(JPasswordField pw, JTextField selectdFile) throws IOException {
@@ -774,7 +771,7 @@ public class SquareConquererStart {
 		try (FileInputStream in = new FileInputStream(selectdFile.getText()); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
 			Tile[][] tiles;
 			root.load(conn);
-			tiles = RemoteWorld.readWorld(conn);
+			tiles = RemoteWorld.loadWorld(conn, root.users());
 			return RootWorld.Builder.create(root, tiles);
 		} catch (Throwable t) {
 			root.close();

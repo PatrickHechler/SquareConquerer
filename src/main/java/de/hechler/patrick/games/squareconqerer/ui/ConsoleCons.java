@@ -2,13 +2,13 @@ package de.hechler.patrick.games.squareconqerer.ui;
 
 import java.io.Console;
 
-public class ConsoleCon implements Con {
+public class ConsoleCons implements Cons {
 	
 	private final Console c;
 	
 	private final Object[] singleVarArg = new Object[1];
 	
-	public ConsoleCon(Console c) { this.c = c; }
+	public ConsoleCons(Console c) { this.c = c; }
 	
 	@Override
 	public char[] readPassword(String prompt) {

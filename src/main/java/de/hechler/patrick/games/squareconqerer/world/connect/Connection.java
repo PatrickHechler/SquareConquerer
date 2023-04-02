@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.function.IntConsumer;
@@ -566,6 +567,14 @@ public class Connection implements Closeable {
 	public int readInt() throws IOException {
 		return readInt(in);
 	}
+
+	public int readByte() throws IOException {
+		return readByte(in);
+	}
+
+	public int readByte(int a, int b) throws IOException {
+		return readByte(in, a, b);
+	}
 	
 	public long readInt0() throws IOException {
 		return readInt0(in);
@@ -577,6 +586,34 @@ public class Connection implements Closeable {
 	
 	public void readInt(int val) throws IOException {
 		readInt(in, val);
+	}
+	
+	public int readInt(int a, int b) throws IOException {
+		int reat = readInt(in);
+		if (a == reat || b == reat) {
+			return reat;
+		}
+		throw new InputMismatchException(
+				"read an unexpected value, expected 0x" + Integer.toHexString(a) + " or 0x" + Integer.toHexString(b) + " but got 0x");
+		
+	}
+	
+	public int readInt(int... vals) throws IOException {
+		int reat = readInt(in);
+		for (int val : vals) {
+			if (reat == val) {
+				return val;
+			}
+		}
+		throw new InputMismatchException("unexpected value: " + reat + " expected: " + Arrays.toString(vals));
+	}
+	
+	public int readInt(IntFunction<String> msg, int a, int b) throws IOException {
+		int reat = readInt(in);
+		if (a == reat || b == reat) {
+			return reat;
+		}
+		throw new InputMismatchException(msg.apply(reat));
 	}
 	
 	public int readInt(IntFunction<String> msg, int... vals) throws IOException {
@@ -595,6 +632,13 @@ public class Connection implements Closeable {
 	
 	public void writeInt(int val) throws IOException {
 		writeInt(out, val);
+	}
+	
+	public void writeByte(int val) throws IOException {
+		if ((val & 0xFF) != val) {
+			throw new IllegalArgumentException("the given value is outside of the byte bounds: 0x" + Integer.toHexString(val));
+		}
+		out.write(val);
 	}
 	
 	public void writeString(String str) throws IOException {
@@ -626,6 +670,25 @@ public class Connection implements Closeable {
 	
 	private static void writeInt(OutputStream out, int value) throws IOException {
 		out.write(new byte[] { (byte) value, (byte) (value >>> 8), (byte) (value >>> 16), (byte) (value >>> 24) });
+	}
+	
+	private static int readByte(InputStream in) throws IOException {
+		int val = in.read();
+		if (val == -1) {
+			throw new EOFException();
+		}
+		return val;
+	}
+	
+	private static int readByte(InputStream in, int a, int b) throws IOException {
+		int val = in.read();
+		if (val == -1) {
+			throw new EOFException();
+		}
+		if (val == a || val == b) {
+			return val;
+		}
+		throw new IOException("expected 0x" + Integer.toHexString(a) + " or 0x" + Integer.toHexString(b) + " but got 0x" + Integer.toHexString(val));
 	}
 	
 	private static int readInt(InputStream in) throws IOException {

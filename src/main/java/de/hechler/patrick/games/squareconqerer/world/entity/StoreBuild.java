@@ -2,28 +2,39 @@ package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
+import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
 import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.enums.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
 
 public final class StoreBuild extends BuildingImpl {
 	
+	public static final int NUMBER = 0x5A1C58D0;
+	
 	private final Resource resource;
 	private int            amount;
 	
-	public StoreBuild(int x, int y, User usr, Resource resource) {
+	public StoreBuild(int x, int y, User usr, Resource resource) throws TurnExecutionException {
 		super(x, y, usr, 5, neededRes(resource));
 		this.resource = resource;
 	}
 	
-	private static EnumIntMap<ProducableResourceType> neededRes(Resource resource) {
+	public StoreBuild(int x, int y, User usr, int lives, EnumIntMap<ProducableResourceType> neededBuildResources, int remainBuildTurns,
+			Resource resource, int resourceAmount) {
+		super(x, y, usr, 5, lives, neededBuildResources, remainBuildTurns);
+		this.resource = resource;
+		this.amount   = resourceAmount;
+	}
+	
+	private static EnumIntMap<ProducableResourceType> neededRes(Resource resource) throws TurnExecutionException {
 		if (resource == null) {
-			throw new NullPointerException("can't create a store for no resource type");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		EnumIntMap<ProducableResourceType> res = new EnumIntMap<>(ProducableResourceType.class);
 		if (resource instanceof OreResourceType ort) {
 			if (ort == OreResourceType.NONE) {
-				throw new IllegalArgumentException("can't create a store for no resource type");
+				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 			res.set(ProducableResourceType.WOOD, 2);
 			res.set(ProducableResourceType.STONE, 1);
@@ -55,27 +66,39 @@ public final class StoreBuild extends BuildingImpl {
 		return res;
 	}
 	
+	public Resource resource() { return resource; }
+	
+	public int amount() { return amount; }
+	
 	@Override
-	protected void finishedBuildStore(Resource r, int amount) {
+	protected void finishedBuildStore(Resource r, int amount) throws TurnExecutionException {
 		if (r != this.resource) {
-			throw new IllegalStateException("I can not store this resource");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		amount+=amount;
+		this.amount += amount;
 	}
 	
 	@Override
-	public void giveRes(Unit u, Resource res, int amount) {
+	public void giveRes(Unit u, Resource res, int amount) throws TurnExecutionException {
 		if (amount <= 0) {
-			throw new IllegalStateException("only strictly positive values for amount are valid");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		if (res != this.resource) {
-			throw new IllegalStateException("I do not have this resource");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		if (amount > this.amount) {
-			throw new IllegalStateException("I do not have so much");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		}
+		if (!isFinishedBuild()) {
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		u.carry(res, amount);
 		this.amount -= amount;
+	}
+	
+	@Override
+	public StoreBuild copy() {
+		return new StoreBuild(x, y, owner(), lives(), neededResources(), remainingBuildTurns(), resource, amount);
 	}
 	
 }

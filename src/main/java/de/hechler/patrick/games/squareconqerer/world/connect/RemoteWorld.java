@@ -6,24 +6,41 @@ import java.io.Closeable;
 import java.io.IOError;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
+import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.RemoteTile;
 import de.hechler.patrick.games.squareconqerer.world.Tile;
 import de.hechler.patrick.games.squareconqerer.world.World;
+import de.hechler.patrick.games.squareconqerer.world.entity.Building;
+import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
+import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
+import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
+import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.enums.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
+import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
+import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 public class RemoteWorld implements World, Closeable {
 	
-	private final Connection conn;
-	private int              xlen;
-	private int              ylen;
-	private RemoteTile[][]   tiles;
-	private long             needUpdate;
-	private boolean          getWorld = true;
+	private final Connection        conn;
+	private int                     xlen;
+	private int                     ylen;
+	private RemoteTile[][]          tiles;
+	private long                    needUpdate;
+	private boolean                 getWorld = true;
+	private long                    lastWorldUpdate;
+	private Map<User, List<Entity>> entities;
+	private Map<String, User>       users;
 	
 	public RemoteWorld(Connection conn) {
 		this.conn = conn;
@@ -117,24 +134,40 @@ public class RemoteWorld implements World, Closeable {
 	public synchronized void updateWorld() throws IOException {
 		try {
 			block(0);
-			RemoteTile[][] t = readWorld(conn, this.tiles, true);
+			lastWorldUpdate = System.currentTimeMillis();
+			if (entities == null) {
+				entities = new HashMap<>();
+				users    = new HashMap<>();
+				users.put(conn.usr.name(), conn.usr);
+			} else {
+				entities.clear();
+			}
+			RemoteTile[][] t = readWorld(conn, this.tiles, lastWorldUpdate, entities, users);
 			if (t != this.tiles) {
 				this.tiles = t;
 				this.xlen  = t.length;
 				this.ylen  = t[0].length;
 			}
+			Map<User, List<Entity>> unmodCopy = new HashMap<>(entities.size());
+			for (Entry<User, List<Entity>> entry : entities.entrySet()) {
+				User         key = entry.getKey();
+				List<Entity> val = entry.getValue();
+				unmodCopy.put(key, Collections.unmodifiableList(val));
+			}
+			entities = Collections.unmodifiableMap(unmodCopy);
 		} finally {
 			unblock();
 		}
 	}
 	
-	public static Tile[][] readWorld(Connection c) throws IOException {
-		return readWorld(c, null, false);
+	public static Tile[][] loadWorld(Connection c, Map<String, User> users) throws IOException {
+		return readWorld(c, null, -1L, null, users);
 	}
 	
 	@SuppressWarnings("unchecked")
-	private static <T extends Tile> T[][] readWorld(Connection conn, T[][] tiles, boolean remote) throws IOException {
-		if (remote) {
+	private static <T extends Tile> T[][] readWorld(Connection conn, T[][] tiles, long timestamp, Map<User, List<Entity>> entities,
+			Map<String, User> users) throws IOException {
+		if (entities != null) {
 			conn.writeInt(OpenWorld.CMD_GET_WORLD);
 		} else {
 			conn.readInt(OpenWorld.CMD_GET_WORLD);
@@ -142,32 +175,96 @@ public class RemoteWorld implements World, Closeable {
 		int xlen = conn.readInt();
 		int ylen = conn.readInt();
 		if (tiles == null) {
-			tiles = (T[][]) (remote ? new RemoteTile[xlen][ylen] : new Tile[xlen][ylen]);
+			tiles = (T[][]) (entities != null ? new RemoteTile[xlen][ylen] : new Tile[xlen][ylen]);
 		} else if (xlen != tiles.length || ylen != tiles[0].length) {
 			System.err.println("[RemoteWorld]: WARN: world size changed (old xlen=" + tiles.length + " ylen=" + tiles[0].length + " new xlen=" + xlen
 					+ " ylen=" + ylen + ')');
-			tiles = (T[][]) (remote ? new RemoteTile[xlen][ylen] : new Tile[xlen][ylen]);
+			tiles = (T[][]) (entities != null ? new RemoteTile[xlen][ylen] : new Tile[xlen][ylen]);
 		}
-		long time = System.currentTimeMillis();
 		for (int x = 0; x < xlen; x++) {
 			for (int y = 0; y < ylen; y++) {
 				int             tto = conn.readInt();
 				int             rto = conn.readInt();
 				TileType        tt  = TileType.of(tto);
 				OreResourceType rt  = OreResourceType.of(rto);
-				tiles[x][y] = (T) (remote ? new RemoteTile(time, tt, rt) : new Tile(tt, rt));
+				boolean         v   = conn.readByte(0, 1) != 0;
+				tiles[x][y] = (T) (entities != null ? new RemoteTile(timestamp, tt, rt, v) : new Tile(tt, rt, v));
 			}
 			conn.readInt(OpenWorld.SUB_GET_WORLD_0);
 		}
 		conn.readInt(OpenWorld.SUB_GET_WORLD_1);
-		conn.readInt(0);
-		conn.readInt(0);
-		conn.readInt(OpenWorld.SUB_GET_WORLD_2);
+		int players = conn.readInt();
+		while (players-- > 0) {
+			String username = conn.readString();
+			User   usr      = entities == null ? users.get(username) : users.computeIfAbsent(username, User::nopw);
+			if (usr == null) {
+				throw new IllegalStateException("got an unknown username (not in map: '" + username + "')");
+			}
+			List<Entity> list = entities.computeIfAbsent(usr, u -> new ArrayList<>());
+			if (conn.readInt(null, OpenWorld.CMD_UNIT, OpenWorld.CMD_BUILD) == OpenWorld.CMD_UNIT) {
+				list.add(readUnit(conn, usr));
+			} else {
+				list.add(readBuilding(conn, usr));
+			}
+			conn.readInt(OpenWorld.SUB_GET_WORLD_2);
+		}
 		conn.readInt(OpenWorld.SUB_GET_WORLD_3);
-		if (remote) {
+		if (entities != null) {
 			conn.writeInt(OpenWorld.FIN_GET_WORLD);
 		}
 		return tiles;
+	}
+	
+	private static Unit readUnit(Connection conn, User usr) throws IOException {
+		int      x     = conn.readInt();
+		int      y     = conn.readInt();
+		int      lives = conn.readInt();
+		int      ca    = conn.readInt();
+		Resource res   = null;
+		if (ca != 0) {
+			res = readRes(conn);
+		}
+		conn.readInt(Carrier.NUMBER);
+		conn.readInt(OpenWorld.FIN_ENTITY);
+		return new Carrier(x, y, usr, lives, res, ca);
+	}
+	
+	public static Resource readRes(Connection conn) throws IOException {
+		return switch (conn.readInt(ProducableResourceType.NUMBER, OreResourceType.NUMBER)) {
+		case ProducableResourceType.NUMBER -> ProducableResourceType.of(conn.readInt());
+		case OreResourceType.NUMBER -> OreResourceType.of(conn.readInt());
+		default -> throw new AssertionError("invalid return type of conn.readInt(int,int)");
+		};
+	}
+	
+	private static Building readBuilding(Connection conn, User usr) throws IOException {
+		int                                x              = conn.readInt();
+		int                                y              = conn.readInt();
+		int                                lives          = conn.readInt();
+		int                                remainTurns    = 0;
+		EnumIntMap<ProducableResourceType> neededBuildRes = null;
+		if (conn.readByte(0, 1) != 0) {
+			remainTurns = conn.readInt();
+			int len = conn.readInt(ProducableResourceType.count(), 0);
+			if (len != 0) {
+				neededBuildRes = new EnumIntMap<>(ProducableResourceType.class);
+				int[] arr = neededBuildRes.array();
+				for (int i = 0; i < arr.length; i++) {
+					arr[i] = conn.readInt();
+					if (arr[i] < 0) {
+						throw new IOException("read an negative amount for a needed resource");
+					}
+				}
+			}
+		}
+		conn.readInt(StoreBuild.NUMBER);
+		Resource storedRes   = readRes(conn);
+		int      storeAmount = conn.readInt();
+		if (storeAmount < 0) {
+			throw new IOException("read an negative amount for the store amount");
+		}
+		conn.readInt(OpenWorld.FIN_ENTITY);
+		return new StoreBuild(x, y, usr, lives, neededBuildRes, remainTurns, storedRes, storeAmount);
 	}
 	
 	public synchronized void updateSingleTile(int x, int y) throws IOException {
@@ -181,7 +278,8 @@ public class RemoteWorld implements World, Closeable {
 			int             resOrid  = conn.readInt();
 			TileType        tt       = TileType.of(typeOrid);
 			OreResourceType rt       = OreResourceType.of(resOrid);
-			tiles[x][y] = new RemoteTile(tt, rt);
+			boolean         v        = conn.readByte(0, 1) != 0;
+			tiles[x][y] = new RemoteTile(tt, rt, v);
 		} finally {
 			unblock();
 		}
@@ -277,8 +375,32 @@ public class RemoteWorld implements World, Closeable {
 	}
 	
 	@Override
+	public Map<User, List<Entity>> entities() {
+		if (needUpdate >= lastWorldUpdate) {
+			try {
+				updateWorld();
+			} catch (IOException e) {
+				throw new IOError(e);
+			}
+		}
+		return entities;
+	}
+	
+	@Override
 	public void close() throws IOException {
 		conn.close();
+	}
+	
+	@Override
+	public void finish(Turn t) {
+		if (t.usr != conn.usr) {
+			throw new IllegalStateException("I can only finish my turns");
+		}
+		try {
+			t.sendTurn(conn);
+		} catch (IOException e) {
+			throw new IOError(e);
+		}
 	}
 	
 }
