@@ -601,10 +601,12 @@ public final class RootWorld implements World {
 		
 		public void set(int x, int y, Building build) {
 			tile(x, y).build(build);
+			executeNTL();
 		}
 		
 		public void set(int x, int y, Unit unit) {
 			tile(x, y).unit(unit);
+			executeNTL();
 		}
 		
 	}

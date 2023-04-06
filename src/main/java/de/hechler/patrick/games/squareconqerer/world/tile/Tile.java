@@ -61,9 +61,11 @@ public sealed class Tile permits RemoteTile {
 	
 	private static Icon icon(Tile t, int width, int height) {
 		if (icons == null) {
-			icons = new Icon[(OreResourceType.count() * TileType.count()) << 1];
+			icons = new Icon[(OreResourceType.count() * TileType.count() * (Building.COUNT + 1) * (Unit.COUNT + 1)) << 1];
 		}
-		int index = (t.resource.ordinal() + OreResourceType.count() * t.type.ordinal()) << 1;
+		int index = (t.type.ordinal() * OreResourceType.count() + t.resource.ordinal()) * (Building.COUNT + 1);
+		index = (index + Building.ordinal(t.build)) * (Unit.COUNT + 1);
+		index = (index + Unit.ordinal(t.unit)) << 1;
 		if (t.visible) index++;
 		if (icons[index] == null || icons[index].getIconWidth() != width || icons[index].getIconHeight() != height) {
 			System.out.println("create icon: " + t);
@@ -105,11 +107,17 @@ public sealed class Tile permits RemoteTile {
 	
 	public boolean visible() { return visible; }
 	
-	public void unit(Unit unit) { this.unit = unit; }
+	public void unit(Unit unit) {
+		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != UserWorld.class && caller != RootWorld.class && caller != RootWorld.Builder.class) {
+			throw new IllegalCallerException("illegal caller: " + caller);
+		}
+		this.unit = unit;
+	}
 	
 	public void build(Building build) {
 		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
-		if (caller != UserWorld.class && caller != RootWorld.class) {
+		if (caller != UserWorld.class && caller != RootWorld.class && caller != RootWorld.Builder.class) {
 			throw new IllegalCallerException("illegal caller: " + caller);
 		}
 		this.build = build;
