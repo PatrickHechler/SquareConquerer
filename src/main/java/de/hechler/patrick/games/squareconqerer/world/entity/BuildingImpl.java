@@ -4,14 +4,14 @@ import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
-import de.hechler.patrick.games.squareconqerer.world.enums.ProducableResourceType;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
+import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 public abstract sealed class BuildingImpl extends EntityImpl implements Building permits StoreBuild {
 	
 	private EnumIntMap<ProducableResourceType> neededResources;
 	private int                                neededBuildTurns;
-
+	
 	protected BuildingImpl(int x, int y, User usr, int maxlives, EnumIntMap<ProducableResourceType> neededResources) {
 		super(x, y, usr, maxlives, maxlives, 0);
 		this.neededResources = neededResources;
@@ -20,10 +20,11 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 		}
 		this.neededBuildTurns = (this.neededBuildTurns >>> 1) + 1;
 	}
-
-	protected BuildingImpl(int x, int y, User usr, int maxlives, int lives, EnumIntMap<ProducableResourceType> neededResources, int remainingBuildTurns) {
+	
+	protected BuildingImpl(int x, int y, User usr, int maxlives, int lives, EnumIntMap<ProducableResourceType> neededResources,
+			int remainingBuildTurns) {
 		super(x, y, usr, maxlives, lives, 0);
-		this.neededResources = neededResources;
+		this.neededResources  = neededResources;
 		this.neededBuildTurns = remainingBuildTurns;
 	}
 	
@@ -90,5 +91,8 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 		}
 		neededBuildTurns--;
 	}
+	
+	@Override
+	public String cls() { return "Building"; }
 	
 }

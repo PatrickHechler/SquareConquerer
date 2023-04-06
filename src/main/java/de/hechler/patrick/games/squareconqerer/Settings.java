@@ -45,9 +45,9 @@ public class Settings {
 	private static final String TRUE  = "true";
 	private static final String FALSE = "false";
 	
-	private static final String HIGH_RESOLUTION = "gui.high_resolution";
 	private static final String ICON_SIZE       = "gui.icon_size";
 	
+	@SuppressWarnings("unused")
 	private static boolean getProp(String name, boolean def) {
 		return switch (PROPS.getProperty(name, def ? TRUE : FALSE)) {
 		case TRUE -> true;
@@ -72,20 +72,13 @@ public class Settings {
 		}
 	}
 	
+	@SuppressWarnings("unused")
 	private static void setProp(String name, boolean val) {
 		PROPS.setProperty(name, val ? TRUE : FALSE);
 	}
 	
 	private static void setProp(String name, int val) {
 		PROPS.setProperty(name, Integer.toString(val));
-	}
-	
-	public static boolean highResolution() {
-		return getProp(HIGH_RESOLUTION, true);
-	}
-	
-	public static void highResolution(boolean value) {
-		setProp(HIGH_RESOLUTION, value);
 	}
 	
 	public static int iconSize() {

@@ -34,13 +34,13 @@ import javax.swing.text.Document;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
+import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
-import de.hechler.patrick.games.squareconqerer.world.Tile;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
-import de.hechler.patrick.games.squareconqerer.world.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.world.connect.OpenWorld;
-import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
 public class SquareConquererStart {
 	

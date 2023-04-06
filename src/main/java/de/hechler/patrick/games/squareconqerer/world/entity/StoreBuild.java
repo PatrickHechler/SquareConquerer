@@ -4,78 +4,44 @@ import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
-import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.ProducableResourceType;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 public final class StoreBuild extends BuildingImpl {
 	
 	public static final int NUMBER = 0x5A1C58D0;
 	
-	private final Resource resource;
-	private int            amount;
+	private final EnumIntMap<OreResourceType>        ores       = new EnumIntMap<>(OreResourceType.class);
+	private final EnumIntMap<ProducableResourceType> producable = new EnumIntMap<>(ProducableResourceType.class);
 	
-	public StoreBuild(int x, int y, User usr, Resource resource) throws TurnExecutionException {
-		super(x, y, usr, 5, neededRes(resource));
-		this.resource = resource;
+	public StoreBuild(int x, int y, User usr) {
+		super(x, y, usr, 5, neededRes());
 	}
 	
 	public StoreBuild(int x, int y, User usr, int lives, EnumIntMap<ProducableResourceType> neededBuildResources, int remainBuildTurns,
-			Resource resource, int resourceAmount) {
+			EnumIntMap<OreResourceType> ores, EnumIntMap<ProducableResourceType> producable) {
 		super(x, y, usr, 5, lives, neededBuildResources, remainBuildTurns);
-		this.resource = resource;
-		this.amount   = resourceAmount;
+		this.ores.putAll(ores);
+		this.producable.putAll(producable);
 	}
 	
-	private static EnumIntMap<ProducableResourceType> neededRes(Resource resource) throws TurnExecutionException {
-		if (resource == null) {
-			throw new TurnExecutionException(ErrorType.INVALID_TURN);
-		}
+	private static EnumIntMap<ProducableResourceType> neededRes() {
 		EnumIntMap<ProducableResourceType> res = new EnumIntMap<>(ProducableResourceType.class);
-		if (resource instanceof OreResourceType ort) {
-			if (ort == OreResourceType.NONE) {
-				throw new TurnExecutionException(ErrorType.INVALID_TURN);
-			}
-			res.set(ProducableResourceType.WOOD, 2);
-			res.set(ProducableResourceType.STONE, 1);
-			res.set(ProducableResourceType.IRON, 1);
-		} else if (resource instanceof ProducableResourceType prt) {
-			switch (prt) {
-			case GLASS -> {
-				res.set(ProducableResourceType.STONE, 3);
-				res.set(ProducableResourceType.WOOD, 3);
-				res.set(ProducableResourceType.IRON, 1);
-			}
-			case GOLD, IRON -> {
-				res.set(ProducableResourceType.IRON, 1);
-				res.set(ProducableResourceType.STONE, 3);
-			}
-			case STEEL -> {
-				res.set(ProducableResourceType.IRON, 3);
-				res.set(ProducableResourceType.STONE, 3);
-			}
-			case STONE, WOOD -> {
-				res.set(ProducableResourceType.WOOD, 2);
-				res.set(ProducableResourceType.STONE, 2);
-			}
-			default -> throw new AssertionError("unknown resource type: " + resource.getClass());
-			}
-		} else {
-			throw new AssertionError("unknown resource type: " + resource.getClass());
-		}
+		res.set(ProducableResourceType.WOOD, 6);
+		res.set(ProducableResourceType.STONE, 3);
 		return res;
 	}
 	
-	public Resource resource() { return resource; }
-	
-	public int amount() { return amount; }
-	
 	@Override
 	protected void finishedBuildStore(Resource r, int amount) throws TurnExecutionException {
-		if (r != this.resource) {
-			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		if (r instanceof ProducableResourceType prt) {
+			producable.add(prt, amount);
+		} else if (r instanceof OreResourceType ort) {
+			ores.add(ort, amount);
+		} else {
+			throw new AssertionError("unknown resource type: " + r.getClass());
 		}
-		this.amount += amount;
 	}
 	
 	@Override
@@ -83,22 +49,43 @@ public final class StoreBuild extends BuildingImpl {
 		if (amount <= 0) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		if (res != this.resource) {
-			throw new TurnExecutionException(ErrorType.INVALID_TURN);
-		}
-		if (amount > this.amount) {
-			throw new TurnExecutionException(ErrorType.INVALID_TURN);
-		}
 		if (!isFinishedBuild()) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
+		if (res instanceof ProducableResourceType prt) {
+			if (producable.sub(prt, amount) < 0) {
+				producable.add(prt, amount);
+				throw new TurnExecutionException(ErrorType.INVALID_TURN);
+			}
+		} else if (res instanceof OreResourceType ort) {
+			if (ores.sub(ort, amount) < 0) {
+				ores.add(ort, amount);
+				throw new TurnExecutionException(ErrorType.INVALID_TURN);
+			}
+		} else {
+			throw new AssertionError("unknown resource type: " + res.getClass());
+		}
 		u.carry(res, amount);
-		this.amount -= amount;
 	}
 	
 	@Override
 	public StoreBuild copy() {
-		return new StoreBuild(x, y, owner(), lives(), neededResources(), remainingBuildTurns(), resource, amount);
+		return new StoreBuild(x, y, owner(), lives(), neededResources(), remainingBuildTurns(), ores, producable);
 	}
+	
+	public EnumIntMap<ProducableResourceType> producable() {
+		EnumIntMap<ProducableResourceType> res = new EnumIntMap<>(ProducableResourceType.class);
+		res.putAll(producable);
+		return res;
+	}
+	
+	public EnumIntMap<OreResourceType> ores() {
+		EnumIntMap<OreResourceType> res = new EnumIntMap<>(OreResourceType.class);
+		res.putAll(ores);
+		return res;
+	}
+	
+	@Override
+	public int ordinal() { return 1; }
 	
 }

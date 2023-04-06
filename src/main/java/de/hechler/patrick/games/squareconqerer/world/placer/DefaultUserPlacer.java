@@ -3,7 +3,7 @@ package de.hechler.patrick.games.squareconqerer.world.placer;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.UserPlacer;
+import de.hechler.patrick.games.squareconqerer.world.stuff.UserPlacer;
 
 
 public class DefaultUserPlacer implements UserPlacer {

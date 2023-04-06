@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer.world.enums;
+package de.hechler.patrick.games.squareconqerer.world.stuff;
 
 import java.awt.image.BufferedImage;
 
@@ -8,14 +8,10 @@ public interface ImageableObj {
 	
 	BufferedImage resource();
 	
-	boolean resolution();
-	
 	void resource(BufferedImage nval);
 	
-	void resolution(boolean nval);
-	
-	boolean multipleResolutions();
-	
 	String name();
+	
+	default String cls() { return getClass().getSimpleName(); }
 	
 }

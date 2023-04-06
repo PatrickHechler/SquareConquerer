@@ -2,10 +2,13 @@ package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
-import de.hechler.patrick.games.squareconqerer.world.enums.ProducableResourceType;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
+import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
+import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
-public sealed interface Building extends Entity permits BuildingImpl {
+public sealed interface Building extends Entity, ImageableObj permits BuildingImpl {
+
+	static final int COUNT = 1;
 	
 	boolean isFinishedBuild();
 	
@@ -21,5 +24,9 @@ public sealed interface Building extends Entity permits BuildingImpl {
 	
 	@Override
 	Building copy();
+	
+	static int ordinal(Building b) {
+		return b == null ? 0 : b.ordinal();
+	}
 	
 }

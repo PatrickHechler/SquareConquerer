@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer.world.connect;
+package de.hechler.patrick.games.squareconqerer.world;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -8,16 +8,17 @@ import java.util.Map;
 import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.interfaces.Executable;
-import de.hechler.patrick.games.squareconqerer.world.Tile;
-import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
-import de.hechler.patrick.games.squareconqerer.world.enums.ProducableResourceType;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 public class OpenWorld implements Executable<IOException> {
@@ -358,6 +359,7 @@ public class OpenWorld implements Executable<IOException> {
 		}
 	}
 	
+	@SuppressWarnings("preview")
 	private static void sendBuilding(Building b, Connection conn) throws IOException {
 		conn.writeInt(b.x());
 		conn.writeInt(b.y());
@@ -377,12 +379,25 @@ public class OpenWorld implements Executable<IOException> {
 				}
 			}
 		}
-		if (b instanceof StoreBuild sb) {
+		switch (b) {
+		case StoreBuild sb -> {
 			conn.writeInt(StoreBuild.NUMBER);
-			writeRes(conn, sb.resource());
-			conn.writeInt(sb.amount());
-		} else {
-			throw new AssertionError("unknown building type: " + b.getClass());
+			if (fb) {
+				EnumIntMap<OreResourceType> ores = sb.ores();
+				int[]                       oa   = ores.array();
+				conn.writeInt(oa.length);
+				for (int i = 0; i < oa.length; i++) {
+					conn.writeInt(oa[i]);
+				}
+				EnumIntMap<ProducableResourceType> producable = sb.producable();
+				int[]                              pa         = producable.array();
+				conn.writeInt(pa.length);
+				for (int i = 0; i < pa.length; i++) {
+					conn.writeInt(pa[i]);
+				}
+			}
+		}
+		default -> throw new AssertionError("unknown building type: " + b.getClass());
 		}
 		conn.writeInt(FIN_ENTITY);
 	}

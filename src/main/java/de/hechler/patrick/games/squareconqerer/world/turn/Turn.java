@@ -9,14 +9,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.enums.Direction;
+import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
+import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
-import de.hechler.patrick.games.squareconqerer.world.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.world.connect.OpenWorld;
-import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
+import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 public final class Turn {
 	

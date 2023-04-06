@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
+import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.enums.Direction;
@@ -20,17 +21,18 @@ import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
-import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.UserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.placer.DefaultUserPlacer;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.stuff.UserPlacer;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
+import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 import de.hechler.patrick.games.squareconqerer.world.turn.CarryTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.EntityTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.StoreTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-public class RootWorld implements World {
+public final class RootWorld implements World {
 	
 	private final RootUser             root;
 	private final Tile[][]             tiles;
@@ -233,7 +235,7 @@ public class RootWorld implements World {
 		return entities(tiles);
 	}
 	
-	public static class Builder implements World {
+	public static final class Builder implements World {
 		
 		private static final OreResourceType[] RES = OreResourceType.values();
 		private static final TileType[]        TYPES;
@@ -284,7 +286,136 @@ public class RootWorld implements World {
 		}
 		
 		public void fillRandom() {
-			fillTotallyRandom();
+			placeSomePoints();
+			boolean emptyTile;
+			do {
+				emptyTile = false;
+				for (int x = 0; x < tiles.length; x++) {
+					for (int y = 0; y < tiles[x].length; y++) {
+						if (tiles[x][y] != null && tiles[x][y].type != TileType.NOT_EXPLORED) {
+							continue;
+						}
+						Tile xDown = null;
+						Tile yDown = null;
+						Tile xUp   = null;
+						Tile yUp   = null;
+						if (x > 0) { xDown = tiles[x - 1][y]; }
+						if (y > 0) { yDown = tiles[x][y - 1]; }
+						if (x < tiles.length - 1) { xUp = tiles[x + 1][y]; }
+						if (y < tiles[x].length - 1) { yUp = tiles[x][y + 1]; }
+						if (xDown == null && yDown == null && xUp == null && yUp == null) {
+							emptyTile = true;
+							continue;
+						}
+						int rndLen;
+						int oceanStart = 0;
+						int oceanEnd   = 0;
+						if ((xDown == null || xDown.type.isWater()) && (yDown == null || yDown.type.isWater()) && (xUp == null || xUp.type.isWater())
+								&& (yUp == null || yUp.type.isWater())) {
+							oceanEnd = 1;
+							if (xDown != null && xDown.type == TileType.WATER_DEEP) { oceanEnd++; }
+							if (yDown != null && yDown.type == TileType.WATER_DEEP) { oceanEnd++; }
+							if (xUp != null && xUp.type == TileType.WATER_DEEP) { oceanEnd++; }
+							if (yUp != null && yUp.type == TileType.WATER_DEEP) { oceanEnd++; }
+						}
+						int waterNormalStart = oceanEnd;
+						int waterNormalEnd   = waterNormalStart + 2;
+						if (xDown != null && xDown.type.isSwamp()) { waterNormalEnd++; }
+						if (yDown != null && yDown.type.isSwamp()) { waterNormalEnd++; }
+						if (xUp != null && xUp.type.isSwamp()) { waterNormalEnd++; }
+						if (yUp != null && yUp.type.isSwamp()) { waterNormalEnd++; }
+						waterNormalEnd >>>= 1;
+						rndLen            = waterNormalEnd;
+						int sandStart     = 0;
+						int sandEnd       = 0;
+						int grassStart    = 0;
+						int grassEnd      = 0;
+						int forestStart   = 0;
+						int forestEnd     = 0;
+						int swampStart    = 0;
+						int swampEnd      = 0;
+						int mountainStart = 0;
+						int mountainEnd   = 0;
+						if ((xDown == null || xDown.type != TileType.WATER_DEEP) && (yDown == null || yDown.type != TileType.WATER_DEEP)
+								&& (xUp == null || xUp.type != TileType.WATER_DEEP) && (yUp == null || yUp.type != TileType.WATER_DEEP)) {
+							sandStart     = rndLen;
+							sandEnd       = sandStart + 2;
+							grassStart    = sandEnd;
+							grassEnd      = grassStart + 2;
+							forestStart   = grassEnd;
+							forestEnd     = forestStart + 2;
+							swampStart    = forestEnd;
+							swampEnd      = swampStart + 2;
+							mountainStart = swampEnd;
+							mountainEnd   = mountainStart + 1;
+							rndLen        = mountainEnd;
+						}
+						int      rndVal = rnd.nextInt(rndLen);
+						TileType type;
+						if (rndVal >= oceanStart && rndVal < oceanEnd) type = TileType.WATER_DEEP;
+						else if (rndVal >= waterNormalStart && rndVal < waterNormalEnd) type = TileType.WATER_NORMAL;
+						else if (rndVal >= sandStart && rndVal < sandEnd) type = (rndVal & 1) != 0 ? TileType.SAND : TileType.SAND_HILL;
+						else if (rndVal >= grassStart && rndVal < grassEnd) type = (rndVal & 1) != 0 ? TileType.GRASS : TileType.GRASS_HILL;
+						else if (rndVal >= forestStart && rndVal < forestEnd) type = (rndVal & 1) != 0 ? TileType.FOREST : TileType.FOREST_HILL;
+						else if (rndVal >= swampStart && rndVal < swampEnd) type = (rndVal & 1) != 0 ? TileType.SWAMP : TileType.SWAMP_HILL;
+						else if (rndVal >= mountainStart && rndVal < mountainEnd) type = TileType.MOUNTAIN;
+						else throw new AssertionError("unexpected random value: " + rndVal);
+						EnumIntMap<OreResourceType> resRndLens = new EnumIntMap<>(OreResourceType.class);
+						resRndLens.set(OreResourceType.NONE, 16);
+						resRndLens.set(OreResourceType.GOLD_ORE, 1);
+						resRndLens.set(OreResourceType.IRON_ORE, 2);
+						resRndLens.set(OreResourceType.COAL_ORE, 4);
+						if (xDown != null) resRndLens.inc(xDown.resource);
+						if (yDown != null) resRndLens.inc(yDown.resource);
+						if (xUp != null) resRndLens.inc(xUp.resource);
+						if (yUp != null) resRndLens.inc(yUp.resource);
+						int noneStart = 0;
+						int noneEnd   = resRndLens.get(OreResourceType.NONE);
+						int goldStart = noneEnd;
+						int goldEnd   = goldStart + resRndLens.get(OreResourceType.GOLD_ORE);
+						int ironStart = goldEnd;
+						int ironEnd   = ironStart + resRndLens.get(OreResourceType.IRON_ORE);
+						int coalStart = ironEnd;
+						int coalEnd   = coalStart + resRndLens.get(OreResourceType.COAL_ORE);
+						rndLen = coalEnd;
+						rndVal = rnd.nextInt(rndLen);
+						OreResourceType ore;
+						if (rndVal >= noneStart && rndVal < noneEnd) ore = OreResourceType.NONE;
+						else if (rndVal >= goldStart && rndVal < goldEnd) ore = OreResourceType.GOLD_ORE;
+						else if (rndVal >= ironStart && rndVal < ironEnd) ore = OreResourceType.IRON_ORE;
+						else if (rndVal >= coalStart && rndVal < coalEnd) ore = OreResourceType.COAL_ORE;
+						else throw new AssertionError("unexpected random value: " + rndVal);
+						tiles[x][y] = new Tile(type, ore, true);
+					}
+				}
+			} while (emptyTile);
+		}
+		
+		private void placeSomePoints() {
+			boolean doRndPoints = true;
+			for (int x = 0; x < tiles.length; x++) {
+				for (int y = 0; y < tiles[x].length; y++) {
+					if (tiles[x][y] == null || tiles[x][y].type == TileType.NOT_EXPLORED) {
+						continue;
+					}
+					doRndPoints = false;
+				}
+				if (!doRndPoints) {
+					break;
+				}
+			}
+			if (doRndPoints) {
+				for (int x = 0; x < tiles.length; x += 10) {
+					for (int y = x % 20 == 0 ? 0 : 5; y < tiles[x].length; y += 10) {
+						TileType        t = TYPES[rnd.nextInt(TYPES.length)]; // skip not explored
+						OreResourceType r = OreResourceType.NONE;
+						if ((rnd.nextInt() & resourceMask) == 0) {
+							r = RES[rnd.nextInt(RES.length)];
+						}
+						tiles[x][y] = new Tile(t, r, true);
+					}
+				}
+			}
 		}
 		
 		public void fillTotallyRandom() {

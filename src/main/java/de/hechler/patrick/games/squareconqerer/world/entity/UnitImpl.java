@@ -3,8 +3,8 @@ package de.hechler.patrick.games.squareconqerer.world.entity;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
-import de.hechler.patrick.games.squareconqerer.world.Tile;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
+import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
 public abstract sealed class UnitImpl extends EntityImpl implements Unit permits Carrier {
 	
@@ -80,5 +80,8 @@ public abstract sealed class UnitImpl extends EntityImpl implements Unit permits
 			this.carryResource = null;
 		}
 	}
+	
+	@Override
+	public String cls() { return "Unit"; }
 	
 }

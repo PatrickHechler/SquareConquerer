@@ -18,15 +18,15 @@ import java.util.regex.Pattern;
 import de.hechler.patrick.games.squareconqerer.Settings;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
+import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
-import de.hechler.patrick.games.squareconqerer.world.Tile;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
-import de.hechler.patrick.games.squareconqerer.world.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.world.connect.OpenWorld;
-import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
-import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
+import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 
 public class SquareConquererCUI implements Runnable {
 	

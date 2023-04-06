@@ -1,6 +1,8 @@
-package de.hechler.patrick.games.squareconqerer.world.enums;
+package de.hechler.patrick.games.squareconqerer.world.tile;
 
 import java.awt.image.BufferedImage;
+
+import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
 public enum TileType implements ImageableObj {
 	
@@ -33,18 +35,11 @@ public enum TileType implements ImageableObj {
 		return VALS.length;
 	}
 	
-	volatile BufferedImage resource;
-	volatile boolean       resolution;
+	private volatile BufferedImage resource;
 	
 	@Override public BufferedImage resource() { return resource; }
 	
 	@Override public void resource(BufferedImage nval) { this.resource = nval; }
-	
-	@Override public boolean resolution() { return resolution; }
-	
-	@Override public void resolution(boolean nval) { this.resolution = nval; }
-	
-	@Override public boolean multipleResolutions() { return true; }
 	
 	/**
 	 * returns <code>true</code> if this is a water tile

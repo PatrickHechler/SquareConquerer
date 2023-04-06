@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer.world.connect;
+package de.hechler.patrick.games.squareconqerer.world;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
@@ -16,21 +16,21 @@ import java.util.Map.Entry;
 
 import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
-import de.hechler.patrick.games.squareconqerer.world.RemoteTile;
-import de.hechler.patrick.games.squareconqerer.world.Tile;
-import de.hechler.patrick.games.squareconqerer.world.World;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
-import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.ProducableResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
-import de.hechler.patrick.games.squareconqerer.world.interfaces.Resource;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
+import de.hechler.patrick.games.squareconqerer.world.tile.RemoteTile;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
+import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-public class RemoteWorld implements World, Closeable {
+public final class RemoteWorld implements World, Closeable {
 	
 	private final Connection        conn;
 	private int                     xlen;
@@ -243,7 +243,8 @@ public class RemoteWorld implements World, Closeable {
 		int                                lives          = conn.readInt();
 		int                                remainTurns    = 0;
 		EnumIntMap<ProducableResourceType> neededBuildRes = null;
-		if (conn.readByte(0, 1) != 0) {
+		boolean                            fb             = conn.readByte(0, 1) != 0;
+		if (fb) {
 			remainTurns = conn.readInt();
 			int len = conn.readInt(ProducableResourceType.count(), 0);
 			if (len != 0) {
@@ -258,13 +259,22 @@ public class RemoteWorld implements World, Closeable {
 			}
 		}
 		conn.readInt(StoreBuild.NUMBER);
-		Resource storedRes   = readRes(conn);
-		int      storeAmount = conn.readInt();
-		if (storeAmount < 0) {
-			throw new IOException("read an negative amount for the store amount");
+		EnumIntMap<OreResourceType>        ores       = new EnumIntMap<>(OreResourceType.class);
+		EnumIntMap<ProducableResourceType> producable = new EnumIntMap<>(ProducableResourceType.class);
+		if (fb) {
+			int[] oa = ores.array();
+			conn.readInt(oa.length);
+			for (int i = 0; i < oa.length; i++) {
+				oa[i] = conn.readInt();
+			}
+			int[] pa = producable.array();
+			conn.readInt(pa.length);
+			for (int i = 0; i < pa.length; i++) {
+				pa[i] = conn.readInt();
+			}
 		}
 		conn.readInt(OpenWorld.FIN_ENTITY);
-		return new StoreBuild(x, y, usr, lives, neededBuildRes, remainTurns, storedRes, storeAmount);
+		return new StoreBuild(x, y, usr, lives, neededBuildRes, remainTurns, ores, producable);
 	}
 	
 	public synchronized void updateSingleTile(int x, int y) throws IOException {

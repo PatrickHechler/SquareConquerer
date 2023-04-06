@@ -1,9 +1,9 @@
-package de.hechler.patrick.games.squareconqerer.world.interfaces;
+package de.hechler.patrick.games.squareconqerer.world.stuff;
 
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
-import de.hechler.patrick.games.squareconqerer.world.connect.Connection;
 
 public interface UserPlacer {
 	

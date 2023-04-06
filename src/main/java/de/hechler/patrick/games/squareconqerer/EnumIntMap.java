@@ -67,6 +67,30 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		}
 		return ++arr[e.ordinal()];
 	}
+
+	public int add(T e, int val) {
+		if (val <= 0) {
+			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
+		}
+		if (!cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		}
+		int o = e.ordinal();
+		arr[o] += val;
+		return arr[o];
+	}
+
+	public int sub(T e, int val) {
+		if (val <= 0) {
+			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
+		}
+		if (!cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		}
+		int o = e.ordinal();
+		arr[o] -= val;
+		return arr[o];
+	}
 	
 	/**
 	 * decrement and return the new value
@@ -143,10 +167,15 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	@Override
 	public void putAll(Map<? extends T, ? extends Integer> m) {
 		if (m instanceof EnumIntMap<?> eim) {
-			cls.asSubclass(eim.cls);
+			if (cls != eim.cls) {
+				throw new ClassCastException("can not cast from " + eim.cls + " to " + cls);
+			}
 			System.arraycopy(eim.arr, 0, arr, 0, arr.length);
+			return;
 		}
-		for (Entry<? extends T, ?> e : m.entrySet()) { put(e.getKey(), (Integer) e.getValue()); }
+		for (Entry<? extends T, ?> e : m.entrySet()) {
+			put(e.getKey(), (Integer) e.getValue());
+		}
 	}
 	
 	@Override
@@ -388,7 +417,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		}
 		
 	}
-
+	
 	public EnumIntMap<T> copy() {
 		return new EnumIntMap<>(cls, arr.clone());
 	}

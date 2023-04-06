@@ -1,7 +1,6 @@
-package de.hechler.patrick.games.squareconqerer.world;
+package de.hechler.patrick.games.squareconqerer.world.tile;
 
-import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 
 public final class RemoteTile extends Tile {
 	

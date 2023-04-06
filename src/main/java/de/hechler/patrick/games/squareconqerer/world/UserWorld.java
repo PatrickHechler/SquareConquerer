@@ -11,11 +11,12 @@ import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
-import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
+import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-public class UserWorld implements World {
+public final class UserWorld implements World {
 	
 	private final World             world;
 	private final User              usr;

@@ -8,6 +8,7 @@ import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -59,22 +60,22 @@ import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.Settings;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
+import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
+import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
-import de.hechler.patrick.games.squareconqerer.world.Tile;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
-import de.hechler.patrick.games.squareconqerer.world.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.world.connect.OpenWorld;
-import de.hechler.patrick.games.squareconqerer.world.connect.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
-import de.hechler.patrick.games.squareconqerer.world.enums.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.ProducableResourceType;
-import de.hechler.patrick.games.squareconqerer.world.enums.TileType;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
+import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 import de.hechler.patrick.games.squareconqerer.world.turn.CarryTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.EntityTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
@@ -156,7 +157,12 @@ public class SquareConquererGUI {
 		});
 		
 		reload(null, false);
-		frame.setVisible(initialVisible);
+		if (initialVisible) {
+			System.out.println("set now visible (large worlds may need some time) world size: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ')');
+			frame.setVisible(true);
+		} else {
+			frame.setVisible(false);
+		}
 	}
 	
 	private JMenuBar initMenu() {
@@ -175,7 +181,8 @@ public class SquareConquererGUI {
 		if (world instanceof RootWorld.Builder) {
 			JMenuItem fillRandom = new JMenuItem("fill with random tiles");
 			fillRandom.setToolTipText("<html>replace all tiles with type not-explored with random tiles<br>"
-					+ "note that then also not-explred tiles with a resource set may get their resource replaced</html>");
+					+ "note that then also not-explored tiles with a resource set may get their resource replaced<br>"
+					+ "the world builder may use rules, which change the possibility for some tiles (such as ocean tiles can only be placed near other water tiles)</html>");
 			fillRandom.addActionListener(e -> {
 				int chosen = JOptionPane.showConfirmDialog(frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION,
 						JOptionPane.QUESTION_MESSAGE);
@@ -183,9 +190,23 @@ public class SquareConquererGUI {
 					return;
 				}
 				((RootWorld.Builder) world).fillRandom();
+				threadBuilder().start(() -> update(null));
 				JOptionPane.showMessageDialog(frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
 			});
 			buildMenu.add(fillRandom);
+			JMenuItem fillTotallyRandom = new JMenuItem("fill with totally random tiles");
+			fillTotallyRandom.setToolTipText("<html>replace all tiles with type not-explored with random tiles<br>"
+					+ "note that then also not-explred tiles with a resource set may get their resource replaced</html>");
+			fillTotallyRandom.addActionListener(e -> {
+				int chosen = JOptionPane.showConfirmDialog(frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION,
+						JOptionPane.QUESTION_MESSAGE);
+				if (chosen != JOptionPane.YES_OPTION) {
+					return;
+				}
+				((RootWorld.Builder) world).fillTotallyRandom();
+				JOptionPane.showMessageDialog(frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
+			});
+			buildMenu.add(fillTotallyRandom);
 		} else {
 			JMenuItem toBuild = new JMenuItem("to build world");
 			toBuild.setToolTipText("convert this world to a build world");
@@ -607,8 +628,8 @@ public class SquareConquererGUI {
 		panel = new JPanel();
 		panel.setLayout(new GridLayout(ylen, xlen, 0, 0));
 		panel.applyComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-		Dimension dim = new Dimension(xlen * iconSize, ylen * iconSize);
-		panel.setPreferredSize(dim);
+		Dimension panelDim = new Dimension(xlen * iconSize, ylen * iconSize);
+		panel.setPreferredSize(panelDim);
 		JScrollPane scrollPane = new JScrollPane(panel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
 				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.getVerticalScrollBar().setUnitIncrement(16);
@@ -643,17 +664,23 @@ public class SquareConquererGUI {
 			
 			@Override
 			public void componentResized(ComponentEvent e) {
-				update();
+				update(null);
 			}
 			
 		});
 		if (!reaload) {
 			frame.setLocationByPlatform(true);
+		} // the frame.pack() method is just to slow for large worlds
+		Rectangle bounds  = frame.getGraphicsConfiguration().getBounds();
+		Insets    insets  = frame.getInsets();
+		Dimension menuDim = menu.getPreferredSize();
+		int       w       = Math.min(Math.max(panelDim.width, menuDim.width) + insets.left + insets.right, bounds.width);
+		int       h       = Math.min(panelDim.height + menuDim.height + insets.bottom + insets.top, bounds.height);
+		if (w != bounds.width || h != bounds.height) { // small world, do pack (getInsets before pack is useless)
+			frame.pack();
+			w = Math.min(frame.getWidth(), bounds.width);
+			h = Math.min(frame.getHeight(), bounds.height);
 		}
-		frame.pack();
-		Rectangle bounds = frame.getGraphicsConfiguration().getBounds();
-		int       w      = Math.min(frame.getWidth(), bounds.width);
-		int       h      = Math.min(frame.getHeight(), bounds.height);
 		frame.setSize(w, h);
 		addHoverBtn(menu, iconSize, scrollPane);
 		update(ufh);
@@ -891,8 +918,9 @@ public class SquareConquererGUI {
 			return;
 		}
 		if (b) {
+			System.out.println("set now visible (large worlds may need some time) world size: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ')');
 			frame.setVisible(true);
-			update();
+			update(null);
 		} else {
 			frame.setVisible(false);
 		}
@@ -900,10 +928,6 @@ public class SquareConquererGUI {
 	
 	private volatile Thread   updateThread;
 	private volatile Runnable updateFinishHook;
-	
-	public void update() {
-		update(null);
-	}
 	
 	private void update(Runnable ufh) {
 		if (frame == null) {
@@ -1147,15 +1171,11 @@ public class SquareConquererGUI {
 				return true;
 			} catch (InvocationTargetException e) {
 				Throwable c = e.getCause();
-				if (c instanceof RuntimeException re) {
-					throw re;
-				}
-				if (c instanceof Error err) {
-					throw err;
-				}
-				throw new AssertionError(e);
+				if (c instanceof RuntimeException re) throw re;
+				if (c instanceof Error err) throw err;
+				throw new AssertionError(e.toString(), e);
 			} catch (InterruptedException e) {
-				throw new AssertionError(e);
+				throw new AssertionError(e.toString(), e);
 			}
 		}
 		return false;
@@ -1163,7 +1183,12 @@ public class SquareConquererGUI {
 	
 	private static boolean ensureNotGUIThread(Runnable r) {
 		if (SwingUtilities.isEventDispatchThread()) {
-			threadBuilder().start(r);
+			Thread t = threadBuilder().start(r);
+			try {
+				t.join();
+			} catch (InterruptedException e) {
+				throw new AssertionError(e.toString(), e);
+			}
 			return true;
 		}
 		return false;

@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer.world.connect;
+package de.hechler.patrick.games.squareconqerer.connect;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 

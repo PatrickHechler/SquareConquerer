@@ -1,5 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
+import java.awt.image.BufferedImage;
+
 import de.hechler.patrick.games.squareconqerer.User;
 
 public abstract sealed class EntityImpl implements Entity permits BuildingImpl, UnitImpl {
@@ -55,5 +57,16 @@ public abstract sealed class EntityImpl implements Entity permits BuildingImpl, 
 			throw new IllegalStateException("the entity does not belong to my owner");
 		}
 	}
+	
+	private volatile BufferedImage resource;
+	
+	@Override
+	public BufferedImage resource() { return resource; }
+	
+	@Override
+	public void resource(BufferedImage nval) { this.resource = resource; }
+	
+	@Override
+	public String name() { return getClass().getSimpleName(); }
 	
 }

@@ -5,9 +5,10 @@ import java.util.Map;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-public interface World {
+public sealed interface World permits RootWorld, RootWorld.Builder, RemoteWorld, UserWorld {
 	
 	User user();
 	
