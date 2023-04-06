@@ -61,7 +61,6 @@ import de.hechler.patrick.games.squareconqerer.Settings;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
@@ -1059,11 +1058,21 @@ public class SquareConquererGUI {
 					p.add(new JLabel("Storage"));
 				}
 				generalBuildingInfo(p, sb, "    ");
-				p.add(new JLabel("    storage resource: "));
-				p.add(new JLabel(sb.resource().toString()));
-				if (sb.isFinishedBuild()) {
-					p.add(new JLabel("    storage amount: "));
-					p.add(new JLabel(Integer.toString(sb.amount())));
+				EnumIntMap<OreResourceType> ores = sb.ores();
+				int[]                       arr  = ores.array();
+				for (int i = 0; i < arr.length; i++) {
+					if (arr[i] > 0) {
+						p.add(new JLabel("    " + OreResourceType.of(i) + ": "));
+						p.add(new JLabel(Integer.toString(arr[i])));
+					}
+				}
+				EnumIntMap<ProducableResourceType> producable = sb.producable();
+				arr = producable.array();
+				for (int i = 0; i < arr.length; i++) {
+					if (arr[i] > 0) {
+						p.add(new JLabel("    " + ProducableResourceType.of(i) + ": "));
+						p.add(new JLabel(Integer.toString(arr[i])));
+					}
 				}
 			}
 			default -> throw new AssertionError("unknown build type: " + b.getClass());
@@ -1077,27 +1086,13 @@ public class SquareConquererGUI {
 			switch ((String) build.getSelectedItem()) {
 			case "none" -> ((RootWorld.Builder) world).set(x, y, (Building) null);
 			case "Storage" -> {
-				OreResourceType[]        values0 = OreResourceType.values();
-				ProducableResourceType[] values1 = ProducableResourceType.values();
-				Object[]                 vals    = new Object[values0.length + values1.length - 1];
-				System.arraycopy(values0, 1, vals, 0, values0.length - 1);
-				System.arraycopy(values1, 0, vals, values0.length, values1.length);
-				Object value = JOptionPane.showInputDialog(dialog, "select the storage resource", "store type", JOptionPane.QUESTION_MESSAGE, null,
-						vals, vals[0]);
+				RootUser          root  = (RootUser) world.user();
+				Map<String, User> users = root.users();
+				Object            value = JOptionPane.showInputDialog(dialog, "select the owner", "store owner", JOptionPane.QUESTION_MESSAGE, null,
+						users.keySet().toArray(), RootUser.ROOT_NAME);
 				if (value != null) {
-					ProducableResourceType prt   = (ProducableResourceType) value;
-					RootUser               root  = (RootUser) world.user();
-					Map<String, User>      users = root.users();
-					value = JOptionPane.showInputDialog(dialog, "select the owner", "store owner", JOptionPane.QUESTION_MESSAGE, null,
-							users.keySet().toArray(), RootUser.ROOT_NAME);
-					if (value != null) {
-						User usr = users.get(value);
-						try {
-							((RootWorld.Builder) world).set(x, y, new StoreBuild(x, y, usr, prt));
-						} catch (TurnExecutionException e1) {
-							e1.printStackTrace();
-						}
-					}
+					User usr = users.get(value);
+					((RootWorld.Builder) world).set(x, y, new StoreBuild(x, y, usr));
 				}
 			}
 			}

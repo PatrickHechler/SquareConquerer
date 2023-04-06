@@ -60,13 +60,10 @@ public abstract sealed class EntityImpl implements Entity permits BuildingImpl, 
 	
 	private volatile BufferedImage resource;
 	
-	@Override
 	public BufferedImage resource() { return resource; }
 	
-	@Override
-	public void resource(BufferedImage nval) { this.resource = resource; }
+	public void resource(BufferedImage nval) { this.resource = nval; }
 	
-	@Override
 	public String name() { return getClass().getSimpleName(); }
 	
 }

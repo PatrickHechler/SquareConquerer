@@ -2,6 +2,7 @@ package de.hechler.patrick.games.squareconqerer;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -67,7 +68,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		}
 		return ++arr[e.ordinal()];
 	}
-
+	
 	public int add(T e, int val) {
 		if (val <= 0) {
 			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
@@ -79,7 +80,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		arr[o] += val;
 		return arr[o];
 	}
-
+	
 	public int sub(T e, int val) {
 		if (val <= 0) {
 			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
@@ -262,11 +263,6 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 				return old;
 			}
 			
-			@Override
-			public int hashCode() {
-				return getKey().hashCode() ^ Integer.hashCode(arr[index]);
-			}
-			
 			private int ival() {
 				return arr[index];
 			}
@@ -277,6 +273,11 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			
 			private Class<T> cls() {
 				return cls;
+			}
+			
+			@Override
+			public int hashCode() {
+				return getKey().hashCode() ^ Integer.hashCode(arr[index]);
 			}
 			
 			@Override
@@ -416,10 +417,108 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			throw new UnsupportedOperationException("clear");
 		}
 		
+		private Class<T> cls() {
+			return cls;
+		}
+		
+		private int[] arr() {
+			return arr;
+		}
+		
+		@Override
+		public int hashCode() { // I know that zero is a valid hash
+			if (hash != 0) return hash;
+			int sum  = 0;
+			T[] vals = null;
+			for (int i = 0; i < arr.length; i++) {
+				if (entries[i] != null) {
+					EnumIntMap<T>.EnumIntEntrySet.MyEntry e = entries[i].get();
+					if (e != null) {
+						sum += e.hashCode();
+						continue;
+					}
+				}
+				if (vals == null) {
+					vals = cls.getEnumConstants();
+				}
+				sum += vals[i].hashCode() ^ Integer.hashCode(arr[i]);
+			}
+			hash = sum;
+			return sum;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof EnumIntMap<?>.EnumIntEntrySet s) {
+				if (cls != s.cls()) return false;
+				return Arrays.equals(arr, s.arr());
+			}
+			if (!(obj instanceof Set<?> s)) return false;
+			if (s.size() != arr.length) return false;
+			for (Object o : s) {
+				if (!(o instanceof Entry<?, ?> e)) return false;
+				if (o instanceof EnumIntMap<?>.EnumIntEntrySet.MyEntry me) {
+					if (me.cls() != cls) return false;
+					if (arr[me.index] != me.ival()) return false;
+					continue;
+				}
+				Object k = e.getKey();
+				Object v = e.getValue();
+				if (k == null || v == null) return false;
+				if (v.getClass() != Integer.class) return false;
+				if (!cls.isInstance(k)) return false;
+				if (arr[((Enum<?>) k).ordinal()] != ((Integer) v).intValue()) return false;
+			} // false true result if the set allows multiple times the same entry or gets
+				// modified
+			return true;
+		}
+		
 	}
 	
 	public EnumIntMap<T> copy() {
 		return new EnumIntMap<>(cls, arr.clone());
+	}
+	
+	private int hash;
+	
+	@Override
+	public int hashCode() {
+		// if the hash value is already calculated return it
+		// if the entry set exists, let the set calculate the hash
+		// :: reason: if the entry sets cache contains all values, there is no need to create a new array
+		// :: possible, because the maps hash code is effectively defined as the entry sets hash code
+		// otherwise calculate the value
+		if (hash != 0) return hash;
+		if (entrySet != null) {
+			return entrySet.hashCode();
+		}
+		int sum  = 0;
+		T[] vals = cls.getEnumConstants();
+		for (int i = 0; i < arr.length; i++) {
+			sum += vals[i].hashCode() ^ Integer.hashCode(arr[i]);
+		}
+		hash = sum;
+		return sum;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof EnumIntMap<?> eim) {
+			if (cls != eim.cls) return false;
+			return Arrays.equals(arr, eim.arr);
+		}
+		if (!(obj instanceof Map<?, ?> m)) return false;
+		if (m.size() != arr.length) return false;
+		if (entrySet != null) {
+			return entrySet().equals(m.entrySet());
+		}
+		T[] vals = cls.getEnumConstants();
+		for (int i = 0; i < vals.length; i++) {
+			Object val = m.get(vals[i]);
+			if (!(val instanceof Integer ival)) return false;
+			if (arr[i] != ival.intValue()) return false;
+		}
+		return true;
 	}
 	
 }

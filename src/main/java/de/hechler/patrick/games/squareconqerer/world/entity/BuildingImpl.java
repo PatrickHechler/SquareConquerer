@@ -93,6 +93,6 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	}
 	
 	@Override
-	public String cls() { return "Building"; }
+	public final String cls() { return "Building"; }
 	
 }
