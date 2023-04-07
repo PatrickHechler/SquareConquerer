@@ -7,7 +7,7 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
 public sealed interface Unit extends Entity, ImageableObj permits UnitImpl {
 	
-	static final int COUNT = 1;
+	static final int COUNT = 2;
 	
 	void changePos(int newx, int newy, Tile checkcanEnter) throws TurnExecutionException;
 	

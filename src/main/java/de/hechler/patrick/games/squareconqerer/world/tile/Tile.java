@@ -61,10 +61,10 @@ public sealed class Tile permits RemoteTile {
 	
 	private static Icon icon(Tile t, int width, int height) {
 		if (icons == null) {
-			icons = new Icon[(OreResourceType.count() * TileType.count() * (Building.COUNT + 1) * (Unit.COUNT + 1)) << 1];
+			icons = new Icon[(OreResourceType.count() * TileType.count() * (Building.COUNT) * (Unit.COUNT)) << 1];
 		}
-		int index = (t.type.ordinal() * OreResourceType.count() + t.resource.ordinal()) * (Building.COUNT + 1);
-		index = (index + Building.ordinal(t.build)) * (Unit.COUNT + 1);
+		int index = (t.type.ordinal() * OreResourceType.count() + t.resource.ordinal()) * (Building.COUNT);
+		index = (index + Building.ordinal(t.build)) * (Unit.COUNT);
 		index = (index + Unit.ordinal(t.unit)) << 1;
 		if (t.visible) index++;
 		if (icons[index] == null || icons[index].getIconWidth() != width || icons[index].getIconHeight() != height) {

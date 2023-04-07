@@ -8,7 +8,7 @@ import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
 public sealed interface Building extends Entity, ImageableObj permits BuildingImpl {
 
-	static final int COUNT = 1;
+	static final int COUNT = 2;
 	
 	boolean isFinishedBuild();
 	

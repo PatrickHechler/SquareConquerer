@@ -20,12 +20,12 @@ public class ImageableObjs {
 	
 	public static BufferedImage immage(TileType tile, OreResourceType res, Building b, Unit u) {
 		if (imgs == null) {
-			imgs = new BufferedImage[OreResourceType.count() * TileType.count() * (Building.COUNT + 1) * (Unit.COUNT + 1)];
+			imgs = new BufferedImage[OreResourceType.count() * TileType.count() * (Building.COUNT) * (Unit.COUNT)];
 		}
 		int to    = tile.ordinal();
 		int ro    = res.ordinal();
-		int index = (to * OreResourceType.count() + ro) * (Building.COUNT + 1);
-		index  = (index + Building.ordinal(b)) * (Unit.COUNT + 1);
+		int index = (to * OreResourceType.count() + ro) * (Building.COUNT);
+		index  = (index + Building.ordinal(b)) * (Unit.COUNT);
 		index += Unit.ordinal(u);
 		BufferedImage result = imgs[index];
 		if (result != null) {
