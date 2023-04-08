@@ -225,7 +225,7 @@ public final class RootWorld implements World {
 				if (uw != null && u.modifyCount() == uw.modCnt) {
 					return uw;
 				}
-				return placer.apply(usr, usrModCnt);
+				return new UserWorld(this, usr, usrModCnt);
 			});
 		}
 	}
@@ -312,19 +312,18 @@ public final class RootWorld implements World {
 						int oceanEnd   = 0;
 						if ((xDown == null || xDown.type.isWater()) && (yDown == null || yDown.type.isWater()) && (xUp == null || xUp.type.isWater())
 								&& (yUp == null || yUp.type.isWater())) {
-							oceanEnd = 1;
-							if (xDown != null && xDown.type == TileType.WATER_DEEP) { oceanEnd++; }
-							if (yDown != null && yDown.type == TileType.WATER_DEEP) { oceanEnd++; }
-							if (xUp != null && xUp.type == TileType.WATER_DEEP) { oceanEnd++; }
-							if (yUp != null && yUp.type == TileType.WATER_DEEP) { oceanEnd++; }
+							oceanEnd = 128;
+							if (xDown != null && xDown.type == TileType.WATER_DEEP) { oceanEnd*=2; }
+							if (yDown != null && yDown.type == TileType.WATER_DEEP) { oceanEnd*=2; }
+							if (xUp != null && xUp.type == TileType.WATER_DEEP) { oceanEnd*=2; }
+							if (yUp != null && yUp.type == TileType.WATER_DEEP) { oceanEnd*=2; }
 						}
 						int waterNormalStart = oceanEnd;
 						int waterNormalEnd   = waterNormalStart + 2;
-						if (xDown != null && xDown.type.isSwamp()) { waterNormalEnd++; }
-						if (yDown != null && yDown.type.isSwamp()) { waterNormalEnd++; }
-						if (xUp != null && xUp.type.isSwamp()) { waterNormalEnd++; }
-						if (yUp != null && yUp.type.isSwamp()) { waterNormalEnd++; }
-						waterNormalEnd >>>= 1;
+						if (xDown != null && xDown.type.isSwamp()) { waterNormalEnd+=2; }
+						if (yDown != null && yDown.type.isSwamp()) { waterNormalEnd+=2; }
+						if (xUp != null && xUp.type.isSwamp()) { waterNormalEnd+=2; }
+						if (yUp != null && yUp.type.isSwamp()) { waterNormalEnd+=2; }
 						rndLen            = waterNormalEnd;
 						int sandStart     = 0;
 						int sandEnd       = 0;
@@ -407,7 +406,8 @@ public final class RootWorld implements World {
 			if (doRndPoints) {
 				for (int x = 0; x < tiles.length; x += 10) {
 					for (int y = x % 20 == 0 ? 0 : 5; y < tiles[x].length; y += 10) {
-						TileType        t = TYPES[rnd.nextInt(TYPES.length)]; // skip not explored
+						int rndVal = rnd.nextInt(TYPES.length << 1);
+						TileType        t = rndVal >= TYPES.length ? TileType.WATER_DEEP : TYPES[rndVal];
 						OreResourceType r = OreResourceType.NONE;
 						if ((rnd.nextInt() & resourceMask) == 0) {
 							r = RES[rnd.nextInt(RES.length)];
