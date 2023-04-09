@@ -591,7 +591,7 @@ public class SquareConquererCUI implements Runnable {
 					try {
 						Connection.ServerAccept.accept(port, (conn, sok) -> {
 							c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
-							UserWorld uw = rw.of(usr, conn.modCnt());
+							World uw = rw.of(usr, conn.modCnt());
 							OpenWorld ow = new OpenWorld(conn, uw);
 							ow.execute();
 						}, rw.user(), sp);
@@ -1380,7 +1380,7 @@ public class SquareConquererCUI implements Runnable {
 				try {
 					Connection.ServerAccept.accept(sst.port, (conn, sok) -> {
 						c.writeLine("accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")");
-						UserWorld uw = rw.of(conn.usr, conn.modCnt());
+						World uw = rw.of(conn.usr, conn.modCnt());
 						OpenWorld ow = new OpenWorld(conn, uw);
 						ow.execute();
 					}, (RootUser) usr, serverPW);

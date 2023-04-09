@@ -64,7 +64,6 @@ import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
-import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
@@ -476,7 +475,7 @@ public class SquareConquererGUI {
 								threadBuilder().start(
 										() -> JOptionPane.showMessageDialog(frame, "'" + conn.usr.name() + "' logged in from " + sok.getInetAddress(),
 												"remote log in", JOptionPane.INFORMATION_MESSAGE));
-								UserWorld userWorld = rw.of(conn.usr, conn.modCnt());
+								World userWorld = rw.of(conn.usr, conn.modCnt());
 								OpenWorld openWorld = new OpenWorld(conn, userWorld);
 								openWorld.execute();
 							}, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);

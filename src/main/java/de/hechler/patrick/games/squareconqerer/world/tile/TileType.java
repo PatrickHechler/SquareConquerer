@@ -37,9 +37,28 @@ public enum TileType implements ImageableObj {
 	
 	private volatile BufferedImage resource;
 	
-	@Override public BufferedImage resource() { return resource; }
+	@Override
+	public BufferedImage resource() { return resource; }
 	
-	@Override public void resource(BufferedImage nval) { this.resource = nval; }
+	@Override
+	public void resource(BufferedImage nval) { this.resource = nval; }
+	
+	/**
+	 * returns <code>true</code> if this is a ocean/deep water tile
+	 * <p>
+	 * only the following tile is an ocean tile:
+	 * <ul>
+	 * <li>{@link #WATER_DEEP}</li>
+	 * </ul>
+	 * 
+	 * @return <code>true</code> if this is a water tile
+	 */
+	public boolean isOcean() {
+		return switch (this) {
+		case WATER_DEEP -> true;
+		default -> false;
+		};
+	}
 	
 	/**
 	 * returns <code>true</code> if this is a water tile
@@ -183,6 +202,16 @@ public enum TileType implements ImageableObj {
 		return switch (this) {
 		case SWAMP, SWAMP_HILL -> true;
 		default -> false;
+		};
+	}
+	
+	public TileType addHill() {
+		return switch (this) {
+		case SAND -> SAND_HILL;
+		case GRASS -> GRASS_HILL;
+		case FOREST -> FOREST_HILL;
+		case SWAMP -> SWAMP_HILL;
+		default -> throw new IllegalStateException("can not add hills to this type (" + name() + ")");
 		};
 	}
 	

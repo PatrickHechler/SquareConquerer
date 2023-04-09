@@ -38,7 +38,6 @@ import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
-import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
@@ -130,7 +129,7 @@ public class SquareConquererStart {
 					try {
 						Connection.ServerAccept.accept(p, (conn, sok) -> {
 							System.err.println("the user '" + conn.usr.name() + "' logged in from '" + sok.getInetAddress() + "'");
-							UserWorld usrWorld = rworld.of(conn.usr, conn.modCnt());
+							World usrWorld = rworld.of(conn.usr, conn.modCnt());
 							OpenWorld oWorld   = new OpenWorld(conn, usrWorld);
 							oWorld.execute();
 						}, rworld.user(), serverpw);

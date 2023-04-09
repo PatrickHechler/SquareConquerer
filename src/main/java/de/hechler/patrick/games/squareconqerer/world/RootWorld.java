@@ -3,6 +3,8 @@ package de.hechler.patrick.games.squareconqerer.world;
 import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -12,7 +14,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
-import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.enums.Direction;
@@ -40,12 +41,13 @@ public final class RootWorld implements World {
 	private final Map<User, UserWorld> subWorlds          = new HashMap<>();
 	private final List<Runnable>       nextTurnListeneres = new LinkedList<>();
 	private final Map<User, Turn>      userTurns          = new LinkedHashMap<>();
-	private volatile boolean           started            = false;
+	private volatile long              seed;
+	private volatile Random            rnd;
 	
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
 		this.root   = root;
 		this.tiles  = tiles;
-		this.placer = placer == null ? new DefaultUserPlacer(this) : placer;
+		this.placer = placer == null ? new DefaultUserPlacer() : placer;
 	}
 	
 	@Override
@@ -75,25 +77,45 @@ public final class RootWorld implements World {
 	}
 	
 	public boolean running() {
-		return started;
+		return rnd != null;
 	}
 	
-	public synchronized void start() {
-		if (started) {
+	public synchronized void start(byte[] s) {
+		if (s == null) {
+			throw new NullPointerException("the given seed is null");
+		}
+		if (rnd != null) {
 			throw new IllegalStateException("the game already started");
 		}
-		started = true;
-		root.allowNewUsers(false);
+		synchronized (root) {
+			root.allowNewUsers(false);
+			Map<String, User> map = root.users();
+			map.remove(RootUser.ROOT_NAME);
+			Collection<User> values = map.values();
+			User[]           users  = values.toArray(new User[values.size()]);
+			Arrays.sort(users, (a, b) -> a.name().compareTo(b.name()));
+			if (users.length << 4 != s.length) throw new IllegalArgumentException("the given seed is illegal");
+			long sval = seed(s);
+			seed = sval;
+			rnd  = new Random(sval);
+			placer.initilize(this, users, rnd);
+		}
 		threadBuilder().start(this::executeNTL);
 	}
 	
-	public synchronized void stop() {
-		if (!started) {
-			throw new IllegalStateException("the game is not started");
+	private static long seed(byte[] s) {
+		long val = 0x6AAF88D7759474ABL;
+		for (int i = 0; i < s.length; i += 16) {
+			long vi = val(s, i);
+			val  = (val * vi) ^ ~Math.multiplyHigh(val, vi);
+			val ^= val(s, i + 8);
 		}
-		started = false;
-		root.allowNewUsers(true);
-		threadBuilder().start(this::executeNTL);
+		return val;
+	}
+	
+	private static long val(byte[] s, int i) {
+		return s[i] & 0xFF | ((s[i + 1] & 0xFFL) << 8) | ((s[i + 2] & 0xFFL) << 16) | ((s[i + 3] & 0xFFL) << 24) | ((s[i + 4] & 0xFFL) << 32)
+				| ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48) | ((s[i + 7] & 0xFFL) << 56);
 	}
 	
 	@Override
@@ -111,7 +133,7 @@ public final class RootWorld implements World {
 		if (t.usr == root) {
 			throw new UnsupportedOperationException("the root can not execute turns");
 		}
-		if (!started) {
+		if (rnd == null) {
 			throw new IllegalStateException("not started");
 		}
 		if (!subWorlds.containsKey(t.usr)) {
@@ -203,21 +225,25 @@ public final class RootWorld implements World {
 	private Entry<Entity, EntityTurn>[] randomOrder(Set<Entry<Entity, EntityTurn>> turns) {
 		@SuppressWarnings("unchecked") // do the entity turns in random order
 		Entry<Entity, EntityTurn>[] arr = turns.toArray((Entry<Entity, EntityTurn>[]) new Entry[turns.size()]);
-		for (int i = 0; i < arr.length - 1; i++) {
-			int val = root.randomInt();
-			val &= 0x7FFFFFFF;
-			val %= arr.length - i;
-			val += i;
-			Entry<Entity, EntityTurn> e = arr[val];
-			arr[val] = arr[i];
-			arr[i]   = e;
-		}
+		shuffle(rnd, arr);
 		return arr;
 	}
 	
-	public synchronized UserWorld of(User usr, int usrModCnt) {
+	public static <T> void shuffle(Random rnd, T[] arr) {
+		for (int i = 0; i < arr.length - 1; i++) {
+			int val = rnd.nextInt();
+			val &= 0x7FFFFFFF;
+			val %= arr.length - i;
+			val += i;
+			T e = arr[val];
+			arr[val] = arr[i];
+			arr[i]   = e;
+		}
+	}
+	
+	public synchronized World of(User usr, int usrModCnt) {
 		if (usr == root) {
-			throw new IllegalArgumentException("the root has no user world");
+			return this;
 		} else if (usr != root.get(usr.name())) {
 			throw new AssertionError("the user is not from my root");
 		} else {
@@ -287,133 +313,165 @@ public final class RootWorld implements World {
 		
 		public void fillRandom() {
 			placeSomePoints();
-			boolean emptyTile;
-			do {
-				emptyTile = false;
-				for (int x = 0; x < tiles.length; x++) {
-					for (int y = 0; y < tiles[x].length; y++) {
-						if (tiles[x][y] != null && tiles[x][y].type != TileType.NOT_EXPLORED) {
-							continue;
-						}
-						Tile xDown = null;
-						Tile yDown = null;
-						Tile xUp   = null;
-						Tile yUp   = null;
-						if (x > 0) { xDown = tiles[x - 1][y]; }
-						if (y > 0) { yDown = tiles[x][y - 1]; }
-						if (x < tiles.length - 1) { xUp = tiles[x + 1][y]; }
-						if (y < tiles[x].length - 1) { yUp = tiles[x][y + 1]; }
-						if (xDown == null && yDown == null && xUp == null && yUp == null) {
-							emptyTile = true;
-							continue;
-						}
-						int rndLen;
-						int oceanStart = 0;
-						int oceanEnd   = 0;
-						if ((xDown == null || xDown.type.isWater()) && (yDown == null || yDown.type.isWater()) && (xUp == null || xUp.type.isWater())
-								&& (yUp == null || yUp.type.isWater())) {
-							oceanEnd = 128;
-							if (xDown != null && xDown.type == TileType.WATER_DEEP) { oceanEnd*=2; }
-							if (yDown != null && yDown.type == TileType.WATER_DEEP) { oceanEnd*=2; }
-							if (xUp != null && xUp.type == TileType.WATER_DEEP) { oceanEnd*=2; }
-							if (yUp != null && yUp.type == TileType.WATER_DEEP) { oceanEnd*=2; }
-						}
-						int waterNormalStart = oceanEnd;
-						int waterNormalEnd   = waterNormalStart + 2;
-						if (xDown != null && xDown.type.isSwamp()) { waterNormalEnd+=2; }
-						if (yDown != null && yDown.type.isSwamp()) { waterNormalEnd+=2; }
-						if (xUp != null && xUp.type.isSwamp()) { waterNormalEnd+=2; }
-						if (yUp != null && yUp.type.isSwamp()) { waterNormalEnd+=2; }
-						rndLen            = waterNormalEnd;
-						int sandStart     = 0;
-						int sandEnd       = 0;
-						int grassStart    = 0;
-						int grassEnd      = 0;
-						int forestStart   = 0;
-						int forestEnd     = 0;
-						int swampStart    = 0;
-						int swampEnd      = 0;
-						int mountainStart = 0;
-						int mountainEnd   = 0;
-						if ((xDown == null || xDown.type != TileType.WATER_DEEP) && (yDown == null || yDown.type != TileType.WATER_DEEP)
-								&& (xUp == null || xUp.type != TileType.WATER_DEEP) && (yUp == null || yUp.type != TileType.WATER_DEEP)) {
-							sandStart     = rndLen;
-							sandEnd       = sandStart + 2;
-							grassStart    = sandEnd;
-							grassEnd      = grassStart + 2;
-							forestStart   = grassEnd;
-							forestEnd     = forestStart + 2;
-							swampStart    = forestEnd;
-							swampEnd      = swampStart + 2;
-							mountainStart = swampEnd;
-							mountainEnd   = mountainStart + 1;
-							rndLen        = mountainEnd;
-						}
-						int      rndVal = rnd.nextInt(rndLen);
-						TileType type;
-						if (rndVal >= oceanStart && rndVal < oceanEnd) type = TileType.WATER_DEEP;
-						else if (rndVal >= waterNormalStart && rndVal < waterNormalEnd) type = TileType.WATER_NORMAL;
-						else if (rndVal >= sandStart && rndVal < sandEnd) type = (rndVal & 1) != 0 ? TileType.SAND : TileType.SAND_HILL;
-						else if (rndVal >= grassStart && rndVal < grassEnd) type = (rndVal & 1) != 0 ? TileType.GRASS : TileType.GRASS_HILL;
-						else if (rndVal >= forestStart && rndVal < forestEnd) type = (rndVal & 1) != 0 ? TileType.FOREST : TileType.FOREST_HILL;
-						else if (rndVal >= swampStart && rndVal < swampEnd) type = (rndVal & 1) != 0 ? TileType.SWAMP : TileType.SWAMP_HILL;
-						else if (rndVal >= mountainStart && rndVal < mountainEnd) type = TileType.MOUNTAIN;
-						else throw new AssertionError("unexpected random value: " + rndVal);
-						EnumIntMap<OreResourceType> resRndLens = new EnumIntMap<>(OreResourceType.class);
-						resRndLens.set(OreResourceType.NONE, 16);
-						resRndLens.set(OreResourceType.GOLD_ORE, 1);
-						resRndLens.set(OreResourceType.IRON_ORE, 2);
-						resRndLens.set(OreResourceType.COAL_ORE, 4);
-						if (xDown != null) resRndLens.inc(xDown.resource);
-						if (yDown != null) resRndLens.inc(yDown.resource);
-						if (xUp != null) resRndLens.inc(xUp.resource);
-						if (yUp != null) resRndLens.inc(yUp.resource);
-						int noneStart = 0;
-						int noneEnd   = resRndLens.get(OreResourceType.NONE);
-						int goldStart = noneEnd;
-						int goldEnd   = goldStart + resRndLens.get(OreResourceType.GOLD_ORE);
-						int ironStart = goldEnd;
-						int ironEnd   = ironStart + resRndLens.get(OreResourceType.IRON_ORE);
-						int coalStart = ironEnd;
-						int coalEnd   = coalStart + resRndLens.get(OreResourceType.COAL_ORE);
-						rndLen = coalEnd;
-						rndVal = rnd.nextInt(rndLen);
-						OreResourceType ore;
-						if (rndVal >= noneStart && rndVal < noneEnd) ore = OreResourceType.NONE;
-						else if (rndVal >= goldStart && rndVal < goldEnd) ore = OreResourceType.GOLD_ORE;
-						else if (rndVal >= ironStart && rndVal < ironEnd) ore = OreResourceType.IRON_ORE;
-						else if (rndVal >= coalStart && rndVal < coalEnd) ore = OreResourceType.COAL_ORE;
-						else throw new AssertionError("unexpected random value: " + rndVal);
-						tiles[x][y] = new Tile(type, ore, true);
-					}
-				}
-			} while (emptyTile);
+			while (fillOnce());
+			executeNTL();
 		}
 		
-		private void placeSomePoints() {
-			boolean doRndPoints = true;
+		private boolean fillOnce() {
+			boolean unfilledTile = false;
 			for (int x = 0; x < tiles.length; x++) {
 				for (int y = 0; y < tiles[x].length; y++) {
-					if (tiles[x][y] == null || tiles[x][y].type == TileType.NOT_EXPLORED) {
+					if (tiles[x][y] != null && tiles[x][y].type != TileType.NOT_EXPLORED) {
 						continue;
 					}
-					doRndPoints = false;
-				}
-				if (!doRndPoints) {
-					break;
+					Tile xDown = null;
+					Tile yDown = null;
+					Tile xUp   = null;
+					Tile yUp   = null;
+					if (x > 0) { xDown = tiles[x - 1][y]; }
+					if (y > 0) { yDown = tiles[x][y - 1]; }
+					if (x < tiles.length - 1) { xUp = tiles[x + 1][y]; }
+					if (y < tiles[x].length - 1) { yUp = tiles[x][y + 1]; }
+					if (xDown == null && yDown == null && xUp == null && yUp == null) {
+						unfilledTile = true;
+						continue;
+					}
+					tiles[x][y] = tile(xDown, xUp, yDown, yUp);
 				}
 			}
-			if (doRndPoints) {
-				for (int x = 0; x < tiles.length; x += 10) {
-					for (int y = x % 20 == 0 ? 0 : 5; y < tiles[x].length; y += 10) {
-						int rndVal = rnd.nextInt(TYPES.length << 1);
-						TileType        t = rndVal >= TYPES.length ? TileType.WATER_DEEP : TYPES[rndVal];
-						OreResourceType r = OreResourceType.NONE;
-						if ((rnd.nextInt() & resourceMask) == 0) {
-							r = RES[rnd.nextInt(RES.length)];
-						}
-						tiles[x][y] = new Tile(t, r, true);
+			return unfilledTile;
+		}
+		
+		private Tile tile(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
+			TileType        type = type(xDown, xUp, yDown, yUp);
+			OreResourceType ore  = resource(xDown, xUp, yDown, yUp);
+			return new Tile(type, ore, true);
+		}
+		
+		private OreResourceType resource(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
+			int none = none(xDown) + none(xUp) + none(yDown) + none(yUp);
+			int gold = gold(xDown) + gold(xUp) + gold(yDown) + gold(yUp);
+			int iron = iron(xDown) + iron(xUp) + iron(yDown) + iron(yUp);
+			int coal = coal(xDown) + coal(xUp) + coal(yDown) + coal(yUp);
+			
+			int posNone = (none * 2) + 1;
+			int posGold = (gold * 2) + 1;
+			int posIron = (iron * 2) + 1;
+			int posCoal = (coal * 2) + 1;
+			int rndVal  = rnd.nextInt(posNone + posGold + posIron + posCoal);
+			
+			OreResourceType ore = null;
+			if (rndVal >= posNone) rndVal -= posNone;
+			else ore = OreResourceType.NONE;
+			if (rndVal >= posGold) rndVal -= posGold;
+			else if (ore == null) ore = OreResourceType.GOLD_ORE;
+			if (rndVal >= posIron) rndVal -= posIron;
+			else if (ore == null) ore = OreResourceType.IRON_ORE;
+			if (rndVal >= posCoal) {/**/} //
+			else if (ore == null) ore = OreResourceType.COAL_ORE;
+			return ore;
+		}
+		
+		// @formatter:off
+		private static int none(Tile t) { return t != null && t.resource == OreResourceType.NONE     ? 1 : 0; }
+		private static int gold(Tile t) { return t != null && t.resource == OreResourceType.GOLD_ORE ? 1 : 0; }
+		private static int iron(Tile t) { return t != null && t.resource == OreResourceType.IRON_ORE ? 1 : 0; }
+		private static int coal(Tile t) { return t != null && t.resource == OreResourceType.COAL_ORE ? 1 : 0; }
+		// @formatter:on
+		
+		private TileType type(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
+			int ocean = ocean(xDown) + ocean(xUp) + ocean(yDown) + ocean(yUp);
+			int land  = land(xDown) + land(xUp) + land(yDown) + land(yUp);
+			if (ocean != 0 && land != 0) {
+				return TileType.WATER_NORMAL;
+			}
+			int      water = water(xDown) + water(xUp) + water(yDown) + water(yUp);
+			int      flat  = flat(xDown) + flat(xUp) + flat(yDown) + flat(yUp);
+			TileType type  = rawType(xDown, xUp, yDown, yUp, ocean, water, flat);
+			if (type.isLand()) {
+				int hill    = hill(xDown) + hill(xUp) + hill(yDown) + hill(yUp);
+				int posHill = (hill * 2) + 1;
+				int posFlat = (flat * 2) + 1;
+				int rndVal1 = rnd.nextInt(posHill + posFlat);
+				if (rndVal1 < posHill) {
+					type = type.addHill();
+				}
+			} else {
+				if (!type.isWater()) throw new AssertionError("unknown type: " + type.name());
+				if (land == 0) {
+					int posOcean  = ocean * 2 + 1;
+					int posNormal = (water - ocean) * 2 + 1;
+					int rndVal1   = rnd.nextInt(posOcean + posNormal);
+					if (rndVal1 < posOcean) {
+						type = TileType.WATER_DEEP;
 					}
+				}
+			}
+			return type;
+		}
+		
+		private TileType rawType(Tile xDown, Tile xUp, Tile yDown, Tile yUp, int ocean, int water, int flat) {
+			int mountain = mountain(xDown) + mountain(xUp) + mountain(yDown) + mountain(yUp);
+			int sand     = sand(xDown) + sand(xUp) + sand(yDown) + sand(yUp);
+			int grass    = grass(xDown) + grass(xUp) + grass(yDown) + grass(yUp);
+			int forest   = forest(xDown) + forest(xUp) + forest(yDown) + forest(yUp);
+			int swamp    = swamp(xDown) + swamp(xUp) + swamp(yDown) + swamp(yUp);
+			// ocean disables everything except water
+			// flat disables mountain
+			int      posWater    = (water * 2) + 1;
+			int      posMountain = ocean == 0 && flat == 0 ? (mountain * 2) + 1 : 0;
+			int      posSand     = ocean == 0 ? (sand * 2) + 1 : 0;
+			int      posGrass    = ocean == 0 ? (grass * 2) + 1 : 0;
+			int      posForest   = ocean == 0 ? (forest * 2) + 1 : 0;
+			int      posSwamp    = ocean == 0 ? (swamp * 2) + 1 : 0;
+			int      rndVal0     = rnd.nextInt(posWater + posMountain + posSand + posGrass + posForest + posSwamp);
+			TileType type        = null;
+			if (rndVal0 > posWater) rndVal0 -= posWater;
+			else type = TileType.WATER_NORMAL;
+			if (rndVal0 >= posMountain) rndVal0 -= posMountain;
+			else if (type == null) type = TileType.MOUNTAIN;
+			if (rndVal0 >= posSand) rndVal0 -= posSand;
+			else if (type == null) type = TileType.SAND;
+			if (rndVal0 >= posGrass) rndVal0 -= posGrass;
+			else if (type == null) type = TileType.GRASS;
+			if (rndVal0 >= posForest) rndVal0 -= posForest;
+			else if (type == null) type = TileType.FOREST;
+			if (rndVal0 >= posSwamp) throw new AssertionError("unexpected random value");
+			else if (type == null) type = TileType.SWAMP;
+			return type;
+		}
+		
+		// @formatter:off
+		private static int swamp(Tile t)    { return t != null && t.type.isSwamp()    ? 1 : 0; }
+		private static int forest(Tile t)   { return t != null && t.type.isForest()   ? 1 : 0; }
+		private static int grass(Tile t)    { return t != null && t.type.isGrass()    ? 1 : 0; }
+		private static int sand(Tile t)     { return t != null && t.type.isSand()     ? 1 : 0; }
+		private static int land(Tile t)     { return t != null && t.type.isLand()     ? 1 : 0; }
+		private static int flat(Tile t)     { return t != null && t.type.isFlat()     ? 1 : 0; }
+		private static int hill(Tile t)     { return t != null && t.type.isHill()     ? 1 : 0; }
+		private static int ocean(Tile t)    { return t != null && t.type.isOcean()    ? 1 : 0; }
+		private static int water(Tile t)    { return t != null && t.type.isWater()    ? 1 : 0; }
+		private static int mountain(Tile t) { return t != null && t.type.isMountain() ? 1 : 0; }
+		// @formatter:on
+		
+		private void placeSomePoints() {
+			for (int x = 0; x < tiles.length; x += 8) {
+				for (int y = x % 16 == 0 ? 0 : 4; y < tiles[x].length; y += 8) {
+					if ((tiles[x][y] != null && tiles[x][y].type != TileType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
+																							// tiles
+							|| (x > 0 && (tiles[x - 1][y] != null && tiles[x - 1][y].type != TileType.NOT_EXPLORED))
+							|| (y > 0 && (tiles[x][y - 1] != null && tiles[x][y - 1].type != TileType.NOT_EXPLORED))
+							|| (x + 1 < tiles.length && (tiles[x + 1][y] != null && tiles[x + 1][y].type != TileType.NOT_EXPLORED))
+							|| (y + 1 < tiles[x].length && (tiles[x][y + 1] != null && tiles[x][y + 1].type != TileType.NOT_EXPLORED))) {
+						continue;
+					}
+					int             rndVal = rnd.nextInt(TYPES.length << 1);
+					TileType        t      = rndVal >= TYPES.length ? TileType.WATER_DEEP : TYPES[rndVal];
+					OreResourceType r      = OreResourceType.NONE;
+					if ((rnd.nextInt() & resourceMask) == 0) {
+						r = RES[rnd.nextInt(RES.length)];
+					}
+					tiles[x][y] = new Tile(t, r, true);
 				}
 			}
 		}
