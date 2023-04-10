@@ -1,7 +1,6 @@
 package de.hechler.patrick.games.squareconqerer.world;
 
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Map;
 
@@ -151,24 +150,22 @@ public class OpenWorld implements Executable<IOException> {
 	private final Connection conn;
 	private final World      world;
 	
-	public OpenWorld(Connection conn, World world) {
+	private OpenWorld(Connection conn, World world) {
 		this.conn  = conn;
 		this.world = world;
 	}
 	
-	private volatile Thread busy;
+	// maybe delegate later to different constructors for different worlds (root
+	// world or non root world for example)
+	public static OpenWorld of(Connection conn, World world) {
+		return new OpenWorld(conn, world);
+	}
 	
 	private void nextTurn() {
 		try {
-			block(250);
-			try {
-				conn.writeInt(NOTIFY_NEXT_TURN);
-			} catch (SocketTimeoutException e) {//
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} finally {
-			unblock();
+			conn.blocked(250, () -> conn.writeInt(NOTIFY_NEXT_TURN), Connection.NOP);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -188,8 +185,7 @@ public class OpenWorld implements Executable<IOException> {
 	}
 	
 	private void singleExecute() throws IOException {
-		try {
-			block(250);
+		conn.blocked(250, () -> {
 			long val0 = conn.readInt0();
 			if (val0 == -1L) {
 				return;
@@ -210,10 +206,7 @@ public class OpenWorld implements Executable<IOException> {
 			}
 			default -> throw new IOException("read invalid data (username: '" + world.user().name() + "')");
 			}
-		} catch (SocketTimeoutException e) {//
-		} finally {
-			unblock();
-		}
+		}, Connection.NOP);
 	}
 	
 	private void sendTile() throws IOException {
@@ -250,33 +243,6 @@ public class OpenWorld implements Executable<IOException> {
 		conn.writeInt(t.type.ordinal());
 		conn.writeInt(t.resource.ordinal());
 		conn.writeByte(t.visible() ? 1 : 0);
-	}
-	
-	private void unblock() {
-		synchronized (this) {
-			if (busy != Thread.currentThread()) {
-				throw new AssertionError("I am not the busy thread");
-			}
-			busy = null;
-			notifyAll();
-		}
-	}
-	
-	private void block(int timeout) {
-		synchronized (this) {
-			while (busy != null) {
-				if (busy == Thread.currentThread()) {
-					throw new AssertionError("deadlock detected");
-				}
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-			busy = Thread.currentThread();
-		}
-		conn.setTimeout(timeout);
 	}
 	
 	public static void saveWorld(World world, Connection conn) throws IOException {

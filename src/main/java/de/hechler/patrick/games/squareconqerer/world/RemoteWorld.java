@@ -5,7 +5,6 @@ import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 import java.io.Closeable;
 import java.io.IOError;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,15 +85,12 @@ public final class RemoteWorld implements World, Closeable {
 	 * @throws IOException
 	 */
 	public synchronized void updateWorldSize() throws IOException {
-		try {
-			block(0);
+		conn.blocked(() -> {
 			conn.writeInt(OpenWorld.CMD_GET_SIZE);
 			xlen       = conn.readInt();
 			ylen       = conn.readInt();
 			this.tiles = new RemoteTile[xlen][ylen];
-		} finally {
-			unblock();
-		}
+		});
 	}
 	
 	@Override
@@ -132,8 +128,7 @@ public final class RemoteWorld implements World, Closeable {
 	}
 	
 	public synchronized void updateWorld() throws IOException {
-		try {
-			block(0);
+		conn.blocked(() -> {
 			lastWorldUpdate = System.currentTimeMillis();
 			if (entities == null) {
 				entities = new HashMap<>();
@@ -155,9 +150,7 @@ public final class RemoteWorld implements World, Closeable {
 				unmodCopy.put(key, Collections.unmodifiableList(val));
 			}
 			entities = Collections.unmodifiableMap(unmodCopy);
-		} finally {
-			unblock();
-		}
+		});
 	}
 	
 	public static Tile[][] loadWorld(Connection c, Map<String, User> users) throws IOException {
@@ -278,8 +271,7 @@ public final class RemoteWorld implements World, Closeable {
 	}
 	
 	public synchronized void updateSingleTile(int x, int y) throws IOException {
-		try {
-			block(0);
+		conn.blocked(() -> {
 			conn.writeInt(OpenWorld.CMD_GET_TILE);
 			conn.writeInt(x);
 			conn.writeInt(y);
@@ -290,38 +282,7 @@ public final class RemoteWorld implements World, Closeable {
 			OreResourceType rt       = OreResourceType.of(resOrid);
 			boolean         v        = conn.readByte(0, 1) != 0;
 			tiles[x][y] = new RemoteTile(tt, rt, v);
-		} finally {
-			unblock();
-		}
-	}
-	
-	private volatile Thread busy;
-	
-	private void unblock() {
-		synchronized (this) {
-			if (busy != Thread.currentThread()) {
-				throw new AssertionError("I am not the busy thread");
-			}
-			busy = null;
-			notifyAll();
-		}
-	}
-	
-	private void block(int timeout) {
-		synchronized (this) {
-			while (busy != null) {
-				if (busy == Thread.currentThread()) {
-					throw new AssertionError("deadlock detected");
-				}
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-			busy = Thread.currentThread();
-		}
-		conn.setTimeout(timeout);
+		});
 	}
 	
 	private List<Runnable> nextTurnListeners = new LinkedList<>();
@@ -329,36 +290,39 @@ public final class RemoteWorld implements World, Closeable {
 	private void deamon() {
 		while (true) {
 			try {
-				block(250);
-				long val = conn.readInt0();
-				if (val == -1L) {
+				conn.blocked(250, () -> {
+					long val = conn.readInt0();
+					if (val == -1L) {
+						return;
+					}
+					switch ((int) val) {
+					case RootWorld.REQ_RND -> {
+						conn.writeInt(RootWorld.GIV_RND);
+						byte[] arr = new byte[16];
+						conn.usr.fillRandom(arr);
+						conn.writeArr(arr);
+					}
+					case OpenWorld.NOTIFY_NEXT_TURN -> {
+						needUpdate = System.currentTimeMillis();
+						for (Runnable r : nextTurnListeners) {
+							r.run();
+						}
+					}
+					case -1 -> {
+						System.err.println("got an invalid notification: 0xFFFFFFFF");
+						conn.close();
+					}
+					default -> {
+						System.err.println("got an invalid notification: 0x" + Integer.toHexString((int) val));
+						conn.close();
+					}
+					}
+				}, Connection.NOP);
+				Thread.sleep(0L);
+			} catch (IOException | InterruptedException e) {
+				if (conn.closed()) {
 					return;
 				}
-				switch ((int) val) {
-				case OpenWorld.NOTIFY_NEXT_TURN -> {
-					needUpdate = System.currentTimeMillis();
-					for (Runnable r : nextTurnListeners) {
-						r.run();
-					}
-				}
-				case -1 -> {
-					System.err.println("got an invalid notification: 0xFFFFFFFF");
-					conn.close();
-				}
-				default -> {
-					System.err.println("got an invalid notification: 0x" + Integer.toHexString((int) val));
-					conn.close();
-				}
-				}
-			} catch (SocketTimeoutException e) {//
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				unblock();
-			}
-			try {
-				Thread.sleep(0L);
-			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
@@ -366,22 +330,12 @@ public final class RemoteWorld implements World, Closeable {
 	
 	@Override
 	public void addNextTurnListener(Runnable listener) {
-		try {
-			block(0);
-			nextTurnListeners.add(listener);
-		} finally {
-			unblock();
-		}
+		conn.blocked(() -> nextTurnListeners.add(listener));
 	}
 	
 	@Override
 	public void removeNextTurnListener(Runnable listener) {
-		try {
-			block(0);
-			nextTurnListeners.remove(listener);
-		} finally {
-			unblock();
-		}
+		conn.blocked(() -> nextTurnListeners.remove(listener));
 	}
 	
 	@Override

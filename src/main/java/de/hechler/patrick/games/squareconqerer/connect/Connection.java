@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 
@@ -31,11 +32,16 @@ import javax.crypto.CipherOutputStream;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
+import de.hechler.patrick.games.squareconqerer.interfaces.Executable;
 import de.hechler.patrick.games.squareconqerer.interfaces.ThrowBiConsumer;
 import de.hechler.patrick.games.squareconqerer.objects.IgnoreCloseInputStream;
 import de.hechler.patrick.games.squareconqerer.objects.IgnoreCloseOutputStream;
 import de.hechler.patrick.games.squareconqerer.objects.InvalidInputStream;
 import de.hechler.patrick.games.squareconqerer.objects.InvalidOutputStream;
+import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
+import de.hechler.patrick.games.squareconqerer.world.RootWorld;
+import de.hechler.patrick.games.squareconqerer.world.UserWorld;
+import de.hechler.patrick.games.squareconqerer.world.World;
 
 public class Connection implements Closeable {
 	
@@ -46,6 +52,7 @@ public class Connection implements Closeable {
 	private final OutputStream out;
 	private final IntConsumer  setTimeout;
 	private final int          modCnt;
+	private volatile boolean   closed;
 	
 	private Connection(User usr, InputStream in, OutputStream out, IntConsumer setTimeout, int modCnt) {
 		this.usr        = usr;
@@ -120,20 +127,16 @@ public class Connection implements Closeable {
 		
 		private ServerAccept() {}
 		
-		public static void accept(ThrowBiConsumer<Connection, Socket, IOException> action, RootUser root, char[] serverPW) throws IOException {
-			accept(DEFAULT_PORT, action, root, serverPW);
-		}
-		
-		public static void accept(int port, ThrowBiConsumer<Connection, Socket, IOException> action, RootUser root, char[] serverPW)
-				throws IOException {
+		public static void accept(int port, RootWorld rw, ThrowBiConsumer<Connection, Socket, IOException> logConnect, Map<User, Connection> connects,
+				char[] serverPW) throws IOException {
 			try (ServerSocket ss = new ServerSocket(port)) {
 				System.err.println("[Connect.ServerAccept]: accept connections at " + ss.getInetAddress() + " : " + ss.getLocalPort());
-				accept(ss, root, action, serverPW);
+				accept(ss, rw, logConnect, connects, serverPW);
 			}
 		}
 		
-		public static void accept(ServerSocket ss, RootUser root, ThrowBiConsumer<Connection, Socket, IOException> action, char[] serverPW)
-				throws IOException {
+		public static void accept(ServerSocket ss, RootWorld rw, ThrowBiConsumer<Connection, Socket, IOException> logConnect,
+				Map<User, Connection> connects, char[] serverPW) throws IOException {
 			List<Socket> soks = new ArrayList<>();
 			IOException  err;
 			try {
@@ -144,7 +147,17 @@ public class Connection implements Closeable {
 						soks.add(sok);
 						threadBuilder().start(() -> {
 							try {
-								action.accept(accept(sok, root, serverPW), sok);
+								Connection conn = accept(sok, rw.user(), serverPW);
+								User       usr  = conn.usr;
+								World      uw   = new UserWorld(rw, conn.usr, conn.modCnt);
+								OpenWorld  ow   = OpenWorld.of(conn, uw);
+								connects.put(usr, conn);
+								try {
+									logConnect.accept(conn, sok);
+									ow.execute();
+								} finally {
+									connects.remove(usr);
+								}
 							} catch (IOException e) {
 								try {
 									sok.close();
@@ -178,7 +191,7 @@ public class Connection implements Closeable {
 			throw err;
 		}
 		
-		public static Connection accept(Socket sok, RootUser root, char[] serverPW) throws IOException {
+		private static Connection accept(Socket sok, RootUser root, char[] serverPW) throws IOException {
 			InputStream  in  = sok.getInputStream();
 			OutputStream out = sok.getOutputStream();
 			try {
@@ -196,7 +209,8 @@ public class Connection implements Closeable {
 			}
 		}
 		
-		public static Connection accept(InputStream in, OutputStream out, IntConsumer setTimeout, RootUser root, char[] serverPW) throws IOException {
+		private static Connection accept(InputStream in, OutputStream out, IntConsumer setTimeout, RootUser root, char[] serverPW)
+				throws IOException {
 			if (readInt(in, ClientConnect.C_CONECT, ClientConnect.C_NEW) != ClientConnect.C_CONECT) {
 				if (serverPW == null) {
 					in.close();
@@ -560,6 +574,57 @@ public class Connection implements Closeable {
 		setTimeout.accept(timeout);
 	}
 	
+	/**
+	 * this is the same as {@link #blocked(int, Executable, Executable) blocked(0,
+	 * exec, null)}
+	 * 
+	 * @param exec
+	 * 
+	 * @throws IOException
+	 */
+	public <T extends Throwable> void blocked(Executable<T> exec) throws T{
+		blocked(0, exec, null);
+	}
+	
+	public static final Executable<IOException> NOP = () -> {};
+	
+	/**
+	 * blocks this connection to execute the given {@link Executable}
+	 * <p>
+	 * note that this method only guarantees that no other thread invokes code with
+	 * the {@link #blocked(int, Executable, int)} method.<br>
+	 * it is still possible to use the read/write methods without being blocked by
+	 * this method
+	 * <p>
+	 * also note that this method will fail if no timeout is supported
+	 * <p>
+	 * if no timeout was reached the timeoutHandler is
+	 * ignored (for example if timeout is {@code 0},
+	 * <code>null</code> can safely be passed)
+	 * 
+	 * @param timeout        the timeout for this connection during (and after) the
+	 *                       execution
+	 * @param exec           the code to be executed while this connection is
+	 *                       blocked
+	 * @param timeoutHandler the executable to be executed after the timeout was
+	 *                       reached if no timeout was reached the timeoutHandler is
+	 *                       ignored (for example if timeout is {@code 0},
+	 *                       <code>null</code> can safely be passed)
+	 * 						
+	 * @throws IOException
+	 */
+	public <T extends Throwable> void blocked(int timeout, Executable<T> exec, Executable<T> timeoutHandler) throws T {
+		synchronized (this) {
+			setTimeout(timeout);
+			try {
+				exec.execute();
+			} catch (Throwable t) {
+				if (!(t instanceof SocketTimeoutException)) throw t;
+				timeoutHandler.execute();
+			}
+		}
+	}
+	
 	public int modCnt() {
 		return modCnt;
 	}
@@ -567,11 +632,11 @@ public class Connection implements Closeable {
 	public int readInt() throws IOException {
 		return readInt(in);
 	}
-
+	
 	public int readByte() throws IOException {
 		return readByte(in);
 	}
-
+	
 	public int readByte(int a, int b) throws IOException {
 		return readByte(in, a, b);
 	}
@@ -589,13 +654,7 @@ public class Connection implements Closeable {
 	}
 	
 	public int readInt(int a, int b) throws IOException {
-		int reat = readInt(in);
-		if (a == reat || b == reat) {
-			return reat;
-		}
-		throw new InputMismatchException(
-				"read an unexpected value, expected 0x" + Integer.toHexString(a) + " or 0x" + Integer.toHexString(b) + " but got 0x");
-		
+		return readInt(in, a, b);
 	}
 	
 	public int readInt(int... vals) throws IOException {
@@ -607,6 +666,7 @@ public class Connection implements Closeable {
 		}
 		throw new InputMismatchException("unexpected value: " + reat + " expected: " + Arrays.toString(vals));
 	}
+	
 	
 	public int readInt(IntFunction<String> msg, int a, int b) throws IOException {
 		int reat = readInt(in);
@@ -655,11 +715,16 @@ public class Connection implements Closeable {
 	
 	@Override
 	public void close() throws IOException {
+		closed = true;
 		try { // invoke both methods even if in.close fails
 			in.close();
 		} finally {
 			out.close();
 		}
+	}
+	
+	public boolean closed() {
+		return closed;
 	}
 	
 	private static void writeString(OutputStream out, String str) throws IOException {

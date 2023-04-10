@@ -2,6 +2,7 @@ package de.hechler.patrick.games.squareconqerer.world;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,6 +17,7 @@ import java.util.Set;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.enums.Direction;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
@@ -76,17 +78,29 @@ public final class RootWorld implements World {
 		}
 	}
 	
-	public boolean running() {
-		return rnd != null;
+	/**
+	 * this is only done when the game starts for the random seed of the world
+	 * <ol>
+	 * <li> Server: {@link #REQ_RND} </li>
+	 * <li> Client: {@link #GIV_RND} </li>
+	 * <li> Client: 16 random bytes </li>
+	 * </ol>
+	 */
+	public static final int REQ_RND = 0x558F7BB1;
+	public static final int GIV_RND = 0x460C8B92;
+	
+	public static void fillRnd(Connection conn, byte[] arr) throws IOException {
+		if (arr.length != 16) throw new AssertionError("the given array has an inavlid size");
+		conn.blocked(() -> {
+			conn.writeInt(REQ_RND);
+			conn.readInt(GIV_RND);
+			conn.readArr(arr);
+		});
 	}
 	
 	public synchronized void start(byte[] s) {
-		if (s == null) {
-			throw new NullPointerException("the given seed is null");
-		}
-		if (rnd != null) {
-			throw new IllegalStateException("the game already started");
-		}
+		if (s == null) throw new NullPointerException("the given seed is null");
+		if (rnd != null) throw new IllegalStateException("the game already started");
 		synchronized (root) {
 			root.allowNewUsers(false);
 			Map<String, User> map = root.users();
@@ -94,7 +108,7 @@ public final class RootWorld implements World {
 			Collection<User> values = map.values();
 			User[]           users  = values.toArray(new User[values.size()]);
 			Arrays.sort(users, (a, b) -> a.name().compareTo(b.name()));
-			if (users.length << 4 != s.length) throw new IllegalArgumentException("the given seed is illegal");
+			if ((users.length + 1) << 4 != s.length) throw new IllegalArgumentException("the given seed is illegal");
 			long sval = seed(s);
 			seed = sval;
 			rnd  = new Random(sval);
@@ -116,6 +130,10 @@ public final class RootWorld implements World {
 	private static long val(byte[] s, int i) {
 		return s[i] & 0xFF | ((s[i + 1] & 0xFFL) << 8) | ((s[i + 2] & 0xFFL) << 16) | ((s[i + 3] & 0xFFL) << 24) | ((s[i + 4] & 0xFFL) << 32)
 				| ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48) | ((s[i + 7] & 0xFFL) << 56);
+	}
+	
+	public boolean running() {
+		return rnd != null;
 	}
 	
 	@Override

@@ -23,11 +23,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -89,6 +96,8 @@ public class SquareConquererGUI {
 	private JPanel         panel;
 	private JButton[][]    btns;
 	private EntityTurn[][] turns;
+	
+	private volatile Map<User, Connection> connects;
 	
 	private final Runnable loadFinishedHook = () -> {
 		if (world instanceof RootWorld) {
@@ -467,26 +476,40 @@ public class SquareConquererGUI {
 				try {
 					int          port = portDoc.getNumber();
 					ServerSocket ss   = new ServerSocket(port);
-					serverThread = threadBuilder().start(() -> {
-						try {
-							RootWorld rw   = (RootWorld) world;
-							RootUser  root = rw.user();
-							Connection.ServerAccept.accept(ss, root, (conn, sok) -> {
-								threadBuilder().start(
-										() -> JOptionPane.showMessageDialog(frame, "'" + conn.usr.name() + "' logged in from " + sok.getInetAddress(),
-												"remote log in", JOptionPane.INFORMATION_MESSAGE));
-								World userWorld = rw.of(conn.usr, conn.modCnt());
-								OpenWorld openWorld = new OpenWorld(conn, userWorld);
-								openWorld.execute();
-							}, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
-						} catch (IOException err) {
-							if (err instanceof ClosedByInterruptException || Thread.interrupted()) {
-								return;
-							}
-							JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(),
-									JOptionPane.ERROR_MESSAGE);
-						}
-					});
+					synchronized (SquareConquererGUI.this) {
+						final HashMap<User, Connection> hm = new HashMap<>();
+						connects     = hm;
+						serverThread = threadBuilder().start(() -> {
+											try {
+												RootWorld rw = (RootWorld) world;
+												Connection.ServerAccept.accept(ss, rw, (conn, sok) -> {
+																	threadBuilder().start(() -> JOptionPane.showMessageDialog(frame,
+																			"'" + conn.usr.name() + "' logged in from " + sok.getInetAddress(),
+																			"remote log in", JOptionPane.INFORMATION_MESSAGE));
+																},
+														hm, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
+											} catch (IOException err) {
+												if (err instanceof ClosedByInterruptException || Thread.interrupted()) {
+													return;
+												}
+												JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(),
+														JOptionPane.ERROR_MESSAGE);
+											} finally {
+												synchronized (SquareConquererGUI.this) {
+													if (connects == hm) {
+														connects = null;
+													}
+												}
+												for (Connection conn : hm.values()) {
+													try {
+														conn.close();
+													} catch (IOException e1) {
+														e1.printStackTrace();
+													}
+												}
+											}
+										});
+					}
 					serverMenu.remove(openItem);
 					serverMenu.add(closeItem, 0);
 					JOptionPane.showMessageDialog(frame, "server started on port " + ss.getLocalPort(), "Server Started",
@@ -862,7 +885,35 @@ public class SquareConquererGUI {
 			if (chosen != JOptionPane.YES_OPTION) {
 				return;
 			}
-			rw.start();
+			synchronized (this) {
+				Map<User, Connection> conns = this.connects;
+				byte[]                seed  = new byte[(conns.size() + 1) << 4];
+				byte[]                tmp   = new byte[16];
+				rw.user().fillRandom(tmp);
+				System.arraycopy(tmp, 0, seed, 0, 16);
+				int i = 16;
+				try {
+					ArrayList<Connection> list = new ArrayList<Connection>(conns.values());
+					Collections.sort(list, (a,b) -> a.usr.name().compareTo(b.usr.name()));
+					for (Iterator<Connection> iter = list.iterator(); iter.hasNext(); i += 16) {
+						final Connection conn = iter.next();
+						try {
+							conn.blocked(() -> RootWorld.fillRnd(conn, tmp));
+						} catch (IOException e1) {
+							JOptionPane.showMessageDialog(frame, "could not get the random value from a client", "start failed",
+									JOptionPane.ERROR_MESSAGE);
+						}
+						System.arraycopy(tmp, 0, seed, i, 16);
+					}
+					if (i < seed.length) {
+						throw new ConcurrentModificationException();
+					}
+					rw.start(seed);
+				} catch (ConcurrentModificationException err) {
+					JOptionPane.showMessageDialog(frame, "accepted/lost a connection during the initilation", "start failed",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
 		}
 		case RootWorld.Builder b -> {
 			int chosen = JOptionPane.showConfirmDialog(frame, "build the world", "BUILD", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
