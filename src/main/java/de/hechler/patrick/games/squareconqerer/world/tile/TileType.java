@@ -25,7 +25,7 @@ public enum TileType implements ImageableObj {
 	
 	;
 	
-	private static TileType[] VALS = values();
+	private static final TileType[] VALS = values();
 	
 	public static TileType of(int oridinal) {
 		return VALS[oridinal];
@@ -56,7 +56,9 @@ public enum TileType implements ImageableObj {
 	public boolean isOcean() {
 		return switch (this) {
 		case WATER_DEEP -> true;
-		default -> false;
+		case FOREST, FOREST_HILL, GRASS, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND, SAND_HILL, SWAMP, SWAMP_HILL,
+				WATER_NORMAL ->
+			false;
 		};
 	}
 	
@@ -74,7 +76,8 @@ public enum TileType implements ImageableObj {
 	public boolean isWater() {
 		return switch (this) {
 		case WATER_DEEP, WATER_NORMAL -> true;
-		default -> false;
+		case FOREST, FOREST_HILL, GRASS, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND, SAND_HILL, SWAMP, SWAMP_HILL ->
+			false;
 		};
 	}
 	
@@ -88,22 +91,22 @@ public enum TileType implements ImageableObj {
 	public boolean isLand() {
 		return switch (this) {
 		case WATER_DEEP, WATER_NORMAL, NOT_EXPLORED -> false;
-		default -> true;
+		case FOREST, FOREST_HILL, GRASS, GRASS_HILL, MOUNTAIN, SAND, SAND_HILL, SWAMP, SWAMP_HILL -> true;
 		};
 	}
 	
 	/**
 	 * returns <code>true</code> if this is a flat tile
 	 * <p>
-	 * a flat tile is a tile, which is <b>no</b> {@link #isHill() hill}, <b>no</b>
-	 * {@link #isMountain() mountain} and <b>no</b> {@link #isWater() water}
+	 * a flat tile is a tile, which is <b>no</b> {@link #isHill() hill}, <b>no</b> {@link #isMountain() mountain} and
+	 * <b>no</b> {@link #isWater() water}
 	 * 
 	 * @return <code>true</code> if this is a flat tile
 	 */
 	public boolean isFlat() {
 		return switch (this) {
 		case SAND, GRASS, FOREST, SWAMP -> true;
-		default -> false;
+		case FOREST_HILL, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND_HILL, SWAMP_HILL, WATER_DEEP, WATER_NORMAL -> false;
 		};
 	}
 	
@@ -123,7 +126,7 @@ public enum TileType implements ImageableObj {
 	public boolean isHill() {
 		return switch (this) {
 		case SAND_HILL, GRASS_HILL, FOREST_HILL, SWAMP_HILL -> true;
-		default -> false;
+		case FOREST, GRASS, MOUNTAIN, NOT_EXPLORED, SAND, SWAMP, WATER_DEEP, WATER_NORMAL -> false;
 		};
 	}
 	
@@ -139,11 +142,10 @@ public enum TileType implements ImageableObj {
 	/**
 	 * returns <code>true</code> if this is a not-flat tile
 	 * <p>
-	 * a not-flat tile is a tile, which is a {@link #isHill() hill} or
-	 * a {@link #isMountain() mountain} tile
+	 * a not-flat tile is a tile, which is a {@link #isHill() hill} or a {@link #isMountain() mountain} tile
 	 * <p>
-	 * note that {@link #isWater() water} tiles are <b>no</b> {@link #isFlat() flat}
-	 * tiles and also <b>no</b> {@link #isNotFlat() not-flat}
+	 * note that {@link #isWater() water} tiles are <b>no</b> {@link #isFlat() flat} tiles and also <b>no</b>
+	 * {@link #isNotFlat() not-flat}
 	 * 
 	 * @return <code>true</code> if this is a mountain tile
 	 */
@@ -159,7 +161,9 @@ public enum TileType implements ImageableObj {
 	public boolean isSand() {
 		return switch (this) {
 		case SAND, SAND_HILL -> true;
-		default -> false;
+		case FOREST, FOREST_HILL, GRASS, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SWAMP, SWAMP_HILL, WATER_DEEP,
+				WATER_NORMAL ->
+			false;
 		};
 	}
 	
@@ -173,7 +177,9 @@ public enum TileType implements ImageableObj {
 	public boolean isGrass() {
 		return switch (this) {
 		case GRASS, GRASS_HILL -> true;
-		default -> false;
+		case FOREST, FOREST_HILL, MOUNTAIN, NOT_EXPLORED, SAND, SAND_HILL, SWAMP, SWAMP_HILL, WATER_DEEP,
+				WATER_NORMAL ->
+			false;
 		};
 	}
 	
@@ -187,7 +193,8 @@ public enum TileType implements ImageableObj {
 	public boolean isForest() {
 		return switch (this) {
 		case FOREST, FOREST_HILL -> true;
-		default -> false;
+		case GRASS, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND, SAND_HILL, SWAMP, SWAMP_HILL, WATER_DEEP, WATER_NORMAL ->
+			false;
 		};
 	}
 	
@@ -201,7 +208,9 @@ public enum TileType implements ImageableObj {
 	public boolean isSwamp() {
 		return switch (this) {
 		case SWAMP, SWAMP_HILL -> true;
-		default -> false;
+		case FOREST, FOREST_HILL, GRASS, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND, SAND_HILL, WATER_DEEP,
+				WATER_NORMAL ->
+			false;
 		};
 	}
 	
@@ -211,7 +220,8 @@ public enum TileType implements ImageableObj {
 		case GRASS -> GRASS_HILL;
 		case FOREST -> FOREST_HILL;
 		case SWAMP -> SWAMP_HILL;
-		default -> throw new IllegalStateException("can not add hills to this type (" + name() + ")");
+		case FOREST_HILL, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND_HILL, SWAMP_HILL, WATER_DEEP, WATER_NORMAL ->
+			throw new IllegalStateException("can not add hills to this type (" + name() + ")");
 		};
 	}
 	

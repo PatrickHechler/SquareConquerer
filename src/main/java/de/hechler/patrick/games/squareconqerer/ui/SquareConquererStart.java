@@ -37,7 +37,6 @@ import javax.swing.text.Document;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
@@ -87,10 +86,10 @@ public class SquareConquererStart {
 			default -> crash(i, args, "unknown argument");
 			}
 		}
-		final int             p              = port != -1 ? port : Connection.DEFAULT_PORT;
-		World                 world          = null;
-		Thread                acceptorThread = null;
-		Map<User, Connection> cs             = null;
+		final int             p            = port != -1 ? port : Connection.DEFAULT_PORT;
+		World                 world        = null;
+		Thread                serverThread = null;
+		Map<User, Connection> connects     = null;
 		if (pw != null) {
 			if (worldFile != null) {
 				RootUser root = RootUser.create(pw);
@@ -128,18 +127,19 @@ public class SquareConquererStart {
 			}
 			if (server && world != null) {
 				final RootWorld rw = (RootWorld) world;
-				HashMap<User, Connection> hashMap = new HashMap<>();
-				cs             = hashMap;
-				acceptorThread = threadBuilder().start(() -> {
-									try {
-										Connection.ServerAccept.accept(p, rw,
-												(conn, sok) -> System.err
-														.println("the user '" + conn.usr.name() + "' logged in from '" + sok.getInetAddress() + "'"),
-												hashMap, serverpw);
-									} catch (IOException e) {
-										e.printStackTrace();
-									}
-								});
+				final Map<User, Connection> cs = new HashMap<>();
+				connects = cs;
+				serverThread = threadBuilder().start(() -> {
+					try {
+						Connection.ServerAccept
+								.accept(p, rw,
+										(conn, sok) -> System.err.println("the user '" + conn.usr.name()
+												+ "' logged in from '" + sok.getInetAddress() + "'"),
+										cs, serverpw);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				});
 			}
 		}
 		if (gui && console) {
@@ -148,7 +148,7 @@ public class SquareConquererStart {
 		if (gui) {
 			if (world != null) {
 				SquareConquererGUI gui = new SquareConquererGUI(world);
-				gui.load(true, acceptorThread);
+				gui.load(true, serverThread);
 			} else {
 				SwingUtilities.invokeLater(() -> {
 					JFrame frame = initStartFrame();
@@ -216,7 +216,7 @@ public class SquareConquererStart {
 		if (console) {
 			SquareConquererCUI cui = new SquareConquererCUI();
 			if (world != null) {
-				cui.setWorld(world, acceptorThread);
+				cui.setWorld(world, serverThread, connects);
 			} else {
 				if (pw != null) {
 					if (name != null) {
@@ -327,7 +327,7 @@ public class SquareConquererStart {
 			crash(i, args, "server password is already set");
 		}
 		serverpw = args[i].toCharArray();
-		args[i]  = null;
+		args[i] = null;
 	}
 	
 	private static void argConnect(String[] args, int i) {
@@ -443,8 +443,8 @@ public class SquareConquererStart {
 		if (pw != null) {
 			crash(i, args, "password already set");
 		}
-		pw      = args[i].toCharArray();
-		args[i] = null;                 // well, at least allow the GC to overwrite the content
+		pw = args[i].toCharArray();
+		args[i] = null; // well, at least allow the GC to overwrite the content
 	}
 	
 	private static void argNameFile(String[] args, int i) {
@@ -595,16 +595,16 @@ public class SquareConquererStart {
 		layout.setHgap(50);
 		layout.setVgap(10);
 		panel.setLayout(layout);
-		pwField          = new JPasswordField(16);
-		serverPWField    = new JPasswordField(16);
-		remote           = new JCheckBox("Remote Login");
-		createUser       = new JCheckBox("Create Remote Account");
-		createNew        = new JCheckBox("Create new World");
-		hostField        = new JTextField(16);
-		nameField        = new JTextField(16);
+		pwField = new JPasswordField(16);
+		serverPWField = new JPasswordField(16);
+		remote = new JCheckBox("Remote Login");
+		createUser = new JCheckBox("Create Remote Account");
+		createNew = new JCheckBox("Create new World");
+		hostField = new JTextField(16);
+		nameField = new JTextField(16);
 		selectdFileField = new JTextField(16);
-		xlenField        = new JTextField(16);
-		ylenField        = new JTextField(16);
+		xlenField = new JTextField(16);
+		ylenField = new JTextField(16);
 		JFileChooser   fc         = new JFileChooser();
 		JButton        loadBtn    = new JButton("select file");
 		JButton        startBtn   = new JButton("connect to server");
@@ -627,8 +627,9 @@ public class SquareConquererStart {
 		ylenField.setText("128");
 		fc.setMultiSelectionEnabled(false);
 		remote.setSelected(true);
-		createUser.setToolTipText("<html>connect to the server using the server password and then create an account on the server<br>"
-				+ "the server password will only be used once to encrypt your password and send it to the server.</html>");
+		createUser.setToolTipText(
+				"<html>connect to the server using the server password and then create an account on the server<br>"
+						+ "the server password will only be used once to encrypt your password and send it to the server.</html>");
 		
 		panel.add(remote, 0);
 		panel.add(createUser, 1);
@@ -698,11 +699,13 @@ public class SquareConquererStart {
 			}
 			File file = fc.getSelectedFile();
 			if (!file.exists()) {
-				JOptionPane.showMessageDialog(frame, "there is no such file", "file not found", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame, "there is no such file", "file not found",
+						JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 			if (!file.isFile()) {
-				JOptionPane.showMessageDialog(frame, "the selected path is no 'normal' file", "no file", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame, "the selected path is no 'normal' file", "no file",
+						JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 			selectdFileField.setText(file.toString());
@@ -726,7 +729,8 @@ public class SquareConquererStart {
 				frame.dispose();
 				gui.visible(true);
 			} catch (Exception err) {
-				JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(),
+						JOptionPane.ERROR_MESSAGE);
 			}
 		});
 		
@@ -735,7 +739,8 @@ public class SquareConquererStart {
 		return frame;
 	}
 	
-	private static World connectToRemoteWorld(JPasswordField pw, char[] serverPW, JTextField host, JTextField name) throws IOException {
+	private static World connectToRemoteWorld(JPasswordField pw, char[] serverPW, JTextField host, JTextField name)
+			throws IOException {
 		World       world;
 		String      hostTxt = host.getText().trim();
 		int         li      = hostTxt.lastIndexOf(':');
@@ -770,7 +775,8 @@ public class SquareConquererStart {
 	
 	private static World loadWorldFromFile(JPasswordField pw, JTextField selectdFile) throws IOException {
 		RootUser root = RootUser.create(pw.getPassword());
-		try (FileInputStream in = new FileInputStream(selectdFile.getText()); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
+		try (FileInputStream in = new FileInputStream(selectdFile.getText());
+				Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
 			Tile[][] tiles;
 			root.load(conn);
 			tiles = RemoteWorld.loadWorld(conn, root.users());

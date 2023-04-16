@@ -90,7 +90,6 @@ import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.StoreTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-@SuppressWarnings("preview")
 public class SquareConquererGUI {
 	
 	private World world;
@@ -1202,10 +1201,11 @@ public class SquareConquererGUI {
 				Object            value = JOptionPane.showInputDialog(dialog, "select the owner", "store owner", JOptionPane.QUESTION_MESSAGE, null,
 						users.keySet().toArray(), RootUser.ROOT_NAME);
 				if (value != null) {
-					User usr = users.get(value);
+					User usr = users.get((String) value);
 					((RootWorld.Builder) world).set(x, y, new StoreBuild(x, y, usr));
 				}
 			}
+			default -> throw new AssertionError("unknown selected item: " + build.getSelectedItem());
 			}
 		});
 		Unit u = t.unit();

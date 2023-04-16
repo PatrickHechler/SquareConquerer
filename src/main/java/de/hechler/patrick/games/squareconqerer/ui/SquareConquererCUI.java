@@ -45,7 +45,8 @@ public class SquareConquererCUI implements Runnable {
 	private static final String CMD_QUIT     = "quit";
 	
 	private static final Pattern PTRN_ARG       = Pattern.compile("([^\\s\\\\'\"]+|'[^']*'|\"[^\"]*\")+");
-	private static final Pattern PTRN_STR       = Pattern.compile("[^\\\\]('([^'\\\\]*|\\\\.)*'|\"([^\"\\\\]*|\\\\.)*\")");
+	private static final Pattern PTRN_STR       = Pattern
+			.compile("[^\\\\]('([^'\\\\]*|\\\\.)*'|\"([^\"\\\\]*|\\\\.)*\")");
 	private static final Pattern PTRN_BACKSLASH = Pattern.compile("\\\\(.)");
 	
 	private static List<String> arguments(String line) {
@@ -92,10 +93,11 @@ public class SquareConquererCUI implements Runnable {
 	public SquareConquererCUI() {
 		Console console = System.console();
 		if (console != null) {
-			this.c           = new ConsoleCons(console);
+			this.c = new ConsoleCons(console);
 			this.interactive = true;
 		} else {
-			this.c           = new IOCons(new Scanner(System.in), System.out);
+			Scanner sc = new Scanner(System.in);
+			this.c = new IOCons(sc, System.out);
 			this.interactive = false;
 		}
 	}
@@ -108,16 +110,17 @@ public class SquareConquererCUI implements Runnable {
 		if (c == null) {
 			throw new NullPointerException("Con c is null");
 		}
-		this.c           = c;
+		this.c = c;
 		this.interactive = interactive;
 	}
 	
 	public void setInteractive(boolean interactive) { this.interactive = interactive; }
 	
-	public void setWorld(World world, Thread serverThread) {
-		this.world        = world;
+	public void setWorld(World world, Thread serverThread, Map<User, Connection> connects) {
+		this.world = world;
 		this.serverThread = serverThread;
-		this.usr          = world.user();
+		this.connects = connects;
+		this.usr = world.user();
 		if (serverThread != null) {
 			threadBuilder().start(() -> {
 				while (serverThread.isAlive()) {
@@ -127,8 +130,11 @@ public class SquareConquererCUI implements Runnable {
 						e.printStackTrace();
 					}
 				}
-				if (this.serverThread == serverThread) {
-					this.serverThread = null;
+				synchronized (SquareConquererCUI.this) {
+					if (this.serverThread == serverThread) {
+						this.serverThread = null;
+						this.connects = null;
+					}
 				}
 			});
 		}
@@ -235,8 +241,8 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdServerPW(List<String> args) {
 		if (args.size() == 1) {
-			switch (ask("do you want to [s]et" + (serverPW != null ? "/[r]emove" : "") + " the server password or do [n]othing? ",
-					serverPW != null ? "srn" : "sn")) {
+			switch (ask("do you want to [s]et" + (serverPW != null ? "/[r]emove" : "")
+					+ " the server password or do [n]othing? ", serverPW != null ? "srn" : "sn")) {
 			case 's' -> serverPW = c.readPassword("enter now the new server password: ");
 			case 'r' -> serverPW = null;
 			case 'n' -> {/**/}
@@ -283,8 +289,8 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdSetPW(List<String> args) {
 		if (args.size() == 1) {
-			switch (ask("set [y]our password" + (usr instanceof RootUser ? ", [s]omeones password" : "") + " or do [n]othing? ",
-					usr instanceof RootUser ? "ysn" : "yn")) {
+			switch (ask("set [y]our password" + (usr instanceof RootUser ? ", [s]omeones password" : "")
+					+ " or do [n]othing? ", usr instanceof RootUser ? "ysn" : "yn")) {
 			case 'y' -> setMyPW();
 			case 's' -> {
 				String name = c.readLine("enter now the username of the given user: ");
@@ -387,7 +393,8 @@ public class SquareConquererCUI implements Runnable {
 				} else if (world instanceof RemoteWorld) {
 					c.writeLine("your loaded world is a remote world");
 				} else {
-					c.writeLine("it seems that there is no server running and your world does not seem to be connected to some server");
+					c.writeLine(
+							"it seems that there is no server running and your world does not seem to be connected to some server");
 				}
 			}
 			case "connect" -> {
@@ -396,7 +403,8 @@ public class SquareConquererCUI implements Runnable {
 					return;
 				}
 				if (usr == null) {
-					c.writeLine("you are not logged in, retry after you logged in (look at " + CMD_SETPW + " and " + CMD_USERNAME + ')');
+					c.writeLine("you are not logged in, retry after you logged in (look at " + CMD_SETPW + " and "
+							+ CMD_USERNAME + ')');
 					return;
 				}
 				int    port = Connection.DEFAULT_PORT;
@@ -442,41 +450,46 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("there are not enugh arguments for the start argument");
 					return;
 				}
-				if (serverThread != null) {
-					c.writeLine("I am already running an server");
-					return;
-				}
-				if (world == null) {
-					c.writeLine("there is no world loaded");
-					return;
-				}
-				if (!(usr instanceof RootUser root)) {
-					c.writeLine("you are not logged in as root");
-					return;
-				}
-				try {
-					int    port = "-".equals(args.get(i)) ? Connection.DEFAULT_PORT : Integer.parseInt(args.get(i));
-					char[] spw  = serverPW;
-					serverPW = null;
-					RootWorld             rw = (RootWorld) world;
-					Map<User, Connection> cs = new HashMap<>();
-					connects     = cs;
-					serverThread = threadBuilder().start(() -> {
-										try {
-											Connection.ServerAccept.accept(port, rw,
-													(conn, sok) -> c
-															.writeLine("the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress()),
-													cs, spw);
-										} catch (IOException e) {
-											c.writeLine("error at the server thread: " + e.toString());
-										} finally {
-											serverThread = null;
-										}
-									});
-					c.writeLine("started the server thread");
-				} catch (NumberFormatException e) {
-					c.writeLine("error parsing the port: " + e.toString());
-					return;
+				synchronized (this) {
+					if (serverThread != null) {
+						c.writeLine("I am already running an server");
+						return;
+					}
+					if (world == null) {
+						c.writeLine("there is no world loaded");
+						return;
+					}
+					if (!(world instanceof RootWorld rw)) {
+						c.writeLine("your loaded world is no root world");
+						return;
+					}
+					try {
+						int    port = "-".equals(args.get(i)) ? Connection.DEFAULT_PORT : Integer.parseInt(args.get(i));
+						char[] spw  = serverPW;
+						serverPW = null;
+						Map<User, Connection> cs = new HashMap<>();
+						this.connects = cs;
+						serverThread = threadBuilder().start(() -> {
+							try {
+								Connection.ServerAccept.accept(port, rw, (conn, sok) -> c.writeLine(
+										"the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress()), cs,
+										spw);
+							} catch (IOException e) {
+								c.writeLine("error at the server thread: " + e.toString());
+							} finally {
+								synchronized (SquareConquererCUI.this) {
+									if (serverThread == Thread.currentThread()) {
+										serverThread = null;
+										connects = null;
+									}
+								}
+							}
+						});
+						c.writeLine("started the server thread");
+					} catch (NumberFormatException e) {
+						c.writeLine("error parsing the port: " + e.toString());
+						return;
+					}
 				}
 			}
 			case "stop" -> {
@@ -495,6 +508,17 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("I told the server thread to stop");
 				} else {
 					c.writeLine("the server stopped");
+				}
+				Map<User, Connection> cs = connects;
+				if (cs != null) {
+					connects = null;
+					for (Connection conn : cs.values()) {
+						try {
+							conn.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 			default -> c.writeLine("unknown argument: " + args.get(i));
@@ -543,12 +567,15 @@ public class SquareConquererCUI implements Runnable {
 				world = nw;
 			}
 		} else if (usr == null) {
-			c.writeLine("you are not logged in, retry after you logged in (take a look at the " + CMD_SETPW + " and " + CMD_USERNAME + " commands)");
+			c.writeLine("you are not logged in, retry after you logged in (take a look at the " + CMD_SETPW + " and "
+					+ CMD_USERNAME + " commands)");
 		} else {
-			switch (ask("do you want to [c]onnect to a server" + (world instanceof RootWorld ? ", [s]tart a server" : "") + " or do [n]othing?",
+			switch (ask("do you want to [c]onnect to a server"
+					+ (world instanceof RootWorld ? ", [s]tart a server" : "") + " or do [n]othing?",
 					world instanceof RootWorld ? "csn" : "cn")) {
 			case 'c' -> {
-				if (world != null && ask("if you proceed you current world will be discarded. ([p]rocced/[c]ancel)? ", "pc") == 'c') {
+				if (world != null && ask("if you proceed you current world will be discarded. ([p]rocced/[c]ancel)? ",
+						"pc") == 'c') {
 					return;
 				}
 				String host = c.readLine("type now the serverhost: ").trim();
@@ -568,7 +595,7 @@ public class SquareConquererCUI implements Runnable {
 					char[] sp = serverPW;
 					if (sp != null) {
 						serverPW = null;
-						conn     = Connection.ClientConnect.connectNew(host, port, usr, sp);
+						conn = Connection.ClientConnect.connectNew(host, port, usr, sp);
 					} else {
 						conn = Connection.ClientConnect.connect(host, port, usr);
 					}
@@ -580,8 +607,8 @@ public class SquareConquererCUI implements Runnable {
 			}
 			case 's' -> {
 				RootWorld rw      = (RootWorld) world;
-				String    portStr = c.readLine("enter now the port on which the server should listen (default is " + Connection.DEFAULT_PORT + "): ")
-						.trim();
+				String    portStr = c.readLine("enter now the port on which the server should listen (default is "
+						+ Connection.DEFAULT_PORT + "): ").trim();
 				int       port    = portStr.isEmpty() ? Connection.DEFAULT_PORT : Integer.parseInt(portStr);
 				char[]    sp      = serverPW;
 				serverPW = null;
@@ -589,8 +616,11 @@ public class SquareConquererCUI implements Runnable {
 				connects = cs;
 				threadBuilder().start(() -> {
 					try {
-						Connection.ServerAccept.accept(port, rw,
-								(conn, sok) -> c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress()), cs, sp);
+						Map<User, Connection> cs0 = new HashMap<>();
+						connects = cs0;
+						Connection.ServerAccept.accept(port, rw, (conn, sok) -> {
+							c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
+						}, cs0, sp);
 					} catch (IOException e) {
 						c.writeLine("error on server thread: " + e.toString());
 					}
@@ -632,12 +662,15 @@ public class SquareConquererCUI implements Runnable {
 				c.writeLine("    valid TYPE values: water sand grass forest swamp mountain not-explored");
 				c.writeLine("    [sand grass forest swamp] accept the '+hill' suffix");
 				c.writeLine("    [water] accepts the '+deep' suffix");
-				c.writeLine("    all types except of not-explored accept the '+normal' suffix, which is just an alias for no suffix");
-				c.writeLine("    if there is only a suffix given it will replace the current suffix (if this is valid)");
+				c.writeLine(
+						"    all types except of not-explored accept the '+normal' suffix, which is just an alias for no suffix");
+				c.writeLine(
+						"    if there is only a suffix given it will replace the current suffix (if this is valid)");
 				c.writeLine("  tile.resource <RESOURCE> <X> <Y>: set the resource of the given tile");
 				c.writeLine("    valid RESOURCE values: none gold iron coal");
 				c.writeLine("  fill-random: all tiles with type not-explored with random values");
-				c.writeLine("    note that the potential existing resource values of these types will be randomly overwritten");
+				c.writeLine(
+						"    note that the potential existing resource values of these types will be randomly overwritten");
 			}
 			case "load" -> {
 				if (++i >= args.size()) {
@@ -660,9 +693,10 @@ public class SquareConquererCUI implements Runnable {
 				if (!(usr instanceof RootUser root) || !root.users().isEmpty()) {
 					c.writeLine("changed to root user");
 				}
-				usr      = usr.makeRoot();
+				usr = usr.makeRoot();
 				username = null;
-				try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
+				try (InputStream in = Files.newInputStream(p);
+						Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 					((RootUser) usr).load(conn);
 					Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) usr).users());
 					world = RootWorld.Builder.createBuilder((RootUser) usr, tiles);
@@ -686,7 +720,8 @@ public class SquareConquererCUI implements Runnable {
 				int x = Integer.parseInt(args.get(i - 1));
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
-					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x="
+							+ x + "|y=" + y + ")");
 					return;
 				}
 				writeTile(x, y);
@@ -730,7 +765,8 @@ public class SquareConquererCUI implements Runnable {
 						&& ask("the save file already exists, proceed? ([p]roceed|[c]ancel)", "pc") == 'c') {
 					break;
 				}
-				try (OutputStream out = Files.newOutputStream(p); Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, usr)) {
+				try (OutputStream out = Files.newOutputStream(p);
+						Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, usr)) {
 					if (usr instanceof RootUser ru) {
 						ru.save(conn);
 					} else {
@@ -777,7 +813,8 @@ public class SquareConquererCUI implements Runnable {
 				int x = Integer.parseInt(args.get(i - 1));
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
-					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x="
+							+ x + "|y=" + y + ")");
 					return;
 				}
 				TileType type = switch (args.get(i - 2).toLowerCase()) {
@@ -800,7 +837,8 @@ public class SquareConquererCUI implements Runnable {
 					case SAND, SAND_HILL -> TileType.SAND;
 					case SWAMP, SWAMP_HILL -> TileType.SWAMP;
 					case WATER_NORMAL, WATER_DEEP -> TileType.WATER_NORMAL;
-					default -> throw new AssertionError("unknown tile type: " + old.type.name());
+					case NOT_EXPLORED ->
+						throw new IllegalStateException("tile type is not-explored does not support +normal");
 					};
 				}
 				case "water+deep" -> TileType.WATER_DEEP;
@@ -827,7 +865,8 @@ public class SquareConquererCUI implements Runnable {
 					case GRASS, GRASS_HILL -> TileType.GRASS_HILL;
 					case SAND, SAND_HILL -> TileType.SAND_HILL;
 					case SWAMP, SWAMP_HILL -> TileType.SWAMP_HILL;
-					default -> throw new AssertionError("unknown tile type: " + old.type.name());
+					case MOUNTAIN, NOT_EXPLORED, WATER_DEEP, WATER_NORMAL, default ->
+						throw new IllegalStateException("old tile type does not support +hill old: " + old.type.name());
 					};
 				}
 				default -> {
@@ -856,7 +895,8 @@ public class SquareConquererCUI implements Runnable {
 				int x = Integer.parseInt(args.get(i - 1));
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
-					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x="
+							+ x + "|y=" + y + ")");
 					return;
 				}
 				OreResourceType res = switch (args.get(i - 2).toLowerCase()) {
@@ -943,7 +983,8 @@ public class SquareConquererCUI implements Runnable {
 				break;
 			}
 			rootLogin(askPW);
-			try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
+			try (InputStream in = Files.newInputStream(p);
+					Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 				((RootUser) usr).load(conn);
 				Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) usr).users());
 				c.writeLine("loaded from file, build now the world");
@@ -1116,10 +1157,12 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("Status command: help");
 					c.writeLine("without arguments, write all status types");
 					c.writeLine("with arguments:");
-					c.writeLine("  " + HELP + " write this message");
+					c.writeLine("  '" + HELP + "' write this message");
 					c.writeLine("  'user' write the user status");
-					c.writeLine("  'world-remote-size' update the size of the remote world and then write the world status");
-					c.writeLine("  'world-remote-all' or 'world-remote-world' update the complete remote world and then write the world status");
+					c.writeLine(
+							"  'world-remote-size' update the size of the remote world and then write the world status");
+					c.writeLine(
+							"  'world-remote-all' or 'world-remote-world' update the complete remote world and then write the world status");
 					c.writeLine("  'server' write the server status");
 					c.writeLine("  'serverpw' or 'server-pw' write the server password status");
 				}
@@ -1142,7 +1185,8 @@ public class SquareConquererCUI implements Runnable {
 			c.writeLine("serverPassword: there is no server password");
 			if (serverThread != null) {
 				c.writeLine("  note that I remove my reference of the server password after starting the server");
-				c.writeLine("  only because I do not know a server password, does not mean that the server knows no password");
+				c.writeLine(
+						"  only because I do not know a server password, does not mean that the server knows no password");
 			}
 		}
 	}
@@ -1371,22 +1415,28 @@ public class SquareConquererCUI implements Runnable {
 			}
 		}
 		if (world != null) {
-			final RootWorld       rw = (RootWorld) world;
-			Map<User, Connection> cs = new HashMap<>();
-			connects     = cs;
-			serverThread = threadBuilder().start(() -> {
-								try {
-									Connection.ServerAccept.accept(sst.port, rw,
-											(conn, sok) -> c
-													.writeLine("accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")"),
-											cs, serverPW);
-								} catch (IOException e) {
-									c.writeLine("error: " + e.toString());
-								} finally {
-									serverThread = null;
-								}
-							});
-			c.writeLine("the server should now accept connections");
+			synchronized (this) {
+				final RootWorld rw = (RootWorld) world;
+				Map<User, Connection> cs = new HashMap<>();
+				connects = cs;
+				serverThread = threadBuilder().start(() -> {
+					try {
+						Connection.ServerAccept.accept(sst.port, rw, (conn, sok) -> c.writeLine(
+								"accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")"),
+								cs, serverPW);
+					} catch (IOException e) {
+						c.writeLine("error on server thread: " + e.toString());
+					} finally {
+						synchronized (SquareConquererCUI.this) {
+							if (serverThread == Thread.currentThread()) {
+								serverThread = null;
+								connects = null;
+							}
+						}
+					}
+				});
+				c.writeLine("the server should now accept connections");
+			}
 		}
 	}
 	
@@ -1457,8 +1507,8 @@ public class SquareConquererCUI implements Runnable {
 			} catch (NumberFormatException e) {
 				c.writeLine("error: " + e.toString());
 			}
-		} while (retry(val < min || val > max,
-				"the minimum number is " + min + (max != Integer.MAX_VALUE ? " and the maximum number is " + max : "")));
+		} while (retry(val < min || val > max, "the minimum number is " + min
+				+ (max != Integer.MAX_VALUE ? " and the maximum number is " + max : "")));
 		return val;
 	}
 	

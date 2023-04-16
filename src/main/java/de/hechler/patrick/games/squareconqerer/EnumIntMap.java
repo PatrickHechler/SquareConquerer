@@ -149,7 +149,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		if (!cls.isInstance(key)) {
 			return null;
 		}
-		return arr[((Enum<?>) key).ordinal()];
+		return Integer.valueOf(arr[((Enum<?>) key).ordinal()]);
 	}
 	
 	@Override
@@ -322,7 +322,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			if (!(val instanceof Integer ival)) {
 				return false;
 			}
-			return arr[((Enum<?>) obj).ordinal()] == ival;
+			return arr[((Enum<?>) obj).ordinal()] == ival.intValue();
 		}
 		
 		@Override
@@ -387,6 +387,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			throw new UnsupportedOperationException("remove");
 		}
 		
+		@SuppressWarnings("unlikely-arg-type")
 		@Override
 		public boolean containsAll(Collection<?> c) {
 			for (Object obj : c) {
@@ -514,6 +515,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		}
 		T[] vals = cls.getEnumConstants();
 		for (int i = 0; i < vals.length; i++) {
+			@SuppressWarnings("unlikely-arg-type")
 			Object val = m.get(vals[i]);
 			if (!(val instanceof Integer ival)) return false;
 			if (arr[i] != ival.intValue()) return false;
