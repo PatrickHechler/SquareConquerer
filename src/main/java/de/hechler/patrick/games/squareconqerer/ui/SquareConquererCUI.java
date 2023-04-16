@@ -9,8 +9,10 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,9 +77,10 @@ public class SquareConquererCUI implements Runnable {
 	}
 	
 	private final Cons c;
-	private boolean   interactive;
+	private boolean    interactive;
 	
-	private volatile Thread serverThread;
+	private volatile Thread                serverThread;
+	private volatile Map<User, Connection> connects;
 	
 	private User   usr;
 	private World  world;
@@ -455,26 +458,21 @@ public class SquareConquererCUI implements Runnable {
 					int    port = "-".equals(args.get(i)) ? Connection.DEFAULT_PORT : Integer.parseInt(args.get(i));
 					char[] spw  = serverPW;
 					serverPW = null;
-					World myWorld = world;
+					RootWorld             rw = (RootWorld) world;
+					Map<User, Connection> cs = new HashMap<>();
+					connects     = cs;
 					serverThread = threadBuilder().start(() -> {
-						try {
-							Connection.ServerAccept.accept(port, (conn, sok) -> {
-								c.writeLine("the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress());
-								World w;
-								if (myWorld instanceof RootWorld rw) {
-									w = new UserWorld(rw, root, conn.modCnt());
-								} else {
-									w = myWorld;
-								}
-								OpenWorld ow = new OpenWorld(conn, w);
-								ow.execute();
-							}, root, spw);
-						} catch (IOException e) {
-							c.writeLine("error at the server thread: " + e.toString());
-						} finally {
-							serverThread = null;
-						}
-					});
+										try {
+											Connection.ServerAccept.accept(port, rw,
+													(conn, sok) -> c
+															.writeLine("the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress()),
+													cs, spw);
+										} catch (IOException e) {
+											c.writeLine("error at the server thread: " + e.toString());
+										} finally {
+											serverThread = null;
+										}
+									});
 					c.writeLine("started the server thread");
 				} catch (NumberFormatException e) {
 					c.writeLine("error parsing the port: " + e.toString());
@@ -587,14 +585,12 @@ public class SquareConquererCUI implements Runnable {
 				int       port    = portStr.isEmpty() ? Connection.DEFAULT_PORT : Integer.parseInt(portStr);
 				char[]    sp      = serverPW;
 				serverPW = null;
+				Map<User, Connection> cs = new HashMap<>();
+				connects = cs;
 				threadBuilder().start(() -> {
 					try {
-						Connection.ServerAccept.accept(port, (conn, sok) -> {
-							c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
-							World uw = rw.of(usr, conn.modCnt());
-							OpenWorld ow = new OpenWorld(conn, uw);
-							ow.execute();
-						}, rw.user(), sp);
+						Connection.ServerAccept.accept(port, rw,
+								(conn, sok) -> c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress()), cs, sp);
 					} catch (IOException e) {
 						c.writeLine("error on server thread: " + e.toString());
 					}
@@ -668,7 +664,7 @@ public class SquareConquererCUI implements Runnable {
 				username = null;
 				try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 					((RootUser) usr).load(conn);
-					Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser)usr).users());
+					Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) usr).users());
 					world = RootWorld.Builder.createBuilder((RootUser) usr, tiles);
 					c.writeLine("loaded world and users successfully from the file");
 				} catch (IOException e) {
@@ -1375,21 +1371,21 @@ public class SquareConquererCUI implements Runnable {
 			}
 		}
 		if (world != null) {
-			final RootWorld rw = (RootWorld) world;
+			final RootWorld       rw = (RootWorld) world;
+			Map<User, Connection> cs = new HashMap<>();
+			connects     = cs;
 			serverThread = threadBuilder().start(() -> {
-				try {
-					Connection.ServerAccept.accept(sst.port, (conn, sok) -> {
-						c.writeLine("accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")");
-						World uw = rw.of(conn.usr, conn.modCnt());
-						OpenWorld ow = new OpenWorld(conn, uw);
-						ow.execute();
-					}, (RootUser) usr, serverPW);
-				} catch (IOException e) {
-					c.writeLine("error: " + e.toString());
-				} finally {
-					serverThread = null;
-				}
-			});
+								try {
+									Connection.ServerAccept.accept(sst.port, rw,
+											(conn, sok) -> c
+													.writeLine("accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")"),
+											cs, serverPW);
+								} catch (IOException e) {
+									c.writeLine("error: " + e.toString());
+								} finally {
+									serverThread = null;
+								}
+							});
 			c.writeLine("the server should now accept connections");
 		}
 	}

@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -85,9 +87,10 @@ public class SquareConquererStart {
 			default -> crash(i, args, "unknown argument");
 			}
 		}
-		final int p              = port != -1 ? port : Connection.DEFAULT_PORT;
-		World     world          = null;
-		Thread    acceptorThread = null;
+		final int             p              = port != -1 ? port : Connection.DEFAULT_PORT;
+		World                 world          = null;
+		Thread                acceptorThread = null;
+		Map<User, Connection> cs             = null;
 		if (pw != null) {
 			if (worldFile != null) {
 				RootUser root = RootUser.create(pw);
@@ -124,19 +127,19 @@ public class SquareConquererStart {
 				}
 			}
 			if (server && world != null) {
-				final RootWorld rworld = (RootWorld) world;
+				final RootWorld rw = (RootWorld) world;
+				HashMap<User, Connection> hashMap = new HashMap<>();
+				cs             = hashMap;
 				acceptorThread = threadBuilder().start(() -> {
-					try {
-						Connection.ServerAccept.accept(p, (conn, sok) -> {
-							System.err.println("the user '" + conn.usr.name() + "' logged in from '" + sok.getInetAddress() + "'");
-							World usrWorld = rworld.of(conn.usr, conn.modCnt());
-							OpenWorld oWorld   = new OpenWorld(conn, usrWorld);
-							oWorld.execute();
-						}, rworld.user(), serverpw);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				});
+									try {
+										Connection.ServerAccept.accept(p, rw,
+												(conn, sok) -> System.err
+														.println("the user '" + conn.usr.name() + "' logged in from '" + sok.getInetAddress() + "'"),
+												hashMap, serverpw);
+									} catch (IOException e) {
+										e.printStackTrace();
+									}
+								});
 			}
 		}
 		if (gui && console) {
@@ -607,8 +610,8 @@ public class SquareConquererStart {
 		JButton        startBtn   = new JButton("connect to server");
 		JLabel         hostlbl    = new JLabel("Host:");
 		JLabel         namelbl    = new JLabel("Username:");
-		JLabel         xlenlbl    = new JLabel("Y-Length: (Width)");
-		JLabel         ylenlbl    = new JLabel("X-Length: (Height)");
+		JLabel         xlenlbl    = new JLabel("X-Length: (Width)");
+		JLabel         ylenlbl    = new JLabel("Y-Length: (Height)");
 		JLabel         spwlabel   = new JLabel("Server Password:");
 		JLabel         invisible0 = new JLabel();
 		JLabel         invisible1 = new JLabel();
@@ -620,8 +623,8 @@ public class SquareConquererStart {
 		NumberDocument ylenDoc    = new NumberDocument(0, Integer.MAX_VALUE);
 		xlenField.setDocument(xlenDoc);
 		ylenField.setDocument(ylenDoc);
-		xlenField.setText("16");
-		ylenField.setText("16");
+		xlenField.setText("128");
+		ylenField.setText("128");
 		fc.setMultiSelectionEnabled(false);
 		remote.setSelected(true);
 		createUser.setToolTipText("<html>connect to the server using the server password and then create an account on the server<br>"
@@ -761,7 +764,7 @@ public class SquareConquererStart {
 	}
 	
 	private static World createNewWorld(JPasswordField pw, NumberDocument xlenDoc, NumberDocument ylenDoc) {
-		RootUser          root = RootUser.create(pw.getPassword());
+		RootUser root = RootUser.create(pw.getPassword());
 		return new RootWorld.Builder(root, Math.max(1, xlenDoc.getNumber()), Math.max(1, ylenDoc.getNumber()));
 	}
 	

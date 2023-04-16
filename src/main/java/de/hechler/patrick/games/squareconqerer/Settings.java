@@ -16,7 +16,7 @@ public class Settings {
 	public static final int     VERSION_FIX      = 0;
 	public static final boolean VERSION_SNAPSHOT = true;
 	public static final String  VERSION_STRING   = VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_FIX + (VERSION_SNAPSHOT ? "-SNAPSHOT" : "");
-
+	
 	private Settings() {}
 	
 	private static final Path       PATH  = Path.of("square-conquerer.properties");
@@ -45,7 +45,7 @@ public class Settings {
 	private static final String TRUE  = "true";
 	private static final String FALSE = "false";
 	
-	private static final String ICON_SIZE       = "gui.icon_size";
+	private static final String ICON_SIZE = "gui.icon_size";
 	
 	@SuppressWarnings("unused")
 	private static boolean getProp(String name, boolean def) {
@@ -91,6 +91,29 @@ public class Settings {
 	
 	public static Thread.Builder threadBuilder() {
 		return Thread.ofVirtual();
+	}
+	
+	/**
+	 * returns the integer value between {@code min} and {@code max}, which is most
+	 * near to {@code val}.
+	 * <ul>
+	 * <li>if {@code val} is lower than {@code min}, {@code min} is returned</li>
+	 * <li>if {@code val} is greater than {@code max}, {@code max} is returned</li>
+	 * <li>if {@code val} is already between {@code min} and {@code max},
+	 * {@code val} is returned</li>
+	 * </ul>
+	 * 
+	 * @param min the minimum value
+	 * @param val the value
+	 * @param max the maximum value
+	 * 
+	 * @return the integer value between {@code min} and {@code max}, which is most
+	 *         near to {@code val}
+	 */
+	public static int between(int min, int val, int max) {
+		if (min >= val) return min;
+		else if (max <= val) return max;
+		else return val;
 	}
 	
 }

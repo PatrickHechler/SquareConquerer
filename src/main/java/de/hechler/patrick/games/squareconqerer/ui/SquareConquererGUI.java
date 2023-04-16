@@ -6,6 +6,7 @@ import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
+import java.awt.GraphicsConfiguration;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
@@ -16,14 +17,16 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOError;
 import java.io.IOException;
-import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.nio.channels.ClosedByInterruptException;
@@ -34,7 +37,6 @@ import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -53,6 +55,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
@@ -94,6 +97,8 @@ public class SquareConquererGUI {
 	
 	private JFrame         frame;
 	private JPanel         panel;
+	private JMenuBar       menu;
+	private JScrollPane    scrollPane;
 	private JButton[][]    btns;
 	private EntityTurn[][] turns;
 	
@@ -164,23 +169,61 @@ public class SquareConquererGUI {
 		});
 		
 		reload(null, false);
+		world.addNextTurnListener(() -> update(null));
+		
+		panel.addMouseWheelListener(new MouseWheelListener() {
+			
+			@Override
+			public void mouseWheelMoved(MouseWheelEvent e) {
+				if ((e.getModifiersEx() & MouseWheelEvent.CTRL_DOWN_MASK) == 0 || e.getScrollType() != MouseWheelEvent.WHEEL_UNIT_SCROLL) {
+					JScrollBar sb;
+					if ((e.getModifiersEx() & MouseWheelEvent.SHIFT_DOWN_MASK) == 0) {
+						sb = scrollPane.getHorizontalScrollBar();
+					} else {
+						sb = scrollPane.getVerticalScrollBar();
+					}
+					// MouseEvent me = SwingUtilities.convertMouseEvent(e.getSource() instanceof
+					// Component c ? c : panel, e, sb);
+					sb.dispatchEvent(e);
+					return;
+				}
+				e.consume();
+				int amnt = e.getUnitsToScroll();
+				int w    = Settings.iconSize();
+				for (; amnt > 0; amnt--) {
+					w = (int) (w / 1.125D);
+				}
+				for (; amnt < 0; amnt++) {
+					w = (int) (w * 1.125D);
+				}
+				Settings.iconSize(Settings.between(16, w, 1024));
+				int       is  = Settings.iconSize();
+				Dimension dim = new Dimension(is * btns.length, is * btns[0].length);
+				panel.setPreferredSize(dim);
+				resizeFrame(false, is, dim);
+			}
+			
+		});
+		
 		if (initialVisible) {
 			System.out.println("set now visible (large worlds may need some time) world size: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ')');
+			long start = System.currentTimeMillis();
 			frame.setVisible(true);
+			long end = System.currentTimeMillis();
+			System.out.println("needed " + (end - start) + " milliseconds to set the frame visible (" + (end - start) / 60000 + ")");
 		} else {
 			frame.setVisible(false);
 		}
 	}
 	
-	private JMenuBar initMenu() {
-		JMenuBar menuBar = new JMenuBar();
-		menuBar.add(menuGeneral());
+	private void initMenu() {
+		menu = new JMenuBar();
+		menu.add(menuGeneral());
 		if (world instanceof RootWorld) {
-			menuBar.add(menuServer());
+			menu.add(menuServer());
 		}
-		menuBar.add(menuBuild());
-		frame.setJMenuBar(menuBar);
-		return menuBar;
+		menu.add(menuBuild());
+		frame.setJMenuBar(menu);
 	}
 	
 	private JMenu menuBuild() {
@@ -249,6 +292,7 @@ public class SquareConquererGUI {
 				oldUsr.close();
 				world = b;
 				reload(buildFinishHook, true);
+				world.addNextTurnListener(() -> update(null));
 			});
 			buildMenu.add(toBuild);
 		}
@@ -585,6 +629,7 @@ public class SquareConquererGUI {
 							} catch (IllegalStateException err) {
 								this.world = RootWorld.Builder.createBuilder(root, tiles);
 							}
+							world.addNextTurnListener(() -> update(null));
 						}
 						SwingUtilities.invokeLater(() -> reload(loadFinishedHook, true));
 					} catch (IOException | RuntimeException e1) {
@@ -642,17 +687,16 @@ public class SquareConquererGUI {
 	private void reload(Runnable ufh, boolean reaload) {
 		ToolTipManager.sharedInstance().setInitialDelay(500);
 		
-		JMenuBar menu     = initMenu();
-		int      xlen     = world.xlen();
-		int      ylen     = world.ylen();
-		int      iconSize = Settings.iconSize();
+		initMenu();
+		int xlen     = world.xlen();
+		int ylen     = world.ylen();
+		int iconSize = Settings.iconSize();
 		panel = new JPanel();
 		panel.setLayout(new GridLayout(ylen, xlen, 0, 0));
 		panel.applyComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
 		Dimension panelDim = new Dimension(xlen * iconSize, ylen * iconSize);
 		panel.setPreferredSize(panelDim);
-		JScrollPane scrollPane = new JScrollPane(panel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		scrollPane = new JScrollPane(panel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 		scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
 		frame.setContentPane(scrollPane);
@@ -691,104 +735,120 @@ public class SquareConquererGUI {
 		});
 		if (!reaload) {
 			frame.setLocationByPlatform(true);
-		} // the frame.pack() method is just to slow for large worlds
-		Rectangle bounds  = frame.getGraphicsConfiguration().getBounds();
-		Insets    insets  = frame.getInsets();
-		Dimension menuDim = menu.getPreferredSize();
-		int       w       = Math.min(Math.max(panelDim.width, menuDim.width) + insets.left + insets.right, bounds.width);
-		int       h       = Math.min(panelDim.height + menuDim.height + insets.bottom + insets.top, bounds.height);
-		if (w != bounds.width || h != bounds.height) { // small world, do pack (getInsets before pack is useless)
+		}
+		resizeFrame(reaload, iconSize, panelDim);
+		update(ufh);
+	}
+	
+	private void resizeFrame(boolean reaload, int tileSize, Dimension panelDim) {
+		// the frame.pack() method is just to slow for large worlds
+		GraphicsConfiguration conf    = frame.getGraphicsConfiguration();
+		Rectangle             bounds  = conf.getBounds();
+		Insets                insets  = frame.getInsets();
+		Dimension             menuDim = menu.getPreferredSize();
+		int                   w       = Math.min(Math.max(panelDim.width, menuDim.width) + insets.left + insets.right, bounds.width);
+		int                   h       = Math.min(panelDim.height + menuDim.height + insets.bottom + insets.top, bounds.height);
+		if (!reaload && (w != bounds.width || h != bounds.height)) { // small world, do pack (getInsets before pack or visible is useless)
 			frame.pack();
 			w = Math.min(frame.getWidth(), bounds.width);
 			h = Math.min(frame.getHeight(), bounds.height);
 		}
 		frame.setSize(w, h);
-		addHoverBtn(menu, iconSize, scrollPane);
-		update(ufh);
-		world.addNextTurnListener(() -> update(null));
+		if (reaload) {
+			addHoveringBtn(tileSize);
+		}
 	}
 	
-	private void addHoverBtn(JMenuBar menu, int tileIconSize, JScrollPane scrollPane) {
-		final JButton hb = new JButton();
+	private void addHoveringBtn(int tileIconSize) {
+		JButton hoveringButton = new JButton();
 		try {
 			String        resPath    = switch (world) {
-										case RootWorld.Builder b when b.buildable() -> "/img/BUILD.png";
+										case RootWorld.Builder b when b.buildable() -> {
+											hoveringButton.setToolTipText("<html>build the world</html>");
+											yield "/img/BUILD.png";
+										}
 										case RootWorld.Builder b -> {
-											b.addNextTurnListener(() -> hb.setVisible(b.buildable()));
-											hb.setVisible(false);
+											b.addNextTurnListener(() -> hoveringButton.setVisible(b.buildable()));
+											hoveringButton.setToolTipText("<html>build the world</html>");
+											hoveringButton.setVisible(false);
 											yield "/img/BUILD.png";
 										}
 										case RootWorld rw -> {
-											rw.addNextTurnListener(() -> hb.setVisible(rw.running()));
-											hb.setVisible(!rw.running());
+											rw.addNextTurnListener(() -> hoveringButton.setVisible(rw.running()));
+											hoveringButton.setVisible(!rw.running());
+											hoveringButton.setToolTipText("<html>start the game</html>");
 											yield "/img/START_GAME.png";
 										}
-										default -> "/img/FINISH_TURN.png";
+										default -> {
+											hoveringButton.setToolTipText("<html>finish your turn</html>");
+											yield "/img/FINISH_TURN.png";
+										}
 										};
 			BufferedImage img        = ImageIO.read(getClass().getResource(resPath));
 			int           ftIconSize = (tileIconSize >>> 1) + (tileIconSize >>> 2);                                     // 3/4 tileSize
 			ImageIcon     icon0      = new ImageIcon(img.getScaledInstance(ftIconSize, ftIconSize, Image.SCALE_SMOOTH));
-			hb.setIcon(icon0);
-			hb.setDisabledIcon(icon0);
-			hb.addComponentListener(new ComponentAdapter() {
+			hoveringButton.setIcon(icon0);
+			hoveringButton.setDisabledIcon(icon0);
+			hoveringButton.addComponentListener(new ComponentAdapter() {
 				
 				int curw = tileIconSize;
 				
 				@Override
 				public void componentResized(ComponentEvent e) {
-					int w   = hb.getWidth();
-					int h   = hb.getHeight();
+					int w   = hoveringButton.getWidth();
+					int h   = hoveringButton.getHeight();
 					int min = Math.min(w, h);
 					if (min == curw) {
 						return;
 					}
 					ImageIcon icon = new ImageIcon(img.getScaledInstance(min, min, Image.SCALE_SMOOTH));
-					hb.setIcon(icon);
-					hb.setDisabledIcon(icon);
+					hoveringButton.setIcon(icon);
+					hoveringButton.setDisabledIcon(icon);
 				}
 				
 			});
-			hb.setSize(ftIconSize, ftIconSize);
+			hoveringButton.setSize(ftIconSize, ftIconSize);
 		} catch (IOException e) {
-			e.printStackTrace();
-			hb.setText("FINISH TURN");
-			hb.setSize(hb.getPreferredSize());
+			throw new IOError(e);
 		}
 		JPanel p = new JPanel();
 		p.setLayout(null);
-		p.add(hb);
+		p.add(hoveringButton);
 		frame.setGlassPane(p);
 		p.setBounds(0, 0, scrollPane.getWidth(), scrollPane.getHeight() + menu.getHeight());
 		p.setVisible(true);
 		p.setOpaque(false);
-		hb.setOpaque(false);
-		hb.setFocusPainted(false);
-		hb.setBorderPainted(false);
-		hb.setContentAreaFilled(false);
-		hb.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+		hoveringButton.setOpaque(false);
+		hoveringButton.setFocusPainted(false);
+		hoveringButton.setBorderPainted(false);
+		hoveringButton.setContentAreaFilled(false);
+		hoveringButton.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+		hoveringButton.setLocation(scrollPane.getWidth() - scrollPane.getVerticalScrollBar().getWidth() - hoveringButton.getWidth(),
+				menu.getHeight() + scrollPane.getHeight() - scrollPane.getHorizontalScrollBar().getHeight() - hoveringButton.getHeight());
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			
 			@Override
 			public void componentResized(ComponentEvent e) {
 				p.setBounds(0, 0, scrollPane.getWidth(), scrollPane.getHeight() + menu.getHeight());
-				hb.setLocation(scrollPane.getWidth() - scrollPane.getVerticalScrollBar().getWidth() - hb.getWidth(),
-						menu.getHeight() + scrollPane.getHeight() - scrollPane.getHorizontalScrollBar().getHeight() - hb.getHeight());
+				hoveringButton.setLocation(scrollPane.getWidth() - scrollPane.getVerticalScrollBar().getWidth() - hoveringButton.getWidth(),
+						menu.getHeight() + scrollPane.getHeight() - scrollPane.getHorizontalScrollBar().getHeight() - hoveringButton.getHeight());
 			}
 			
 		});
+		
 		MouseAdapter val = new MouseAdapter() {
 			
 			JButton lastbtn;
 			
 			@Override
 			public void mousePressed(MouseEvent e) {
-				if (ignore(hb, e)) {
+				if (ignore(hoveringButton, e)) {
 					skipAction = System.currentTimeMillis();
-					Component comp = panel.findComponentAt(hb.getX() + e.getX(), hb.getY() + e.getY() - menu.getHeight());
+					Component comp = panel.findComponentAt(hoveringButton.getX() + e.getX(), hoveringButton.getY() + e.getY() - menu.getHeight());
 					if (comp instanceof JButton btn) {
-						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(), hb.getX() + e.getX() - btn.getX(),
-								hb.getY() + e.getY() - btn.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(),
-								e.getButton());
+						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(),
+								hoveringButton.getX() + e.getX() - btn.getX(), hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(),
+								e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 						btn.dispatchEvent(event);
 					}
 				}
@@ -796,12 +856,12 @@ public class SquareConquererGUI {
 			
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				if (ignore(hb, e)) {
-					Component comp = panel.findComponentAt(hb.getX() + e.getX(), hb.getY() + e.getY() - menu.getHeight());
+				if (ignore(hoveringButton, e)) {
+					Component comp = panel.findComponentAt(hoveringButton.getX() + e.getX(), hoveringButton.getY() + e.getY() - menu.getHeight());
 					if (comp instanceof JButton btn) {
-						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(), hb.getX() + e.getX() - btn.getX(),
-								hb.getY() + e.getY() - btn.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(),
-								e.getButton());
+						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(),
+								hoveringButton.getX() + e.getX() - btn.getX(), hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(),
+								e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 						btn.dispatchEvent(event);
 					}
 				}
@@ -809,14 +869,14 @@ public class SquareConquererGUI {
 			
 			@Override
 			public void mouseMoved(MouseEvent e) {
-				if (ignore(hb, e)) {
-					Component comp = panel.findComponentAt(hb.getX() + e.getX(), hb.getY() + e.getY() - menu.getHeight());
+				if (ignore(hoveringButton, e)) {
+					Component comp = panel.findComponentAt(hoveringButton.getX() + e.getX(), hoveringButton.getY() + e.getY() - menu.getHeight());
 					if (comp != lastbtn && lastbtn != null) {
 						lastbtn.setBorderPainted(false);
 					} else if (comp == lastbtn) {
-						MouseEvent event = new MouseEvent(lastbtn, e.getID(), e.getWhen(), e.getModifiersEx(), hb.getX() + e.getX() - lastbtn.getX(),
-								hb.getY() + e.getY() - lastbtn.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(),
-								e.getButton());
+						MouseEvent event = new MouseEvent(lastbtn, e.getID(), e.getWhen(), e.getModifiersEx(),
+								hoveringButton.getX() + e.getX() - lastbtn.getX(), hoveringButton.getY() + e.getY() - lastbtn.getY(),
+								e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 						lastbtn.dispatchEvent(event);
 						return;
 					}
@@ -824,8 +884,8 @@ public class SquareConquererGUI {
 						lastbtn = btn;
 						btn.setBorderPainted(true);
 						MouseEvent event = new MouseEvent(btn, MouseEvent.MOUSE_ENTERED, e.getWhen(), e.getModifiersEx(),
-								hb.getX() + e.getX() - btn.getX(), hb.getY() + e.getY() - btn.getY(), e.getXOnScreen(), e.getYOnScreen(),
-								e.getClickCount(), e.isPopupTrigger(), e.getButton());
+								hoveringButton.getX() + e.getX() - btn.getX(), hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(),
+								e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 						btn.dispatchEvent(event); // send mouse enter event, so the button displays the correct border
 					} // no need to send an mouse leave event (I only let the mouse hover border print
 				} else if (lastbtn != null) { // or non border at all)
@@ -850,15 +910,15 @@ public class SquareConquererGUI {
 			
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				if (ignore(hb, e)) {
+				if (ignore(hoveringButton, e)) {
 					skipAction = System.currentTimeMillis();
 				}
 			}
 			
 		};
-		hb.addMouseMotionListener(val);
-		hb.addMouseListener(val);
-		hb.addActionListener(this::hoverBtnAction);
+		hoveringButton.addMouseMotionListener(val);
+		hoveringButton.addMouseListener(val);
+		hoveringButton.addActionListener(this::hoverBtnAction);
 	}
 	
 	private long skipAction;
@@ -894,7 +954,7 @@ public class SquareConquererGUI {
 				int i = 16;
 				try {
 					ArrayList<Connection> list = new ArrayList<Connection>(conns.values());
-					Collections.sort(list, (a,b) -> a.usr.name().compareTo(b.usr.name()));
+					Collections.sort(list, (a, b) -> a.usr.name().compareTo(b.usr.name()));
 					for (Iterator<Connection> iter = list.iterator(); iter.hasNext(); i += 16) {
 						final Connection conn = iter.next();
 						try {
@@ -922,6 +982,7 @@ public class SquareConquererGUI {
 			}
 			world = b.create();
 			reload(buildFinishHook, true);
+			world.addNextTurnListener(() -> update(null));
 		}
 		case RemoteWorld rw -> threadBuilder().start(() -> finishTurn());
 		default -> throw new AssertionError("illegal world type: " + world.getClass());

@@ -47,6 +47,8 @@ public class Connection implements Closeable {
 	
 	public static final int DEFAULT_PORT = 21226;
 	
+	public static final int CON_LOG_OUT = 0x50DDC7F1;
+	
 	public final User          usr;
 	private final InputStream  in;
 	private final OutputStream out;
@@ -151,7 +153,13 @@ public class Connection implements Closeable {
 								User       usr  = conn.usr;
 								World      uw   = new UserWorld(rw, conn.usr, conn.modCnt);
 								OpenWorld  ow   = OpenWorld.of(conn, uw);
-								connects.put(usr, conn);
+								Connection old = connects.put(usr, conn);
+								if (old !=  null) {
+									old.blocked(() -> {
+										old.writeInt(CON_LOG_OUT);
+										old.close();
+									});
+								}
 								try {
 									logConnect.accept(conn, sok);
 									ow.execute();

@@ -81,9 +81,9 @@ public final class RootWorld implements World {
 	/**
 	 * this is only done when the game starts for the random seed of the world
 	 * <ol>
-	 * <li> Server: {@link #REQ_RND} </li>
-	 * <li> Client: {@link #GIV_RND} </li>
-	 * <li> Client: 16 random bytes </li>
+	 * <li>Server: {@link #REQ_RND}</li>
+	 * <li>Client: {@link #GIV_RND}</li>
+	 * <li>Client: 16 random bytes</li>
 	 * </ol>
 	 */
 	public static final int REQ_RND = 0x558F7BB1;
@@ -403,19 +403,19 @@ public final class RootWorld implements World {
 			if (ocean != 0 && land != 0) {
 				return TileType.WATER_NORMAL;
 			}
-			int      water = water(xDown) + water(xUp) + water(yDown) + water(yUp);
-			int      flat  = flat(xDown) + flat(xUp) + flat(yDown) + flat(yUp);
-			TileType type  = rawType(xDown, xUp, yDown, yUp, ocean, water, flat);
-			if (type.isLand()) {
+			int      water    = water(xDown) + water(xUp) + water(yDown) + water(yUp);
+			int      flat     = flat(xDown) + flat(xUp) + flat(yDown) + flat(yUp);
+			int      mountain = mountain(xDown) + mountain(xUp) + mountain(yDown) + mountain(yUp);
+			TileType type     = rawType(xDown, xUp, yDown, yUp, ocean, water, flat, mountain);
+			if (type.isLand() && !type.isMountain()) {
 				int hill    = hill(xDown) + hill(xUp) + hill(yDown) + hill(yUp);
-				int posHill = (hill * 2) + 1;
+				int posHill = (mountain * 4) + (hill * 2) + 1;
 				int posFlat = (flat * 2) + 1;
 				int rndVal1 = rnd.nextInt(posHill + posFlat);
 				if (rndVal1 < posHill) {
 					type = type.addHill();
 				}
-			} else {
-				if (!type.isWater()) throw new AssertionError("unknown type: " + type.name());
+			} else if (type.isWater()) {
 				if (land == 0) {
 					int posOcean  = ocean * 2 + 1;
 					int posNormal = (water - ocean) * 2 + 1;
@@ -424,27 +424,26 @@ public final class RootWorld implements World {
 						type = TileType.WATER_DEEP;
 					}
 				}
-			}
+			} else if (!type.isMountain()) throw new AssertionError("unknown type: " + type.name());
 			return type;
 		}
 		
-		private TileType rawType(Tile xDown, Tile xUp, Tile yDown, Tile yUp, int ocean, int water, int flat) {
-			int mountain = mountain(xDown) + mountain(xUp) + mountain(yDown) + mountain(yUp);
-			int sand     = sand(xDown) + sand(xUp) + sand(yDown) + sand(yUp);
-			int grass    = grass(xDown) + grass(xUp) + grass(yDown) + grass(yUp);
-			int forest   = forest(xDown) + forest(xUp) + forest(yDown) + forest(yUp);
-			int swamp    = swamp(xDown) + swamp(xUp) + swamp(yDown) + swamp(yUp);
+		private TileType rawType(Tile xDown, Tile xUp, Tile yDown, Tile yUp, int ocean, int water, int flat, int mountain) {
+			int sand   = sand(xDown) + sand(xUp) + sand(yDown) + sand(yUp);
+			int grass  = grass(xDown) + grass(xUp) + grass(yDown) + grass(yUp);
+			int forest = forest(xDown) + forest(xUp) + forest(yDown) + forest(yUp);
+			int swamp  = swamp(xDown) + swamp(xUp) + swamp(yDown) + swamp(yUp);
 			// ocean disables everything except water
 			// flat disables mountain
 			int      posWater    = (water * 2) + 1;
-			int      posMountain = ocean == 0 && flat == 0 ? (mountain * 2) + 1 : 0;
+			int      posMountain = ocean == 0 ? Math.max((mountain * 2) - (flat * 2) + 1, 1) : 0;
 			int      posSand     = ocean == 0 ? (sand * 2) + 1 : 0;
 			int      posGrass    = ocean == 0 ? (grass * 2) + 1 : 0;
 			int      posForest   = ocean == 0 ? (forest * 2) + 1 : 0;
 			int      posSwamp    = ocean == 0 ? (swamp * 2) + 1 : 0;
 			int      rndVal0     = rnd.nextInt(posWater + posMountain + posSand + posGrass + posForest + posSwamp);
 			TileType type        = null;
-			if (rndVal0 > posWater) rndVal0 -= posWater;
+			if (rndVal0 >= posWater) rndVal0 -= posWater;
 			else type = TileType.WATER_NORMAL;
 			if (rndVal0 >= posMountain) rndVal0 -= posMountain;
 			else if (type == null) type = TileType.MOUNTAIN;
@@ -454,7 +453,7 @@ public final class RootWorld implements World {
 			else if (type == null) type = TileType.GRASS;
 			if (rndVal0 >= posForest) rndVal0 -= posForest;
 			else if (type == null) type = TileType.FOREST;
-			if (rndVal0 >= posSwamp) throw new AssertionError("unexpected random value");
+			if (rndVal0 >= posSwamp && type == null) throw new AssertionError("unexpected random value");
 			else if (type == null) type = TileType.SWAMP;
 			return type;
 		}
