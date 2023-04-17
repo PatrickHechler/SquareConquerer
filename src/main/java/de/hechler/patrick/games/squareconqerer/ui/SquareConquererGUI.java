@@ -32,6 +32,7 @@ import java.net.ServerSocket;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -90,6 +91,7 @@ import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.StoreTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
+@SuppressWarnings("preview")
 public class SquareConquererGUI {
 	
 	private World world;
@@ -967,7 +969,7 @@ public class SquareConquererGUI {
 					if (i < seed.length) {
 						throw new ConcurrentModificationException();
 					}
-					rw.start(seed);
+					rw.startGame(seed);
 				} catch (ConcurrentModificationException err) {
 					JOptionPane.showMessageDialog(frame, "accepted/lost a connection during the initilation", "start failed",
 							JOptionPane.ERROR_MESSAGE);
@@ -993,8 +995,7 @@ public class SquareConquererGUI {
 		if (chosen != JOptionPane.YES_OPTION) {
 			return;
 		}
-		Turn                    t  = new Turn(world);
-		Map<Entity, EntityTurn> ts = t.turns();
+		Turn t = new Turn(world);
 		for (int x = 0; x < turns.length; x++) {
 			EntityTurn[] ets = turns[x];
 			for (int y = 0; y < ets.length; y++) {
@@ -1010,7 +1011,7 @@ public class SquareConquererGUI {
 							case StoreTurn val -> tile.unit();
 							default -> throw new AssertionError("unknown entity turn type: " + et.getClass());
 							};
-				ts.put(ett, et);
+				t.put(ett, et);
 			}
 		}
 		world.finish(t);

@@ -5,6 +5,8 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.StackWalker.Option;
+import java.util.Collections;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -13,6 +15,7 @@ import javax.swing.ImageIcon;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
+import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObjs;
@@ -104,6 +107,41 @@ public sealed class Tile permits RemoteTile {
 	public Unit unit() { return unit; }
 	
 	public Building building() { return build; }
+	
+	/**
+	 * returns an list containing all entities on this tile
+	 * <ol>
+	 * <li>if there is a building:
+	 * <ol>
+	 * <li>the building</li>
+	 * <li>all its units (sorted like {@link Entity#units()} method)</li>
+	 * </ol>
+	 * </li>
+	 * <li>all units on the tile sorted like in the {@link Entity#units()} method:
+	 * <ol>
+	 * <li>the unit</li>
+	 * <li>all its units (sorted like {@link Entity#units()} method)</li>
+	 * </ol>
+	 * </li>
+	 * </ol>
+	 * 
+	 * @return an list containing all entities on this tile
+	 */
+	public List<Entity> entities() {
+		Unit     u = unit;
+		Building b = build;
+		if (u == null) {
+			if (b == null) {
+				return Collections.emptyList();
+			} else {
+				return List.of(b);
+			}
+		} else if (b == null) {
+			return List.of(u);
+		} else {
+			return List.of(b, u);
+		}
+	}
 	
 	public boolean visible() { return visible; }
 	

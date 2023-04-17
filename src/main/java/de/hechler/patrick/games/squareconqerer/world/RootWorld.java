@@ -7,14 +7,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
+import java.util.TreeMap;
 
+import de.hechler.patrick.games.squareconqerer.Random;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
@@ -37,14 +34,15 @@ import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 public final class RootWorld implements World {
 	
-	private final RootUser             root;
-	private final Tile[][]             tiles;
-	private final UserPlacer           placer;
-	private final Map<User, UserWorld> subWorlds          = new HashMap<>();
-	private final List<Runnable>       nextTurnListeneres = new LinkedList<>();
-	private final Map<User, Turn>      userTurns          = new LinkedHashMap<>();
-	private volatile long              seed;
-	private volatile Random            rnd;
+	private final RootUser              root;
+	private final Tile[][]              tiles;
+	private final UserPlacer            placer;
+	private final Map<User, UserWorld>  subWorlds          = new HashMap<>();
+	private final List<Runnable>        nextTurnListeneres = new ArrayList<>();
+	private final Map<User, Turn>       userTurns          = new TreeMap<>();
+	private final List<Map<User, Turn>> allTurns           = new ArrayList<>();
+	private volatile byte[]             seed;
+	private volatile Random             rnd;
 	
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
 		this.root   = root;
@@ -98,7 +96,26 @@ public final class RootWorld implements World {
 		});
 	}
 	
-	public synchronized void start(byte[] s) {
+	private static final int RWS_START  = 0x07D78BDC;
+	private static final int RWS_SUB0   = 0x327B8CFB;
+	private static final int RWS_SUB1   = 0xCC2BB5FA;
+	private static final int RWS_SUB2   = 0xB5F22CF2;
+	private static final int RWS_FINISH = 0x934ABD64;
+	
+	public synchronized void saveEverything(Connection conn) throws IOException {
+		conn.writeInt(RWS_START);
+		conn.writeInt(seed.length);
+		conn.writeArr(seed);
+		conn.writeInt(RWS_SUB0);
+		root.save(conn);
+		conn.writeInt(RWS_SUB1);
+		OpenWorld.saveWorld(this, conn);
+		conn.writeInt(RWS_SUB2);
+		
+		conn.writeInt(RWS_FINISH);
+	}
+	
+	public synchronized void startGame(byte[] s) {
 		if (s == null) throw new NullPointerException("the given seed is null");
 		if (rnd != null) throw new IllegalStateException("the game already started");
 		synchronized (root) {
@@ -110,7 +127,7 @@ public final class RootWorld implements World {
 			Arrays.sort(users, (a, b) -> a.name().compareTo(b.name()));
 			if ((users.length + 1) << 4 != s.length) throw new IllegalArgumentException("the given seed is illegal");
 			long sval = seed(s);
-			seed = sval;
+			seed = s;
 			rnd  = new Random(sval);
 			placer.initilize(this, users, rnd);
 		}
@@ -157,38 +174,42 @@ public final class RootWorld implements World {
 		if (!subWorlds.containsKey(t.usr)) {
 			throw new AssertionError("this user is invalid");
 		}
+		for (EntityTurn e : t.turns()) {
+			if (e.entity().owner() != t.usr) {
+				throw new IllegalArgumentException("the turn wants to use not owned entities");
+			}
+		}
 		userTurns.put(t.usr, t);
 		if (userTurns.size() >= root.users().keySet().size()) {
 			threadBuilder().start(this::executeTurn);
 		}
 	}
 	
-	private void executeTurn() { // do the turns in the order the users finished
-		for (Turn userturn : userTurns.values()) { // and the entity turns in random order
-			for (Entry<Entity, EntityTurn> entry : randomOrder(userturn.turns().entrySet())) {
-				User usr = userturn.usr;
-				try {
-					Entity e = entry.getKey();
-					if (e.owner() != usr) {
-						throw new TurnExecutionException(ErrorType.UNKNOWN);
-					}
-					Tile t = tiles[e.x()][e.y()];
-					executeEntityTurn(entry, e, t);
-				} catch (TurnExecutionException e) {
-					System.err.println("error while executing the turn for the user '" + usr + "': " + e.type);
-					e.printStackTrace();
-				} catch (Exception e) {
-					System.err.println("error while executing the turn for the user '" + usr + '\'');
-					e.printStackTrace();
-				}
+	private void executeTurn() {
+		List<EntityTurn> list = new ArrayList<>();
+		for (Turn userturn : userTurns.values()) {
+			list.addAll(userturn.turns());
+		} // list is sorted: user names and then entity turns
+		allTurns.add(new HashMap<>(userTurns));
+		for (EntityTurn et : randomOrder(list)) {
+			try {
+				Entity e = et.entity();
+				Tile   t = tiles[e.x()][e.y()];
+				executeEntityTurn(et, e, t);
+			} catch (TurnExecutionException e) {
+				System.err.println("error while executing a turn for the user '" + et.entity().owner() + "': " + e.type);
+				e.printStackTrace();
+			} catch (Exception e) {
+				System.err.println("error while executing a turn for the user '" + et.entity().owner() + '\'');
+				e.printStackTrace();
 			}
 		}
 		executeNTL();
 	}
 	
 	@SuppressWarnings("preview")
-	private void executeEntityTurn(Entry<Entity, EntityTurn> entry, Entity e, Tile t) throws TurnExecutionException {
-		switch (entry.getValue()) {
+	private void executeEntityTurn(EntityTurn turn, Entity e, Tile t) throws TurnExecutionException {
+		switch (turn) {
 		case MoveTurn mt -> {
 			checkHasUnit(e, t);
 			Unit            u    = (Unit) e;
@@ -230,7 +251,7 @@ public final class RootWorld implements World {
 			}
 			b.store(u, st.amount());
 		}
-		default -> throw new AssertionError("unknown entity turn type: " + entry.getValue().getClass());
+		default -> throw new AssertionError("unknown entity turn type: " + turn.getClass());
 		}
 	}
 	
@@ -240,9 +261,8 @@ public final class RootWorld implements World {
 		}
 	}
 	
-	private Entry<Entity, EntityTurn>[] randomOrder(Set<Entry<Entity, EntityTurn>> turns) {
-		@SuppressWarnings("unchecked") // do the entity turns in random order
-		Entry<Entity, EntityTurn>[] arr = turns.toArray((Entry<Entity, EntityTurn>[]) new Entry[turns.size()]);
+	private EntityTurn[] randomOrder(Collection<EntityTurn> c) {
+		EntityTurn[] arr = c.toArray(new EntityTurn[c.size()]);
 		shuffle(rnd, arr);
 		return arr;
 	}

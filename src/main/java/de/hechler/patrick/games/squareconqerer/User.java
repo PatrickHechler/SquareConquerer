@@ -28,7 +28,7 @@ import javax.crypto.spec.SecretKeySpec;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 
-public sealed class User implements Closeable {
+public sealed class User implements Closeable, Comparable<User> {
 	
 	private volatile int     modCnt;
 	private volatile Secret0 s;
@@ -183,6 +183,23 @@ public sealed class User implements Closeable {
 	
 	public int randomInt() {
 		return RND.nextInt();
+	}
+	
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		return this == obj;
+	}
+	
+	@Override
+	public int compareTo(User o) {
+		int cmp = s.name.compareTo(o.s.name); // users are from different root
+		if (cmp == 0 && this != o) throw new AssertionError("different users with the same name should not be compared");
+		return cmp;
 	}
 	
 	@Override
@@ -392,6 +409,16 @@ public sealed class User implements Closeable {
 			res.putAll(otherUsers);
 			res.put(ROOT_NAME, this);
 			return res;
+		}
+		
+		@Override
+		public int hashCode() {
+			return super.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return super.equals(obj);
 		}
 		
 	}

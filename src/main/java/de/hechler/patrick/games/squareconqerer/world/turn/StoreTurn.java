@@ -1,5 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.world.turn;
 
-public record StoreTurn(int amount) implements EntityTurn {
-	
+import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
+
+public record StoreTurn(Unit entity, int amount) implements EntityTurn {
+
 }

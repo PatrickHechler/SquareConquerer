@@ -6,15 +6,17 @@ import java.util.Collections;
 import java.util.List;
 
 import de.hechler.patrick.games.squareconqerer.enums.Direction;
+import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 
-public record MoveTurn(List<Direction> dirs) implements EntityTurn {
+public record MoveTurn(Unit entity, List<Direction> dirs) implements EntityTurn {
 	
-	public MoveTurn(List<Direction> dirs) {
+	public MoveTurn(Unit entity, List<Direction> dirs) {
+		this.entity = entity;
 		this.dirs = Collections.unmodifiableList(new ArrayList<>(dirs));
 	}
 	
-	public MoveTurn(Direction... dirs) {
-		this(Arrays.asList(dirs));
+	public MoveTurn(Unit entity, Direction... dirs) {
+		this(entity, Arrays.asList(dirs));
 	}
 	
 }

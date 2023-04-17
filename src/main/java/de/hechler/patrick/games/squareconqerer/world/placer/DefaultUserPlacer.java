@@ -1,9 +1,9 @@
 package de.hechler.patrick.games.squareconqerer.world.placer;
 
 import java.awt.Point;
-import java.util.Random;
 
 import de.hechler.patrick.games.squareconqerer.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.Random;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
