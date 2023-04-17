@@ -3,7 +3,7 @@ package de.hechler.patrick.games.squareconqerer.world.placer;
 import java.awt.Point;
 
 import de.hechler.patrick.games.squareconqerer.EnumIntMap;
-import de.hechler.patrick.games.squareconqerer.Random;
+import de.hechler.patrick.games.squareconqerer.Random2;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
@@ -27,7 +27,7 @@ public class DefaultUserPlacer implements UserPlacer {
 	}
 	
 	@Override
-	public void initilize(World world, User[] usrs, Random rnd) {
+	public void initilize(World world, User[] usrs, Random2 rnd) {
 		int[] arr = entityAmounts.array();
 		int   sum = 0;
 		for (int i = 0; i < arr.length; i++) {
@@ -56,7 +56,7 @@ public class DefaultUserPlacer implements UserPlacer {
 		}
 	}
 	
-	private void initUsr(Random rnd, User usr, World world, int x, int y, int size, int unitCount) {
+	private void initUsr(Random2 rnd, User usr, World world, int x, int y, int size, int unitCount) {
 		int[]   iarr = entityAmounts.array().clone();
 		Point[] p    = new Point[unitCount];
 		for (int i = 0; unitCount > 0; i++) {

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import de.hechler.patrick.games.squareconqerer.Random;
+import de.hechler.patrick.games.squareconqerer.Random2;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
@@ -42,7 +42,7 @@ public final class RootWorld implements World {
 	private final Map<User, Turn>       userTurns          = new TreeMap<>();
 	private final List<Map<User, Turn>> allTurns           = new ArrayList<>();
 	private volatile byte[]             seed;
-	private volatile Random             rnd;
+	private volatile Random2             rnd;
 	
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
 		this.root   = root;
@@ -128,7 +128,7 @@ public final class RootWorld implements World {
 			if ((users.length + 1) << 4 != s.length) throw new IllegalArgumentException("the given seed is illegal");
 			long sval = seed(s);
 			seed = s;
-			rnd  = new Random(sval);
+			rnd  = new Random2(sval);
 			placer.initilize(this, users, rnd);
 		}
 		threadBuilder().start(this::executeNTL);
@@ -267,7 +267,7 @@ public final class RootWorld implements World {
 		return arr;
 	}
 	
-	public static <T> void shuffle(Random rnd, T[] arr) {
+	public static <T> void shuffle(Random2 rnd, T[] arr) {
 		for (int i = 0; i < arr.length - 1; i++) {
 			int val = rnd.nextInt();
 			val &= 0x7FFFFFFF;
@@ -313,16 +313,16 @@ public final class RootWorld implements World {
 		
 		private List<Runnable> nextTurnListeners = new ArrayList<>();
 		private final Tile[][] tiles;
-		private final Random   rnd;
+		private final Random2   rnd;
 		private final RootUser root;
 		
 		private int resourceMask = 7;
 		
 		public Builder(RootUser usr, int xlen, int ylen) {
-			this(usr, xlen, ylen, new Random());
+			this(usr, xlen, ylen, new Random2());
 		}
 		
-		public Builder(RootUser usr, int xlen, int ylen, Random rnd) {
+		public Builder(RootUser usr, int xlen, int ylen, Random2 rnd) {
 			if (xlen <= 0 || ylen <= 0) {
 				throw new IllegalArgumentException("xlen=" + xlen + " ylen=" + ylen);
 			}
@@ -337,7 +337,7 @@ public final class RootWorld implements World {
 			this.rnd   = rnd;
 		}
 		
-		private Builder(RootUser usr, Tile[][] tiles, Random rnd) {
+		private Builder(RootUser usr, Tile[][] tiles, Random2 rnd) {
 			this.root  = usr;
 			this.tiles = tiles;
 			this.rnd   = rnd;
@@ -665,10 +665,10 @@ public final class RootWorld implements World {
 		}
 		
 		public static Builder createBuilder(RootUser root, Tile[][] tiles) {
-			return createBuilder(root, tiles, new Random());
+			return createBuilder(root, tiles, new Random2());
 		}
 		
-		public static Builder createBuilder(RootUser root, Tile[][] tiles, Random rnd) {
+		public static Builder createBuilder(RootUser root, Tile[][] tiles, Random2 rnd) {
 			Tile[][] copy = tiles.clone();
 			for (int x = 0; x < copy.length; x++) {
 				if (copy[x].length != copy[0].length) {
