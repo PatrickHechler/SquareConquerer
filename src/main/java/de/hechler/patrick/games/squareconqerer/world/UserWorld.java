@@ -1,5 +1,6 @@
 package de.hechler.patrick.games.squareconqerer.world;
 
+import java.lang.StackWalker.Option;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +32,14 @@ public final class UserWorld implements World {
 		this.modCnt = modCnt;
 		usr.checkModCnt(modCnt);
 		world.addNextTurnListener(this::nextTurn);
+	}
+	
+	Tile[][] cach() {
+		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != RootWorld.class) {
+			throw new IllegalCallerException("this method is intern");
+		}
+		return cach;
 	}
 	
 	@Override

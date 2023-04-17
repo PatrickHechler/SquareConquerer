@@ -81,18 +81,6 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		return arr[o];
 	}
 	
-	public int sub(T e, int val) {
-		if (val <= 0) {
-			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
-		}
-		if (!cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
-		}
-		int o = e.ordinal();
-		arr[o] -= val;
-		return arr[o];
-	}
-	
 	/**
 	 * decrement and return the new value
 	 * 
@@ -105,6 +93,18 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
 		}
 		return --arr[e.ordinal()];
+	}
+	
+	public int sub(T e, int val) {
+		if (val <= 0) {
+			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
+		}
+		if (!cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		}
+		int o = e.ordinal();
+		arr[o] -= val;
+		return arr[o];
 	}
 	
 	/**
@@ -267,10 +267,6 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 				return arr[index];
 			}
 			
-			private int i() {
-				return index;
-			}
-			
 			private Class<T> cls() {
 				return cls;
 			}
@@ -309,7 +305,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		@Override
 		public boolean contains(Object o) {
 			if (o instanceof EnumIntMap<?>.EnumIntEntrySet.MyEntry me) {
-				return cls == me.cls() && arr[me.i()] == me.ival();
+				return cls == me.cls() && arr[me.index] == me.ival();
 			}
 			if (!(o instanceof Entry<?, ?> e)) {
 				return false;
@@ -387,12 +383,20 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			throw new UnsupportedOperationException("remove");
 		}
 		
-		@SuppressWarnings("unlikely-arg-type")
 		@Override
 		public boolean containsAll(Collection<?> c) {
 			for (Object obj : c) {
-				if (!contains(obj)) {
+				if (obj instanceof EnumIntMap<?>.EnumIntEntrySet.MyEntry e) {
+					if (e.cls() != cls) return false;
+					if (e.ival() != arr[e.index]) return false;
+				} else if (!(obj instanceof Entry<?, ?> e)) {
 					return false;
+				} else {
+					Object key = e.getKey();
+					if (!cls.isInstance(key)) return false;
+					Object val = e.getValue();
+					if (!(val instanceof Integer ival)) return false;
+					if (arr[((Enum<?>)key).ordinal()] != ival.intValue()) return false;
 				}
 			}
 			return true;
@@ -486,8 +490,10 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	public int hashCode() {
 		// if the hash value is already calculated return it
 		// if the entry set exists, let the set calculate the hash
-		// :: reason: if the entry sets cache contains all values, there is no need to create a new array
-		// :: possible, because the maps hash code is effectively defined as the entry sets hash code
+		// :: reason: if the entry sets cache contains all values, there is no need to
+		// create a new array
+		// :: possible, because the maps hash code is effectively defined as the entry
+		// sets hash code
 		// otherwise calculate the value
 		if (hash != 0) return hash;
 		if (entrySet != null) {
@@ -511,11 +517,10 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		if (!(obj instanceof Map<?, ?> m)) return false;
 		if (m.size() != arr.length) return false;
 		if (entrySet != null) {
-			return entrySet().equals(m.entrySet());
+			return entrySet.equals(m.entrySet());
 		}
 		T[] vals = cls.getEnumConstants();
 		for (int i = 0; i < vals.length; i++) {
-			@SuppressWarnings("unlikely-arg-type")
 			Object val = m.get(vals[i]);
 			if (!(val instanceof Integer ival)) return false;
 			if (arr[i] != ival.intValue()) return false;

@@ -30,6 +30,7 @@ import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 
+@SuppressWarnings("preview")
 public class SquareConquererCUI implements Runnable {
 	
 	private static final String HELP = "help";
@@ -644,11 +645,18 @@ public class SquareConquererCUI implements Runnable {
 				c.writeLine(CMD_WORLD + " help: change or display the world");
 				c.writeLine("base commands: (those work always)");
 				c.writeLine("  " + HELP + ": print this message");
+				c.writeLine("  load-all <SAVE_FILE>: load everything from the file");
+				c.writeLine("    the loaded world will be in root mode");
+				c.writeLine("    if there is no user this operation will fail");
+				c.writeLine("    if the user is currently not root, it will be after this operation");
+				c.writeLine("    if the user already is root, all subusers will be deleted");
+				c.writeLine("    the SAVE_FILE has to be created with save-all or save-all-force");
 				c.writeLine("  load <SAVE_FILE>: load other users and world from the file");
 				c.writeLine("    the loaded world will be in build mode");
 				c.writeLine("    if there is no user this operation will fail");
 				c.writeLine("    if the user is currently not root, it will be after this operation");
 				c.writeLine("    if the user already is root, all subusers will be deleted");
+				c.writeLine("    the SAVE_FILE has to be created with save or save-force");
 				c.writeLine("simple commands: (work, when there is an world)");
 				c.writeLine("  print or print.types: print all tile types of the world");
 				c.writeLine("  print.resources: print all resources of the world");
@@ -656,6 +664,9 @@ public class SquareConquererCUI implements Runnable {
 				c.writeLine("  to-build: convert the world to a build world");
 				c.writeLine("  save <FILE>: save the current world to the given file");
 				c.writeLine("  save-force <FILE>: like save, but do not ask if the file already exist");
+				c.writeLine("root world commands: (world needs to be in root mode)");
+				c.writeLine("  save-all <FILE>: save everything to the given file");
+				c.writeLine("  save-all-force <FILE>: like save-all, but do not ask if the file already exist");
 				c.writeLine("build world commands: (world needs to be in build mode)");
 				c.writeLine("  build: convert the world to a root world");
 				c.writeLine("  tile.type <TYPE> <X> <Y>: set the type of the given tile");
@@ -705,6 +716,36 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("error: " + e.toString());
 				}
 			}
+			case "load-all" -> {
+				if (++i >= args.size()) {
+					c.writeLine("not enugh args for the load argument");
+					return;
+				}
+				Path p = Path.of(args.get(i));
+				if (!Files.exists(p)) {
+					c.writeLine("the file does not exist");
+					return;
+				}
+				if (!Files.isRegularFile(p)) {
+					c.writeLine("the path does not refer to a regular file");
+					return;
+				}
+				if (usr == null) {
+					c.writeLine("there is no user logged in");
+					return;
+				}
+				if (!(usr instanceof RootUser root) || !root.users().isEmpty()) {
+					c.writeLine("changed to root user");
+				}
+				usr = usr.makeRoot();
+				username = null;
+				try (InputStream in = Files.newInputStream(p);
+						Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
+					world = RootWorld.loadEverything(conn);
+				} catch (IOException e) {
+					c.writeLine("error: " + e.toString());
+				}
+			}
 			case "print", "print.types" -> cmdWorldAllTilesType();
 			case "print.resources" -> cmdWorldAllTilesResources();
 			case "tile" -> {
@@ -750,6 +791,32 @@ public class SquareConquererCUI implements Runnable {
 				}
 				world = b;
 				c.writeLine("successfully converted the current world to a build world");
+			}
+			case "save-all", "save-all-force" -> {
+				if (++i >= args.size()) {
+					c.writeLine("not enugh arguments for the save argument");
+					return;
+				}
+				if (world == null) {
+					c.writeLine("there is no world I can save");
+					return;
+				}
+				if (!(world instanceof RootWorld rw)) {
+					c.writeLine("the current world is not in root world");
+					return;
+				}
+				Path p = Path.of(args.get(i));
+				if (!"save-all-force".equals(args.get(i)) && Files.exists(p)
+						&& ask("the save file already exists, proceed? ([p]roceed|[c]ancel)", "pc") == 'c') {
+					break;
+				}
+				try (OutputStream out = Files.newOutputStream(p);
+						Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, usr)) {
+					rw.saveEverything(conn);
+					c.writeLine("saved everything in the given file");
+				} catch (IOException e) {
+					c.writeLine("error while saving: " + e.toString());
+				}
 			}
 			case "save", "save-force" -> {
 				if (++i >= args.size()) {

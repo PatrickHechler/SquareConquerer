@@ -157,6 +157,10 @@ public final class RemoteWorld implements World, Closeable {
 		return readWorld(c, null, -1L, null, users);
 	}
 	
+	public static void loadWorld(Connection c, Map<String, User> users, Tile[][] tiles) throws IOException {
+		readWorld(c, tiles, -1L, null, users);
+	}
+	
 	@SuppressWarnings("unchecked")
 	private static <T extends Tile> T[][] readWorld(Connection conn, T[][] tiles, long timestamp, Map<User, List<Entity>> entities,
 			Map<String, User> users) throws IOException {
@@ -170,12 +174,14 @@ public final class RemoteWorld implements World, Closeable {
 		if (tiles == null) {
 			tiles = (T[][]) (entities != null ? new RemoteTile[xlen][ylen] : new Tile[xlen][ylen]);
 		} else if (xlen != tiles.length || ylen != tiles[0].length) {
+			if (entities == null) throw new IllegalArgumentException("different world sizes");
 			System.err.println("[RemoteWorld]: WARN: world size changed (old xlen=" + tiles.length + " ylen=" + tiles[0].length + " new xlen=" + xlen
 					+ " ylen=" + ylen + ')');
 			tiles = (T[][]) (entities != null ? new RemoteTile[xlen][ylen] : new Tile[xlen][ylen]);
 		}
 		for (int x = 0; x < xlen; x++) {
 			for (int y = 0; y < ylen; y++) {
+				if (tiles[x].length != ylen) throw new IllegalArgumentException("world has no rectangular form!");
 				int             tto = conn.readInt();
 				int             rto = conn.readInt();
 				TileType        tt  = TileType.of(tto);

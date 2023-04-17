@@ -105,11 +105,11 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * @see #setSeed(long)
 	 */
 	public Random2(long seed) {
-		this.seed = new AtomicLong(initialScramble(seed));
+		this.seed = new AtomicLong(seed);
 	}
 	
-	private static long initialScramble(long seed) {
-		return (seed ^ MULTIPLIER) & MASK;
+	public long getCurrentSeed() {
+		return seed.get();
 	}
 	
 	/**

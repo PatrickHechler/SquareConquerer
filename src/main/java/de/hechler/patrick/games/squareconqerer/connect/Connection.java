@@ -153,8 +153,8 @@ public class Connection implements Closeable {
 								User       usr  = conn.usr;
 								World      uw   = new UserWorld(rw, conn.usr, conn.modCnt);
 								OpenWorld  ow   = OpenWorld.of(conn, uw);
-								Connection old = connects.put(usr, conn);
-								if (old !=  null) {
+								Connection old  = connects.put(usr, conn);
+								if (old != null) {
 									old.blocked(() -> {
 										old.writeInt(CON_LOG_OUT);
 										old.close();
@@ -590,7 +590,7 @@ public class Connection implements Closeable {
 	 * 
 	 * @throws IOException
 	 */
-	public <T extends Throwable> void blocked(Executable<T> exec) throws T{
+	public <T extends Throwable> void blocked(Executable<T> exec) throws T {
 		blocked(0, exec, null);
 	}
 	
@@ -657,6 +657,10 @@ public class Connection implements Closeable {
 		return readString(in);
 	}
 	
+	public long readLong() throws IOException {
+		return readLong(in);
+	}
+	
 	public void readInt(int val) throws IOException {
 		readInt(in, val);
 	}
@@ -702,6 +706,10 @@ public class Connection implements Closeable {
 		writeInt(out, val);
 	}
 	
+	public void writeLong(long val) throws IOException {
+		writeLong(out, val);
+	}
+	
 	public void writeByte(int val) throws IOException {
 		if ((val & 0xFF) != val) {
 			throw new IllegalArgumentException("the given value is outside of the byte bounds: 0x" + Integer.toHexString(val));
@@ -745,6 +753,11 @@ public class Connection implements Closeable {
 		out.write(new byte[] { (byte) value, (byte) (value >>> 8), (byte) (value >>> 16), (byte) (value >>> 24) });
 	}
 	
+	private static void writeLong(OutputStream out, long value) throws IOException {
+		out.write(new byte[] { (byte) value, (byte) (value >>> 8), (byte) (value >>> 16), (byte) (value >>> 24), (byte) (value >>> 32),
+				(byte) (value >>> 40), (byte) (value >>> 48), (byte) (value >>> 56) });
+	}
+	
 	private static int readByte(InputStream in) throws IOException {
 		int val = in.read();
 		if (val == -1) {
@@ -762,6 +775,20 @@ public class Connection implements Closeable {
 			return val;
 		}
 		throw new IOException("expected 0x" + Integer.toHexString(a) + " or 0x" + Integer.toHexString(b) + " but got 0x" + Integer.toHexString(val));
+	}
+	
+	private static long readLong(InputStream in) throws IOException {
+		byte[] arr = new byte[8];
+		readArr(in, arr);
+		long val = 0xFFL & arr[0];
+		val |= (0xFFL & arr[1]) << 8;
+		val |= (0xFFL & arr[2]) << 16;
+		val |= (0xFFL & arr[3]) << 24;
+		val |= (0xFFL & arr[4]) << 32;
+		val |= (0xFFL & arr[5]) << 40;
+		val |= (0xFFL & arr[6]) << 48;
+		val |= (0xFFL & arr[7]) << 56;
+		return val;
 	}
 	
 	private static int readInt(InputStream in) throws IOException {

@@ -3,12 +3,15 @@ package de.hechler.patrick.games.squareconqerer.world;
 import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import de.hechler.patrick.games.squareconqerer.Random2;
@@ -37,17 +40,32 @@ public final class RootWorld implements World {
 	private final RootUser              root;
 	private final Tile[][]              tiles;
 	private final UserPlacer            placer;
-	private final Map<User, UserWorld>  subWorlds          = new HashMap<>();
-	private final List<Runnable>        nextTurnListeneres = new ArrayList<>();
-	private final Map<User, Turn>       userTurns          = new TreeMap<>();
-	private final List<Map<User, Turn>> allTurns           = new ArrayList<>();
+	private final Map<User, UserWorld>  subWorlds;
+	private final List<Runnable>        nextTurnListeneres;
+	private final Map<User, Turn>       userTurns;
+	private final List<Map<User, Turn>> allTurns;
 	private volatile byte[]             seed;
-	private volatile Random2             rnd;
+	private volatile Random2            rnd;
 	
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
-		this.root   = root;
-		this.tiles  = tiles;
-		this.placer = placer == null ? new DefaultUserPlacer() : placer;
+		this.root               = root;
+		this.tiles              = tiles;
+		this.placer             = placer == null ? new DefaultUserPlacer() : placer;
+		this.subWorlds          = new HashMap<>();
+		this.nextTurnListeneres = new ArrayList<>();
+		this.userTurns          = new TreeMap<>();
+		this.allTurns           = new ArrayList<>();
+	}
+	
+	private RootWorld(RootWorld rw, UserPlacer placer) {
+		this.root               = rw.root;
+		this.tiles              = rw.tiles;
+		this.placer             = placer;
+		this.subWorlds          = rw.subWorlds;
+		this.nextTurnListeneres = rw.nextTurnListeneres;
+		this.userTurns          = rw.userTurns;
+		this.allTurns           = rw.allTurns;
+		if (placer == null || !nextTurnListeneres.isEmpty()) throw new AssertionError();
 	}
 	
 	@Override
@@ -100,10 +118,16 @@ public final class RootWorld implements World {
 	private static final int RWS_SUB0   = 0x327B8CFB;
 	private static final int RWS_SUB1   = 0xCC2BB5FA;
 	private static final int RWS_SUB2   = 0xB5F22CF2;
+	private static final int RWS_SUB3   = 0x2DB9E5C9;
+	private static final int RWS_SUB4   = 0x0FFE8516;
+	private static final int RWS_SUB5   = 0xB99A5E60;
+	private static final int RWS_SUB6   = 0x8B25AC3E;
+	private static final int RWS_SUB7   = 0xB6676572;
 	private static final int RWS_FINISH = 0x934ABD64;
 	
 	public synchronized void saveEverything(Connection conn) throws IOException {
 		conn.writeInt(RWS_START);
+		conn.writeLong(rnd.getCurrentSeed());
 		conn.writeInt(seed.length);
 		conn.writeArr(seed);
 		conn.writeInt(RWS_SUB0);
@@ -111,8 +135,86 @@ public final class RootWorld implements World {
 		conn.writeInt(RWS_SUB1);
 		OpenWorld.saveWorld(this, conn);
 		conn.writeInt(RWS_SUB2);
-		
+		conn.writeInt(subWorlds.size());
+		for (Entry<User, UserWorld> e : subWorlds.entrySet()) {
+			User      usr = e.getKey();
+			UserWorld uw  = e.getValue();
+			conn.writeString(usr.name());
+			conn.writeInt(RWS_SUB3);
+			OpenWorld.saveWorld(uw, conn);
+		}
+		conn.writeInt(RWS_SUB4);
+		conn.writeInt(allTurns.size());
+		for (Map<User, Turn> ts : allTurns) {
+			conn.writeInt(RWS_SUB5);
+			conn.writeInt(ts.size());
+			for (Entry<User, Turn> e : ts.entrySet()) {
+				User u = e.getKey();
+				Turn t = e.getValue();
+				conn.writeString(u.name());
+				conn.writeInt(RWS_SUB6);
+				t.sendTurn(conn);
+			}
+		}
+		conn.writeInt(RWS_SUB6);
+		conn.writeString(placer.getClass().getName());
+		conn.writeInt(RWS_SUB7);
+		placer.writePlacer(conn);
 		conn.writeInt(RWS_FINISH);
+	}
+	
+	public static RootWorld loadEverything(Connection conn) throws IOException {
+		conn.readInt(RWS_START);
+		long   curSeed = conn.readLong();
+		byte[] seed    = new byte[conn.readInt()];
+		conn.readArr(seed);
+		conn.readInt(RWS_SUB0);
+		RootUser root = (RootUser) conn.usr;
+		root.load(conn);
+		conn.readInt(RWS_SUB1);
+		Tile[][]  tiles = RemoteWorld.loadWorld(conn, root.users());
+		RootWorld res   = RootWorld.Builder.create(root, tiles);
+		conn.readInt(RWS_SUB2);
+		res.seed = seed;
+		res.rnd = new Random2(curSeed);
+		for (int remain = conn.readInt(); remain > 0; remain--) {
+			String name = conn.readString();
+			User   usr  = root.get(name);
+			conn.readInt(RWS_SUB3);
+			UserWorld uw = res.usrOf(usr, 0);
+			RemoteWorld.loadWorld(conn, root.users(), uw.cach());
+		}
+		conn.readInt(RWS_SUB4);
+		for (int remain = conn.readInt(); remain > 0; remain--) {
+			conn.readInt(RWS_SUB5);
+			Map<User, Turn> add = new HashMap<>();
+			for (int iremain = conn.readInt(); iremain > 0; iremain--) {
+				String name = conn.readString();
+				User   usr  = root.get(name);
+				conn.readInt(RWS_SUB6);
+				Turn t = new Turn(res.usrOf(usr, 0));
+				t.retrieveTurn(conn);
+				add.put(usr, t);
+			}
+			res.allTurns.add(add);
+		}
+		conn.readInt(RWS_SUB6);
+		try {
+			Class<?> placerCls = Class.forName(conn.readString());
+			conn.readInt(RWS_SUB7);
+			Method     met    = placerCls.getMethod("readPlacer", Connection.class);
+			UserPlacer placer = (UserPlacer) met.invoke(null, conn);
+			conn.readInt(RWS_FINISH);
+			return new RootWorld(res, placer);
+		} catch (IllegalAccessException | NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+			throw new AssertionError(e);
+		} catch (InvocationTargetException e) {
+			Throwable c = e.getCause();
+			if (c instanceof IOException ioe) throw ioe;
+			if (c instanceof RuntimeException re) throw re;
+			if (c instanceof Error err) throw err;
+			throw new AssertionError(e);
+		}
 	}
 	
 	public synchronized void startGame(byte[] s) {
@@ -285,13 +387,17 @@ public final class RootWorld implements World {
 		} else if (usr != root.get(usr.name())) {
 			throw new AssertionError("the user is not from my root");
 		} else {
-			return subWorlds.compute(usr, (u, uw) -> {
-				if (uw != null && u.modifyCount() == uw.modCnt) {
-					return uw;
-				}
-				return new UserWorld(this, usr, usrModCnt);
-			});
+			return usrOf(usr, usrModCnt);
 		}
+	}
+	
+	private UserWorld usrOf(User usr, int usrModCnt) {
+		return subWorlds.compute(usr, (u, uw) -> {
+			if (uw != null && u.modifyCount() == uw.modCnt) {
+				return uw;
+			}
+			return new UserWorld(this, usr, usrModCnt);
+		});
 	}
 	
 	@Override
@@ -313,7 +419,7 @@ public final class RootWorld implements World {
 		
 		private List<Runnable> nextTurnListeners = new ArrayList<>();
 		private final Tile[][] tiles;
-		private final Random2   rnd;
+		private final Random2  rnd;
 		private final RootUser root;
 		
 		private int resourceMask = 7;

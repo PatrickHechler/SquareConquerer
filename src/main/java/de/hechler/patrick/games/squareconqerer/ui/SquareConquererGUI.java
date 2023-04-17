@@ -32,7 +32,6 @@ import java.net.ServerSocket;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -154,7 +153,7 @@ public class SquareConquererGUI {
 			return;
 		}
 		
-		frame = new JFrame(world.getClass().getSimpleName() + ": " + world.user().name());
+		frame = new JFrame();
 		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
 			
@@ -576,8 +575,10 @@ public class SquareConquererGUI {
 		JMenu        generalMenu = new JMenu("General");
 		JFileChooser fc          = new JFileChooser();
 		fc.setMultiSelectionEnabled(false);
-		initMenuGeneralSave(generalMenu, fc);
-		initMenuGeneralLoad(generalMenu, fc);
+		initMenuGeneralSave(generalMenu, fc, false);
+		initMenuGeneralSave(generalMenu, fc, true);
+		initMenuGeneralLoad(generalMenu, fc, false);
+		initMenuGeneralLoad(generalMenu, fc, true);
 		initMenuGeneralExit(generalMenu);
 		return generalMenu;
 	}
@@ -595,7 +596,7 @@ public class SquareConquererGUI {
 		generalMenu.add(exitItem);
 	}
 	
-	private void initMenuGeneralLoad(JMenu generalMenu, JFileChooser fc) {
+	private void initMenuGeneralLoad(JMenu generalMenu, JFileChooser fc/* TODO: boolean laodAll */) {
 		JMenuItem loadItem = new JMenuItem("Load");
 		loadItem.addActionListener(e -> {
 			int result = fc.showOpenDialog(frame);
@@ -643,7 +644,7 @@ public class SquareConquererGUI {
 		generalMenu.add(loadItem);
 	}
 	
-	private void initMenuGeneralSave(JMenu generalMenu, JFileChooser fc) {
+	private void initMenuGeneralSave(JMenu generalMenu, JFileChooser fc/* TODO: boolean saveAll */) {
 		JMenuItem saveItem = new JMenuItem("Save");
 		saveItem.addActionListener(e -> {
 			if (!(world instanceof RootWorld)) {
@@ -687,6 +688,8 @@ public class SquareConquererGUI {
 	
 	private void reload(Runnable ufh, boolean reaload) {
 		ToolTipManager.sharedInstance().setInitialDelay(500);
+		
+		frame.setTitle(world.getClass().getSimpleName() + ": " + world.user().name());
 		
 		initMenu();
 		int xlen     = world.xlen();
@@ -755,7 +758,7 @@ public class SquareConquererGUI {
 			h = Math.min(frame.getHeight(), bounds.height);
 		}
 		frame.setSize(w, h);
-		if (reaload) {
+		if (!reaload) {
 			addHoveringBtn(tileSize);
 		}
 	}

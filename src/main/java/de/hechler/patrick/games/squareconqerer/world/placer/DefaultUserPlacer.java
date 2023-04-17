@@ -1,10 +1,13 @@
 package de.hechler.patrick.games.squareconqerer.world.placer;
 
 import java.awt.Point;
+import java.io.IOException;
+import java.util.InputMismatchException;
 
 import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.Random2;
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
@@ -24,6 +27,27 @@ public class DefaultUserPlacer implements UserPlacer {
 	
 	public DefaultUserPlacer(EnumIntMap<EntityType> entityAmounts) {
 		this.entityAmounts = entityAmounts;
+	}
+	
+	@Override
+	public void writePlacer(Connection conn) throws IOException {
+		int[] arr = entityAmounts.array();
+		conn.writeInt(arr.length);
+		for (int i = 0; i < arr.length; i++) {
+			if (arr[i] < 0) throw new IllegalStateException("value is negative");
+			conn.writeInt(arr[i]);
+		}
+	}
+	
+	public static UserPlacer readPlacer(Connection conn) throws IOException {
+		DefaultUserPlacer dup = new DefaultUserPlacer();
+		int[] arr = dup.entityAmounts.array();
+		conn.readInt(arr.length);
+		for (int i = 0; i < arr.length; i++) {
+			arr[i] = conn.readInt();
+			if (arr[i] < 0) throw new InputMismatchException("value is negative");
+		}
+		return dup;
 	}
 	
 	@Override
