@@ -30,7 +30,6 @@ import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 
-@SuppressWarnings("preview")
 public class SquareConquererCUI implements Runnable {
 	
 	private static final String HELP = "help";
@@ -932,7 +931,7 @@ public class SquareConquererCUI implements Runnable {
 					case GRASS, GRASS_HILL -> TileType.GRASS_HILL;
 					case SAND, SAND_HILL -> TileType.SAND_HILL;
 					case SWAMP, SWAMP_HILL -> TileType.SWAMP_HILL;
-					case MOUNTAIN, NOT_EXPLORED, WATER_DEEP, WATER_NORMAL, default ->
+					case MOUNTAIN, NOT_EXPLORED, WATER_DEEP, WATER_NORMAL ->
 						throw new IllegalStateException("old tile type does not support +hill old: " + old.type.name());
 					};
 				}

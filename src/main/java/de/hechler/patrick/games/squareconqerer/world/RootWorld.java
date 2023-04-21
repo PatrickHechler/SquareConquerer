@@ -544,7 +544,7 @@ public final class RootWorld implements World {
 			} else if (type.isWater()) {
 				if (land == 0) {
 					int posOcean  = ocean * 2 + 1;
-					int posNormal = (water - ocean) * 2 + 1;
+					int posNormal = Math.max((water - ocean) * 2 + 1, 1);
 					int rndVal1   = rnd.nextInt(posOcean + posNormal);
 					if (rndVal1 < posOcean) {
 						type = TileType.WATER_DEEP;
@@ -562,7 +562,7 @@ public final class RootWorld implements World {
 			// ocean disables everything except water
 			// flat disables mountain
 			int      posWater    = (water * 2) + 1;
-			int      posMountain = ocean == 0 ? Math.max((mountain * 2) - (flat * 2) + 1, 1) : 0;
+			int      posMountain = ocean == 0 ? Math.max(mountain - (flat * 2) + 1, 1) : 0;
 			int      posSand     = ocean == 0 ? (sand * 2) + 1 : 0;
 			int      posGrass    = ocean == 0 ? (grass * 2) + 1 : 0;
 			int      posForest   = ocean == 0 ? (forest * 2) + 1 : 0;

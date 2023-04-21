@@ -15,6 +15,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.FocusEvent.Cause;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -133,7 +134,7 @@ public class SquareConquererGUI {
 		}
 		this.world = world;
 	}
-	
+
 	public void load(boolean initialVisible, Thread t) {
 		if (frame != null) {
 			throw new IllegalStateException("already loaded");
@@ -596,58 +597,99 @@ public class SquareConquererGUI {
 		generalMenu.add(exitItem);
 	}
 	
-	private void initMenuGeneralLoad(JMenu generalMenu, JFileChooser fc/* TODO: boolean laodAll */) {
-		JMenuItem loadItem = new JMenuItem("Load");
+	private void initMenuGeneralLoad(JMenu generalMenu, JFileChooser fc, boolean loadEverything) {
+		JMenuItem loadItem = new JMenuItem(loadEverything ? "Load Everything" : "Load");
 		loadItem.addActionListener(e -> {
 			int result = fc.showOpenDialog(frame);
 			if (result == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
-				threadBuilder().start(() -> {
-					User usr = world.user();
-					try (FileInputStream in = new FileInputStream(file); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
-						RootUser root = usr.rootClone();
-						Tile[][] tiles;
-						try {
-							root.load(conn);
-							tiles = RemoteWorld.loadWorld(conn, root.users());
-						} catch (Throwable t) {
-							root.close();
-							throw t;
-						}
-						usr.close();
-						synchronized (SquareConquererGUI.this) {
-							while (updateThread != null) {
-								if (!updateThread.isAlive()) {
-									System.err.println("update thread is dead");
-									updateThread     = null;
-									updateFinishHook = null;
-									break;
-								}
-								updateThread.interrupt();
-							}
-							updateFinishHook = loadFinishedHook;
-							try {
-								this.world = RootWorld.Builder.create(root, tiles);
-							} catch (IllegalStateException err) {
-								this.world = RootWorld.Builder.createBuilder(root, tiles);
-							}
-							world.addNextTurnListener(() -> update(null));
-						}
-						SwingUtilities.invokeLater(() -> reload(loadFinishedHook, true));
-					} catch (IOException | RuntimeException e1) {
-						e1.printStackTrace();
-						JOptionPane.showMessageDialog(frame, e1.toString(), e1.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
-					}
-				});
+				if (loadEverything) {
+					threadBuilder().start(() -> loadEverythingFromFile(file));
+				} else {
+					threadBuilder().start(() -> loadFromFile(file));
+				}
 			}
 		});
 		generalMenu.add(loadItem);
 	}
 	
-	private void initMenuGeneralSave(JMenu generalMenu, JFileChooser fc/* TODO: boolean saveAll */) {
-		JMenuItem saveItem = new JMenuItem("Save");
+	private void loadEverythingFromFile(File file) {
+		User     usr  = world.user();
+		RootUser root = usr.rootClone();
+		try {
+			try (FileInputStream in = new FileInputStream(file); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
+				World w = RootWorld.loadEverything(conn);
+				synchronized (SquareConquererGUI.this) {
+					while (updateThread != null) {
+						updateThread.interrupt();
+						try {
+							updateThread.join(10L);
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+					}
+					updateFinishHook = loadFinishedHook;
+					this.world       = w;
+					world.addNextTurnListener(() -> update(null));
+				}
+				SwingUtilities.invokeLater(() -> reload(loadFinishedHook, true));
+			} catch (IOException e) {
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(frame, e.toString(), e.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+			}
+		} catch (Throwable t) {
+			root.close();
+			throw t;
+		}
+	}
+	
+	private void loadFromFile(File file) {
+		User usr = world.user();
+		try (FileInputStream in = new FileInputStream(file); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
+			Tile[][] tiles;
+			RootUser root = usr.rootClone();
+			try {
+				root.load(conn);
+				tiles = RemoteWorld.loadWorld(conn, root.users());
+			} catch (Throwable t) {
+				root.close();
+				throw t;
+			}
+			usr.close();
+			synchronized (SquareConquererGUI.this) {
+				while (updateThread != null) {
+					updateThread.interrupt();
+					try {
+						updateThread.join(100L);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+				}
+				updateFinishHook = loadFinishedHook;
+				try {
+					this.world = RootWorld.Builder.create(root, tiles);
+				} catch (IllegalStateException err) {
+					this.world = RootWorld.Builder.createBuilder(root, tiles);
+				}
+				world.addNextTurnListener(() -> update(null));
+			}
+			SwingUtilities.invokeLater(() -> reload(loadFinishedHook, true));
+		} catch (IOException | RuntimeException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(frame, e.toString(), e.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	
+	private void initMenuGeneralSave(JMenu generalMenu, JFileChooser fc, boolean saveAll) {
+		if (saveAll && !(world instanceof RootWorld)) return;
+		JMenuItem saveItem = new JMenuItem(saveAll ? "Save Everything" : "Save");
 		saveItem.addActionListener(e -> {
 			if (!(world instanceof RootWorld)) {
+				if (saveAll) {
+					JOptionPane.showMessageDialog(frame, "the save everything buton should not exist, only root worlds can save everything",
+							"ERROR", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
 				int choosen = JOptionPane.showConfirmDialog(frame,
 						"the world is no root world, it may not contain the full information and thus there may be unexplred tiles",
 						"save non root world", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
@@ -668,13 +710,17 @@ public class SquareConquererGUI {
 				try {
 					try (FileOutputStream out = new FileOutputStream(file);
 							Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, world.user());) {
-						User u = world.user();
-						if (u instanceof RootUser root) {
-							root.save(conn);
+						if (saveAll) {
+							((RootWorld) world).saveEverything(conn);
 						} else {
-							RootUser.nopw().save(conn);
+							User u = world.user();
+							if (u instanceof RootUser root) {
+								root.save(conn);
+							} else {
+								RootUser.nopw().save(conn);
+							}
+							OpenWorld.saveWorld(world, conn);
 						}
-						OpenWorld.saveWorld(world, conn);
 						JOptionPane.showMessageDialog(frame, "finishd saving", "save", JOptionPane.INFORMATION_MESSAGE);
 					}
 				} catch (IOException e1) {
@@ -723,6 +769,7 @@ public class SquareConquererGUI {
 					
 					@Override
 					public void mouseEntered(MouseEvent e) {
+						btn.requestFocusInWindow(Cause.MOUSE_EVENT);
 						btn.setBorderPainted(true);
 					}
 					
@@ -886,6 +933,7 @@ public class SquareConquererGUI {
 					}
 					if (comp instanceof JButton btn) {
 						lastbtn = btn;
+						btn.requestFocusInWindow(Cause.MOUSE_EVENT);
 						btn.setBorderPainted(true);
 						MouseEvent event = new MouseEvent(btn, MouseEvent.MOUSE_ENTERED, e.getWhen(), e.getModifiersEx(),
 								hoveringButton.getX() + e.getX() - btn.getX(), hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(),
