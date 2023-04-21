@@ -101,8 +101,6 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * number generator which is maintained by method {@link #next}.
 	 *
 	 * @param seed the initial seed
-	 * 
-	 * @see #setSeed(long)
 	 */
 	public Random2(long seed) {
 		this.seed = new AtomicLong(seed);
@@ -120,13 +118,13 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * chosen bit values, each of which is (approximately) equally
 	 * likely to be {@code 0} or {@code 1}.
 	 *
-	 * @apiNote
+	 *<p><b>apiNote</b>
 	 *          The other random-producing methods in this class are implemented
 	 *          in terms of this method, so subclasses can override just this
 	 *          method to provide a different source of pseudorandom numbers for
 	 *          the entire class.
 	 * 			
-	 * @implSpec
+	 * <p><b>implSpec</b>
 	 *           The implementation in this class atomically updates the seed to
 	 * 			
 	 *           <pre>{@code (seed * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1)}</pre>
@@ -163,7 +161,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * byte array. The number of random bytes produced is equal to
 	 * the length of the byte array.
 	 *
-	 * @implSpec The method {@code nextBytes} is
+	 * <p><b>implSpec</b> The method {@code nextBytes} is
 	 *           implemented by class {@code Random} as if by:
 	 * 			
 	 *           <pre>{@code
@@ -194,7 +192,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * pseudorandomly generated and returned. All 2<sup>32</sup> possible
 	 * {@code int} values are produced with (approximately) equal probability.
 	 *
-	 * @implSpec The method {@code nextInt} is
+	 * <p><b>implSpec</b> The method {@code nextInt} is
 	 *           implemented by class {@code Random} as if by:
 	 * 			
 	 *           <pre>{@code
@@ -220,7 +218,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * {@code int} values are produced with (approximately) equal
 	 * probability.
 	 *
-	 * @implSpec The method {@code nextInt(int bound)} is implemented by
+	 * <p><b>implSpec</b> The method {@code nextInt(int bound)} is implemented by
 	 *           class {@code Random} as if by:
 	 * 			
 	 *           <pre>{@code
@@ -303,7 +301,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * contract of {@code nextLong} is that one {@code long} value is
 	 * pseudorandomly generated and returned.
 	 *
-	 * @implSpec The method {@code nextLong} is implemented by class {@code Random}
+	 * <p><b>implSpec</b> The method {@code nextLong} is implemented by class {@code Random}
 	 *           as if by:
 	 * 			
 	 *           <pre>{@code
@@ -332,7 +330,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * values {@code true} and {@code false} are produced with
 	 * (approximately) equal probability.
 	 *
-	 * @implSpec The method {@code nextBoolean} is implemented by class
+	 * <p><b>implSpec</b> The method {@code nextBoolean} is implemented by class
 	 *           {@code Random} as if by:
 	 * 			
 	 *           <pre>{@code
@@ -365,7 +363,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * where <i>m</i> is a positive integer less than 2<sup>24</sup>, are
 	 * produced with (approximately) equal probability.
 	 *
-	 * @implSpec The method {@code nextFloat} is implemented by class
+	 * <p><b>implSpec</b> The method {@code nextFloat} is implemented by class
 	 *           {@code Random} as if by:
 	 * 			
 	 *           <pre>{@code
@@ -411,7 +409,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * range {@code 0.0d} (inclusive) to {@code 1.0d} (exclusive), is
 	 * pseudorandomly generated and returned.
 	 *
-	 * @implSpec The method {@code nextDouble} is implemented by class
+	 * <p><b>implSpec</b> The method {@code nextDouble} is implemented by class
 	 *           {@code Random} as if by:
 	 * 			
 	 *           <pre>{@code
@@ -469,7 +467,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * normal distribution with mean {@code 0.0} and standard deviation
 	 * {@code 1.0}, is pseudorandomly generated and returned.
 	 *
-	 * @implSpec The method {@code nextGaussian} is implemented by class
+	 * <p><b>implSpec</b> The method {@code nextGaussian} is implemented by class
 	 *           {@code Random} as if by a threadsafe version of the following:
 	 * 			
 	 *           <pre>{@code

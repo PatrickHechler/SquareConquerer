@@ -57,7 +57,7 @@ public sealed interface Unit extends Entity, ImageableObj, Comparable<Unit> perm
 	 * <li>a unit type specific compare</li>
 	 * </ol>
 	 * 
-	 * @implNote subclasses only have to implement the unit specific compare.<br>
+	 * <p><b>implNote</b> subclasses only have to implement the unit specific compare.<br>
 	 *           They should do something like:
 	 *           <code>int c = super.compareTo(0); if (c == 0) c = specificCompare((SpecificUnitType) o); return c;</code><br>
 	 *           also note that the non unit type specific compare also compares the

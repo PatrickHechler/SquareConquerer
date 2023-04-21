@@ -586,9 +586,9 @@ public class Connection implements Closeable {
 	 * this is the same as {@link #blocked(int, Executable, Executable) blocked(0,
 	 * exec, null)}
 	 * 
-	 * @param exec
+	 * @param exec the executable to execute
 	 * 
-	 * @throws IOException
+	 * @throws T if the executable throws it
 	 */
 	public <T extends Throwable> void blocked(Executable<T> exec) throws T {
 		blocked(0, exec, null);
@@ -600,7 +600,7 @@ public class Connection implements Closeable {
 	 * blocks this connection to execute the given {@link Executable}
 	 * <p>
 	 * note that this method only guarantees that no other thread invokes code with
-	 * the {@link #blocked(int, Executable, int)} method.<br>
+	 * the {@code blocked(int, Executable, int)} method.<br>
 	 * it is still possible to use the read/write methods without being blocked by
 	 * this method
 	 * <p>
@@ -619,7 +619,9 @@ public class Connection implements Closeable {
 	 *                       ignored (for example if timeout is {@code 0},
 	 *                       <code>null</code> can safely be passed)
 	 * 						
-	 * @throws IOException
+	 * @param exec the executable to execute
+	 * 
+	 * @throws T if the executable throws it
 	 */
 	public <T extends Throwable> void blocked(int timeout, Executable<T> exec, Executable<T> timeoutHandler) throws T {
 		synchronized (this) {
