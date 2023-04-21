@@ -40,12 +40,15 @@ import java.util.Iterator;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -56,9 +59,11 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JRootPane;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
@@ -134,7 +139,7 @@ public class SquareConquererGUI {
 		}
 		this.world = world;
 	}
-
+	
 	public void load(boolean initialVisible, Thread t) {
 		if (frame != null) {
 			throw new IllegalStateException("already loaded");
@@ -323,7 +328,7 @@ public class SquareConquererGUI {
 	
 	private ActionListener menuServerPWChangeListener() {
 		return e -> {
-			JDialog dialog = new JDialog(frame);
+			JDialog dialog = createDialog();
 			dialog.setModalityType(ModalityType.APPLICATION_MODAL);
 			dialog.setTitle("Open Server");
 			dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -360,15 +365,38 @@ public class SquareConquererGUI {
 				dialog.dispose();
 			});
 			
-			dialog.pack();
-			dialog.setLocationRelativeTo(frame);
-			dialog.setVisible(true);
+			initDialog(dialog);
 		};
+	}
+	
+	private JDialog createDialog() {
+		JDialog   dialog   = new JDialog(frame);
+		JRootPane rootPane = dialog.getRootPane();
+		KeyStroke stroke   = KeyStroke.getKeyStroke("ESCAPE");
+		InputMap  inputMap = rootPane.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+		inputMap.put(stroke, "ESCAPE");
+		rootPane.getActionMap().put("ESCAPE", new AbstractAction() {
+			
+			private static final long serialVersionUID = -5661612443847132035L;
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				dialog.dispose();
+			}
+			
+		});
+		return dialog;
+	}
+	
+	private void initDialog(JDialog dialog) {
+		dialog.pack();
+		dialog.setLocationRelativeTo(frame);
+		dialog.setVisible(true);
 	}
 	
 	private ActionListener menuServerDeleteListener() {
 		return e -> {
-			JDialog dialog = new JDialog(frame);
+			JDialog dialog = createDialog();
 			dialog.setModalityType(ModalityType.APPLICATION_MODAL);
 			dialog.setTitle("Open Server");
 			dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -406,15 +434,13 @@ public class SquareConquererGUI {
 			dp.add(new JLabel());
 			dp.add(delBtn);
 			
-			dialog.pack();
-			dialog.setLocationRelativeTo(frame);
-			dialog.setVisible(true);
+			initDialog(dialog);
 		};
 	}
 	
 	private ActionListener menuServerAddListener() {
 		return e -> {
-			JDialog dialog = new JDialog(frame);
+			JDialog dialog = createDialog();
 			dialog.setModalityType(ModalityType.APPLICATION_MODAL);
 			dialog.setTitle("Open Server");
 			dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -462,9 +488,7 @@ public class SquareConquererGUI {
 				dialog.dispose();
 			});
 			
-			dialog.pack();
-			dialog.setLocationRelativeTo(frame);
-			dialog.setVisible(true);
+			initDialog(dialog);
 		};
 	}
 	
@@ -488,7 +512,7 @@ public class SquareConquererGUI {
 	
 	private ActionListener menuServerOpenListener(JMenu serverMenu, JMenuItem openItem, JMenuItem closeItem) {
 		return e -> {
-			JDialog dialog = new JDialog(frame);
+			JDialog dialog = createDialog();
 			dialog.setModalityType(ModalityType.APPLICATION_MODAL);
 			dialog.setTitle("Open Server");
 			dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -566,9 +590,7 @@ public class SquareConquererGUI {
 				dialog.dispose();
 			});
 			
-			dialog.pack();
-			dialog.setLocationRelativeTo(frame);
-			dialog.setVisible(true);
+			initDialog(dialog);
 		};
 	}
 	
@@ -686,8 +708,8 @@ public class SquareConquererGUI {
 		saveItem.addActionListener(e -> {
 			if (!(world instanceof RootWorld)) {
 				if (saveAll) {
-					JOptionPane.showMessageDialog(frame, "the save everything buton should not exist, only root worlds can save everything",
-							"ERROR", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(frame, "the save everything buton should not exist, only root worlds can save everything", "ERROR",
+							JOptionPane.ERROR_MESSAGE);
 					return;
 				}
 				int choosen = JOptionPane.showConfirmDialog(frame,
@@ -1173,13 +1195,13 @@ public class SquareConquererGUI {
 	
 	private void pressed(int x, int y) {
 		Tile    t      = world.tile(x, y);
-		JDialog dialog = new JDialog();
+		JDialog dialog = createDialog();
 		dialog.setModalityType(ModalityType.APPLICATION_MODAL);
 		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		dialog.setTitle("Tile at (" + x + '|' + y + ')');
-		JPanel p = new JPanel();
-		dialog.setContentPane(p);
-		p.setLayout(new GridLayout(0, 2));
+		JPanel dp = new JPanel();
+		dialog.setContentPane(dp);
+		dp.setLayout(new GridLayout(0, 2));
 		
 		if (world instanceof RootWorld.Builder rb) {
 			JComboBox<TileType>        cbt = new JComboBox<>(TileType.values());
@@ -1190,26 +1212,26 @@ public class SquareConquererGUI {
 			cbr.setSelectedIndex(t.resource.ordinal());
 			cbt.addActionListener(e -> rb.set(x, y, TileType.of(cbt.getSelectedIndex())));
 			cbr.addActionListener(e -> rb.set(x, y, OreResourceType.of(cbr.getSelectedIndex())));
-			p.add(new JLabel("ground:"));
-			p.add(cbt);
-			p.add(new JLabel("resource:"));
-			p.add(cbr);
+			dp.add(new JLabel("ground:"));
+			dp.add(cbt);
+			dp.add(new JLabel("resource:"));
+			dp.add(cbr);
 		} else {
-			p.add(new JLabel("ground:"));
-			p.add(new JLabel(t.type.toString()));
-			p.add(new JLabel("resource:"));
-			p.add(new JLabel(t.resource.toString()));
+			dp.add(new JLabel("ground:"));
+			dp.add(new JLabel(t.type.toString()));
+			dp.add(new JLabel("resource:"));
+			dp.add(new JLabel(t.resource.toString()));
 		}
 		if (!t.visible()) {
-			p.add(new JLabel("visibiel: currently not visible"));
+			dp.add(new JLabel("visibiel: currently not visible"));
 		}
 		Building b = t.building();
-		p.add(new JLabel("Building:"));
+		dp.add(new JLabel("Building:"));
 		final JComboBox<String> build;
 		if (world instanceof RootWorld.Builder) {
 			build = new JComboBox<>(new String[] { "none", "Storage" });
 			build.setEditable(false);
-			p.add(build);
+			dp.add(build);
 		} else build = null;
 		if (b != null) {
 			switch (b) {
@@ -1217,23 +1239,23 @@ public class SquareConquererGUI {
 				if (build != null) {
 					build.setSelectedItem("Storage");
 				} else {
-					p.add(new JLabel("Storage"));
+					dp.add(new JLabel("Storage"));
 				}
-				generalBuildingInfo(p, sb, "    ");
+				generalBuildingInfo(dp, sb, "    ");
 				EnumIntMap<OreResourceType> ores = sb.ores();
 				int[]                       arr  = ores.array();
 				for (int i = 0; i < arr.length; i++) {
 					if (arr[i] > 0) {
-						p.add(new JLabel("    " + OreResourceType.of(i) + ": "));
-						p.add(new JLabel(Integer.toString(arr[i])));
+						dp.add(new JLabel("    " + OreResourceType.of(i) + ": "));
+						dp.add(new JLabel(Integer.toString(arr[i])));
 					}
 				}
 				EnumIntMap<ProducableResourceType> producable = sb.producable();
 				arr = producable.array();
 				for (int i = 0; i < arr.length; i++) {
 					if (arr[i] > 0) {
-						p.add(new JLabel("    " + ProducableResourceType.of(i) + ": "));
-						p.add(new JLabel(Integer.toString(arr[i])));
+						dp.add(new JLabel("    " + ProducableResourceType.of(i) + ": "));
+						dp.add(new JLabel(Integer.toString(arr[i])));
 					}
 				}
 			}
@@ -1242,7 +1264,7 @@ public class SquareConquererGUI {
 		} else if (build != null) {
 			build.setSelectedItem("none");
 		} else {
-			p.add(new JLabel("none"));
+			dp.add(new JLabel("none"));
 		}
 		build.addActionListener(e -> {
 			switch ((String) build.getSelectedItem()) {
@@ -1261,22 +1283,20 @@ public class SquareConquererGUI {
 			}
 		});
 		Unit u = t.unit();
-		p.add(new JLabel("Unit:"));
+		dp.add(new JLabel("Unit:"));
 		if (u != null) {
 			switch (u) {
 			case Carrier c -> {
-				p.add(new JLabel("Carrier"));
-				generalUnitInfo(p, c, "    ");
+				dp.add(new JLabel("Carrier"));
+				generalUnitInfo(dp, c, "    ");
 			}
 			default -> throw new AssertionError("unknown unit type: " + u.getClass());
 			}
 		} else {
-			p.add(new JLabel("none"));
+			dp.add(new JLabel("none"));
 		}
 		
-		dialog.pack();
-		dialog.setLocationRelativeTo(frame);
-		dialog.setVisible(true);
+		initDialog(dialog);
 		
 	}
 	
