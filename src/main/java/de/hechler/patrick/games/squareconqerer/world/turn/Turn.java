@@ -11,12 +11,12 @@ import java.util.TreeMap;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.enums.Direction;
 import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
+import de.hechler.patrick.games.squareconqerer.world.enums.Direction;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 public final class Turn {

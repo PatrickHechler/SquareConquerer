@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer.enums;
+package de.hechler.patrick.games.squareconqerer.world.enums;
 
 
 public enum Direction {

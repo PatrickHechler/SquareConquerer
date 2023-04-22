@@ -5,8 +5,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import de.hechler.patrick.games.squareconqerer.enums.Direction;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
+import de.hechler.patrick.games.squareconqerer.world.enums.Direction;
 
 public record MoveTurn(Unit entity, List<Direction> dirs) implements EntityTurn {
 	

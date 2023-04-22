@@ -242,7 +242,7 @@ public sealed class User implements Closeable, Comparable<User> {
 		
 		private volatile boolean noNew;
 		
-		public RootUser(Secret0 s) {
+		private RootUser(Secret0 s) {
 			super(s);
 			if (s._pw != null) {
 				Runtime.getRuntime().addShutdownHook(new Thread(this::close));
