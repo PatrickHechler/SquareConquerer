@@ -5,25 +5,27 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public sealed interface SCHelpBlock {
+public sealed interface SCPageBlock {
 	
-	record EntryBlock(List<SCHelpEntry> entries) implements SCHelpBlock {
+	record SeperatingBlock(boolean bold) implements SCPageBlock {}
+	
+	record EntryBlock(List<SCPageEntry> entries) implements SCPageBlock {
 		
-		public EntryBlock(List<SCHelpEntry> entries) {
-			ArrayList<SCHelpEntry> list = new ArrayList<>(entries);
-			for (SCHelpEntry e : list) {
+		public EntryBlock(List<SCPageEntry> entries) {
+			ArrayList<SCPageEntry> list = new ArrayList<>(entries);
+			for (SCPageEntry e : list) {
 				if (e == null) throw new NullPointerException("null entries are not supported!");
 			}
 			this.entries = Collections.unmodifiableList(list);
 		}
 		
-		public EntryBlock(SCHelpEntry... entries) {
+		public EntryBlock(SCPageEntry... entries) {
 			this(Arrays.asList(entries));
 		}
 		
 	}
 	
-	record TextBlock(String text) implements SCHelpBlock {
+	record TextBlock(String text) implements SCPageBlock {
 		
 		public TextBlock {
 			if (text == null) throw new NullPointerException("null texts are not supported");

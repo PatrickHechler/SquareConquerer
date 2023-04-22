@@ -4,18 +4,30 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.ServiceLoader;
 
-import de.hechler.patrick.games.squareconqerer.addons.records.SCHelp;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCLicense;
+import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
 
 public abstract class SquareConquererAddon {
 	
 	public static final String GAME_ADDON_NAME = "Square Conquerer";
 	
+	/**
+	 * this field stores the unique name of this add-on
+	 */
 	public final String name;
 	
+	/**
+	 * creates a new {@link SquareConquererAddon} instance with the given
+	 * {@code name}.
+	 * <p>
+	 * the name must be unique<br>
+	 * this means, that the name {@value #GAME_ADDON_NAME} is not allowed to be used
+	 * by any other add-on than the {@link TheGameAddon}.
+	 * 
+	 * @param name the {@link #name} of the add-on
+	 */
 	public SquareConquererAddon(String name) {
 		this.name = name;
 	}
@@ -29,6 +41,7 @@ public abstract class SquareConquererAddon {
 	 * @return the game add-on
 	 */
 	public static TheGameAddon theGame() {
+		// the type TheGameAddon is not really useful for
 		TheGameAddon g = theGame;
 		if (g != null) return g;
 		addonsMap();
@@ -113,8 +126,25 @@ public abstract class SquareConquererAddon {
 		return addons;
 	}
 	
-	public abstract Optional<SCLicense> license();
+	/**
+	 * returns the license of this add-on
+	 * 
+	 * @return the license of this add-on
+	 */
+	public abstract SCLicense license();
 	
-	public abstract SCHelp help();
+	/**
+	 * returns the help page of this add-on
+	 * 
+	 * @return the help page of this add-on
+	 */
+	public abstract SCPage help();
+	
+	/**
+	 * returns the credits page of this add-on
+	 * 
+	 * @return the credits page of this add-on
+	 */
+	public abstract SCPage credits();
 	
 }

@@ -408,7 +408,7 @@ public final class RootWorld implements World {
 			if (uw != null && u.modifyCount() == uw.modCnt) {
 				return uw;
 			}
-			return new UserWorld(this, usr, usrModCnt);
+			return UserWorld.usrOf(this, usr, usrModCnt);
 		});
 	}
 	
@@ -725,7 +725,7 @@ public final class RootWorld implements World {
 		}
 		
 		public void set(int x, int y, Tile t) {
-			tiles[x][y] = t;
+			tiles[x][y] = t.copy();
 			executeNTL();
 		}
 		

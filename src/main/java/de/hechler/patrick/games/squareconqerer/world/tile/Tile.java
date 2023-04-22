@@ -7,11 +7,13 @@ import java.io.IOException;
 import java.lang.StackWalker.Option;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
+import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
@@ -29,8 +31,8 @@ public sealed class Tile permits RemoteTile {
 	private boolean              visible;
 	private Building             build;
 	private Unit                 unit;
-	
-	private static int created;
+	private Supplier<SCPage>     page;
+	private String               title;
 	
 	public Tile(TileType type, OreResourceType resource, boolean visible) {
 		if (type == null || resource == null) {
@@ -39,20 +41,16 @@ public sealed class Tile permits RemoteTile {
 		this.type     = type;
 		this.resource = resource;
 		this.visible  = visible;
-		if ((created++ & 0x1FF) == 0) {
-			System.out.println("created " + created + " tile instances");
-		}
 	}
 	
-	private Tile(TileType type, OreResourceType resource, boolean visible, Building build, Unit unit) {
+	private Tile(TileType type, OreResourceType resource, boolean visible, Building build, Unit unit, Supplier<SCPage> page, String title) {
 		this.type     = type;
 		this.resource = resource;
 		this.visible  = visible;
 		this.build    = build;
 		this.unit     = unit;
-		if ((created++ & 0x1FF) == 0) {
-			System.out.println("created " + created + " tile instances");
-		}
+		this.page     = page;
+		this.title    = title;
 	}
 	
 	private static BufferedImage notVisible;
@@ -101,7 +99,19 @@ public sealed class Tile permits RemoteTile {
 	}
 	
 	public Tile copy() {
-		return new Tile(type, resource, visible, build == null ? null : build.copy(), unit == null ? null : unit.copy());
+		return new Tile(type, resource, visible, build == null ? null : build.copy(), unit == null ? null : unit.copy(), page, title);
+	}
+	
+	public boolean hasPage() { return page != null; }
+	
+	public SCPage page() {
+		if (page == null) throw new IllegalStateException("I have no page");
+		return page.get();
+	}
+	
+	public String pageTitle() {
+		if (page == null) throw new IllegalStateException("I have no page");
+		return title;
 	}
 	
 	public Unit unit() { return unit; }
@@ -160,6 +170,8 @@ public sealed class Tile permits RemoteTile {
 		}
 		this.build = build;
 	}
+	
+	public void page(Supplier<SCPage> page, String title) { this.page = page; this.title = title; }
 	
 	public void visible(boolean visible) { this.visible = visible; }
 	

@@ -40,37 +40,37 @@ public sealed class User implements Closeable, Comparable<User> {
 	public static int startModCnt() {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ServerAccept.class) {
-			throw new UnsupportedOperationException("this is an intern method");
+			throw new IllegalCallerException("this is an intern method");
 		}
 		return 0;
 	}
 	
 	/**
 	 * this is an intern method, calling it from any extern class will result in an
-	 * {@link UnsupportedOperationException}
+	 * {@link IllegalCallerException}
 	 * 
 	 * @return the password array of this user
 	 * 
-	 * @throws UnsupportedOperationException if the caller is not valid
+	 * @throws IllegalCallerException if the caller is not valid
 	 */
-	public synchronized char[] pw() throws UnsupportedOperationException {
+	public synchronized char[] pw() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ClientConnect.class) {
-			throw new UnsupportedOperationException("this is an intern method");
+			throw new IllegalCallerException("this is an intern method");
 		}
 		return s._pw;
 	}
 	
-	public synchronized int modifyCount() throws UnsupportedOperationException {
+	public synchronized int modifyCount() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ServerAccept.class && caller != Connection.OneWayAccept.class && caller != RootWorld.class
-				&& caller != Connection.ClientConnect.class) {
-			throw new UnsupportedOperationException("this is an intern method");
+				&& caller != Connection.ClientConnect.class && caller != Connection.class) {
+			throw new IllegalCallerException("this is an intern method");
 		}
 		return modCnt;
 	}
 	
-	public synchronized void checkModCnt(int cnt) throws UnsupportedOperationException {
+	public synchronized void checkModCnt(int cnt) throws IllegalCallerException {
 		if (modCnt != cnt) {
 			throw new IllegalStateException("this user has been set to invalid (changed password/deleted/whatever)");
 		}

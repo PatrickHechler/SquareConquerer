@@ -26,12 +26,23 @@ public final class UserWorld implements World {
 	private Tile[][]                cach;
 	private boolean[][]             visible;
 	
-	public UserWorld(World world, User usr, int modCnt) {
+	private UserWorld(World world, User usr, int modCnt) {
 		this.world  = world;
 		this.usr    = usr;
 		this.modCnt = modCnt;
-		usr.checkModCnt(modCnt);
 		world.addNextTurnListener(this::nextTurn);
+	}
+
+	public static World of(World w, User usr, int modCnt) {
+		usr.checkModCnt(modCnt);
+		if (w.user() == usr) return w;
+		return new UserWorld(w, usr, modCnt);
+	}
+	
+	public static UserWorld usrOf(World w, User usr, int modCnt) {
+		usr.checkModCnt(modCnt);
+		if (w.user() == usr) throw new IllegalStateException("user of is only possible, when the user changes!");
+		return new UserWorld(w, usr, modCnt);
 	}
 	
 	Tile[][] cach() {

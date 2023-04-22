@@ -5,21 +5,21 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public record SCHelp(List<SCHelpBlock> blocks) {
+public record SCPage(List<SCPageBlock> blocks) {
 	
-	public SCHelp(List<SCHelpBlock> blocks) {
-		ArrayList<SCHelpBlock> list = new ArrayList<>(blocks);
-		for (SCHelpBlock b : list) {
+	public SCPage(List<SCPageBlock> blocks) {
+		ArrayList<SCPageBlock> list = new ArrayList<>(blocks);
+		for (SCPageBlock b : list) {
 			if (b == null) throw new NullPointerException("null blocks are not supporetd!");
 		}
 		this.blocks = Collections.unmodifiableList(list);
 	}
 
-	public SCHelp(SCHelpBlock... blocks) {
+	public SCPage(SCPageBlock... blocks) {
 		this(Arrays.asList(blocks));
 	}
 
-	public SCHelp(SCHelpBlock block) {
+	public SCPage(SCPageBlock block) {
 		this(List.of(block));
 	}
 

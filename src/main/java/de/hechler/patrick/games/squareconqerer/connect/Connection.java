@@ -71,6 +71,25 @@ public class Connection implements Closeable {
 		}));
 	}
 	
+	public static Connection createUnsecure(User usr, InputStream in) {
+		return createUnsecure(usr, in, InvalidOutputStream.INSTANCE, null);
+	}
+	
+	public static Connection createUnsecure(User usr, OutputStream out) {
+		return createUnsecure(usr, InvalidInputStream.INSTANCE, out, null);
+	}
+	
+	public static Connection createUnsecure(User usr, InputStream in, OutputStream out) {
+		return createUnsecure(usr, in, out, null);
+	}
+	
+	public static Connection createUnsecure(User usr, InputStream in, OutputStream out, IntConsumer setTimeout) {
+		if (usr == null || in == null || out == null) {
+			throw new NullPointerException("usr=" + usr + " in=" + in + " out=" + out);
+		}
+		return new Connection(usr, in, out, setTimeout, usr.modifyCount());
+	}
+	
 	public static class OneWayAccept {
 		
 		private OneWayAccept() {}
@@ -151,7 +170,7 @@ public class Connection implements Closeable {
 							try {
 								Connection conn = accept(sok, rw.user(), serverPW);
 								User       usr  = conn.usr;
-								World      uw   = new UserWorld(rw, conn.usr, conn.modCnt);
+								World      uw   = UserWorld.of(rw, conn.usr, conn.modCnt);
 								OpenWorld  ow   = OpenWorld.of(conn, uw);
 								Connection old  = connects.put(usr, conn);
 								if (old != null) {
@@ -618,9 +637,8 @@ public class Connection implements Closeable {
 	 *                       reached if no timeout was reached the timeoutHandler is
 	 *                       ignored (for example if timeout is {@code 0},
 	 *                       <code>null</code> can safely be passed)
+	 * @param exec           the executable to execute
 	 * 						
-	 * @param exec the executable to execute
-	 * 
 	 * @throws T if the executable throws it
 	 */
 	public <T extends Throwable> void blocked(int timeout, Executable<T> exec, Executable<T> timeoutHandler) throws T {
