@@ -10,12 +10,14 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.Iterator;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import de.hechler.patrick.games.squareconqerer.Random2;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCPageBlock;
+import de.hechler.patrick.games.squareconqerer.addons.records.SCPageBlock.EntryBlock;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
@@ -44,12 +46,7 @@ public class PageWorld {
 	
 	public PageWorld(SCPage page) {
 		this.page = page;
-		Random2 rnd = new Random2();
-		this.pageTile = randomTile(rnd, false);
-		this.linkTile = randomTile(rnd, false);
-		this.wrldTile = randomTile(rnd, false);
-		this.textTile = randomTile(rnd, false);
-		this.othrTile = randomTile(rnd, false);
+		randomTiles(false);
 	}
 	
 	private static Tile randomTile(Random2 rnd, boolean allowNotExplored) {
@@ -63,14 +60,37 @@ public class PageWorld {
 	
 	public void randomTiles(boolean allowNotExplored) {
 		Random2 rnd = new Random2();
-		this.pageTile = randomTile(rnd, allowNotExplored);
-		this.linkTile = randomTile(rnd, allowNotExplored);
-		this.wrldTile = randomTile(rnd, allowNotExplored);
-		this.textTile = randomTile(rnd, allowNotExplored);
-		this.othrTile = randomTile(rnd, allowNotExplored);
+		do {
+			pageTile = randomTile(rnd, allowNotExplored);
+			linkTile = randomTile(rnd, allowNotExplored);
+			wrldTile = randomTile(rnd, allowNotExplored);
+			textTile = randomTile(rnd, allowNotExplored);
+			othrTile = randomTile(rnd, allowNotExplored);
+		} while (!maxOne(TileType::isForest) || !maxOne(TileType::isGrass) || !maxOne(TileType::isMountain) || !maxOne(TileType::isSand)
+				|| !maxOne(TileType::isSwamp) || !maxOne(TileType::isWater));
+	}
+	
+	private boolean maxOne(Predicate<TileType> t) {
+		return maxOne(t, pageTile.type, linkTile.type, wrldTile.type, textTile.type, othrTile.type);
+	}
+	
+	private static boolean maxOne(Predicate<TileType> t, TileType... types) {
+		boolean matched = false;
+		for (TileType tt : types) {
+			if (t.test(tt)) {
+				if (matched) return false;
+				matched = true;
+			}
+		}
+		return true;
 	}
 	
 	public RootWorld.Builder createWorld() {
+		System.out.println("pageTiele: " + pageTile);
+		System.out.println("linkTiele: " + linkTile);
+		System.out.println("wrldTiele: " + wrldTile);
+		System.out.println("textTiele: " + textTile);
+		System.out.println("othrTiele: " + othrTile);
 		FontRenderContext frc       = new FontRenderContext(null, false, false);
 		Font              f         = new Font("Monospace", Font.PLAIN, 9);
 		Rectangle2D       maxBounds = f.getMaxCharBounds(frc);
@@ -85,16 +105,6 @@ public class PageWorld {
 		System.out.println("pageWorld: finish counting: " + dim);
 		BufferedImage img = new BufferedImage(dim.width + 1, dim.height + 1, BufferedImage.TYPE_BYTE_GRAY);
 		Graphics2D    g   = img.createGraphics();
-		frc = g.getFontRenderContext();
-		Dimension dim2 = countAll(frc, f, xStartOff, yStartOff, ch);
-		System.out.println("pageWorld: finish counting (again): " + dim);
-		if (dim2.width > dim.width || dim2.height > dim.height) {
-			img = new BufferedImage(dim.width + 1, dim.height + 1, BufferedImage.TYPE_BYTE_GRAY);
-			g   = img.createGraphics();
-			// hopefully that there will be the same Font Render Context
-			frc = g.getFontRenderContext();
-		}
-		dim = dim2;
 		g.setFont(f);
 		int yoff = yStartOff;
 		for (SCPageBlock block : page.blocks()) {
@@ -105,6 +115,13 @@ public class PageWorld {
 		RootWorld.Builder b      = new RootWorld.Builder(RootUser.create(new char[0]), dim.width, dim.height);
 		fill(raster, b, ch, f, frc, xStartOff, yStartOff);
 		System.out.println("pageWorld: finish");
+		int cnt = 0;
+		for (int x = 0; x < b.xlen(); x++) {
+			for (int y = 0; y < b.ylen(); y++) {
+				if (b.tile(x, y).hasPage()) cnt++;
+			}
+		}
+		System.out.println("there are " + cnt + " tiles with a page");
 		return b;
 	}
 	
@@ -119,20 +136,10 @@ public class PageWorld {
 	}
 	
 	private void fill(WritableRaster raster, RootWorld.Builder b, int ch, Font f, FontRenderContext frc, int xStartOff, int yStartOff) {
-		int[]  arr = new int[1];
-		char[] cs  = new char[b.xlen() + 1];
-		cs[cs.length - 1] = '\n';
+		int[] arr  = new int[1];
 		for (int y = 0; y < b.ylen(); y++) {
 			for (int x = 0; x < b.xlen(); x++) {
-				int a = raster.getPixel(x, y, arr)[0];
-				cs[x] = (switch (a) {
-				case VAL_PAGE -> 'P';
-				case VAL_LINK -> 'L';
-				case VAL_WRLD -> 'W';
-				case VAL_TEXT -> 'T';
-				case VAL_NONE -> ' ';
-				default -> '#';
-				});
+				int  a = raster.getPixel(x, y, arr)[0];
 				Tile t;
 				switch (a) {
 				case VAL_PAGE -> t = pageTile;
@@ -146,64 +153,68 @@ public class PageWorld {
 				}
 				}
 				switch (a) {
-				case VAL_PAGE, VAL_LINK, VAL_WRLD -> {
-					setPage(ch, f, frc, xStartOff, yStartOff, x, y, t);
-				}
+				case VAL_PAGE, VAL_LINK, VAL_WRLD -> fillTile(ch, f, frc, xStartOff, yStartOff, x, y, t);
 				default -> t.page(null, null);
 				}
 				b.set(x, y, t);
 			}
-			System.out.print(cs);
 		}
 	}
 	
-	private void setPage(int ch, Font f, FontRenderContext frc, int xStartOff, int yStartOff, int x, int y, Tile t) {
-		int yPos = yStartOff;
+	private void fillTile(int ch, Font f, FontRenderContext frc, int xStartOff, int yStartOff, int x, int y, Tile t) {
+		int yPos = yStartOff - ch;
 		for (SCPageBlock block : page.blocks()) {
 			if (yPos >= y) {
 				System.err.println("error: did not found position");
 				t.page(null, null);
-				break;
+				return;
 			}
 			switch (block) {
-			case SCPageBlock.TextBlock tb -> yPos += tb.text().lines().count();
+			case SCPageBlock.TextBlock tb -> yPos += ch * tb.text().lines().count();
 			case SCPageBlock.EntryBlock eb -> {
 				yPos += ch;
 				if (yPos < y) break;
-				int                   xPos = xStartOff;
-				Iterator<SCPageEntry> iter = eb.entries().iterator();
-				SCPageEntry           e    = iter.next();
-				while (xPos < x) {
-					if (!iter.hasNext()) {
-						System.err.println("error: not enugh elements in the iterator");
-						break;
-					}
-					switch (e) {
-					case SCPageEntry.LinkEntry le -> xPos += width(frc, f, le.text());
-					case SCPageEntry.PageEntry pe -> xPos += width(frc, f, pe.text());
-					case SCPageEntry.WorldEntry we -> xPos += width(frc, f, we.text());
-					case SCPageEntry.TextEntry te -> xPos += width(frc, f, te.text());
-					}
-					e = iter.next();
-				}
-				switch (e) {
-				case SCPageEntry.LinkEntry le -> {
-					Supplier<SCPage> sup = () -> new SCPage(new SCPageBlock.EntryBlock(le));
-					t.page(sup, le.text());
-				}
-				case SCPageEntry.PageEntry pe -> pe.page();
-				case SCPageEntry.WorldEntry we -> {
-					Supplier<SCPage> sup = () -> new SCPage(new SCPageBlock.EntryBlock(we));
-					t.page(sup, we.worldName());
-				}
-				case SCPageEntry.TextEntry te -> {
-					System.err.println("error: text entry");
-					t.page(null, null);
-				}
-				}
+				int xPos = xStartOff;
+				fillFromEntryBlock(frc, f, x, t, xPos, eb);
+				return;
 			}
 			case SCPageBlock.SeperatingBlock sb -> yPos += sbHigh(sb);
 			}
+		}
+		System.err.println("error: invalid line");
+	}
+	
+	private static void fillFromEntryBlock(FontRenderContext frc, Font f, int x, Tile t, int xPos, EntryBlock eb) {
+		Iterator<SCPageEntry> iter = eb.entries().iterator();
+		SCPageEntry           e    = iter.next();
+		while (switch (e) {
+		case SCPageEntry.LinkEntry le -> xPos += width(frc, f, le.text());
+		case SCPageEntry.PageEntry pe -> xPos += width(frc, f, pe.text());
+		case SCPageEntry.WorldEntry we -> xPos += width(frc, f, we.text());
+		case SCPageEntry.TextEntry te -> xPos += width(frc, f, te.text());
+		} < x) {
+			if (!iter.hasNext()) {
+				System.err.println("error: not enugh elements in the iterator");
+				return ;
+			}
+			e = iter.next();
+		}
+		switch (e) {
+		case SCPageEntry.LinkEntry le -> {
+			Supplier<SCPage> sup = () -> new SCPage(new SCPageBlock.EntryBlock(le));
+			t.page(sup, le.text());
+		}
+		case SCPageEntry.PageEntry pe -> {
+			t.page(pe.page(), pe.title());
+		}
+		case SCPageEntry.WorldEntry we -> {
+			Supplier<SCPage> sup = () -> new SCPage(new SCPageBlock.EntryBlock(we));
+			t.page(sup, we.worldName());
+		}
+		case SCPageEntry.TextEntry te -> {
+			System.err.println("error: text entry");
+			t.page(null, null);
+		}
 		}
 	}
 	
@@ -234,8 +245,7 @@ public class PageWorld {
 		}
 		case SCPageBlock.TextBlock tb -> {
 			for (String line : tb.text().replace("\t", "  ").split("\r\n?|\n")) {
-				g.setColor(COLOR_TEXT);
-				g.drawString(line, xStartOff, yoff);
+				draw(g, line, f, frc, xStartOff, yoff, COLOR_TEXT);
 				yoff += ch;
 			}
 		}
@@ -246,8 +256,9 @@ public class PageWorld {
 	private static int draw(Graphics2D g, String text, Font f, FontRenderContext frc, int xoff, int yoff, Color c) {
 		text = text.replace("\t", "  ");
 		g.setColor(c);
-		g.drawString(text, xoff, yoff);
-		xoff += width(frc, f, text);
+		TextLayout layout = new TextLayout(text, f, frc);
+		layout.draw(g, (float) xoff, (float) yoff);
+		xoff += width(layout);
 		return xoff;
 	}
 	
@@ -278,8 +289,12 @@ public class PageWorld {
 	}
 	
 	private static int width(FontRenderContext frc, Font f, String text) {
-		// FIXME find better solution than to multiply with 1.1
-		return (int) Math.ceil(new TextLayout(text, f, frc).getBounds().getWidth() * 1.1D);
+		TextLayout textLayout = new TextLayout(text, f, frc);
+		return width(textLayout);
+	}
+	
+	private static int width(TextLayout textLayout) {
+		return (int) Math.ceil(textLayout.getLeading() + textLayout.getAdvance());
 	}
 	
 }

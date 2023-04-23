@@ -551,7 +551,7 @@ public final class RootWorld implements World {
 				int posFlat = (flat * 2) + 1;
 				int rndVal1 = rnd.nextInt(posHill + posFlat);
 				if (rndVal1 < posHill) {
-					type = type.addHill();
+					type = type.addHill(true);
 				}
 			} else if (type.isWater()) {
 				if (land == 0) {

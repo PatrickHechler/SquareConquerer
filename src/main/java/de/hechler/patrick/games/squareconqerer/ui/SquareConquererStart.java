@@ -148,7 +148,7 @@ public class SquareConquererStart {
 		if (gui) {
 			if (world != null) {
 				SquareConquererGUI gui = new SquareConquererGUI(world);
-				gui.load(true, serverThread);
+				gui.load(serverThread);
 			} else {
 				SwingUtilities.invokeLater(() -> {
 					JFrame frame = initStartFrame();
@@ -725,9 +725,8 @@ public class SquareConquererStart {
 					world = loadWorldFromFile(pwField, selectdFileField);
 				}
 				SquareConquererGUI gui = new SquareConquererGUI(world);
-				gui.load(false);
 				frame.dispose();
-				gui.visible(true);
+				gui.load();
 			} catch (Exception err) {
 				JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(),
 						JOptionPane.ERROR_MESSAGE);

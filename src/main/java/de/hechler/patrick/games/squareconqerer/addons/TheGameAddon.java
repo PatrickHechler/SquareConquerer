@@ -71,12 +71,18 @@ public final class TheGameAddon extends SquareConquererAddon {
 				new SCPageBlock.SeperatingBlock(true), //
 				new SCPageBlock.EntryBlock(//
 						new SCPageEntry.TextEntry("General "), //
+						deep != 242 ? // I got a stackoverflow at 243
 						new SCPageEntry.PageEntry("Help",
 								deep > 22
-										? "Help (maybe the " + (100 - 24 + deep - (deep % 100)) + "th Help is more helpful (this is the " + (deep + 1)
+										? "Help (maybe the " + (100 + 42 + deep - (deep % 100)) + "th Help is more helpful (this is the " + (deep + 1)
 												+ "th Help))"
 										: "Help",
-								() -> generateMyHelpPage(deep + 1)),
+								() -> generateMyHelpPage(deep + 1))
+						: new SCPageEntry.WorldEntry("Help",  "Help (maybe this help is more helpful)", () -> {
+							PageWorld pw = new PageWorld(generateMyHelpPage(deep + 1));
+							return pw.createWorld();
+						})
+						,
 						new SCPageEntry.TextEntry(": "),
 						new SCPageEntry.LinkEntry("readme", "https://github.com/PatrickHechler/SquareConquerer/blob/master/readme.md")//
 				), //
