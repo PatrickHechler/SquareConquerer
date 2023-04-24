@@ -7,7 +7,9 @@ import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
-public abstract sealed class BuildingImpl extends EntityImpl implements Building permits StoreBuild {
+public abstract sealed class BuildingImpl extends EntityImpl implements Building permits StoreBuild, MyBuild {
+	
+	public static final int MY_COUNT_NO_NULL = 1;
 	
 	private EnumIntMap<ProducableResourceType> neededResources;
 	private int                                neededBuildTurns;

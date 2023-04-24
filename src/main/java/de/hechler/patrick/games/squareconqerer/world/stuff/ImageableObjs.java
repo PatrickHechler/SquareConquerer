@@ -63,7 +63,7 @@ public class ImageableObjs {
 	
 	private static BufferedImage loadImg(ImageableObj e) throws IOError {
 		try {
-			return ImageIO.read(e.getClass().getResource("/img/" + e.cls() + "/" + e.name() + ".png"));
+			return ImageIO.read(e.url());
 		} catch (IllegalArgumentException err) {
 			System.err.println("error while loading image for " + e.cls() + ':' + e.name() + ": " + err.toString());
 			throw err;

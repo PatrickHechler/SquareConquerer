@@ -510,10 +510,10 @@ public final class RootWorld implements World {
 			int iron = iron(xDown) + iron(xUp) + iron(yDown) + iron(yUp);
 			int coal = coal(xDown) + coal(xUp) + coal(yDown) + coal(yUp);
 			
-			int posNone = (none * 2) + 1;
-			int posGold = (gold * 2) + 1;
-			int posIron = (iron * 2) + 1;
-			int posCoal = (coal * 2) + 1;
+			int posNone = (none * 5) + 2;
+			int posGold = (gold * 4) + 1;
+			int posIron = (iron * 3) + 2;
+			int posCoal = (coal * 5) + 1;
 			int rndVal  = rnd.nextInt(posNone + posGold + posIron + posCoal);
 			
 			OreResourceType ore = null;

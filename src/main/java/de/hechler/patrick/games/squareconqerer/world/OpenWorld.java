@@ -4,18 +4,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
+import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
+import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.interfaces.Executable;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
-import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
-import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
-import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
@@ -295,23 +292,6 @@ public class OpenWorld implements Executable<IOException> {
 		}
 	}
 	
-	private static void sendUnit(Unit u, Connection conn) throws IOException {
-		conn.writeInt(u.x());
-		conn.writeInt(u.y());
-		conn.writeInt(u.lives());
-		int ca = u.carryAmount();
-		conn.writeInt(ca);
-		if (ca != 0) {
-			writeRes(conn, u.carryRes());
-		}
-		if (u instanceof Carrier) {
-			conn.writeInt(Carrier.NUMBER);
-		} else {
-			throw new AssertionError("unknown unit type: " + u.getClass());
-		}
-		conn.writeInt(FIN_ENTITY);
-	}
-	
 	public static void writeRes(Connection conn, Resource r) throws AssertionError, IOException {
 		Class<? extends Resource> cls = r.getClass();
 		if (!cls.isEnum()) {
@@ -325,46 +305,27 @@ public class OpenWorld implements Executable<IOException> {
 		}
 	}
 	
-	@SuppressWarnings("preview")
+	private static void sendUnit(Unit u, Connection conn) throws IOException {
+		SquareConquererAddon addon = SquareConquererAddon.addon(u);
+		if (addon == SquareConquererAddon.theGame()) {
+			conn.writeInt(TheGameAddon.THE_GAME);
+		} else {
+			conn.writeInt(TheGameAddon.OTHER_ADDON);
+			conn.writeString(addon.name);
+		}
+		addon.entities().sendUnit(conn, u);
+		conn.writeInt(FIN_ENTITY);
+	}
+	
 	private static void sendBuilding(Building b, Connection conn) throws IOException {
-		conn.writeInt(b.x());
-		conn.writeInt(b.y());
-		conn.writeInt(b.lives());
-		boolean fb = b.isFinishedBuild();
-		conn.writeByte(fb ? 1 : 0);
-		if (!fb) {
-			conn.writeInt(b.remainingBuildTurns());
-			EnumIntMap<ProducableResourceType> res = b.neededResources();
-			if (res == null) {
-				conn.writeInt(0);
-			} else {
-				int[] arr = res.array();
-				conn.writeInt(arr.length);
-				for (int i = 0; i < arr.length; i++) {
-					conn.writeInt(arr[i]);
-				}
-			}
+		SquareConquererAddon addon = SquareConquererAddon.addon(b);
+		if (addon == SquareConquererAddon.theGame()) {
+			conn.writeInt(TheGameAddon.THE_GAME);
+		} else {
+			conn.writeInt(TheGameAddon.OTHER_ADDON);
+			conn.writeString(addon.name);
 		}
-		switch (b) {
-		case StoreBuild sb -> {
-			conn.writeInt(StoreBuild.NUMBER);
-			if (fb) {
-				EnumIntMap<OreResourceType> ores = sb.ores();
-				int[]                       oa   = ores.array();
-				conn.writeInt(oa.length);
-				for (int i = 0; i < oa.length; i++) {
-					conn.writeInt(oa[i]);
-				}
-				EnumIntMap<ProducableResourceType> producable = sb.producable();
-				int[]                              pa         = producable.array();
-				conn.writeInt(pa.length);
-				for (int i = 0; i < pa.length; i++) {
-					conn.writeInt(pa[i]);
-				}
-			}
-		}
-		default -> throw new AssertionError("unknown building type: " + b.getClass());
-		}
+		addon.entities().sendBuild(conn, b);
 		conn.writeInt(FIN_ENTITY);
 	}
 	

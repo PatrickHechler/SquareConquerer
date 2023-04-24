@@ -5,16 +5,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+import de.hechler.patrick.games.squareconqerer.addons.entities.AddonEntities;
+import de.hechler.patrick.games.squareconqerer.addons.entities.TheGameEntities;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCLicense;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCPageBlock;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.world.PageWorld;
+import de.hechler.patrick.games.squareconqerer.world.entity.BuildingImpl;
+import de.hechler.patrick.games.squareconqerer.world.entity.UnitImpl;
 
 public final class TheGameAddon extends SquareConquererAddon {
 	
+	public static final int THE_GAME    = 0xE5664F22;
+	public static final int OTHER_ADDON = 0x2DC4071A;
+	
+	private final TheGameEntities entities = new TheGameEntities();
+	
 	public TheGameAddon() {
-		super(SquareConquererAddon.GAME_ADDON_NAME);
+		super(SquareConquererAddon.GAME_ADDON_NAME, UnitImpl.MY_COUNT_NO_NULL + BuildingImpl.MY_COUNT_NO_NULL);
 	}
 	
 	private SCLicense myLicense;
@@ -71,18 +80,7 @@ public final class TheGameAddon extends SquareConquererAddon {
 				new SCPageBlock.SeperatingBlock(true), //
 				new SCPageBlock.EntryBlock(//
 						new SCPageEntry.TextEntry("General "), //
-						deep != 242 ? // I got a stackoverflow at 243
-						new SCPageEntry.PageEntry("Help",
-								deep > 22
-										? "Help (maybe the " + (100 + 42 + deep - (deep % 100)) + "th Help is more helpful (this is the " + (deep + 1)
-												+ "th Help))"
-										: "Help",
-								() -> generateMyHelpPage(deep + 1))
-						: new SCPageEntry.WorldEntry("Help",  "Help (maybe this help is more helpful)", () -> {
-							PageWorld pw = new PageWorld(generateMyHelpPage(deep + 1));
-							return pw.createWorld();
-						})
-						,
+						selfReference(deep), //
 						new SCPageEntry.TextEntry(": "),
 						new SCPageEntry.LinkEntry("readme", "https://github.com/PatrickHechler/SquareConquerer/blob/master/readme.md")//
 				), //
@@ -94,6 +92,18 @@ public final class TheGameAddon extends SquareConquererAddon {
 						new SCPageEntry.WorldEntry("\tSimple Tutorial", "Simple Tutorial", () -> new PageWorld(myCredits).createWorld())//
 				)//
 		);
+	}
+	
+	private SCPageEntry selfReference(int deep) {
+		if (deep == 242) { // I got a stackoverflow at 243
+			return new SCPageEntry.WorldEntry("Help", "Help (maybe this help is more helpful)", () -> {
+				PageWorld pw = new PageWorld(generateMyHelpPage(deep + 1));
+				return pw.createWorld();
+			});
+		}
+		int    helpful   = 100 + 42 + deep - (deep % 100);
+		String helpTitle = deep > 22 ? "Help (maybe the " + helpful + "th Help is more helpful (this is the " + (deep + 1) + "th Help))" : "Help";
+		return new SCPageEntry.PageEntry("Help", helpTitle, () -> generateMyHelpPage(deep + 1));
 	}
 	
 	private SCPage myCredits;
@@ -116,6 +126,21 @@ public final class TheGameAddon extends SquareConquererAddon {
 			);
 		}
 		return myCredits;
+	}
+	
+	@Override
+	public AddonEntities entities() {
+		return entities;
+	}
+	
+	@Override
+	protected void initOridinalOffset(int offset) {
+		throw new UnsupportedOperationException("the game addon does not support an offset diffferent than zero");
+	}
+	
+	@Override
+	public int oridinalOffset() {
+		return 0;
 	}
 	
 }

@@ -1315,7 +1315,7 @@ public class SquareConquererGUI {
 		if (hoveringButton == this.hoveringButton) {
 			int x = scrollPane.getWidth() - hoveringButton.getWidth();
 			if (scrollPane.getVerticalScrollBar().isShowing()) {
-				y -= scrollPane.getVerticalScrollBar().getWidth();
+				x -= scrollPane.getVerticalScrollBar().getWidth();
 			}
 			hoveringButton.setLocation(x, y);
 		} else {

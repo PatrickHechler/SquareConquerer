@@ -5,9 +5,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.TreeMap;
 
+import de.hechler.patrick.games.squareconqerer.addons.entities.AddonEntities;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCLicense;
 import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
+import de.hechler.patrick.games.squareconqerer.world.entity.Building;
+import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
+import de.hechler.patrick.games.squareconqerer.world.entity.EntityImpl;
+import de.hechler.patrick.games.squareconqerer.world.entity.MyBuild;
+import de.hechler.patrick.games.squareconqerer.world.entity.MyUnit;
+import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 
 public abstract class SquareConquererAddon {
 	
@@ -17,6 +25,8 @@ public abstract class SquareConquererAddon {
 	 * this field stores the unique name of this add-on
 	 */
 	public final String name;
+	private final int   oridinalLength;
+	private int         oridinalOffset;
 	
 	/**
 	 * creates a new {@link SquareConquererAddon} instance with the given
@@ -28,12 +38,28 @@ public abstract class SquareConquererAddon {
 	 * 
 	 * @param name the {@link #name} of the add-on
 	 */
-	public SquareConquererAddon(String name) {
-		this.name = name;
+	public SquareConquererAddon(String name, int oridinalLength) {
+		this.name           = name;
+		this.oridinalLength = oridinalLength;
 	}
 	
-	private static volatile Map<String, SquareConquererAddon> addons;
-	private static volatile TheGameAddon                      theGame;
+	protected void initOridinalOffset(int offset) {
+		if (oridinalOffset != 0) {
+			throw new AssertionError("offset already has a non-zero value");
+		}
+		oridinalOffset = offset;
+	}
+	
+	public int oridinalOffset() {
+		if (oridinalOffset == 0) {
+			throw new AssertionError("offset is not yet initialized");
+		}
+		return oridinalOffset;
+	}
+	
+	private static volatile Map<String, SquareConquererAddon>                  addons;
+	private static volatile TheGameAddon                                       theGame;
+	private static volatile Map<Class<? extends Entity>, SquareConquererAddon> entity;
 	
 	/**
 	 * returns the game add-on
@@ -109,10 +135,65 @@ public abstract class SquareConquererAddon {
 			if (g == null) {
 				throw new AssertionError("I am missing the game addon!");
 			}
+			Map<Class<? extends Entity>, SquareConquererAddon> m   = new HashMap<>();
+			int                                                off = ((SquareConquererAddon) g).oridinalLength;
+			for (SquareConquererAddon addon : new TreeMap<>(a).values()) {
+				if (addon != g) {
+					addon.initOridinalOffset(off);
+					off += addon.oridinalLength;
+				}
+				for (Class<? extends Entity> cls : addon.entities().entityClassses().keySet()) {
+					if (m.put(cls, addon) != null) {
+						throw new AssertionError("multiple addons add the same entity class!");
+					}
+				}
+			}
 			addons  = Collections.unmodifiableMap(a);
 			theGame = g;
 			return a;
 		}
+	}
+	
+	public static SquareConquererAddon addon(Entity e) {
+		Map<Class<? extends Entity>, SquareConquererAddon> es = entity;
+		if (es == null) {
+			addonsMap();
+			es = entity;
+		} // potentially faster check for the game entities
+		if (e instanceof EntityImpl && !(e instanceof MyUnit || e instanceof MyBuild)) {
+			return theGame;
+		}
+		SquareConquererAddon res = es.get(e.getClass());
+		if (res == null) throw new AssertionError("unknown entity class: " + e.getClass());
+		return res;
+	}
+	
+	public static SquareConquererAddon addon(Unit u) {
+		Map<Class<? extends Entity>, SquareConquererAddon> es = entity;
+		if (es == null) {
+			addonsMap();
+			es = entity;
+		} // potentially faster check for the game entities
+		if (u instanceof EntityImpl && !(u instanceof MyUnit)) {
+			return theGame;
+		}
+		SquareConquererAddon res = es.get(u.getClass());
+		if (res == null) throw new AssertionError("unknown entity class: " + u.getClass());
+		return res;
+	}
+	
+	public static SquareConquererAddon addon(Building b) {
+		Map<Class<? extends Entity>, SquareConquererAddon> es = entity;
+		if (es == null) {
+			addonsMap();
+			es = entity;
+		} // potentially faster check for the game entities
+		if (b instanceof EntityImpl && !(b instanceof MyUnit)) {
+			return theGame;
+		}
+		SquareConquererAddon res = es.get(b.getClass());
+		if (res == null) throw new AssertionError("unknown entity class: " + b.getClass());
+		return res;
 	}
 	
 	private static Map<String, SquareConquererAddon> loadAddons() {
@@ -146,5 +227,7 @@ public abstract class SquareConquererAddon {
 	 * @return the credits page of this add-on
 	 */
 	public abstract SCPage credits();
+	
+	public abstract AddonEntities entities();
 	
 }

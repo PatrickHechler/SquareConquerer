@@ -1,10 +1,15 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import java.util.ConcurrentModificationException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
@@ -12,7 +17,33 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
 public sealed interface Unit extends Entity, ImageableObj, Comparable<Unit> permits UnitImpl {
 	
-	static final int COUNT = 2;
+	/**
+	 * this value holds the amount of different unit types plus {@code 1} (for
+	 * <code>null</code>/none)
+	 */
+	static final int COUNT = Intern.calcCount();
+	
+	static final int COUNT_NO_NULL = COUNT - 1;
+	
+	static class Intern {
+		
+		private Intern() {}
+		
+		private static int calcCount() {
+			int         cnt   = 1;
+			Set<String> names = new HashSet<>();
+			for (SquareConquererAddon addon : SquareConquererAddon.addons()) {
+				Map<Class<? extends Entity>, String> cls = addon.entities().entityClassses();
+				for (Entry<Class<? extends Entity>, String> entry : cls.entrySet()) {
+					if (Unit.class.isAssignableFrom(entry.getClass())) continue;
+					if (names.add(entry.getValue())) cnt++;
+				}
+				names.clear();
+			}
+			return cnt;
+		}
+		
+	}
 	
 	void changePos(int newx, int newy, Tile checkcanEnter) throws TurnExecutionException;
 	
@@ -56,13 +87,14 @@ public sealed interface Unit extends Entity, ImageableObj, Comparable<Unit> perm
 	 * <li>the {@link Object#getClass() class} {@link Class#getName() name}</li>
 	 * <li>a unit type specific compare</li>
 	 * </ol>
-	 * 
-	 * <p><b>implNote</b> subclasses only have to implement the unit specific compare.<br>
-	 *           They should do something like:
-	 *           <code>int c = super.compareTo(0); if (c == 0) c = specificCompare((SpecificUnitType) o); return c;</code><br>
-	 *           also note that the non unit type specific compare also compares the
-	 *           {@link Object#getClass() class} {@link Class#getName() names}, so
-	 *           the other unit has the same type if the specific compare is needed
+	 * <p>
+	 * <b>implNote</b> subclasses only have to implement the unit specific
+	 * compare.<br>
+	 * They should do something like:
+	 * <code>int c = super.compareTo(0); if (c == 0) c = specificCompare((SpecificUnitType) o); return c;</code><br>
+	 * also note that the non unit type specific compare also compares the
+	 * {@link Object#getClass() class} {@link Class#getName() names}, so
+	 * the other unit has the same type if the specific compare is needed
 	 */
 	@Override
 	default int compareTo(Unit o) {

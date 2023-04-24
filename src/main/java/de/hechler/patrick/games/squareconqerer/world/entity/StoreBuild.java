@@ -10,6 +10,8 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 public final class StoreBuild extends BuildingImpl {
 	
+	public static final String NAME = "Storage";
+
 	public static final int NUMBER = 0x5A1C58D0;
 	
 	private final EnumIntMap<OreResourceType>        ores       = new EnumIntMap<>(OreResourceType.class);

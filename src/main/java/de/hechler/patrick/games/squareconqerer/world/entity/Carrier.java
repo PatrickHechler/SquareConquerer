@@ -5,6 +5,8 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 public final class Carrier extends UnitImpl {
 	
+	public static final String NAME = "Carrier";
+	
 	public static final int NUMBER = 0x925D9B86;
 	
 	private static final int MAX_LIVES  = 3;

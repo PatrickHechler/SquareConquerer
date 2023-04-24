@@ -1,6 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.world.stuff;
 
 import java.awt.image.BufferedImage;
+import java.net.URL;
 
 public interface ImageableObj {
 	
@@ -13,5 +14,7 @@ public interface ImageableObj {
 	String name();
 	
 	default String cls() { return getClass().getSimpleName(); }
+	
+	default URL url() { return this.getClass().getResource("/img/" + this.cls() + "/" + this.name() + ".png"); }
 	
 }
