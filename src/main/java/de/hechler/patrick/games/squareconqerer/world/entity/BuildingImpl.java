@@ -1,9 +1,9 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
-import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
+import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 

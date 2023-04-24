@@ -3,9 +3,9 @@ package de.hechler.patrick.games.squareconqerer.world.stuff;
 
 import java.io.IOException;
 
-import de.hechler.patrick.games.squareconqerer.Random2;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.objects.Random2;
 import de.hechler.patrick.games.squareconqerer.world.World;
 
 public interface UserPlacer {

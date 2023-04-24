@@ -13,7 +13,7 @@ import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;

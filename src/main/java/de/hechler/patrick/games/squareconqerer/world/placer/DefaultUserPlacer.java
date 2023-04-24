@@ -4,10 +4,10 @@ import java.awt.Point;
 import java.io.IOException;
 import java.util.InputMismatchException;
 
-import de.hechler.patrick.games.squareconqerer.EnumIntMap;
-import de.hechler.patrick.games.squareconqerer.Random2;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.objects.Random2;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;

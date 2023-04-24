@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
+import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;

@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;

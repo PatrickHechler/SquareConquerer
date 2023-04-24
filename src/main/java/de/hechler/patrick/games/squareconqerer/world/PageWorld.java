@@ -13,12 +13,12 @@ import java.util.Iterator;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import de.hechler.patrick.games.squareconqerer.Random2;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPageBlock;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPageBlock.EntryBlock;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPageEntry;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock.EntryBlock;
+import de.hechler.patrick.games.squareconqerer.objects.Random2;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.TileType;

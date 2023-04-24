@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer.addons.records;
+package de.hechler.patrick.games.squareconqerer.addons.pages;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -7,10 +7,10 @@ import java.nio.charset.StandardCharsets;
 
 import de.hechler.patrick.games.squareconqerer.addons.entities.AddonEntities;
 import de.hechler.patrick.games.squareconqerer.addons.entities.TheGameEntities;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCLicense;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPageBlock;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPageEntry;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCLicense;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.world.PageWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.BuildingImpl;
 import de.hechler.patrick.games.squareconqerer.world.entity.UnitImpl;

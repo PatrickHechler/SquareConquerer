@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
-import de.hechler.patrick.games.squareconqerer.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;

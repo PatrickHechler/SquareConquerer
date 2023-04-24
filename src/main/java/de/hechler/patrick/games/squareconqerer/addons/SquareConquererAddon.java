@@ -8,8 +8,8 @@ import java.util.ServiceLoader;
 import java.util.TreeMap;
 
 import de.hechler.patrick.games.squareconqerer.addons.entities.AddonEntities;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCLicense;
-import de.hechler.patrick.games.squareconqerer.addons.records.SCPage;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCLicense;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.EntityImpl;
@@ -17,6 +17,13 @@ import de.hechler.patrick.games.squareconqerer.world.entity.MyBuild;
 import de.hechler.patrick.games.squareconqerer.world.entity.MyUnit;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 
+/**
+ * an addon can be used to add stuff to the base game<br>
+ * for example units and buildings
+ * <p>
+ * every addon has its own {@link #license() license} and
+ * {@link #help() help}/{@link #credits() credits} page and
+ */
 public abstract class SquareConquererAddon {
 	
 	public static final String GAME_ADDON_NAME = "Square Conquerer";

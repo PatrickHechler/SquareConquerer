@@ -5,7 +5,7 @@ module de.hechler.patrick.games.squareconqerer {
 	exports de.hechler.patrick.games.squareconqerer;
 	exports de.hechler.patrick.games.squareconqerer.addons;
 	exports de.hechler.patrick.games.squareconqerer.addons.entities;
-	exports de.hechler.patrick.games.squareconqerer.addons.records;
+	exports de.hechler.patrick.games.squareconqerer.addons.pages;
 	exports de.hechler.patrick.games.squareconqerer.connect;
 	exports de.hechler.patrick.games.squareconqerer.exceptions;
 	exports de.hechler.patrick.games.squareconqerer.exceptions.enums;

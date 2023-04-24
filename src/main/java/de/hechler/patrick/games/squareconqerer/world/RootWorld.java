@@ -14,12 +14,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import de.hechler.patrick.games.squareconqerer.Random2;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
+import de.hechler.patrick.games.squareconqerer.objects.Random2;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;

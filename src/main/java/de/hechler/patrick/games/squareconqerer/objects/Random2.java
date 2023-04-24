@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer;
+package de.hechler.patrick.games.squareconqerer.objects;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.random.RandomGenerator;

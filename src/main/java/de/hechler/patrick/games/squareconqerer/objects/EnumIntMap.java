@@ -1,4 +1,4 @@
-package de.hechler.patrick.games.squareconqerer;
+package de.hechler.patrick.games.squareconqerer.objects;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
