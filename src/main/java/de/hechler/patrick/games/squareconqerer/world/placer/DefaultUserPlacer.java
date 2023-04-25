@@ -2,7 +2,6 @@ package de.hechler.patrick.games.squareconqerer.world.placer;
 
 import java.awt.Point;
 import java.io.IOException;
-import java.util.InputMismatchException;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
@@ -31,7 +30,7 @@ public class DefaultUserPlacer implements UserPlacer {
 	
 	@Override
 	public void writePlacer(Connection conn) throws IOException {
-		int[] arr = entityAmounts.array();
+		int[] arr = this.entityAmounts.array();
 		conn.writeInt(arr.length);
 		for (int i = 0; i < arr.length; i++) {
 			if (arr[i] < 0) throw new IllegalStateException("value is negative");
@@ -44,15 +43,14 @@ public class DefaultUserPlacer implements UserPlacer {
 		int[] arr = dup.entityAmounts.array();
 		conn.readInt(arr.length);
 		for (int i = 0; i < arr.length; i++) {
-			arr[i] = conn.readInt();
-			if (arr[i] < 0) throw new InputMismatchException("value is negative");
+			arr[i] = conn.readPos();
 		}
 		return dup;
 	}
 	
 	@Override
 	public void initilize(World world, User[] usrs, Random2 rnd) {
-		int[] arr = entityAmounts.array();
+		int[] arr = this.entityAmounts.array();
 		int   sum = 0;
 		for (int i = 0; i < arr.length; i++) {
 			if (arr[i] < 0) throw new IllegalStateException("amount is negative: " + arr[i] + " : " + EntityType.of(i));
@@ -81,7 +79,7 @@ public class DefaultUserPlacer implements UserPlacer {
 	}
 	
 	private void initUsr(Random2 rnd, User usr, World world, int x, int y, int size, int unitCount) {
-		int[]   iarr = entityAmounts.array().clone();
+		int[]   iarr = this.entityAmounts.array().clone();
 		Point[] p    = new Point[unitCount];
 		for (int i = 0; unitCount > 0; i++) {
 			int  unit    = rnd.nextInt(unitCount--);
@@ -139,16 +137,16 @@ public class DefaultUserPlacer implements UserPlacer {
 		return false;
 	}
 	
-	public int get(EntityType e) { return entityAmounts.get(e); }
+	public int get(EntityType e) { return this.entityAmounts.get(e); }
 	
-	public void set(EntityType e, int val) { entityAmounts.set(e, val); }
+	public void set(EntityType e, int val) { this.entityAmounts.set(e, val); }
 	
-	public int add(EntityType e, int val) { return entityAmounts.add(e, val); }
+	public int add(EntityType e, int val) { return this.entityAmounts.addBy(e, val); }
 	
-	public int sub(EntityType e, int val) { return entityAmounts.sub(e, val); }
+	public int sub(EntityType e, int val) { return this.entityAmounts.subBy(e, val); }
 	
-	public int inc(EntityType e) { return entityAmounts.inc(e); }
+	public int inc(EntityType e) { return this.entityAmounts.inc(e); }
 	
-	public int dec(EntityType e) { return entityAmounts.dec(e); }
+	public int dec(EntityType e) { return this.entityAmounts.dec(e); }
 	
 }

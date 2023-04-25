@@ -38,9 +38,9 @@ public final class StoreBuild extends BuildingImpl {
 	@Override
 	protected void finishedBuildStore(Resource r, int amount) throws TurnExecutionException {
 		if (r instanceof ProducableResourceType prt) {
-			producable.add(prt, amount);
+			this.producable.addBy(prt, amount);
 		} else if (r instanceof OreResourceType ort) {
-			ores.add(ort, amount);
+			this.ores.addBy(ort, amount);
 		} else {
 			throw new AssertionError("unknown resource type: " + r.getClass());
 		}
@@ -55,13 +55,13 @@ public final class StoreBuild extends BuildingImpl {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		if (res instanceof ProducableResourceType prt) {
-			if (producable.sub(prt, amount) < 0) {
-				producable.add(prt, amount);
+			if (this.producable.subBy(prt, amount) < 0) {
+				this.producable.addBy(prt, amount);
 				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 		} else if (res instanceof OreResourceType ort) {
-			if (ores.sub(ort, amount) < 0) {
-				ores.add(ort, amount);
+			if (this.ores.subBy(ort, amount) < 0) {
+				this.ores.addBy(ort, amount);
 				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 		} else {
@@ -72,18 +72,18 @@ public final class StoreBuild extends BuildingImpl {
 	
 	@Override
 	public StoreBuild copy() {
-		return new StoreBuild(x, y, owner(), lives(), neededResources(), remainingBuildTurns(), ores, producable);
+		return new StoreBuild(super.x, super.y, owner(), lives(), neededResources(), remainingBuildTurns(), this.ores, this.producable);
 	}
 	
 	public EnumIntMap<ProducableResourceType> producable() {
 		EnumIntMap<ProducableResourceType> res = new EnumIntMap<>(ProducableResourceType.class);
-		res.putAll(producable);
+		res.putAll(this.producable);
 		return res;
 	}
 	
 	public EnumIntMap<OreResourceType> ores() {
 		EnumIntMap<OreResourceType> res = new EnumIntMap<>(OreResourceType.class);
-		res.putAll(ores);
+		res.putAll(this.ores);
 		return res;
 	}
 	

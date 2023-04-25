@@ -36,10 +36,10 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	 * @return the current value
 	 */
 	public int get(T e) {
-		if (!cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		if (!this.cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
 		}
-		return arr[e.ordinal()];
+		return this.arr[e.ordinal()];
 	}
 	
 	/**
@@ -49,10 +49,10 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	 * @param val the new value
 	 */
 	public void set(T e, int val) {
-		if (!cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		if (!this.cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
 		}
-		arr[e.ordinal()] = val;
+		this.arr[e.ordinal()] = val;
 	}
 	
 	/**
@@ -63,22 +63,22 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	 * @return the new value
 	 */
 	public int inc(T e) {
-		if (!cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		if (!this.cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
 		}
-		return ++arr[e.ordinal()];
+		return ++this.arr[e.ordinal()];
 	}
 	
-	public int add(T e, int val) {
+	public int addBy(T e, int val) {
 		if (val <= 0) {
 			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
 		}
-		if (!cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		if (!this.cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
 		}
 		int o = e.ordinal();
-		arr[o] += val;
-		return arr[o];
+		this.arr[o] += val;
+		return this.arr[o];
 	}
 	
 	/**
@@ -89,22 +89,22 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	 * @return the new value
 	 */
 	public int dec(T e) {
-		if (!cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		if (!this.cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
 		}
-		return --arr[e.ordinal()];
+		return --this.arr[e.ordinal()];
 	}
 	
-	public int sub(T e, int val) {
+	public int subBy(T e, int val) {
 		if (val <= 0) {
-			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
+			throw new IllegalArgumentException("sub is not greather than zero: sub=" + val);
 		}
-		if (!cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + cls);
+		if (!this.cls.isInstance(e)) {
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
 		}
 		int o = e.ordinal();
-		arr[o] -= val;
-		return arr[o];
+		this.arr[o] -= val;
+		return this.arr[o];
 	}
 	
 	/**
@@ -114,20 +114,20 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	 * @return the backing array
 	 */
 	public int[] array() {
-		return arr;
+		return this.arr;
 	}
 	
 	@Override
 	public int size() {
-		return arr.length;
+		return this.arr.length;
 	}
 	
 	@Override
-	public boolean isEmpty() { return arr.length == 0; }
+	public boolean isEmpty() { return this.arr.length == 0; }
 	
 	@Override
 	public boolean containsKey(Object key) {
-		return cls.isInstance(key);
+		return this.cls.isInstance(key);
 	}
 	
 	@Override
@@ -136,7 +136,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			return false;
 		}
 		int search = ival.intValue();
-		for (int val : arr) {
+		for (int val : this.arr) {
 			if (search == val) {
 				return true;
 			}
@@ -146,17 +146,17 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	
 	@Override
 	public Integer get(Object key) {
-		if (!cls.isInstance(key)) {
+		if (!this.cls.isInstance(key)) {
 			return null;
 		}
-		return Integer.valueOf(arr[((Enum<?>) key).ordinal()]);
+		return Integer.valueOf(this.arr[((Enum<?>) key).ordinal()]);
 	}
 	
 	@Override
 	public Integer put(T key, Integer value) {
 		int     o   = key.ordinal();
-		Integer old = Integer.valueOf(arr[o]);
-		arr[o] = value.intValue();
+		Integer old = Integer.valueOf(this.arr[o]);
+		this.arr[o] = value.intValue();
 		return old;
 	}
 	
@@ -168,10 +168,10 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	@Override
 	public void putAll(Map<? extends T, ? extends Integer> m) {
 		if (m instanceof EnumIntMap<?> eim) {
-			if (cls != eim.cls) {
-				throw new ClassCastException("can not cast from " + eim.cls + " to " + cls);
+			if (this.cls != eim.cls) {
+				throw new ClassCastException("can not cast from " + eim.cls + " to " + this.cls);
 			}
-			System.arraycopy(eim.arr, 0, arr, 0, arr.length);
+			System.arraycopy(eim.arr, 0, this.arr, 0, this.arr.length);
 			return;
 		}
 		for (Entry<? extends T, ?> e : m.entrySet()) {
@@ -188,30 +188,30 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	
 	@Override
 	public Set<T> keySet() { // this is stupid
-		if (keySet == null) {
-			keySet = Set.of(cls.getEnumConstants());
+		if (this.keySet == null) {
+			this.keySet = Set.of(this.cls.getEnumConstants());
 		}
-		return keySet;
+		return this.keySet;
 	}
 	
 	private Collection<Integer> values;
 	
 	@Override
 	public Collection<Integer> values() {
-		if (values == null) {
-			values = new IntArrayList(arr);
+		if (this.values == null) {
+			this.values = new IntArrayList(this.arr);
 		}
-		return values;
+		return this.values;
 	}
 	
 	private Set<Entry<T, Integer>> entrySet;
 	
 	@Override
 	public Set<Entry<T, Integer>> entrySet() {
-		if (entrySet == null) {
-			entrySet = new EnumIntEntrySet();
+		if (this.entrySet == null) {
+			this.entrySet = new EnumIntEntrySet();
 		}
-		return entrySet;
+		return this.entrySet;
 	}
 	
 	private class EnumIntEntrySet implements Set<Entry<T, Integer>> {
@@ -221,18 +221,18 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		@SuppressWarnings("unchecked")
 		private MyEntry entry(int i) {
 			MyEntry res;
-			if (entries == null) {
-				entries    = (WeakReference<MyEntry>[]) new WeakReference<?>[arr.length];
+			if (this.entries == null) {
+				this.entries    = (WeakReference<MyEntry>[]) new WeakReference<?>[EnumIntMap.this.arr.length];
 				res        = new MyEntry(i);
-				entries[i] = new WeakReference<>(res);
-			} else if (entries[i] == null) {
+				this.entries[i] = new WeakReference<>(res);
+			} else if (this.entries[i] == null) {
 				res        = new MyEntry(i);
-				entries[i] = new WeakReference<>(res);
+				this.entries[i] = new WeakReference<>(res);
 			} else {
-				res = entries[i].get();
+				res = this.entries[i].get();
 				if (res == null) {
 					res        = new MyEntry(i);
-					entries[i] = new WeakReference<>(res);
+					this.entries[i] = new WeakReference<>(res);
 				}
 			}
 			return res;
@@ -247,78 +247,78 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			
 			@Override
 			public T getKey() {
-				if (key == null) {
-					key = cls.getEnumConstants()[index];
+				if (this.key == null) {
+					this.key = EnumIntMap.this.cls.getEnumConstants()[this.index];
 				}
-				return key;
+				return this.key;
 			}
 			
 			@Override
-			public Integer getValue() { return Integer.valueOf(arr[index]); }
+			public Integer getValue() { return Integer.valueOf(EnumIntMap.this.arr[this.index]); }
 			
 			@Override
 			public Integer setValue(Integer value) {
-				Integer old = Integer.valueOf(arr[index]);
-				arr[index] = value.intValue();
+				Integer old = Integer.valueOf(EnumIntMap.this.arr[this.index]);
+				EnumIntMap.this.arr[this.index] = value.intValue();
 				return old;
 			}
 			
 			private int ival() {
-				return arr[index];
+				return EnumIntMap.this.arr[this.index];
 			}
 			
 			private Class<T> cls() {
-				return cls;
+				return EnumIntMap.this.cls;
 			}
 			
 			@Override
 			public int hashCode() {
-				return getKey().hashCode() ^ Integer.hashCode(arr[index]);
+				return getKey().hashCode() ^ Integer.hashCode(EnumIntMap.this.arr[this.index]);
 			}
 			
 			@Override
 			public boolean equals(Object obj) {
 				if (obj instanceof EnumIntMap<?>.EnumIntEntrySet.MyEntry me) {
-					return me.index == index && me.cls() == cls && me.ival() == arr[index];
+					return me.index == this.index && me.cls() == EnumIntMap.this.cls && me.ival() == EnumIntMap.this.arr[this.index];
 				}
 				if (!(obj instanceof Entry<?, ?> e2)) {
 					return false;
 				}
 				Object ok = e2.getKey();
-				if (!cls.isInstance(ok) || ((Enum<?>) ok).ordinal() != index) {
+				if (!EnumIntMap.this.cls.isInstance(ok) || ((Enum<?>) ok).ordinal() != this.index) {
 					return false;
 				}
 				Object ov = e2.getValue();
-				return ov instanceof Integer val && val.intValue() == arr[index];
+				return ov instanceof Integer val && val.intValue() == EnumIntMap.this.arr[this.index];
 			}
 			
 		}
 		
 		@Override
 		public int size() {
-			return arr.length;
+			return EnumIntMap.this.arr.length;
 		}
 		
 		@Override
-		public boolean isEmpty() { return arr.length == 0; }
+		public boolean isEmpty() { return EnumIntMap.this.arr.length == 0; }
 		
 		@Override
 		public boolean contains(Object o) {
 			if (o instanceof EnumIntMap<?>.EnumIntEntrySet.MyEntry me) {
-				return cls == me.cls() && arr[me.index] == me.ival();
+				return EnumIntMap.this.cls == me.cls() && EnumIntMap.this.arr[me.index] == me.ival();
 			}
 			if (!(o instanceof Entry<?, ?> e)) {
 				return false;
 			}
 			Object obj = e.getKey();
-			if (!cls.isInstance(obj)) {
+			if (!EnumIntMap.this.cls.isInstance(obj)) {
 				return false;
 			}
 			Object val = e.getValue();
 			if (!(val instanceof Integer ival)) {
 				return false;
 			}
-			return arr[((Enum<?>) obj).ordinal()] == ival.intValue();
+			return EnumIntMap.this.arr[((Enum<?>) obj).ordinal()] == ival.intValue();
 		}
 		
 		@Override
@@ -329,15 +329,15 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 				
 				@Override
 				public boolean hasNext() {
-					return index < arr.length;
+					return this.index < EnumIntMap.this.arr.length;
 				}
 				
 				@Override
 				public Entry<T, Integer> next() {
-					if (index >= arr.length) {
+					if (this.index >= EnumIntMap.this.arr.length) {
 						throw new NoSuchElementException("no more elements");
 					}
-					return entry(index++);
+					return entry(this.index++);
 				}
 				
 			};
@@ -345,7 +345,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		
 		@Override
 		public Object[] toArray() {
-			Object[] obj = new Object[arr.length];
+			Object[] obj = new Object[EnumIntMap.this.arr.length];
 			for (int i = 0; i < obj.length; i++) {
 				obj[i] = entry(i);
 			}
@@ -357,10 +357,10 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		public <A> A[] toArray(A[] a) {
 			Class<?> ct = a.getClass().componentType();
 			MyEntry.class.asSubclass(ct);
-			if (a.length < arr.length) {
-				a = (A[]) Array.newInstance(a.getClass().componentType(), arr.length);
-			} else if (a.length > arr.length) {
-				a[arr.length] = null;
+			if (a.length < EnumIntMap.this.arr.length) {
+				a = (A[]) Array.newInstance(a.getClass().componentType(), EnumIntMap.this.arr.length);
+			} else if (a.length > EnumIntMap.this.arr.length) {
+				a[EnumIntMap.this.arr.length] = null;
 			}
 			for (int i = 0; i < a.length; i++) {
 				a[i] = (A) entry(i);
@@ -370,7 +370,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		
 		@Override
 		public <A> A[] toArray(IntFunction<A[]> generator) {
-			return toArray(generator.apply(arr.length));
+			return toArray(generator.apply(EnumIntMap.this.arr.length));
 		}
 		
 		@Override
@@ -386,17 +386,17 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		@Override
 		public boolean containsAll(Collection<?> c) {
 			for (Object obj : c) {
-				if (obj instanceof EnumIntMap<?>.EnumIntEntrySet.MyEntry e) {
-					if (e.cls() != cls) return false;
-					if (e.ival() != arr[e.index]) return false;
+				if (obj instanceof EnumIntMap<?>.EnumIntEntrySet.MyEntry me) {
+					if (me.cls() != EnumIntMap.this.cls) return false;
+					if (me.ival() != EnumIntMap.this.arr[me.index]) return false;
 				} else if (!(obj instanceof Entry<?, ?> e)) {
 					return false;
 				} else {
 					Object key = e.getKey();
-					if (!cls.isInstance(key)) return false;
+					if (!EnumIntMap.this.cls.isInstance(key)) return false;
 					Object val = e.getValue();
 					if (!(val instanceof Integer ival)) return false;
-					if (arr[((Enum<?>)key).ordinal()] != ival.intValue()) return false;
+					if (EnumIntMap.this.arr[((Enum<?>)key).ordinal()] != ival.intValue()) return false;
 				}
 			}
 			return true;
@@ -423,56 +423,56 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		}
 		
 		private Class<T> cls() {
-			return cls;
+			return EnumIntMap.this.cls;
 		}
 		
 		private int[] arr() {
-			return arr;
+			return EnumIntMap.this.arr;
 		}
 		
 		@Override
 		public int hashCode() { // I know that zero is a valid hash
-			if (hash != 0) return hash;
+			if (EnumIntMap.this.hash != 0) return EnumIntMap.this.hash;
 			int sum  = 0;
 			T[] vals = null;
-			for (int i = 0; i < arr.length; i++) {
-				if (entries[i] != null) {
-					EnumIntMap<T>.EnumIntEntrySet.MyEntry e = entries[i].get();
+			for (int i = 0; i < EnumIntMap.this.arr.length; i++) {
+				if (this.entries[i] != null) {
+					EnumIntMap<T>.EnumIntEntrySet.MyEntry e = this.entries[i].get();
 					if (e != null) {
 						sum += e.hashCode();
 						continue;
 					}
 				}
 				if (vals == null) {
-					vals = cls.getEnumConstants();
+					vals = EnumIntMap.this.cls.getEnumConstants();
 				}
-				sum += vals[i].hashCode() ^ Integer.hashCode(arr[i]);
+				sum += vals[i].hashCode() ^ Integer.hashCode(EnumIntMap.this.arr[i]);
 			}
-			hash = sum;
+			EnumIntMap.this.hash = sum;
 			return sum;
 		}
 		
 		@Override
 		public boolean equals(Object obj) {
 			if (obj instanceof EnumIntMap<?>.EnumIntEntrySet s) {
-				if (cls != s.cls()) return false;
-				return Arrays.equals(arr, s.arr());
+				if (EnumIntMap.this.cls != s.cls()) return false;
+				return Arrays.equals(EnumIntMap.this.arr, s.arr());
 			}
 			if (!(obj instanceof Set<?> s)) return false;
-			if (s.size() != arr.length) return false;
+			if (s.size() != EnumIntMap.this.arr.length) return false;
 			for (Object o : s) {
 				if (!(o instanceof Entry<?, ?> e)) return false;
 				if (o instanceof EnumIntMap<?>.EnumIntEntrySet.MyEntry me) {
-					if (me.cls() != cls) return false;
-					if (arr[me.index] != me.ival()) return false;
+					if (me.cls() != EnumIntMap.this.cls) return false;
+					if (EnumIntMap.this.arr[me.index] != me.ival()) return false;
 					continue;
 				}
 				Object k = e.getKey();
 				Object v = e.getValue();
 				if (k == null || v == null) return false;
 				if (v.getClass() != Integer.class) return false;
-				if (!cls.isInstance(k)) return false;
-				if (arr[((Enum<?>) k).ordinal()] != ((Integer) v).intValue()) return false;
+				if (!EnumIntMap.this.cls.isInstance(k)) return false;
+				if (EnumIntMap.this.arr[((Enum<?>) k).ordinal()] != ((Integer) v).intValue()) return false;
 			} // false true result if the set allows multiple times the same entry or gets
 				// modified
 			return true;
@@ -481,7 +481,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	}
 	
 	public EnumIntMap<T> copy() {
-		return new EnumIntMap<>(cls, arr.clone());
+		return new EnumIntMap<>(this.cls, this.arr.clone());
 	}
 	
 	private int hash;
@@ -495,35 +495,35 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		// :: possible, because the maps hash code is effectively defined as the entry
 		// sets hash code
 		// otherwise calculate the value
-		if (hash != 0) return hash;
-		if (entrySet != null) {
-			return entrySet.hashCode();
+		if (this.hash != 0) return this.hash;
+		if (this.entrySet != null) {
+			return this.entrySet.hashCode();
 		}
 		int sum  = 0;
-		T[] vals = cls.getEnumConstants();
-		for (int i = 0; i < arr.length; i++) {
-			sum += vals[i].hashCode() ^ Integer.hashCode(arr[i]);
+		T[] vals = this.cls.getEnumConstants();
+		for (int i = 0; i < this.arr.length; i++) {
+			sum += vals[i].hashCode() ^ Integer.hashCode(this.arr[i]);
 		}
-		hash = sum;
+		this.hash = sum;
 		return sum;
 	}
 	
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof EnumIntMap<?> eim) {
-			if (cls != eim.cls) return false;
-			return Arrays.equals(arr, eim.arr);
+			if (this.cls != eim.cls) return false;
+			return Arrays.equals(this.arr, eim.arr);
 		}
 		if (!(obj instanceof Map<?, ?> m)) return false;
-		if (m.size() != arr.length) return false;
-		if (entrySet != null) {
-			return entrySet.equals(m.entrySet());
+		if (m.size() != this.arr.length) return false;
+		if (this.entrySet != null) {
+			return this.entrySet.equals(m.entrySet());
 		}
-		T[] vals = cls.getEnumConstants();
+		T[] vals = this.cls.getEnumConstants();
 		for (int i = 0; i < vals.length; i++) {
 			Object val = m.get(vals[i]);
 			if (!(val instanceof Integer ival)) return false;
-			if (arr[i] != ival.intValue()) return false;
+			if (this.arr[i] != ival.intValue()) return false;
 		}
 		return true;
 	}

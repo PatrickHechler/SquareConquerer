@@ -114,8 +114,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	public static void fillRnd(Connection conn, byte[] arr) throws IOException {
 		if (arr.length != 16) throw new AssertionError("the given array has an inavlid size");
 		conn.blocked(() -> {
-			conn.writeInt(REQ_RND);
-			conn.readInt(GIV_RND);
+			conn.writeReadInt(REQ_RND, GIV_RND);
 			conn.readArr(arr);
 		});
 	}
@@ -329,8 +328,8 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	}
 	
 	private static long val(byte[] s, int i) {
-		return s[i] & 0xFF | ((s[i + 1] & 0xFFL) << 8) | ((s[i + 2] & 0xFFL) << 16) | ((s[i + 3] & 0xFFL) << 24) | ((s[i + 4] & 0xFFL) << 32) | ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48)
-			| ((s[i + 7] & 0xFFL) << 56);
+		return s[i] & 0xFF | ((s[i + 1] & 0xFFL) << 8) | ((s[i + 2] & 0xFFL) << 16) | ((s[i + 3] & 0xFFL) << 24) | ((s[i + 4] & 0xFFL) << 32)
+			| ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48) | ((s[i + 7] & 0xFFL) << 56);
 	}
 	
 	public synchronized boolean running() {
@@ -344,8 +343,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	
 	public synchronized void validateGame(Connection conn) throws IOException {
 		if (!conn.isBlocking()) throw new IllegalStateException("the connection has to be in block state");
-		conn.writeInt(START_VAL_GAME);
-		conn.readInt(SUB0_VAL_GAME);
+		conn.writeReadInt(START_VAL_GAME, SUB0_VAL_GAME);
 		saveEverything(conn, false);
 		conn.writeInt(FIN_VAL_GAME);
 		conn.readInt(SUB1_VAL_GAME);
@@ -516,7 +514,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		private void executeNTL() {
-			for (Runnable r : nextTurnListeners) {
+			for (Runnable r : this.nextTurnListeners) {
 				r.run();
 			}
 		}
@@ -529,24 +527,24 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		
 		private boolean fillOnce() {
 			boolean unfilledTile = false;
-			for (int x = 0; x < tiles.length; x++) {
-				for (int y = 0; y < tiles[x].length; y++) {
-					if (tiles[x][y] != null && tiles[x][y].type != TileType.NOT_EXPLORED) {
+			for (int x = 0; x < this.tiles.length; x++) {
+				for (int y = 0; y < this.tiles[x].length; y++) {
+					if (this.tiles[x][y] != null && this.tiles[x][y].type != TileType.NOT_EXPLORED) {
 						continue;
 					}
 					Tile xDown = null;
 					Tile yDown = null;
 					Tile xUp   = null;
 					Tile yUp   = null;
-					if (x > 0) { xDown = tiles[x - 1][y]; }
-					if (y > 0) { yDown = tiles[x][y - 1]; }
-					if (x < tiles.length - 1) { xUp = tiles[x + 1][y]; }
-					if (y < tiles[x].length - 1) { yUp = tiles[x][y + 1]; }
-					if (xDown == null && yDown == null && xUp == null && yUp == null) {
+					if (x > 0) { xDown = this.tiles[x - 1][y]; }
+					if (y > 0) { yDown = this.tiles[x][y - 1]; }
+					if (x < this.tiles.length - 1) { xUp = this.tiles[x + 1][y]; }
+					if (y < this.tiles[x].length - 1) { yUp = this.tiles[x][y + 1]; }
+					if (xDown != null || yDown != null || xUp != null || yUp != null) {
+						this.tiles[x][y] = tile(xDown, xUp, yDown, yUp);
+					} else {
 						unfilledTile = true;
-						continue;
 					}
-					tiles[x][y] = tile(xDown, xUp, yDown, yUp);
 				}
 			}
 			return unfilledTile;
@@ -568,7 +566,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			int posGold = (gold * 4) + 1;
 			int posIron = (iron * 3) + 2;
 			int posCoal = (coal * 5) + 1;
-			int rndVal  = rnd.nextInt(posNone + posGold + posIron + posCoal);
+			int rndVal  = this.rnd.nextInt(posNone + posGold + posIron + posCoal);
 			
 			OreResourceType ore = null;
 			if (rndVal >= posNone) rndVal -= posNone;
@@ -602,7 +600,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				int hill    = hill(xDown) + hill(xUp) + hill(yDown) + hill(yUp);
 				int posHill = (mountain * 4) + (hill * 2) + 1;
 				int posFlat = (flat * 2) + 1;
-				int rndVal1 = rnd.nextInt(posHill + posFlat);
+				int rndVal1 = this.rnd.nextInt(posHill + posFlat);
 				if (rndVal1 < posHill) {
 					type = type.addHill(true);
 				}
@@ -610,7 +608,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				if (land == 0) {
 					int posOcean  = ocean * 2 + 1;
 					int posNormal = Math.max((water - ocean) * 2 + 1, 1);
-					int rndVal1   = rnd.nextInt(posOcean + posNormal);
+					int rndVal1   = this.rnd.nextInt(posOcean + posNormal);
 					if (rndVal1 < posOcean) {
 						type = TileType.WATER_DEEP;
 					}
@@ -632,7 +630,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			int      posGrass    = ocean == 0 ? (grass * 2) + 1 : 0;
 			int      posForest   = ocean == 0 ? (forest * 2) + 1 : 0;
 			int      posSwamp    = ocean == 0 ? (swamp * 2) + 1 : 0;
-			int      rndVal0     = rnd.nextInt(posWater + posMountain + posSand + posGrass + posForest + posSwamp);
+			int      rndVal0     = this.rnd.nextInt(posWater + posMountain + posSand + posGrass + posForest + posSwamp);
 			TileType type        = null;
 			if (rndVal0 >= posWater) rndVal0 -= posWater;
 			else type = TileType.WATER_NORMAL;
@@ -663,37 +661,37 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		// @formatter:on
 		
 		private void placeSomePoints() {
-			for (int x = 0; x < tiles.length; x += 8) {
-				for (int y = x % 16 == 0 ? 0 : 4; y < tiles[x].length; y += 8) {
-					if ((tiles[x][y] != null && tiles[x][y].type != TileType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
-																							// tiles
-						|| (x > 0 && (tiles[x - 1][y] != null && tiles[x - 1][y].type != TileType.NOT_EXPLORED))
-						|| (y > 0 && (tiles[x][y - 1] != null && tiles[x][y - 1].type != TileType.NOT_EXPLORED))
-						|| (x + 1 < tiles.length && (tiles[x + 1][y] != null && tiles[x + 1][y].type != TileType.NOT_EXPLORED))
-						|| (y + 1 < tiles[x].length && (tiles[x][y + 1] != null && tiles[x][y + 1].type != TileType.NOT_EXPLORED))) {
+			for (int x = 0; x < this.tiles.length; x += 8) {
+				for (int y = x % 16 == 0 ? 0 : 4; y < this.tiles[x].length; y += 8) {
+					if ((this.tiles[x][y] != null && this.tiles[x][y].type != TileType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
+						// tiles
+						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].type != TileType.NOT_EXPLORED))
+						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].type != TileType.NOT_EXPLORED))
+						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].type != TileType.NOT_EXPLORED))
+						|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].type != TileType.NOT_EXPLORED))) {
 						continue;
 					}
-					int             rndVal = rnd.nextInt(TYPES.length << 1);
+					int             rndVal = this.rnd.nextInt(TYPES.length << 1);
 					TileType        t      = rndVal >= TYPES.length ? TileType.WATER_DEEP : TYPES[rndVal];
 					OreResourceType r      = OreResourceType.NONE;
-					if ((rnd.nextInt() & resourceMask) == 0) {
-						r = RES[rnd.nextInt(RES.length)];
+					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
+						r = RES[this.rnd.nextInt(RES.length)];
 					}
-					tiles[x][y] = new Tile(t, r, true);
+					this.tiles[x][y] = new Tile(t, r, true);
 				}
 			}
 		}
 		
 		public void fillTotallyRandom() {
-			for (Tile[] ts : tiles) {
+			for (Tile[] ts : this.tiles) {
 				for (int i = 0; i < ts.length; i++) {
 					if (ts[i] != null && ts[i].type != TileType.NOT_EXPLORED) {
 						continue;
 					}
-					TileType        t = TYPES[rnd.nextInt(TYPES.length)]; // skip not explored
+					TileType        t = TYPES[this.rnd.nextInt(TYPES.length)]; // skip not explored
 					OreResourceType r = OreResourceType.NONE;
-					if ((rnd.nextInt() & resourceMask) == 0) {
-						r = RES[rnd.nextInt(RES.length)];
+					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
+						r = RES[this.rnd.nextInt(RES.length)];
 					}
 					ts[i] = new Tile(t, r, true);
 				}
@@ -707,32 +705,32 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		
 		@Override
 		public RootUser user() {
-			return root;
+			return this.root;
 		}
 		
 		@Override
 		public int xlen() {
-			return tiles.length;
+			return this.tiles.length;
 		}
 		
 		@Override
 		public int ylen() {
-			return tiles[0].length;
+			return this.tiles[0].length;
 		}
 		
 		@Override
 		public Tile tile(int x, int y) {
-			if (tiles[x][y] == null) {
-				tiles[x][y] = new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE, true);
+			if (this.tiles[x][y] == null) {
+				this.tiles[x][y] = new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE, true);
 			}
-			return tiles[x][y];
+			return this.tiles[x][y];
 		}
 		
 		/**
 		 * returns the tile at the given position
 		 * <p>
-		 * the difference between {@link #tile(int, int)} and {@link #get(int, int)} is, that this method returns <code>null</code>, if the tile is not set, while {@link #tile(int, int)} creates a new
-		 * non explored tile without resource in this case
+		 * the difference between {@link #tile(int, int)} and {@link #get(int, int)} is, that this method returns <code>null</code>, if the tile is not set, while
+		 * {@link #tile(int, int)} creates a new non explored tile without resource in this case
 		 * 
 		 * @param x the x coordinate
 		 * @param y the y coordinate
@@ -740,23 +738,23 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @return
 		 */
 		public Tile get(int x, int y) {
-			return tiles[x][y];
+			return this.tiles[x][y];
 		}
 		
 		public void set(int x, int y, TileType t) {
-			if (tiles[x][y] == null) {
-				tiles[x][y] = new Tile(t, OreResourceType.NONE, true);
+			if (this.tiles[x][y] == null) {
+				this.tiles[x][y] = new Tile(t, OreResourceType.NONE, true);
 			} else {
-				tiles[x][y] = new Tile(t, tiles[x][y].resource, true);
+				this.tiles[x][y] = new Tile(t, this.tiles[x][y].resource, true);
 			}
 			executeNTL();
 		}
 		
 		public void set(int x, int y, OreResourceType r) {
-			if (tiles[x][y] == null) {
+			if (this.tiles[x][y] == null) {
 				throw new NullPointerException("the tile does not already exist");
 			} else {
-				tiles[x][y] = new Tile(tiles[x][y].type, r, true);
+				this.tiles[x][y] = new Tile(this.tiles[x][y].type, r, true);
 			}
 			executeNTL();
 		}
@@ -765,17 +763,17 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			if (t == null) { throw new NullPointerException("type is null"); }
 			if (t == TileType.NOT_EXPLORED) { throw new NullPointerException("NOT_EXPLORED is not allowed"); }
 			if (r == null) { throw new NullPointerException("resource is null"); }
-			tiles[x][y] = new Tile(t, r, true);
+			this.tiles[x][y] = new Tile(t, r, true);
 			executeNTL();
 		}
 		
 		public void set(int x, int y, Tile t) {
-			tiles[x][y] = t.copy();
+			this.tiles[x][y] = t.copy();
 			executeNTL();
 		}
 		
 		public RootWorld create() throws IllegalStateException, NullPointerException {
-			return create(root, this.tiles);
+			return create(this.root, this.tiles);
 		}
 		
 		public static RootWorld create(RootUser root, Tile[][] tiles) throws IllegalStateException, NullPointerException {
@@ -783,9 +781,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		public boolean buildable() {
-			for (int x = 0; x < tiles.length; x++) {
-				Tile[] ts = tiles[x].clone();
-				if (ts.length != tiles[0].length) { return false; }
+			for (int x = 0; x < this.tiles.length; x++) {
+				Tile[] ts = this.tiles[x].clone();
+				if (ts.length != this.tiles[0].length) { return false; }
 				for (int y = 0; y < ts.length; y++) {
 					Tile t = ts[y];
 					if (t == null) { return false; }
@@ -797,15 +795,17 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		public static RootWorld create(RootUser root, Tile[][] tiles, UserPlacer placer) throws IllegalStateException, NullPointerException {
-			Tile[][] copy = tiles.clone();
+			Tile[][] copy = new Tile[tiles.length][tiles[0].length];
 			for (int x = 0; x < copy.length; x++) {
-				Tile[] ts = copy[x].clone();
-				if (ts.length != copy[0].length) { throw new IllegalStateException("the world has the have an rectangular form!"); }
+				Tile[] ts  = copy[x];
+				Tile[] ots = tiles[x];
+				if (ts.length != ots.length) { throw new IllegalStateException("the world has the have an rectangular form!"); }
 				for (int y = 0; y < ts.length; y++) {
-					Tile t = ts[y].copy();
+					Tile t = ots[y].copy();
 					if (t == null) { throw new NullPointerException("no tile is allowed to be null"); }
 					if (t.type == null || t.resource == null) { throw new NullPointerException("a tile has a null type/resource"); }
 					if (t.type == TileType.NOT_EXPLORED) { throw new IllegalStateException("a tile with type NOT_EXPLORED was found"); }
+					ts[y] = t;
 				}
 			}
 			return new RootWorld(root, copy, placer);
@@ -816,22 +816,23 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		public static Builder createBuilder(RootUser root, Tile[][] tiles, Random2 rnd) {
-			Tile[][] copy = tiles.clone();
-			for (int x = 0; x < copy.length; x++) {
-				if (copy[x].length != copy[0].length) { throw new IllegalStateException("the world has the have an rectangular form!"); } // only enforce an rectangular form for the builder
+			Tile[][] copy = tiles.clone(); // do clone, so the rectangular form can not be destroyed
+			int      ylen = copy[0].length;
+			for (int x = 0; x < copy.length; x++) { // only enforce the rectangular form, the builder is allowed to contain invalid tiles
+				if (copy[x].length != ylen) throw new IllegalStateException("the world has the have an rectangular form!");
 			}
 			return new Builder(root, tiles, rnd);
 		}
 		
 		@Override
-		public void addNextTurnListener(Runnable listener) { nextTurnListeners.add(listener); }
+		public void addNextTurnListener(Runnable listener) { this.nextTurnListeners.add(listener); }
 		
 		@Override
-		public void removeNextTurnListener(Runnable listener) { nextTurnListeners.remove(listener); }
+		public void removeNextTurnListener(Runnable listener) { this.nextTurnListeners.remove(listener); }
 		
 		@Override
 		public Map<User, List<Entity>> entities() {
-			return RootWorld.entities(tiles);
+			return RootWorld.entities(this.tiles);
 		}
 		
 		@Override

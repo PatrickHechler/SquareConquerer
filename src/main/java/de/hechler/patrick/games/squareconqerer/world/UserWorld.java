@@ -50,44 +50,44 @@ public final class UserWorld implements World {
 		if (caller != RootWorld.class) {
 			throw new IllegalCallerException("this method is intern");
 		}
-		return cach;
+		return this.cach;
 	}
 	
 	@Override
 	public User user() {
-		usr.checkModCnt(modCnt);
-		return usr;
+		this.usr.checkModCnt(this.modCnt);
+		return this.usr;
 	}
 	
 	@Override
 	public int xlen() {
-		usr.checkModCnt(modCnt);
-		return world.xlen();
+		this.usr.checkModCnt(this.modCnt);
+		return this.world.xlen();
 	}
 	
 	@Override
 	public int ylen() {
-		usr.checkModCnt(modCnt);
-		return world.ylen();
+		this.usr.checkModCnt(this.modCnt);
+		return this.world.ylen();
 	}
 	
 	@Override
 	public Tile tile(int x, int y) {
-		usr.checkModCnt(modCnt);
-		if (entities == null) {
+		this.usr.checkModCnt(this.modCnt);
+		if (this.entities == null) {
 			update();
 		}
-		if (visible != null && visible[x][y]) {
-			return cach[x][y];
+		if (this.visible != null && this.visible[x][y]) {
+			return this.cach[x][y];
 		} else {
-			Tile t = cach != null && cach[x][y] != null ? cach[x][y] : new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE, false);
+			Tile t = this.cach != null && this.cach[x][y] != null ? this.cach[x][y] : new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE, false);
 			addMyEntities(x, y, t);
 			return t;
 		}
 	}
 	
 	private void addMyEntities(int x, int y, Tile t) throws AssertionError {
-		List<Entity> list = entities.get(usr);
+		List<Entity> list = this.entities.get(this.usr);
 		if (list != null) {
 			Unit     u = null;
 			Building b = null;
@@ -108,36 +108,36 @@ public final class UserWorld implements World {
 	}
 	
 	@Override
-	public void addNextTurnListener(Runnable listener) { world.addNextTurnListener(listener); }
+	public void addNextTurnListener(Runnable listener) { this.world.addNextTurnListener(listener); }
 	
 	@Override
-	public void removeNextTurnListener(Runnable listener) { world.removeNextTurnListener(listener); }
+	public void removeNextTurnListener(Runnable listener) { this.world.removeNextTurnListener(listener); }
 	
 	@Override
 	public Map<User, List<Entity>> entities() {
-		if (entities == null) {
+		if (this.entities == null) {
 			update();
 		}
-		return entities;
+		return this.entities;
 	}
 	
 	private void update() {
 		Map<User, List<Entity>> es   = new HashMap<>();
-		Map<User, List<Entity>> all  = world.entities();
-		List<Entity>            list = all.get(usr);
+		Map<User, List<Entity>> all  = this.world.entities();
+		List<Entity>            list = all.get(this.usr);
 		if (list == null) {
-			entities     = Collections.emptyMap();
+			this.entities     = Collections.emptyMap();
 			this.visible = null;
 			return;
 		}
-		es.put(usr, list);
-		if (cach == null) {
-			cach = new Tile[world.xlen()][world.ylen()];
+		es.put(this.usr, list);
+		if (this.cach == null) {
+			this.cach = new Tile[this.world.xlen()][this.world.ylen()];
 		}
-		if (visible == null) {
-			visible = new boolean[world.xlen()][world.ylen()];
+		if (this.visible == null) {
+			this.visible = new boolean[this.world.xlen()][this.world.ylen()];
 		} else {
-			for (boolean[] v : visible) { Arrays.fill(v, false); }
+			for (boolean[] v : this.visible) { Arrays.fill(v, false); }
 		}
 		for (Entity e : list) {
 			int v = e.viewRange();
@@ -169,14 +169,14 @@ public final class UserWorld implements World {
 	}
 	
 	private void cach(Map<User, List<Entity>> es, int x, int y, int x0, int y0) {
-		if (x0 < 0 || y0 < 0 || x0 >= visible.length || y0 >= visible[x0].length || visible[x0][y0]) {
+		if (x0 < 0 || y0 < 0 || x0 >= this.visible.length || y0 >= this.visible[x0].length || this.visible[x0][y0]) {
 			return;
 		}
-		visible[x0][y0] = true;
-		Tile t = world.tile(x0, y0);
+		this.visible[x0][y0] = true;
+		Tile t = this.world.tile(x0, y0);
 		add(es, t.unit());
 		add(es, t.building());
-		cach[x][y] = t.copy();
+		this.cach[x][y] = t.copy();
 	}
 	
 	private static void add(Map<User, List<Entity>> result, Entity e) {
@@ -188,9 +188,9 @@ public final class UserWorld implements World {
 		}
 	}
 	
-	private void nextTurn() { entities = null; }
+	private void nextTurn() { this.entities = null; }
 	
 	@Override
-	public void finish(Turn t) { world.finish(t); }
+	public void finish(Turn t) { this.world.finish(t); }
 	
 }

@@ -21,7 +21,6 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 	
 	private final Map<Class<? extends Entity>, String> entitiCls;
 	
-	
 	public AbstractAddonEntities(Map<Class<? extends Entity>, String> entitiCls) {
 		this.entitiCls = Collections.unmodifiableMap(new HashMap<>(entitiCls));
 	}
@@ -43,14 +42,11 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 	
 	@Override
 	public Unit recieveUnit(Connection conn, User usr) throws IOException, StreamCorruptedException {
-		int x = conn.readInt();
-		int y = conn.readInt();
-		if (x < 0 || y < 0) throw new StreamCorruptedException("negative coordinates");
-		int lives = conn.readInt();
-		if (lives < 0) throw new StreamCorruptedException("negative live count");
-		int ca = conn.readInt();
-		if (ca < 0) throw new StreamCorruptedException("negative carry amount");
-		Resource res = null;
+		int      x     = conn.readPos();
+		int      y     = conn.readPos();
+		int      lives = conn.readStrictPos();
+		int      ca    = conn.readPos();
+		Resource res   = null;
 		if (ca != 0) {
 			res = RemoteWorld.readRes(conn);
 		}
@@ -85,32 +81,29 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 	
 	@Override
 	public Building recieveBuild(Connection conn, User usr) throws IOException, StreamCorruptedException {
-		int x     = conn.readInt();
-		int y     = conn.readInt();
-		int lives = conn.readInt();
-		if (x < 0 || y < 0 || lives < 0) throw new StreamCorruptedException("negative amount");
-		int                                remTurns = 0;
-		EnumIntMap<ProducableResourceType> res      = null;
-		boolean fb = conn.readByte(0, 1) != 0;
+		int                                x             = conn.readPos();
+		int                                y             = conn.readPos();
+		int                                lives         = conn.readStrictPos();
+		int                                remBuildTurns = 0;
+		EnumIntMap<ProducableResourceType> res           = null;
+		boolean                            fb            = conn.readByte(0, 1) != 0;
 		if (fb) {
-			remTurns = conn.readInt();
-			if (remTurns < 0) throw new StreamCorruptedException("negative amount");
+			remBuildTurns = conn.readPos();
 			if (conn.readInt(0, ProducableResourceType.count()) != 0) {
 				res = new EnumIntMap<>(ProducableResourceType.class);
 				int[] arr = res.array();
 				for (int i = 0; i < arr.length; i++) {
-					arr[i] = conn.readInt();
-					if (arr[i] < 0) throw new StreamCorruptedException("negative amount");
+					arr[i] = conn.readPos();
 				}
 			}
 		}
-		return finishRecieveBuild(conn, usr, x, y, lives, fb, remTurns, res);
+		return finishRecieveBuild(conn, usr, x, y, lives, fb, remBuildTurns, res);
 	}
 	
 	protected abstract Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int remTurns,
-			EnumIntMap<ProducableResourceType> res) throws IOException, StreamCorruptedException;
+		EnumIntMap<ProducableResourceType> res) throws IOException, StreamCorruptedException;
 	
 	@Override
-	public Map<Class<? extends Entity>, String> entityClassses() { return entitiCls; }
+	public Map<Class<? extends Entity>, String> entityClassses() { return this.entitiCls; }
 	
 }

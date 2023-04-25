@@ -23,12 +23,12 @@ public final class Carrier extends UnitImpl {
 	
 	@Override
 	public int moveRange() {
-		return 3 - (carryAmount >>> 1);
+		return 3 - (super.carryAmount >>> 1);
 	}
 	
 	@Override
 	public Carrier copy() {
-		return new Carrier(x, y, owner(), lives(), carryResource, carryAmount);
+		return new Carrier(super.x, super.y, owner(), lives(), super.carryResource, super.carryAmount);
 	}
 	
 	@Override

@@ -31,13 +31,13 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	}
 	
 	@Override // check both if there is no build time
-	public boolean isFinishedBuild() { return neededBuildTurns <= 0 && neededResources != null; }
+	public boolean isFinishedBuild() { return this.neededBuildTurns <= 0 && this.neededResources != null; }
 	
 	@Override
-	public int remainingBuildTurns() { return neededBuildTurns; }
+	public int remainingBuildTurns() { return this.neededBuildTurns; }
 	
 	@Override
-	public EnumIntMap<ProducableResourceType> neededResources() { return neededResources == null ? null : neededResources.copy(); }
+	public EnumIntMap<ProducableResourceType> neededResources() { return this.neededResources == null ? null : this.neededResources.copy(); }
 	
 	@Override
 	public void store(Unit u, int amount) throws TurnExecutionException {
@@ -48,7 +48,7 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 		if (amount <= 0) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		if (neededResources == null) {
+		if (this.neededResources == null) {
 			finishedBuildStore(u.carryRes(), amount);
 			u.uncarry(amount);
 			return;
@@ -57,7 +57,7 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 		if (!(r instanceof ProducableResourceType prt)) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		int amt = neededResources.get(prt);
+		int amt = this.neededResources.get(prt);
 		if (amt == 0) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
@@ -65,7 +65,7 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		amt -= amount;
-		neededResources.set(prt, amt);
+		this.neededResources.set(prt, amt);
 	}
 	
 	protected void finishedBuildStore(Resource r, int amount) throws TurnExecutionException {
@@ -80,18 +80,18 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	@Override
 	public void build(Unit u) throws TurnExecutionException {
 		checkOwner(u);
-		if (neededResources != null) {
-			for (int val : neededResources.array()) {
+		if (this.neededResources != null) {
+			for (int val : this.neededResources.array()) {
 				if (val > 0) {
 					throw new TurnExecutionException(ErrorType.INVALID_TURN);
 				}
 			}
-			neededResources = null;
+			this.neededResources = null;
 		}
-		if (neededBuildTurns <= 0) {
+		if (this.neededBuildTurns <= 0) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		neededBuildTurns--;
+		this.neededBuildTurns--;
 	}
 	
 	@Override

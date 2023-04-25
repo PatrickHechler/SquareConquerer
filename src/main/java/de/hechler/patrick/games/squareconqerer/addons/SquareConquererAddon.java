@@ -21,8 +21,7 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
  * an addon can be used to add stuff to the base game<br>
  * for example units and buildings
  * <p>
- * every addon has its own {@link #license() license} and
- * {@link #help() help}/{@link #credits() credits} page and
+ * every addon has its own {@link #license() license} and {@link #help() help}/{@link #credits() credits} page and
  */
 public abstract class SquareConquererAddon {
 	
@@ -36,14 +35,13 @@ public abstract class SquareConquererAddon {
 	private int         oridinalOffset;
 	
 	/**
-	 * creates a new {@link SquareConquererAddon} instance with the given
-	 * {@code name}.
+	 * creates a new {@link SquareConquererAddon} instance with the given {@code name}.
 	 * <p>
 	 * the name must be unique<br>
-	 * this means, that the name {@value #GAME_ADDON_NAME} is not allowed to be used
-	 * by any other add-on than the {@link TheGameAddon}.
+	 * this means, that the name {@value #GAME_ADDON_NAME} is not allowed to be used by any other add-on than the {@link TheGameAddon}.
 	 * 
-	 * @param name the {@link #name} of the add-on
+	 * @param name           the {@link #this.name} of the add-on
+	 * @param oridinalLength the amount of different units and buildings added by this addon
 	 */
 	public SquareConquererAddon(String name, int oridinalLength) {
 		this.name           = name;
@@ -51,17 +49,13 @@ public abstract class SquareConquererAddon {
 	}
 	
 	protected void initOridinalOffset(int offset) {
-		if (oridinalOffset != 0) {
-			throw new AssertionError("offset already has a non-zero value");
-		}
-		oridinalOffset = offset;
+		if (this.oridinalOffset != 0) { throw new AssertionError("offset already has a non-zero value"); }
+		this.oridinalOffset = offset;
 	}
 	
 	public int oridinalOffset() {
-		if (oridinalOffset == 0) {
-			throw new AssertionError("offset is not yet initialized");
-		}
-		return oridinalOffset;
+		if (this.oridinalOffset == 0) { throw new AssertionError("offset is not yet initialized"); }
+		return this.oridinalOffset;
 	}
 	
 	private static volatile Map<String, SquareConquererAddon>                  addons;
@@ -82,13 +76,9 @@ public abstract class SquareConquererAddon {
 	}
 	
 	/**
-	 * returns an unmodifiable collection containing almost all add-ons (excluding
-	 * the game
-	 * add-on)
+	 * returns an unmodifiable collection containing almost all add-ons (excluding the game add-on)
 	 * 
-	 * @return an unmodifiable collection containing almost all add-ons (excluding
-	 *         the game
-	 *         add-on)
+	 * @return an unmodifiable collection containing almost all add-ons (excluding the game add-on)
 	 */
 	public static Collection<SquareConquererAddon> onlyAddons() {
 		Map<String, SquareConquererAddon> a = new HashMap<>(addonsMap());
@@ -97,13 +87,11 @@ public abstract class SquareConquererAddon {
 	}
 	
 	/**
-	 * returns a unmodifiable map containing almost all add-ons (excluding the game
-	 * add-on)
+	 * returns a unmodifiable map containing almost all add-ons (excluding the game add-on)
 	 * <p>
-	 * the add-ons are mapped with their {@link #name} as keys
+	 * the add-ons are mapped with their {@link #this.name} as keys
 	 * 
-	 * @return a unmodifiable map containing almost all add-ons (excluding the game
-	 *         add-on)
+	 * @return a unmodifiable map containing almost all add-ons (excluding the game add-on)
 	 */
 	public static Map<String, SquareConquererAddon> onlyAddonsMap() {
 		Map<String, SquareConquererAddon> a = new HashMap<>(addonsMap());
@@ -112,11 +100,9 @@ public abstract class SquareConquererAddon {
 	}
 	
 	/**
-	 * returns an unmodifiable collection containing all add-ons (including the game
-	 * add-on)
+	 * returns an unmodifiable collection containing all add-ons (including the game add-on)
 	 * 
-	 * @return an unmodifiable collection containing all add-ons (including the game
-	 *         add-on)
+	 * @return an unmodifiable collection containing all add-ons (including the game add-on)
 	 */
 	public static Collection<SquareConquererAddon> addons() {
 		Map<String, SquareConquererAddon> a = addons;
@@ -127,7 +113,7 @@ public abstract class SquareConquererAddon {
 	/**
 	 * returns a unmodifiable map containing all add-ons (including the game add-on)
 	 * <p>
-	 * the add-ons are mapped with their {@link #name} as keys
+	 * the add-ons are mapped with their {@link #this.name} as keys
 	 * 
 	 * @return a unmodifiable map containing all add-ons (including the game add-on)
 	 */
@@ -167,9 +153,7 @@ public abstract class SquareConquererAddon {
 			addonsMap();
 			es = entity;
 		} // potentially faster check for the game entities
-		if (e instanceof EntityImpl && !(e instanceof MyUnit || e instanceof MyBuild)) {
-			return theGame;
-		}
+		if (e instanceof EntityImpl && !(e instanceof MyUnit || e instanceof MyBuild)) { return theGame; }
 		SquareConquererAddon res = es.get(e.getClass());
 		if (res == null) throw new AssertionError("unknown entity class: " + e.getClass());
 		return res;
@@ -181,9 +165,7 @@ public abstract class SquareConquererAddon {
 			addonsMap();
 			es = entity;
 		} // potentially faster check for the game entities
-		if (u instanceof EntityImpl && !(u instanceof MyUnit)) {
-			return theGame;
-		}
+		if (u instanceof EntityImpl && !(u instanceof MyUnit)) { return theGame; }
 		SquareConquererAddon res = es.get(u.getClass());
 		if (res == null) throw new AssertionError("unknown entity class: " + u.getClass());
 		return res;
@@ -195,9 +177,7 @@ public abstract class SquareConquererAddon {
 			addonsMap();
 			es = entity;
 		} // potentially faster check for the game entities
-		if (b instanceof EntityImpl && !(b instanceof MyUnit)) {
-			return theGame;
-		}
+		if (b instanceof EntityImpl && !(b instanceof MyUnit)) { return theGame; }
 		SquareConquererAddon res = es.get(b.getClass());
 		if (res == null) throw new AssertionError("unknown entity class: " + b.getClass());
 		return res;
@@ -207,9 +187,7 @@ public abstract class SquareConquererAddon {
 		Map<String, SquareConquererAddon>   addons = new HashMap<>();
 		ServiceLoader<SquareConquererAddon> loader = ServiceLoader.load(SquareConquererAddon.class);
 		for (SquareConquererAddon addon : loader) {
-			if (addons.put(addon.name, addon) != null) {
-				throw new AssertionError("multiple addons with the same name: '" + addon.name + "'");
-			}
+			if (addons.put(addon.name, addon) != null) { throw new AssertionError("multiple addons with the same name: '" + addon.name + "'"); }
 		}
 		return addons;
 	}

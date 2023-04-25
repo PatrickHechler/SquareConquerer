@@ -36,21 +36,21 @@ public abstract sealed class EntityImpl implements Entity permits BuildingImpl, 
 	}
 	
 	@Override
-	public int x() { return x; }
+	public int x() { return this.x; }
 	
-	public int y() { return y; }
-	
-	@Override
-	public User owner() { return usr; }
+	public int y() { return this.y; }
 	
 	@Override
-	public int lives() { return lives; }
+	public User owner() { return this.usr; }
 	
 	@Override
-	public int maxLives() { return maxlives; }
+	public int lives() { return this.lives; }
 	
 	@Override
-	public int viewRange() { return viewRange; }
+	public int maxLives() { return this.maxlives; }
+	
+	@Override
+	public int viewRange() { return this.viewRange; }
 	
 	protected void checkOwner(Entity e) {
 		if (e.owner() != owner()) {
@@ -60,7 +60,7 @@ public abstract sealed class EntityImpl implements Entity permits BuildingImpl, 
 	
 	private volatile BufferedImage resource;
 	
-	public BufferedImage resource() { return resource; }
+	public BufferedImage resource() { return this.resource; }
 	
 	public void resource(BufferedImage nval) { this.resource = nval; }
 	

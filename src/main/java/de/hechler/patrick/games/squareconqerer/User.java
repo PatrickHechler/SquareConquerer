@@ -163,11 +163,11 @@ public sealed class User implements Closeable, Comparable<User> {
 		RND = r;
 	}
 	
-	public void fillRandom(byte[] bytes) {
+	public static void fillRandom(byte[] bytes) {
 		RND.nextBytes(bytes);
 	}
 	
-	public int randomInt() {
+	public static int randomInt() {
 		return RND.nextInt();
 	}
 	

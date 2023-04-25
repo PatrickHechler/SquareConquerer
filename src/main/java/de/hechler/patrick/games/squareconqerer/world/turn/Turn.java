@@ -51,28 +51,25 @@ public final class Turn {
 	public void put(Entity e, EntityTurn et) {
 		if (e == null) throw new NullPointerException("entity is null");
 		if (et == null) throw new NullPointerException("entity turn is null");
-		if (e.owner() != world.user()) throw new IllegalArgumentException("I do not own this user");
-		turns.put(e, et);
+		if (e.owner() != this.world.user()) throw new IllegalArgumentException("I do not own this user");
+		this.turns.put(e, et);
 	}
 	
 	public Collection<EntityTurn> turns() throws UnsupportedOperationException {
-		return Collections.unmodifiableCollection(turns.values());
+		return Collections.unmodifiableCollection(this.turns.values());
 	}
 	
-	public static final int  CMD_TURN = 0x67A31709;
-	private static final int ET_CARRY = 0x5E209AC4;
-	private static final int ET_MOVE  = 0x037255BF;
-	private static final int ET_STORE = 0xC9690B0E;
-	private static final int FIN_TURN = 0x00E7B2EF;
+	public static final int  CMD_TURN  = 0x67A31709;
+	private static final int  SUB0_TURN = 0x7A881D25;
+	private static final int ET_CARRY  = 0x5E209AC4;
+	private static final int ET_MOVE   = 0x037255BF;
+	private static final int ET_STORE  = 0xC9690B0E;
+	private static final int FIN_TURN  = 0x00E7B2EF;
 	
 	public void retrieveTurn(Connection conn) throws IOException {
-		if (!turns.isEmpty()) {
-			throw new IllegalStateException("turns is not empty");
-		}
-		int len = conn.readInt();
-		if (len < 0) {
-			throw new IOException("read a negative length");
-		}
+		conn.writeInt(SUB0_TURN);
+		if (!this.turns.isEmpty()) { throw new IllegalStateException("turns is not empty"); }
+		int len = conn.readPos();
 		while (len-- > 0) {
 			Entity     e;
 			EntityTurn et;
@@ -80,16 +77,13 @@ public final class Turn {
 			int        y = conn.readInt();
 			switch (conn.readInt(ET_CARRY, ET_MOVE, ET_STORE)) {
 			case ET_CARRY -> {
-				e = world.tile(x, y).unit();
+				e = this.world.tile(x, y).unit();
 				Resource res    = RemoteWorld.readRes(conn);
-				int      amount = conn.readInt();
-				if (amount < 0) {
-					throw new IOException("read a negative amount!");
-				}
+				int      amount = conn.readPos();
 				et = new CarryTurn((Unit) e, res, amount);
 			}
 			case ET_MOVE -> {
-				e = world.tile(x, y).unit();
+				e = this.world.tile(x, y).unit();
 				int             moves = conn.readInt();
 				List<Direction> dirs  = new ArrayList<>(moves);
 				while (moves-- > 0) {
@@ -98,21 +92,21 @@ public final class Turn {
 				et = new MoveTurn((Unit) e, dirs);
 			}
 			case ET_STORE -> {
-				e = world.tile(x, y).unit();
+				e = this.world.tile(x, y).unit();
 				int amount = conn.readInt();
 				et = new StoreTurn((Unit) e, amount);
 			}
 			default -> throw new AssertionError("illegal return value from conn.readInt(int...)");
 			}
-			turns.put(e, et);
+			this.turns.put(e, et);
 		}
 	}
 	
 	@SuppressWarnings("preview")
 	public void sendTurn(Connection conn) throws IOException {
-		conn.writeInt(CMD_TURN);
-		conn.writeInt(turns.size());
-		for (Entry<Entity, EntityTurn> turn : turns.entrySet()) {
+		conn.writeReadInt(CMD_TURN, SUB0_TURN);
+		conn.writeInt(this.turns.size());
+		for (Entry<Entity, EntityTurn> turn : this.turns.entrySet()) {
 			Entity     e  = turn.getKey();
 			EntityTurn et = turn.getValue();
 			conn.writeInt(e.x());

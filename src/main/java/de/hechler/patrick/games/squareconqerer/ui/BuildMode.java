@@ -20,72 +20,72 @@ public class BuildMode {
 	private int    state = STATE_INACTIVE;
 	private Object obj;
 	
-	public boolean isActive() { return state != STATE_INACTIVE; }
+	public boolean isActive() { return this.state != STATE_INACTIVE; }
 	
 	public Tile modify(Tile t) {
-		return switch (state) {
+		return switch (this.state) {
 		case STATE_INACTIVE -> throw new IllegalStateException("I am inactive");
 		case STATE_DEEP -> new Tile(t.type.addDeep(false), t.resource, t.visible());
 		case STATE_HILL -> new Tile(t.type.addHill(false), t.resource, t.visible());
 		case STATE_NORMAL -> new Tile(t.type.addNormal(false), t.resource, t.visible());
-		case STATE_SET_GROUND -> new Tile((TileType) obj, t.resource, t.visible());
-		case STATE_SET_ORE -> new Tile(t.type, (OreResourceType) obj, t.visible());
+		case STATE_SET_GROUND -> new Tile((TileType) this.obj, t.resource, t.visible());
+		case STATE_SET_ORE -> new Tile(t.type, (OreResourceType) this.obj, t.visible());
 		case STATE_SET_UNIT -> {
-			t.unit((Unit) obj);
+			t.unit((Unit) this.obj);
 			yield t;
 		}
 		case STATE_SET_BUILD -> {
-			t.build((Building) obj);
+			t.build((Building) this.obj);
 			yield t;
 		}
-		default -> throw new AssertionError("illegal state: " + state);
+		default -> throw new AssertionError("illegal state: " + this.state);
 		};
 	}
 	
-	public void makeInactive() { state = STATE_INACTIVE; }
+	public void makeInactive() { this.state = STATE_INACTIVE; }
 	
-	public void makePlusDeep() { state = STATE_DEEP; }
+	public void makePlusDeep() { this.state = STATE_DEEP; }
 	
-	public void makePlusHill() { state = STATE_HILL; }
+	public void makePlusHill() { this.state = STATE_HILL; }
 	
-	public void makePlusNormal() { state = STATE_NORMAL; }
+	public void makePlusNormal() { this.state = STATE_NORMAL; }
 	
 	public void makeSetResource(OreResourceType res) {
 		if (res == null) throw new NullPointerException("resource is null");
-		state = STATE_SET_ORE;
-		obj   = res;
+		this.state = STATE_SET_ORE;
+		this.obj   = res;
 	}
 	
 	public void makeSetGround(TileType grd) {
 		if (grd == null) throw new NullPointerException("ground is null");
-		state = STATE_SET_GROUND;
-		obj   = grd;
+		this.state = STATE_SET_GROUND;
+		this.obj   = grd;
 	}
 	
 	public void makeSetUnit(Unit u) {
 		if (u == null) throw new NullPointerException("unit is null");
-		state = STATE_SET_UNIT;
-		obj   = u;
+		this.state = STATE_SET_UNIT;
+		this.obj   = u;
 	}
 	
 	public void makeSetBuilding(Building b) {
 		if (b == null) throw new NullPointerException("building is null");
-		state = STATE_SET_UNIT;
-		obj   = b;
+		this.state = STATE_SET_UNIT;
+		this.obj   = b;
 	}
 	
 	@Override
 	public String toString() {
-		return switch (state) {
+		return switch (this.state) {
 		case STATE_INACTIVE -> "none";
 		case STATE_DEEP -> "add +deep suffix";
 		case STATE_HILL -> "add +hill suffix";
 		case STATE_NORMAL -> "add +normal suffix";
-		case STATE_SET_ORE -> "set ore type: " + /* ((OreResourceType) */obj/* ) */.toString();
-		case STATE_SET_GROUND -> "set ground type: " + /* ((TileType) */obj/* ) */.toString();
-		case STATE_SET_UNIT -> "set the unit: " + /* ((Unit) */obj/* ) */.toString();
-		case STATE_SET_BUILD -> "set the building: " + /* ((Build) */obj/* ) */.toString();
-		default -> throw new AssertionError("illegal state: " + state);
+		case STATE_SET_ORE -> "set ore type: " + /* ((OreResourceType) */this.obj/* ) */.toString();
+		case STATE_SET_GROUND -> "set ground type: " + /* ((TileType) */this.obj/* ) */.toString();
+		case STATE_SET_UNIT -> "set the unit: " + /* ((Unit) */this.obj/* ) */.toString();
+		case STATE_SET_BUILD -> "set the building: " + /* ((Build) */this.obj/* ) */.toString();
+		default -> throw new AssertionError("illegal state: " + this.state);
 		};
 	}
 	

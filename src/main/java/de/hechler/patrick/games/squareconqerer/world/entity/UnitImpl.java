@@ -41,12 +41,12 @@ public abstract sealed class UnitImpl extends EntityImpl implements Unit permits
 	
 	@Override
 	public Resource carryRes() {
-		return carryResource;
+		return this.carryResource;
 	}
 	
 	@Override
 	public int carryAmount() {
-		return carryAmount;
+		return this.carryAmount;
 	}
 	
 	@Override
