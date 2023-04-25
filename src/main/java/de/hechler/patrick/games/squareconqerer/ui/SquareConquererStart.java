@@ -3,6 +3,7 @@ package de.hechler.patrick.games.squareconqerer.ui;
 import static de.hechler.patrick.games.squareconqerer.Settings.VERSION_STRING;
 import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +32,9 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.plaf.FontUIResource;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 
@@ -60,6 +64,202 @@ public class SquareConquererStart {
 	private static int     ylen           = -1;
 	
 	public static void main(String[] args) {
+		readArgs(args);
+		final int             p            = port != -1 ? port : Connection.DEFAULT_PORT;
+		World                 world        = null;
+		Thread                serverThread = null;
+		Map<User, Connection> connects     = null;
+		if (pw != null) {
+			if (worldFile != null) {
+				world = tryLoadWorld(args, world);
+			} else if (xlen != -1) {
+				world = tryCreateWorld();
+			} else if (host != null && name != null) {
+				world = tryConnectWorld(args, p, world);
+			}
+			if (server && world != null) {
+				final RootWorld             rw = (RootWorld) world;
+				final Map<User, Connection> cs = new HashMap<>();
+				connects     = cs;
+				serverThread = threadBuilder().start(() -> {
+									try {
+										Connection.ServerAccept.accept(p, rw, (conn, sok) -> System.err.println("the user '" + conn.usr.name() + "' logged in from '" + sok.getInetAddress() + "'"), cs,
+											serverpw);
+									} catch (IOException e) {
+										e.printStackTrace();
+									}
+								});
+			}
+		}
+		if (gui && console) {
+			crash(-1, args, "gui and console modes are not allowed together");
+		}
+		if (gui) {
+			startGUI(args, p, world, serverThread);
+		}
+		if (console) {
+			startCON(p, world, serverThread, connects);
+		}
+	}
+	
+	private static World tryConnectWorld(String[] args, final int p, World world) {
+		User       usr = User.create(name, pw);
+		Connection conn;
+		try {
+			if (serverpw != null) {
+				conn = Connection.ClientConnect.connect(host, p, usr);
+			} else {
+				conn = Connection.ClientConnect.connectNew(host, p, usr, serverpw);
+			}
+			world = new RemoteWorld(conn);
+		} catch (IOException e) {
+			for (int i = 0; i < pw.length; i++) { pw[i] = '\0'; }
+			for (int i = 0; serverpw != null && i < serverpw.length; i++) { serverpw[i] = '\0'; }
+			crash(-1, args, "could not establish a connection with the server: " + e.toString());
+		}
+		return world;
+	}
+	
+	private static World tryCreateWorld() {
+		World    world;
+		RootUser root = RootUser.create(pw);
+		world = new RootWorld.Builder(root, xlen, ylen);
+		if (!emptyWorld) {
+			((RootWorld.Builder) world).fillRandom();
+		}
+		return world;
+	}
+	
+	private static World tryLoadWorld(String[] args, World world) {
+		RootUser root = RootUser.create(pw);
+		try (InputStream in = Files.newInputStream(worldFile, StandardOpenOption.READ); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
+			root.load(conn);
+			Tile[][] tiles = RemoteWorld.loadWorld(conn, root.users());
+			world = RootWorld.Builder.create(root, tiles);
+		} catch (IOException e) {
+			for (int i = 0; i < pw.length; i++) { pw[i] = '\0'; }
+			for (int i = 0; serverpw != null && i < serverpw.length; i++) { serverpw[i] = '\0'; }
+			crash(-1, args, "could not load the data from the file: " + e.toString());
+		}
+		return world;
+	}
+	
+	private static void startCON(final int p, World world, Thread serverThread, Map<User, Connection> connects) {
+		SquareConquererCUI cui = new SquareConquererCUI();
+		if (world != null) {
+			cui.setWorld(world, serverThread, connects);
+		} else {
+			if (pw != null) {
+				if (name != null) {
+					cui.setUsr(User.create(name, pw));
+				} else {
+					cui.setUsr(RootUser.create(pw));
+				}
+			} else if (name != null) {
+				cui.setName(name);
+			}
+			if (serverpw != null) {
+				cui.setSPW(serverpw);
+			}
+			
+			if (worldFile != null) {
+				cui.startLoad(worldFile);
+				if (port != -1) {
+					cui.startServer(p);
+				}
+			} else if (server) {
+				cui.startConnect(host, p);
+			}
+		}
+		if (consoleInter || consoleNoInter) {
+			cui.setInteractive(consoleInter);
+		}
+		cui.run();
+	}
+	
+	private static void startGUI(String[] args, final int p, World world, Thread serverThread) {
+		setDefaultFonts();
+		if (world != null) {
+			SquareConquererGUI gui = new SquareConquererGUI(world);
+			gui.load(serverThread);
+		} else {
+			SwingUtilities.invokeLater(() -> {
+				JFrame frame = initStartFrame();
+				if (pw != null) {
+					setPW(args);
+				}
+				if (serverpw != null) {
+					setServerPW(args);
+				}
+				if (host != null) {
+					setHost(p);
+				}
+				if (name != null) {
+					nameField.setText(name);
+				}
+				if (worldFile != null) {
+					selectdFileField.setText(worldFile.toString());
+				}
+				if (xlen != -1) {
+					xlenField.setText(Integer.toString(xlen));
+				}
+				if (ylen != -1) {
+					ylenField.setText(Integer.toString(ylen));
+				}
+				createUser.setSelected(serverpw != null);
+				if (name != null || host != null) {
+					remote.setSelected(true);
+				} else if (xlen != -1) {
+					remote.setSelected(false);
+					createNew.setSelected(true);
+				} else if (worldFile != null) {
+					remote.setSelected(false);
+					createNew.setSelected(false);
+				}
+				checkBoxListener.actionPerformed(null);
+				frame.setVisible(true);
+			});
+		}
+	}
+	
+	private static void setHost(final int p) {
+		String h;
+		if (host.indexOf(':') != -1) {
+			h = "[" + host + "]:" + p;
+		} else {
+			h = host + ":" + p;
+		}
+		hostField.setText(h);
+	}
+	
+	private static void setServerPW(String[] args) {
+		Document doc = serverPWField.getDocument();
+		for (int i = 0; i < serverpw.length; i++) {
+			try {
+				doc.insertString(i, Character.toString(serverpw[i]), null);
+			} catch (BadLocationException e) {
+				for (; i < serverpw.length; i++) { serverpw[i] = '\0'; }
+				crash(-1, args, "could not initilize the server password field: " + e.toString());
+			}
+			serverpw[i] = '\0';
+		}
+	}
+	
+	private static void setPW(String[] args) {
+		Document doc = pwField.getDocument();
+		for (int i = 0; i < pw.length; i++) {
+			try {
+				doc.insertString(i, Character.toString(pw[i]), null);
+			} catch (BadLocationException e) {
+				for (; i < pw.length; i++) { pw[i] = '\0'; }
+				for (i = 0; serverpw != null && i < serverpw.length; i++) { serverpw[i] = '\0'; }
+				crash(-1, args, "could not initilize the password field: " + e.toString());
+			}
+			pw[i] = '\0';
+		}
+	}
+	
+	private static void readArgs(String[] args) {
 		for (int i = 0; i < args.length; i++) {
 			switch (args[i].toLowerCase()) {
 			case "--help" -> argHelp();
@@ -86,164 +286,19 @@ public class SquareConquererStart {
 			default -> crash(i, args, "unknown argument");
 			}
 		}
-		final int             p            = port != -1 ? port : Connection.DEFAULT_PORT;
-		World                 world        = null;
-		Thread                serverThread = null;
-		Map<User, Connection> connects     = null;
-		if (pw != null) {
-			if (worldFile != null) {
-				RootUser root = RootUser.create(pw);
-				try (InputStream in = Files.newInputStream(worldFile, StandardOpenOption.READ);
-						Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
-					root.load(conn);
-					Tile[][] tiles = RemoteWorld.loadWorld(conn, root.users());
-					world = RootWorld.Builder.create(root, tiles);
-				} catch (IOException e) {
-					for (int i = 0; pw != null && i < pw.length; i++) { pw[i] = '\0'; }
-					for (int i = 0; serverpw != null && i < serverpw.length; i++) { serverpw[i] = '\0'; }
-					crash(-1, args, "could not load the data from the file: " + e.toString());
-				}
-			} else if (xlen != -1) {
-				RootUser root = RootUser.create(pw);
-				world = new RootWorld.Builder(root, xlen, ylen);
-				if (!emptyWorld) {
-					((RootWorld.Builder) world).fillRandom();
-				}
-			} else if (host != null && name != null) {
-				User       usr = User.create(name, pw);
-				Connection conn;
-				try {
-					if (serverpw != null) {
-						conn = Connection.ClientConnect.connect(host, p, usr);
-					} else {
-						conn = Connection.ClientConnect.connectNew(host, p, usr, serverpw);
-					}
-					world = new RemoteWorld(conn);
-				} catch (IOException e) {
-					for (int i = 0; pw != null && i < pw.length; i++) { pw[i] = '\0'; }
-					for (int i = 0; serverpw != null && i < serverpw.length; i++) { serverpw[i] = '\0'; }
-					crash(-1, args, "could not establish a connection with the server: " + e.toString());
-				}
+	}
+	
+	private static void setDefaultFonts() {
+		FontUIResource      f    = new FontUIResource("Sans", Font.PLAIN, 14);
+		Enumeration<Object> keys = UIManager.getDefaults().keys();
+		while (keys.hasMoreElements()) {
+			Object key   = keys.nextElement();
+			Object value = UIManager.get(key);
+			if (value instanceof FontUIResource fur) {
+				FontUIResource val = f;
+				val = new FontUIResource(val.getFontName(), fur.getStyle(), (int) (fur.getSize() * 1.25));
+				UIManager.put(key, val);
 			}
-			if (server && world != null) {
-				final RootWorld rw = (RootWorld) world;
-				final Map<User, Connection> cs = new HashMap<>();
-				connects = cs;
-				serverThread = threadBuilder().start(() -> {
-					try {
-						Connection.ServerAccept
-								.accept(p, rw,
-										(conn, sok) -> System.err.println("the user '" + conn.usr.name()
-												+ "' logged in from '" + sok.getInetAddress() + "'"),
-										cs, serverpw);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				});
-			}
-		}
-		if (gui && console) {
-			crash(-1, args, "gui and console modes are not allowed together");
-		}
-		if (gui) {
-			if (world != null) {
-				SquareConquererGUI gui = new SquareConquererGUI(world);
-				gui.load(serverThread);
-			} else {
-				SwingUtilities.invokeLater(() -> {
-					JFrame frame = initStartFrame();
-					if (pw != null) {
-						Document doc = pwField.getDocument();
-						for (int i = 0; i < pw.length; i++) {
-							try {
-								doc.insertString(i, Character.toString(pw[i]), null);
-							} catch (BadLocationException e) {
-								for (; i < pw.length; i++) { pw[i] = '\0'; }
-								for (i = 0; serverpw != null && i < serverpw.length; i++) { serverpw[i] = '\0'; }
-								crash(-1, args, "could not initilize the password field: " + e.toString());
-							}
-							pw[i] = '\0';
-						}
-					}
-					if (serverpw != null) {
-						Document doc = serverPWField.getDocument();
-						for (int i = 0; i < serverpw.length; i++) {
-							try {
-								doc.insertString(i, Character.toString(serverpw[i]), null);
-							} catch (BadLocationException e) {
-								for (; i < serverpw.length; i++) { serverpw[i] = '\0'; }
-								crash(-1, args, "could not initilize the server password field: " + e.toString());
-							}
-							serverpw[i] = '\0';
-						}
-					}
-					if (host != null) {
-						String h;
-						if (host.indexOf(':') != -1) {
-							h = "[" + host + "]:" + p;
-						} else {
-							h = host + ":" + p;
-						}
-						hostField.setText(h);
-					}
-					if (name != null) {
-						nameField.setText(name);
-					}
-					if (worldFile != null) {
-						selectdFileField.setText(worldFile.toString());
-					}
-					if (xlen != -1) {
-						xlenField.setText(Integer.toString(xlen));
-					}
-					if (ylen != -1) {
-						ylenField.setText(Integer.toString(ylen));
-					}
-					createUser.setSelected(serverpw != null);
-					if (name != null || host != null) {
-						remote.setSelected(true);
-					} else if (xlen != -1) {
-						remote.setSelected(false);
-						createNew.setSelected(true);
-					} else if (worldFile != null) {
-						remote.setSelected(false);
-						createNew.setSelected(false);
-					}
-					checkBoxListener.actionPerformed(null);
-					frame.setVisible(true);
-				});
-			}
-		}
-		if (console) {
-			SquareConquererCUI cui = new SquareConquererCUI();
-			if (world != null) {
-				cui.setWorld(world, serverThread, connects);
-			} else {
-				if (pw != null) {
-					if (name != null) {
-						cui.setUsr(User.create(name, pw));
-					} else {
-						cui.setUsr(RootUser.create(pw));
-					}
-				} else if (name != null) {
-					cui.setName(name);
-				}
-				if (serverpw != null) {
-					cui.setSPW(serverpw);
-				}
-				
-				if (worldFile != null) {
-					cui.startLoad(worldFile);
-					if (port != -1) {
-						cui.startServer(p);
-					}
-				} else if (server) {
-					cui.startConnect(host, p);
-				}
-			}
-			if (consoleInter || consoleNoInter) {
-				cui.setInteractive(consoleInter);
-			}
-			cui.run();
 		}
 	}
 	
@@ -270,7 +325,7 @@ public class SquareConquererStart {
 		}
 		try {
 			xlen = Integer.parseInt(args[i - 1]);
-		} catch (NumberFormatException e) {
+		} catch (@SuppressWarnings("unused") NumberFormatException e) {
 			crash(i - 1, args, "invalid number");
 		}
 		if (xlen <= 0) {
@@ -278,7 +333,7 @@ public class SquareConquererStart {
 		}
 		try {
 			ylen = Integer.parseInt(args[i]);
-		} catch (NumberFormatException e) {
+		} catch (@SuppressWarnings("unused") NumberFormatException e) {
 			crash(i, args, "invalid number");
 		}
 		if (ylen <= 0) {
@@ -327,7 +382,7 @@ public class SquareConquererStart {
 			crash(i, args, "server password is already set");
 		}
 		serverpw = args[i].toCharArray();
-		args[i] = null;
+		args[i]  = null;
 	}
 	
 	private static void argConnect(String[] args, int i) {
@@ -443,8 +498,8 @@ public class SquareConquererStart {
 		if (pw != null) {
 			crash(i, args, "password already set");
 		}
-		pw = args[i].toCharArray();
-		args[i] = null; // well, at least allow the GC to overwrite the content
+		pw      = args[i].toCharArray();
+		args[i] = null;                 // well, at least allow the GC to overwrite the content
 	}
 	
 	private static void argNameFile(String[] args, int i) {
@@ -595,16 +650,16 @@ public class SquareConquererStart {
 		layout.setHgap(50);
 		layout.setVgap(10);
 		panel.setLayout(layout);
-		pwField = new JPasswordField(16);
-		serverPWField = new JPasswordField(16);
-		remote = new JCheckBox("Remote Login");
-		createUser = new JCheckBox("Create Remote Account");
-		createNew = new JCheckBox("Create new World");
-		hostField = new JTextField(16);
-		nameField = new JTextField(16);
+		pwField          = new JPasswordField(16);
+		serverPWField    = new JPasswordField(16);
+		remote           = new JCheckBox("Remote Login");
+		createUser       = new JCheckBox("Create Remote Account");
+		createNew        = new JCheckBox("Create new World");
+		hostField        = new JTextField(16);
+		nameField        = new JTextField(16);
 		selectdFileField = new JTextField(16);
-		xlenField = new JTextField(16);
-		ylenField = new JTextField(16);
+		xlenField        = new JTextField(16);
+		ylenField        = new JTextField(16);
 		JFileChooser   fc         = new JFileChooser();
 		JButton        loadBtn    = new JButton("select file");
 		JButton        startBtn   = new JButton("connect to server");
@@ -627,9 +682,8 @@ public class SquareConquererStart {
 		ylenField.setText("128");
 		fc.setMultiSelectionEnabled(false);
 		remote.setSelected(true);
-		createUser.setToolTipText(
-				"<html>connect to the server using the server password and then create an account on the server<br>"
-						+ "the server password will only be used once to encrypt your password and send it to the server.</html>");
+		createUser.setToolTipText("<html>connect to the server using the server password and then create an account on the server<br>"
+			+ "the server password will only be used once to encrypt your password and send it to the server.</html>");
 		
 		panel.add(remote, 0);
 		panel.add(createUser, 1);
@@ -694,18 +748,14 @@ public class SquareConquererStart {
 		createNew.addActionListener(checkBoxListener);
 		loadBtn.addActionListener(e -> {
 			int chosen = fc.showOpenDialog(frame);
-			if (chosen != JFileChooser.APPROVE_OPTION) {
-				return;
-			}
+			if (chosen != JFileChooser.APPROVE_OPTION) { return; }
 			File file = fc.getSelectedFile();
 			if (!file.exists()) {
-				JOptionPane.showMessageDialog(frame, "there is no such file", "file not found",
-						JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame, "there is no such file", "file not found", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 			if (!file.isFile()) {
-				JOptionPane.showMessageDialog(frame, "the selected path is no 'normal' file", "no file",
-						JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame, "the selected path is no 'normal' file", "no file", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 			selectdFileField.setText(file.toString());
@@ -728,18 +778,16 @@ public class SquareConquererStart {
 				frame.dispose();
 				gui.load();
 			} catch (Exception err) {
-				JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(),
-						JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
 			}
 		});
 		
 		frame.pack();
-		frame.setLocationRelativeTo(null);
+		frame.setLocationByPlatform(true);
 		return frame;
 	}
 	
-	private static World connectToRemoteWorld(JPasswordField pw, char[] serverPW, JTextField host, JTextField name)
-			throws IOException {
+	private static World connectToRemoteWorld(JPasswordField pw, char[] serverPW, JTextField host, JTextField name) throws IOException {
 		World       world;
 		String      hostTxt = host.getText().trim();
 		int         li      = hostTxt.lastIndexOf(':');
@@ -774,8 +822,7 @@ public class SquareConquererStart {
 	
 	private static World loadWorldFromFile(JPasswordField pw, JTextField selectdFile) throws IOException {
 		RootUser root = RootUser.create(pw.getPassword());
-		try (FileInputStream in = new FileInputStream(selectdFile.getText());
-				Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
+		try (FileInputStream in = new FileInputStream(selectdFile.getText()); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
 			Tile[][] tiles;
 			root.load(conn);
 			tiles = RemoteWorld.loadWorld(conn, root.users());

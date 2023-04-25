@@ -653,6 +653,10 @@ public class Connection implements Closeable {
 		}
 	}
 	
+	public boolean isBlocking() {
+		return Thread.holdsLock(this);
+	}
+	
 	public int modCnt() {
 		return modCnt;
 	}

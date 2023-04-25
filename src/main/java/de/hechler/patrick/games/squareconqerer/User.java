@@ -39,15 +39,12 @@ public sealed class User implements Closeable, Comparable<User> {
 	
 	public static int startModCnt() {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
-		if (caller != Connection.ServerAccept.class) {
-			throw new IllegalCallerException("this is an intern method");
-		}
+		if (caller != Connection.ServerAccept.class) { throw new IllegalCallerException("this is an intern method"); }
 		return 0;
 	}
 	
 	/**
-	 * this is an intern method, calling it from any extern class will result in an
-	 * {@link IllegalCallerException}
+	 * this is an intern method, calling it from any extern class will result in an {@link IllegalCallerException}
 	 * 
 	 * @return the password array of this user
 	 * 
@@ -55,31 +52,26 @@ public sealed class User implements Closeable, Comparable<User> {
 	 */
 	public synchronized char[] pw() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
-		if (caller != Connection.ClientConnect.class) {
-			throw new IllegalCallerException("this is an intern method");
-		}
-		return s._pw;
+		if (caller != Connection.ClientConnect.class) { throw new IllegalCallerException("this is an intern method"); }
+		return this.s._pw;
 	}
 	
 	public synchronized int modifyCount() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
-		if (caller != Connection.ServerAccept.class && caller != Connection.OneWayAccept.class && caller != RootWorld.class
-				&& caller != Connection.ClientConnect.class && caller != Connection.class) {
+		if (caller != Connection.ServerAccept.class && caller != Connection.OneWayAccept.class && caller != RootWorld.class && caller != Connection.ClientConnect.class && caller != Connection.class) {
 			throw new IllegalCallerException("this is an intern method");
 		}
-		return modCnt;
+		return this.modCnt;
 	}
 	
 	public synchronized void checkModCnt(int cnt) throws IllegalCallerException {
-		if (modCnt != cnt) {
-			throw new IllegalStateException("this user has been set to invalid (changed password/deleted/whatever)");
-		}
+		if (this.modCnt != cnt) { throw new IllegalStateException("this user has been set to invalid (changed password/deleted/whatever)"); }
 	}
 	
-	public String name() { return s.name; }
+	public String name() { return this.s.name; }
 	
 	public synchronized void changePassword(char[] pw) {
-		Secret0 os   = s;
+		Secret0 os   = this.s;
 		String  name = os.name;
 		char[]  opw  = os._pw;
 		for (int i = 0; i < opw.length; i++) { opw[i] = '\0'; }
@@ -88,16 +80,14 @@ public sealed class User implements Closeable, Comparable<User> {
 	}
 	
 	public synchronized User changeName(String name) {
-		Secret0 s0 = new Secret0(name, s._pw);
+		Secret0 s0 = new Secret0(name, this.s._pw);
 		if (RootUser.ROOT_NAME.equals(name)) {
-			if (this instanceof RootUser) {
-				return this;
-			}
+			if (this instanceof RootUser) { return this; }
 			this.s = null;
 			close();
 			return new RootUser(s0);
 		} else if (this instanceof RootUser) {
-			s = null;
+			this.s = null;
 			close();
 			return new User(s0);
 		} else {
@@ -107,19 +97,17 @@ public sealed class User implements Closeable, Comparable<User> {
 	}
 	
 	public synchronized RootUser rootClone() {
-		Secret0 s0 = new Secret0(RootUser.ROOT_NAME, s._pw.clone());
+		Secret0 s0 = new Secret0(RootUser.ROOT_NAME, this.s._pw.clone());
 		return new RootUser(s0);
 	}
 	
 	/**
-	 * this method will create a new root user with the password of this user and
-	 * then close this user
+	 * this method will create a new root user with the password of this user and then close this user
 	 * <p>
-	 * this is not the same as {@link #changeName(String)}, because even if this
-	 * user is already root, it will be replaced by a new root user
+	 * this is not the same as {@link #changeName(String)}, because even if this user is already root, it will be replaced by a new root user
 	 */
 	public synchronized RootUser makeRoot() {
-		Secret0 s0 = new Secret0(RootUser.ROOT_NAME, s._pw);
+		Secret0 s0 = new Secret0(RootUser.ROOT_NAME, this.s._pw);
 		this.s = null;
 		this.modCnt++;
 		close();
@@ -135,8 +123,7 @@ public sealed class User implements Closeable, Comparable<User> {
 			IvParameterSpec param      = new IvParameterSpec(initVec);
 			c0.init(Cipher.DECRYPT_MODE, keySpec, param);
 			return new CipherInputStream(in, c0);
-		} catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchPaddingException
-				| InvalidKeySpecException e) {
+		} catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeySpecException e) {
 			throw new AssertionError(e.toString(), e);
 		}
 	}
@@ -150,18 +137,17 @@ public sealed class User implements Closeable, Comparable<User> {
 			IvParameterSpec param      = new IvParameterSpec(initVec);
 			c1.init(Cipher.ENCRYPT_MODE, keySpec, param);
 			return new CipherOutputStream(out, c1);
-		} catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchPaddingException
-				| InvalidKeySpecException e) {
+		} catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeySpecException e) {
 			throw new AssertionError(e.toString(), e);
 		}
 	}
 	
 	public synchronized CipherInputStream decrypt(InputStream in, byte[] salt, byte[] initVec) {
-		return decrypt(s._pw, in, salt, initVec);
+		return decrypt(this.s._pw, in, salt, initVec);
 	}
 	
 	public synchronized CipherOutputStream encrypt(OutputStream out, byte[] salt, byte[] initVec) {
-		return encrypt(s._pw, out, salt, initVec);
+		return encrypt(this.s._pw, out, salt, initVec);
 	}
 	
 	private static final SecureRandom RND;
@@ -170,7 +156,7 @@ public sealed class User implements Closeable, Comparable<User> {
 		SecureRandom r;
 		try {
 			r = SecureRandom.getInstanceStrong();
-		} catch (NoSuchAlgorithmException e) {
+		} catch (@SuppressWarnings("unused") NoSuchAlgorithmException e) {
 			System.err.println("[User]: WARN: no strong secure random found! (fall back to SecureRandom)");
 			r = new SecureRandom();
 		}
@@ -186,18 +172,18 @@ public sealed class User implements Closeable, Comparable<User> {
 	}
 	
 	@Override
-	public int hashCode() {
+	public final int hashCode() {
 		return super.hashCode();
 	}
 	
 	@Override
-	public boolean equals(Object obj) {
+	public final boolean equals(Object obj) {
 		return this == obj;
 	}
 	
 	@Override
-	public int compareTo(User o) {
-		int cmp = s.name.compareTo(o.s.name); // users are from different root
+	public final int compareTo(User o) {
+		int cmp = this.s.name.compareTo(o.s.name); // users are from different root
 		if (cmp == 0 && this != o) throw new AssertionError("different users with the same name should not be compared");
 		return cmp;
 	}
@@ -205,20 +191,16 @@ public sealed class User implements Closeable, Comparable<User> {
 	@Override
 	public synchronized void close() {
 		char[] pw;
-		if (s == null) {
-			return;
-		}
-		pw = s._pw;
-		s  = null;
+		if (this.s == null) { return; }
+		pw     = this.s._pw;
+		this.s = null;
 		for (int i = 0; i < pw.length; i++) {
 			pw[i] = '\0';
 		}
 	}
 	
 	public static User create(String name, char[] pw) {
-		if (RootUser.ROOT_NAME.equals(name)) {
-			return RootUser.create(pw);
-		}
+		if (RootUser.ROOT_NAME.equals(name)) { return RootUser.create(pw); }
 		User usr = new User(new Secret0(name, pw));
 		Runtime.getRuntime().addShutdownHook(new Thread(usr::close));
 		return usr;
@@ -239,8 +221,7 @@ public sealed class User implements Closeable, Comparable<User> {
 		
 		private volatile int               maxUsers   = Integer.MAX_VALUE;
 		private volatile Map<String, User> otherUsers = new HashMap<>();
-		
-		private volatile boolean noNew;
+		private volatile boolean           noNew;
 		
 		private RootUser(Secret0 s) {
 			super(s);
@@ -267,18 +248,14 @@ public sealed class User implements Closeable, Comparable<User> {
 		@Override
 		public synchronized void close() {
 			super.close();
-			if (otherUsers == null) {
-				return;
-			}
-			otherUsers.values().forEach(User::close);
-			otherUsers.clear();
-			otherUsers = null;
+			if (this.otherUsers == null) { return; }
+			this.otherUsers.values().forEach(User::close);
+			this.otherUsers.clear();
+			this.otherUsers = null;
 		}
 		
 		public synchronized void maxUsers(int maxUsers) {
-			if (maxUsers < 0) {
-				throw new IllegalArgumentException("negative number for max users");
-			}
+			if (maxUsers < 0) { throw new IllegalArgumentException("negative number for max users"); }
 			this.maxUsers = maxUsers;
 		}
 		
@@ -291,7 +268,7 @@ public sealed class User implements Closeable, Comparable<User> {
 		}
 		
 		public synchronized User get(String user) {
-			User usr = otherUsers.get(user);
+			User usr = this.otherUsers.get(user);
 			if (usr != null) {
 				return usr;
 			} else if (RootUser.ROOT_NAME.equals(user)) {
@@ -302,17 +279,11 @@ public sealed class User implements Closeable, Comparable<User> {
 		}
 		
 		public synchronized User add(String user, char[] pw) {
-			if (noNew) {
-				throw new IllegalStateException("no new users allowed");
-			}
-			Map<String, User> ou = otherUsers;
-			if (maxUsers - 1 <= ou.size()) {
-				throw new IllegalStateException("max amount of users reached");
-			}
+			if (this.noNew) { throw new IllegalStateException("no new users allowed"); }
+			Map<String, User> ou = this.otherUsers;
+			if (this.maxUsers - 1 <= ou.size()) { throw new IllegalStateException("max amount of users reached"); }
 			User usr = ou.get(user);
-			if (usr != null || RootUser.ROOT_NAME.equals(user)) {
-				throw new IllegalArgumentException("there is already an user with that name");
-			}
+			if (usr != null || RootUser.ROOT_NAME.equals(user)) { throw new IllegalArgumentException("there is already an user with that name"); }
 			usr = new User(new Secret0(user, pw));
 			ou.put(user, usr);
 			return usr;
@@ -320,18 +291,14 @@ public sealed class User implements Closeable, Comparable<User> {
 		
 		public synchronized void remove(User remove) {
 			synchronized (remove) {
-				Map<String, User> ot = otherUsers;
-				if (ot.remove(remove.name(), remove)) {
-					throw new AssertionError("I could not find the given user");
-				}
+				Map<String, User> ot = this.otherUsers;
+				if (ot.remove(remove.name(), remove)) { throw new AssertionError("I could not find the given user"); }
 				remove.modCnt++;
 			}
 		}
 		
 		public synchronized void changePW(User usr, char[] newPW) {
-			if (get(usr.s.name) != usr) {
-				throw new AssertionError("I can only change the password of my users!");
-			}
+			if (get(usr.s.name) != usr) { throw new AssertionError("I can only change the password of my users!"); }
 			synchronized (usr) {
 				Secret0 oldSecret = usr.s;
 				char[]  oldPW     = oldSecret._pw;
@@ -348,7 +315,7 @@ public sealed class User implements Closeable, Comparable<User> {
 		
 		public void save(Connection conn) throws IOException {
 			conn.writeInt(RU_SAVE);
-			Map<String, User> ou = otherUsers;
+			Map<String, User> ou = this.otherUsers;
 			conn.writeInt(ou.size());
 			for (User usr : ou.values()) {
 				conn.writeString(usr.s.name);
@@ -379,10 +346,8 @@ public sealed class User implements Closeable, Comparable<User> {
 		}
 		
 		public synchronized void load(Connection conn) throws IOException {
-			Map<String, User> ou = otherUsers;
-			if (!ou.isEmpty()) {
-				throw new IllegalStateException("there are already other users!");
-			}
+			Map<String, User> ou = this.otherUsers;
+			if (!ou.isEmpty()) { throw new IllegalStateException("there are already other users!"); }
 			conn.readInt(RU_SAVE);
 			int remain = conn.readInt();
 			for (; remain > 0; remain--) {
@@ -405,32 +370,18 @@ public sealed class User implements Closeable, Comparable<User> {
 		}
 		
 		public synchronized Map<String, User> users() {
-			HashMap<String, User> res = new HashMap<>(otherUsers.size() + 1);
-			res.putAll(otherUsers);
+			HashMap<String, User> res = new HashMap<>(this.otherUsers.size() + 1);
+			res.putAll(this.otherUsers);
 			res.put(ROOT_NAME, this);
 			return res;
-		}
-		
-		@Override
-		public int hashCode() {
-			return super.hashCode();
-		}
-		
-		@Override
-		public boolean equals(Object obj) {
-			return super.equals(obj);
 		}
 		
 	}
 	
 	private static record Secret0(String name, char[] _pw) {
 		
-		private Secret0
-		
-		{
-			if (name == null || _pw == null) {
-				throw new NullPointerException("user or pw is null");
-			}
+		private Secret0 {
+			if (name == null || _pw == null) throw new NullPointerException("user or pw is null");
 		}
 		
 		@SuppressWarnings({ "static-method", "unused" })
@@ -442,7 +393,7 @@ public sealed class User implements Closeable, Comparable<User> {
 		public int hashCode() {
 			final int prime  = 31;
 			int       result = 1;
-			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
 			return result;
 		}
 		
@@ -455,7 +406,7 @@ public sealed class User implements Closeable, Comparable<User> {
 		public String toString() {
 			StringBuilder builder = new StringBuilder();
 			builder.append("Secret [user=");
-			builder.append(name);
+			builder.append(this.name);
 			builder.append("]");
 			return builder.toString();
 		}

@@ -12,7 +12,7 @@ import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResource
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
-public sealed interface Building extends Entity, ImageableObj permits BuildingImpl {
+public interface Building extends Entity, ImageableObj {
 	
 	/**
 	 * this value holds the amount of different building types plus {@code 1} (for

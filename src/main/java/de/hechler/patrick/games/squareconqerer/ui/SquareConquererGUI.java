@@ -10,10 +10,13 @@ import java.awt.Desktop;
 import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
@@ -33,11 +36,14 @@ import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -87,8 +93,8 @@ import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCLicense;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
-import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock.SeperatingBlock;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
@@ -115,14 +121,19 @@ import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 @SuppressWarnings("preview")
 public class SquareConquererGUI {
 	
+	private final RootWorld     source;
+	private int                 index;
+	private Iterator<RootWorld> iter;
+	private SquareConquererGUI  logView;
+	
 	private World world;
 	
 	private JFrame         frame;
 	private JPanel         panel;
 	private JMenuBar       menu;
 	private JScrollPane    scrollPane;
-	private JButton        hoveringButton;
-	private JButton        hoveringBuildModeButton;
+	private JButton        hoveringRigthButton;
+	private JButton        hoveringLeftButton;
 	private BuildMode      myBuildMode;
 	private JButton[][]    btns;
 	private EntityTurn[][] turns;
@@ -130,68 +141,76 @@ public class SquareConquererGUI {
 	private volatile Map<User, Connection> connects;
 	
 	private final Runnable loadFinishedHook = () -> {
-		if (world instanceof RootWorld) {
-			JOptionPane.showMessageDialog(frame, "finishd loading", "load", JOptionPane.INFORMATION_MESSAGE);
-		} else if (world instanceof RootWorld.Builder) {
-			JOptionPane.showMessageDialog(frame, "finishd loading, the loaded world is in build mode", "load", JOptionPane.INFORMATION_MESSAGE);
-		} else if (world instanceof UserWorld) {
-			JOptionPane.showMessageDialog(frame, "finishd loading, the loaded world is in user mode", "load", JOptionPane.INFORMATION_MESSAGE);
-		} else if (world instanceof RemoteWorld) {
-			JOptionPane.showMessageDialog(frame, "finishd loading, the loaded world is in remote mode", "load", JOptionPane.INFORMATION_MESSAGE);
-		} else if (world != null) {
-			JOptionPane.showMessageDialog(frame, "finishd loading, the loaded world is of type: " + world.getClass().getSimpleName(), "load",
-					JOptionPane.INFORMATION_MESSAGE);
+		if (this.world instanceof RootWorld) {
+			JOptionPane.showMessageDialog(this.frame, "finishd loading", "load", JOptionPane.INFORMATION_MESSAGE);
+		} else if (this.world instanceof RootWorld.Builder) {
+			JOptionPane.showMessageDialog(this.frame, "finishd loading, the loaded world is in build mode", "load", JOptionPane.INFORMATION_MESSAGE);
+		} else if (this.world instanceof UserWorld) {
+			JOptionPane.showMessageDialog(this.frame, "finishd loading, the loaded world is in user mode", "load", JOptionPane.INFORMATION_MESSAGE);
+		} else if (this.world instanceof RemoteWorld) {
+			JOptionPane.showMessageDialog(this.frame, "finishd loading, the loaded world is in remote mode", "load", JOptionPane.INFORMATION_MESSAGE);
+		} else if (this.world != null) {
+			JOptionPane.showMessageDialog(this.frame, "finishd loading, the loaded world is of type: " + this.world.getClass().getSimpleName(), "load", JOptionPane.INFORMATION_MESSAGE);
 		} else {
-			JOptionPane.showMessageDialog(frame, "could not load for some reason", "load failed", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this.frame, "could not load for some reason", "load failed", JOptionPane.ERROR_MESSAGE);
 		}
 	};
 	
 	private final Runnable buildFinishHook = () -> {
-		if (world instanceof RootWorld.Builder) {
-			JOptionPane.showMessageDialog(frame, "the converting to a build mode world is now completed", "converted to build",
-					JOptionPane.INFORMATION_MESSAGE);
+		if (this.world instanceof RootWorld.Builder) {
+			JOptionPane.showMessageDialog(this.frame, "the converting to a build mode world is now completed", "converted to build", JOptionPane.INFORMATION_MESSAGE);
 		} else {
-			JOptionPane.showMessageDialog(frame, "the world build operation is now completed", "finished build", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this.frame, "the world build operation is now completed", "finished build", JOptionPane.INFORMATION_MESSAGE);
 		}
 	};
 	
 	private Thread serverThread;
 	
+	public SquareConquererGUI(RootWorld source, Iterator<RootWorld> iter) {
+		this.source = source;
+		this.iter   = iter;
+		this.world  = iter.next();
+	}
+	
+	public SquareConquererGUI() {
+		this.source = null;
+	}
+	
 	public SquareConquererGUI(World world) {
-		if (world == null) {
-			throw new NullPointerException("world is null");
-		}
-		this.world = world;
+		if (world == null) { throw new NullPointerException("world is null"); }
+		this.source = null;
+		this.world  = world;
 	}
 	
 	public void load(Thread t) {
-		if (frame != null) {
-			throw new IllegalStateException("already loaded");
-		} // I don't need a second method for that
-		if (ensureGUIThread(() -> load(t))) {
-			return;
-		}
-		serverThread = t;
+		if (this.frame != null) { throw new IllegalStateException("already loaded"); } // I don't need a second method for that
+		if (ensureGUIThread(() -> load(t))) { return; }
+		this.serverThread = t;
 		load();
 	}
 	
 	public void load() {
-		if (frame != null) {
-			throw new IllegalStateException("already loaded");
-		} // I don't need a second method for that
-		if (ensureGUIThread(this::load)) {
-			return;
-		}
-		frame = new JFrame();
-		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		frame.addWindowListener(new WindowAdapter() {
+		if (this.frame != null) { throw new IllegalStateException("already loaded"); } // I don't need a second method for that
+		if (ensureGUIThread(this::load)) { return; }
+		this.frame = new JFrame();
+		this.frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+		this.frame.addWindowListener(new WindowAdapter() {
 			
 			@Override
 			public void windowClosing(WindowEvent e) {
-				int chosen = JOptionPane.showConfirmDialog(frame, "Exit Square Conquerer?", "Exit", JOptionPane.YES_NO_OPTION,
-						JOptionPane.QUESTION_MESSAGE);
-				if (chosen == JOptionPane.YES_OPTION) {
-					System.exit(0);
+				if (SquareConquererGUI.this.source != null) {
+					int chosen = JOptionPane.showConfirmDialog(SquareConquererGUI.this.frame, "Close Square Conquerer History?", "Close", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					if (chosen == JOptionPane.YES_OPTION) {
+						if (SquareConquererGUI.this.logView == SquareConquererGUI.this) {
+							SquareConquererGUI.this.logView = null;
+						}
+						SquareConquererGUI.this.frame.dispose();
+					}
+				} else {
+					int chosen = JOptionPane.showConfirmDialog(SquareConquererGUI.this.frame, "Exit Square Conquerer?", "Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					if (chosen == JOptionPane.YES_OPTION) {
+						System.exit(0);
+					}
 				}
 			}
 			
@@ -201,16 +220,19 @@ public class SquareConquererGUI {
 	}
 	
 	private void initMenu() {
-		menu = new JMenuBar();
-		menu.add(menuGeneral());
-		if (world instanceof RootWorld) {
-			menu.add(menuServer());
+		this.menu = new JMenuBar();
+		this.menu.add(menuGeneral());
+		if (this.world instanceof RootWorld) {
+			this.menu.add(menuGameHistory());
+			if (this.source == null) {
+				this.menu.add(menuServer());
+			}
 		}
-		menu.add(menuBuild());
-		menu.add(menuHelp());
-		menu.add(menuCredits());
-		menu.add(menuLicense());
-		frame.setJMenuBar(menu);
+		this.menu.add(menuBuild());
+		this.menu.add(menuHelp());
+		this.menu.add(menuCredits());
+		this.menu.add(menuLicense());
+		this.frame.setJMenuBar(this.menu);
 	}
 	
 	private JMenu menuLicense() {
@@ -249,8 +271,7 @@ public class SquareConquererGUI {
 			addWorldPage(creditsMenu, page, "All Credits (World)", "All Credits World");
 			addPage(creditsMenu, page, "All Credits (Boring)", "Credits: ");
 		}
-		addWorldPage(creditsMenu, SquareConquererAddon.theGame().credits(), SquareConquererAddon.GAME_ADDON_NAME + " (World)",
-				SquareConquererAddon.GAME_ADDON_NAME + " (Credits World)");
+		addWorldPage(creditsMenu, SquareConquererAddon.theGame().credits(), SquareConquererAddon.GAME_ADDON_NAME + " (World)", SquareConquererAddon.GAME_ADDON_NAME + " (Credits World)");
 		addPage(creditsMenu, SquareConquererAddon.theGame().credits(), SquareConquererAddon.GAME_ADDON_NAME + " (Boring)", "Credits: ");
 		for (SquareConquererAddon addon : SquareConquererAddon.onlyAddons()) {
 			addWorldPage(creditsMenu, addon.credits(), "Addon: " + addon.name + " (World)", "Addon: " + addon.name + " (Credits World)");
@@ -272,8 +293,7 @@ public class SquareConquererGUI {
 			addWorldPage(helpMenu, page, "All Helps (World)", "All Helps World");
 			addPage(helpMenu, page, "All Help Pages", "Help: ");
 		}
-		addWorldPage(helpMenu, SquareConquererAddon.theGame().help(), SquareConquererAddon.GAME_ADDON_NAME + " (World)",
-				SquareConquererAddon.GAME_ADDON_NAME + " (Help World)");
+		addWorldPage(helpMenu, SquareConquererAddon.theGame().help(), SquareConquererAddon.GAME_ADDON_NAME + " (World)", SquareConquererAddon.GAME_ADDON_NAME + " (Help World)");
 		addPage(helpMenu, SquareConquererAddon.theGame().help(), SquareConquererAddon.GAME_ADDON_NAME, "Help: ");
 		for (SquareConquererAddon addon : SquareConquererAddon.onlyAddons()) {
 			addWorldPage(helpMenu, addon.help(), "Addon: " + addon.name + " (World)", "Addon: " + addon.name + " (Help World)");
@@ -285,20 +305,19 @@ public class SquareConquererGUI {
 	private void addWorldPage(JMenu menu, SCPage page, String addonName, String title) {
 		JMenuItem item = new JMenuItem(addonName);
 		item.addActionListener(e -> {
-			int chosen = JOptionPane.showConfirmDialog(frame, "load " + title + "? (your current world will be discarded)", "load page world",
-					JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			int chosen = JOptionPane.showConfirmDialog(this.frame, "load " + title + "? (your current world will be discarded)", "load page world", JOptionPane.YES_NO_OPTION,
+				JOptionPane.QUESTION_MESSAGE);
 			if (chosen != JOptionPane.YES_OPTION) return;
 			PageWorld pw = new PageWorld(page);
-			if (world instanceof RemoteWorld rw) {
+			if (this.world instanceof RemoteWorld rw) {
 				try {
 					rw.close();
 				} catch (IOException e1) {
 					e1.printStackTrace();
-					JOptionPane.showMessageDialog(frame, "error wile closing remote world: " + e1.toString() + " (I will continue anyway)",
-							"error on close (ignored)", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this.frame, "error wile closing remote world: " + e1.toString() + " (I will continue anyway)", "error on close (ignored)", JOptionPane.ERROR_MESSAGE);
 				}
 			}
-			Thread st = serverThread;
+			Thread st = this.serverThread;
 			while (st != null) {
 				st.interrupt();
 				try {
@@ -306,17 +325,17 @@ public class SquareConquererGUI {
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
-				st = serverThread;
+				st = this.serverThread;
 			}
-			world = pw.createWorld().create();
-			reload(loadFinishedHook, true, true);
+			this.world = pw.createWorld().create();
+			reload(this.loadFinishedHook, true, true);
 		});
 		menu.add(item);
 	}
 	
 	private void addPage(JMenu menu, SCPage page, String addonName, String titlePrefix) {
 		JMenuItem item = new JMenuItem(addonName);
-		item.addActionListener(e -> showPage(new JDialog(frame), page, addonName, titlePrefix));
+		item.addActionListener(e -> showPage(new JDialog(this.frame), page, addonName, titlePrefix));
 		menu.add(item);
 	}
 	
@@ -406,28 +425,26 @@ public class SquareConquererGUI {
 			
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				int chosen = JOptionPane.showConfirmDialog(dialog,
-						"load world " + we.worldName() + '?' + (world == null ? "" : " current world will be discarded!"),
-						"load " + we.worldName() + '?', JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+				int chosen = JOptionPane.showConfirmDialog(dialog, "load world " + we.worldName() + '?' + (SquareConquererGUI.this.world == null ? "" : " current world will be discarded!"),
+					"load " + we.worldName() + '?', JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 				if (chosen != JOptionPane.YES_OPTION) return;
 				World w = we.world().get();
 				if (w == null) {
 					JOptionPane.showMessageDialog(dialog, "error: world is null", "there is no world", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
-				if (world instanceof RemoteWorld rw) {
+				if (SquareConquererGUI.this.world instanceof RemoteWorld rw) {
 					try {
 						rw.close();
 					} catch (IOException e1) {
 						e1.printStackTrace();
-						JOptionPane.showMessageDialog(dialog, "error: while closing remote world: " + e1.toString() + " (I will continue anyway)",
-								e1.getClass().toString(), JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(dialog, "error: while closing remote world: " + e1.toString() + " (I will continue anyway)", e1.getClass().toString(), JOptionPane.ERROR_MESSAGE);
 					}
 				}
-				Thread st = serverThread;
+				Thread st = SquareConquererGUI.this.serverThread;
 				while (st != null) {
 					st.interrupt();
-					Map<User, Connection> cs = connects;
+					Map<User, Connection> cs = SquareConquererGUI.this.connects;
 					try {
 						st.join(10L);
 					} catch (InterruptedException e1) {
@@ -442,10 +459,10 @@ public class SquareConquererGUI {
 							}
 						}
 					}
-					st = serverThread;
+					st = SquareConquererGUI.this.serverThread;
 				}
-				world = w;
-				reload(loadFinishedHook, true, true);
+				SquareConquererGUI.this.world = w;
+				reload(SquareConquererGUI.this.loadFinishedHook, true, true);
 			}
 			
 		});
@@ -497,13 +514,11 @@ public class SquareConquererGUI {
 			public void mouseClicked(MouseEvent e) {
 				try {
 					URI uri    = le.link();
-					int chosen = JOptionPane.showConfirmDialog(dialog, "open link: " + uri, "open link", JOptionPane.YES_NO_OPTION,
-							JOptionPane.QUESTION_MESSAGE);
+					int chosen = JOptionPane.showConfirmDialog(dialog, "open link: " + uri, "open link", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 					if (chosen != JOptionPane.YES_OPTION) return;
 					Desktop.getDesktop().browse(uri);
 				} catch (IOException | RuntimeException e1) {
-					JOptionPane.showMessageDialog(dialog, "error while opening link '" + le.link() + "': " + e1.toString(), "could not open the link",
-							JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(dialog, "error while opening link '" + le.link() + "': " + e1.toString(), "could not open the link", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			
@@ -544,7 +559,7 @@ public class SquareConquererGUI {
 	
 	private JMenu menuBuild() {
 		JMenu buildMenu = new JMenu("Build");
-		if (world instanceof RootWorld.Builder) {
+		if (this.world instanceof RootWorld.Builder) {
 			addFillRandomMenuItems(buildMenu);
 		} else {
 			addConvertToBuildMenuItem(buildMenu);
@@ -556,70 +571,139 @@ public class SquareConquererGUI {
 		JMenuItem toBuild = new JMenuItem("to build world");
 		toBuild.setToolTipText("convert this world to a build world");
 		toBuild.addActionListener(e -> {
-			int chosen = JOptionPane.showConfirmDialog(frame,
-					"convert to a build world?"
-							+ (world instanceof RemoteWorld || serverThread != null ? " (this will close the server connection)" : ""),
-					"to build world", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-			if (chosen != JOptionPane.YES_OPTION) {
-				return;
-			}
-			Thread st = serverThread;
+			int chosen = JOptionPane.showConfirmDialog(this.frame,
+				"convert to a build world?" + (this.world instanceof RemoteWorld || this.serverThread != null ? " (this will close the server connection)" : ""), "to build world",
+				JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (chosen != JOptionPane.YES_OPTION) { return; }
+			Thread st = this.serverThread;
 			if (st != null) {
 				st.interrupt();
 			}
-			User              oldUsr = world.user();
+			User              oldUsr = this.world.user();
 			RootUser          root   = oldUsr.rootClone();
-			RootWorld.Builder b      = new RootWorld.Builder(root, world.xlen(), world.ylen());
+			RootWorld.Builder b      = new RootWorld.Builder(root, this.world.xlen(), this.world.ylen());
 			for (int x = 0; x < b.xlen(); x++) {
 				for (int y = 0; y < b.ylen(); y++) {
-					b.set(x, y, world.tile(x, y));
+					b.set(x, y, this.world.tile(x, y));
 				}
 			}
-			if (world instanceof RemoteWorld rw) {
+			if (this.world instanceof RemoteWorld rw) {
 				try {
 					rw.close();
 				} catch (IOException e1) {
-					JOptionPane.showMessageDialog(frame, "error while closing remote world (do not retry, I will proceed anyway): " + e.toString(),
-							"error: " + e.getClass(), JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this.frame, "error while closing remote world (do not retry, I will proceed anyway): " + e1.toString(), "error: " + e.getClass(),
+						JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			oldUsr.close();
-			world = b;
+			this.world = b;
 			b.addNextTurnListener(() -> update(null));
-			reload(buildFinishHook, true, true);
+			reload(this.buildFinishHook, true, true);
 		});
 		buildMenu.add(toBuild);
 	}
 	
 	private void addFillRandomMenuItems(JMenu buildMenu) {
 		JMenuItem fillRandom = new JMenuItem("fill with random tiles");
-		fillRandom.setToolTipText("<html>replace all tiles with type not-explored with random tiles<br>"
-				+ "note that then also not-explored tiles with a resource set may get their resource replaced<br>"
+		fillRandom
+			.setToolTipText("<html>replace all tiles with type not-explored with random tiles<br>" + "note that then also not-explored tiles with a resource set may get their resource replaced<br>"
 				+ "the world builder may use rules, which change the possibility for some tiles (such as ocean tiles can only be placed near other water tiles)</html>");
 		fillRandom.addActionListener(e -> {
-			int chosen = JOptionPane.showConfirmDialog(frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE);
-			if (chosen != JOptionPane.YES_OPTION) {
-				return;
-			}
-			((RootWorld.Builder) world).fillRandom();
+			int chosen = JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (chosen != JOptionPane.YES_OPTION) { return; }
+			((RootWorld.Builder) this.world).fillRandom();
 			threadBuilder().start(() -> update(null));
-			JOptionPane.showMessageDialog(frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this.frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
 		});
 		buildMenu.add(fillRandom);
 		JMenuItem fillTotallyRandom = new JMenuItem("fill with totally random tiles");
-		fillTotallyRandom.setToolTipText("<html>replace all tiles with type not-explored with random tiles<br>"
-				+ "note that then also not-explred tiles with a resource set may get their resource replaced</html>");
+		fillTotallyRandom.setToolTipText(
+			"<html>replace all tiles with type not-explored with random tiles<br>" + "note that then also not-explred tiles with a resource set may get their resource replaced</html>");
 		fillTotallyRandom.addActionListener(e -> {
-			int chosen = JOptionPane.showConfirmDialog(frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE);
-			if (chosen != JOptionPane.YES_OPTION) {
-				return;
-			}
-			((RootWorld.Builder) world).fillTotallyRandom();
-			JOptionPane.showMessageDialog(frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
+			int chosen = JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (chosen != JOptionPane.YES_OPTION) { return; }
+			((RootWorld.Builder) this.world).fillTotallyRandom();
+			JOptionPane.showMessageDialog(this.frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
 		});
 		buildMenu.add(fillTotallyRandom);
+	}
+	
+	private JMenu menuGameHistory() {
+		JMenu gameHistoryMenu = new JMenu("Game History");
+		if (this.source != null) {
+			JMenuItem nextItem = new JMenuItem("Next Turn");
+			JMenuItem prevItem = new JMenuItem("Prev Turn");
+			JMenuItem gotoItem = new JMenuItem("Goto Turn");
+			
+			nextItem.addActionListener(e -> gotoTurn(this.index + 1));
+			prevItem.addActionListener(e -> gotoTurn(this.index - 1));
+			gotoItem.addActionListener(e -> {
+				JDialog dialog = createDialog();
+				JPanel  dp     = new JPanel(new GridLayout(1, 2));
+				dialog.setContentPane(dp);
+				dp.add(new JLabel("Enter Turn: "));
+				NumberDocument doc = new NumberDocument(0, this.source.iterCount() - 1);
+				dp.add(new JTextField(doc, Integer.toString(this.index), 0));
+				dp.add(new JLabel());
+				JButton fin = new JButton("goto");
+				dp.add(fin);
+				fin.addActionListener(e1 -> {
+					gotoTurn(doc.getNumber());
+					dialog.dispose();
+				});
+				initDialog(dialog, false);
+			});
+			
+			gameHistoryMenu.add(nextItem);
+			gameHistoryMenu.add(prevItem);
+			gameHistoryMenu.add(gotoItem);
+		} else {
+			JMenuItem showItem = new JMenuItem("Show");
+			
+			showItem.addActionListener(menuGameHistoryShowListener());
+			
+			gameHistoryMenu.add(showItem);
+			
+			addSendUsers(gameHistoryMenu);
+		}
+		return gameHistoryMenu;
+	}
+	
+	private void gotoTurn(int turn) {
+		if (turn < 0) {
+			JOptionPane.showMessageDialog(this.frame, "there is no negative turn", "invalid turn", JOptionPane.ERROR_MESSAGE);
+			return;
+		} else if (turn >= this.source.iterCount()) {
+			JOptionPane.showMessageDialog(this.frame, "there is no turn " + turn + " (yet)", "invalid turn", JOptionPane.ERROR_MESSAGE);
+			return;
+		} // the turns can only be done forward
+		if (turn < this.index) {
+			this.iter  = this.source.iterator();
+			this.index = 0;
+			this.world = this.iter.next();
+		}
+		while (turn > this.index) {
+			this.world = this.iter.next();
+			this.index++;
+		}
+		update(null);
+	}
+	
+	private ActionListener menuGameHistoryShowListener() {
+		return e -> {
+			if (this.logView != null) {
+				this.logView.frame.toFront();
+				this.logView.frame.requestFocus(Cause.TRAVERSAL);
+				return;
+			}
+			int c = JOptionPane.showConfirmDialog(this.frame, "show the game history?", "show history", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.YES_OPTION) return;
+			this.logView         = new SquareConquererGUI((RootWorld) this.world, ((RootWorld) this.world).iterator());
+			this.logView.logView = this;
+			this.logView.load();
+			this.logView.frame.toFront();
+			this.logView.frame.requestFocusInWindow(Cause.ACTIVATION);
+		};
 	}
 	
 	private JMenu menuServer() {
@@ -628,7 +712,8 @@ public class SquareConquererGUI {
 		JMenuItem closeItem    = new JMenuItem("Close Running Server");
 		JMenuItem addItem      = new JMenuItem("Add Player");
 		JMenuItem delItem      = new JMenuItem("Delete Player");
-		JMenuItem pwChangeItem = new JMenuItem("change Password");
+		JMenuItem pwChangeItem = new JMenuItem("Change Password");
+		
 		
 		openItem.addActionListener(menuServerOpenListener(serverMenu, openItem, closeItem));
 		closeItem.addActionListener(menuServerCloseListener(serverMenu, openItem, closeItem));
@@ -640,7 +725,61 @@ public class SquareConquererGUI {
 		serverMenu.add(addItem);
 		serverMenu.add(delItem);
 		serverMenu.add(pwChangeItem);
+		addSendUsers(serverMenu);
 		return serverMenu;
+	}
+	
+	@SuppressWarnings("unlikely-arg-type")
+	private void addSendUsers(JMenu addMenu) {
+		JMenuItem sendUsersItem = new JMenuItem("Send Users");
+		JMenuItem sendUserItem  = new JMenuItem("Send Single User");
+		
+		sendUserItem.addActionListener(e -> {
+			JDialog dialog = createDialog();
+			JPanel  dp     = new JPanel();
+			dialog.setContentPane(dp);
+			dp.setLayout(new GridLayout(1, 2));
+			dp.add(new JLabel("Select User: "));
+			Object[] usrs = this.logView.connects.keySet().toArray();
+			Arrays.sort(usrs);
+			String[] names = new String[usrs.length];
+			for (int i = 0; i < names.length; i++) {
+				names[i] = ((User) usrs[i]).name();
+			}
+			JComboBox<String> combo = new JComboBox<>(names);
+			dp.add(combo);
+			combo.addActionListener(e1 -> {
+				Connection conn = this.logView.connects.get(usrs[combo.getSelectedIndex()]);
+				if (conn == null) {
+					JOptionPane.showMessageDialog(combo, "the user seeems to be disconnected", "no connection", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				int c = JOptionPane.showConfirmDialog(combo, "send '" + conn.usr.name() + "' the game history?", "validate?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+				if (c != JOptionPane.YES_OPTION) return;
+				try {
+					conn.blocked(() -> ((RootWorld) this.world).validateGame(conn));
+				} catch (IOException e2) {
+					JOptionPane.showMessageDialog(combo, "the validation failed: " + e2.toString(), "error: could not validate", JOptionPane.ERROR_MESSAGE);
+				}
+			});
+			initDialog(dialog, false);
+		});
+		
+		sendUsersItem.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(this.frame, "send all connected users the game history?", "validate?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.YES_OPTION) return;
+			for (Connection conn : this.connects.values()) {
+				try {
+					conn.blocked(() -> ((RootWorld) this.world).validateGame(conn));
+				} catch (IOException e2) {
+					JOptionPane.showMessageDialog(this.frame, "the validation failed for the user (" + conn.usr.name() + "): " + e2.toString(), "error: could not validate", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
+		
+		addMenu.add(sendUsersItem);
+		addMenu.add(sendUserItem);
+		
 	}
 	
 	private ActionListener menuServerPWChangeListener() {
@@ -667,16 +806,13 @@ public class SquareConquererGUI {
 			dp.add(change);
 			
 			combo.addItem(RootUser.ROOT_NAME);
-			RootUser root = ((RootWorld) world).user();
+			RootUser root = ((RootWorld) this.world).user();
 			root.users().keySet().forEach(combo::addItem);
 			
 			change.addActionListener(oe -> {
 				String name   = combo.getSelectedItem().toString();
-				int    chosen = JOptionPane.showConfirmDialog(dialog, "change the password of '" + name + "'?", "change password",
-						JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-				if (chosen != JOptionPane.YES_OPTION) {
-					return;
-				}
+				int    chosen = JOptionPane.showConfirmDialog(dialog, "change the password of '" + name + "'?", "change password", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+				if (chosen != JOptionPane.YES_OPTION) { return; }
 				root.changePW(root.get(name), pw.getPassword());
 				dialog.dispose();
 			});
@@ -686,7 +822,7 @@ public class SquareConquererGUI {
 	}
 	
 	private JDialog createDialog() {
-		return createDialog(new JDialog(frame));
+		return createDialog(new JDialog(this.frame));
 	}
 	
 	private static JDialog createDialog(JDialog dialog) {
@@ -712,7 +848,7 @@ public class SquareConquererGUI {
 	}
 	
 	private void initDialog(JDialog dialog, boolean scrollable) {
-		dialog.setLocationRelativeTo(frame);
+		dialog.setLocationRelativeTo(this.frame);
 		if (scrollable) {
 			JScrollPane scroll = (JScrollPane) dialog.getContentPane();
 			scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
@@ -738,7 +874,7 @@ public class SquareConquererGUI {
 			scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		} else dialog.pack();
-		dialog.setLocationRelativeTo(frame);
+		dialog.setLocationRelativeTo(this.frame);
 		dialog.setVisible(true);
 	}
 	
@@ -756,21 +892,17 @@ public class SquareConquererGUI {
 			combo.setEditable(false);
 			JButton delBtn = new JButton("DELTE USER");
 			
-			RootUser root = ((RootWorld) world).user();
+			RootUser root = ((RootWorld) this.world).user();
 			root.users().keySet().forEach(combo::addItem);
 			
 			delBtn.addActionListener(oe -> {
 				String name   = combo.getSelectedItem().toString();
-				int    chosen = JOptionPane.showConfirmDialog(dialog, "DELETE '" + name + "'?", "DELETE USER", JOptionPane.YES_NO_OPTION,
-						JOptionPane.QUESTION_MESSAGE);
-				if (chosen != JOptionPane.YES_OPTION) {
-					return;
-				}
+				int    chosen = JOptionPane.showConfirmDialog(dialog, "DELETE '" + name + "'?", "DELETE USER", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+				if (chosen != JOptionPane.YES_OPTION) { return; }
 				
 				threadBuilder().start(() -> {
 					root.remove(root.get(name));
-					SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(frame, "the user '" + name + "' was successfully deleted",
-							"user DELETED", JOptionPane.INFORMATION_MESSAGE));
+					SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.frame, "the user '" + name + "' was successfully deleted", "user DELETED", JOptionPane.INFORMATION_MESSAGE));
 				});
 			});
 			
@@ -807,9 +939,7 @@ public class SquareConquererGUI {
 					if ((getLength() + str.length()) >= 127) {
 						int len = getText(0, getLength()).getBytes(StandardCharsets.UTF_8).length;
 						len += str.getBytes(StandardCharsets.UTF_8).length;
-						if (len > 0xFF) {
-							return;
-						}
+						if (len > 0xFF) { return; }
 					}
 					super.insertString(offs, str, a);
 				}
@@ -825,7 +955,7 @@ public class SquareConquererGUI {
 			
 			finishBtn.addActionListener(oe -> {
 				try {
-					RootUser root = ((RootWorld) world).user();
+					RootUser root = ((RootWorld) this.world).user();
 					root.add(userField.getText(), pw.getPassword());
 				} catch (Exception err) {
 					JOptionPane.showMessageDialog(dialog, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
@@ -840,8 +970,8 @@ public class SquareConquererGUI {
 	
 	private ActionListener menuServerCloseListener(JMenu serverMenu, JMenuItem openItem, JMenuItem closeItem) {
 		return e -> {
-			Thread st = serverThread;
-			serverThread = null;
+			Thread st = this.serverThread;
+			this.serverThread = null;
 			st.interrupt();
 			serverMenu.remove(closeItem);
 			threadBuilder().start(() -> {
@@ -851,7 +981,7 @@ public class SquareConquererGUI {
 					e1.printStackTrace();
 				}
 				SwingUtilities.invokeLater(() -> serverMenu.add(openItem, 0));
-				JOptionPane.showMessageDialog(frame, "server stopped successfully", "Server Stopped", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(this.frame, "server stopped successfully", "Server Stopped", JOptionPane.INFORMATION_MESSAGE);
 			});
 		};
 	}
@@ -873,9 +1003,8 @@ public class SquareConquererGUI {
 			dp.add(portTxt);
 			
 			JCheckBox serverPWCB = new JCheckBox("Server Password");
-			serverPWCB.setToolTipText("<html>a server password lets remote users create accounts themself<br>"
-					+ "It is then no longer needed to add all users manually,<br>"
-					+ "but everyone with the server password can create an infinit amount of users</html>");
+			serverPWCB.setToolTipText("<html>a server password lets remote users create accounts themself<br>" + "It is then no longer needed to add all users manually,<br>"
+				+ "but everyone with the server password can create an infinit amount of users</html>");
 			dp.add(serverPWCB);
 			JPasswordField serverPWPF = new JPasswordField(16);
 			dp.add(serverPWPF);
@@ -892,42 +1021,39 @@ public class SquareConquererGUI {
 					ServerSocket ss   = new ServerSocket(port);
 					synchronized (SquareConquererGUI.this) {
 						final HashMap<User, Connection> hm = new HashMap<>();
-						connects     = hm;
-						serverThread = threadBuilder().start(() -> {
-											try {
-												RootWorld rw = (RootWorld) world;
-												Connection.ServerAccept.accept(ss, rw, (conn, sok) -> {
-																	threadBuilder().start(() -> JOptionPane.showMessageDialog(frame,
-																			"'" + conn.usr.name() + "' logged in from " + sok.getInetAddress(),
-																			"remote log in", JOptionPane.INFORMATION_MESSAGE));
-																},
+						this.connects     = hm;
+						this.serverThread = threadBuilder().start(() -> {
+												try {
+													RootWorld rw = (RootWorld) this.world;
+													Connection.ServerAccept.accept(ss, rw, (conn, sok) -> threadBuilder().start(() -> {
+																			InetAddress addr = sok.getInetAddress();
+																			String name = conn.usr.name();
+																			JOptionPane.showMessageDialog(this.frame, "'" + name + "' logged in from " + addr, "remote log in",
+																				JOptionPane.INFORMATION_MESSAGE);
+																		}),
 														hm, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
-											} catch (IOException err) {
-												if (err instanceof ClosedByInterruptException || Thread.interrupted()) {
-													return;
-												}
-												JOptionPane.showMessageDialog(frame, "error: " + err.getMessage(), err.getClass().getSimpleName(),
-														JOptionPane.ERROR_MESSAGE);
-											} finally {
-												synchronized (SquareConquererGUI.this) {
-													if (connects == hm) {
-														connects = null;
+												} catch (IOException err) {
+													if (err instanceof ClosedByInterruptException || Thread.interrupted()) { return; }
+													JOptionPane.showMessageDialog(this.frame, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+												} finally {
+													synchronized (SquareConquererGUI.this) {
+														if (this.connects == hm) {
+															this.connects = null;
+														}
+													}
+													for (Connection conn : hm.values()) {
+														try {
+															conn.close();
+														} catch (IOException e1) {
+															e1.printStackTrace();
+														}
 													}
 												}
-												for (Connection conn : hm.values()) {
-													try {
-														conn.close();
-													} catch (IOException e1) {
-														e1.printStackTrace();
-													}
-												}
-											}
-										});
+											});
 					}
 					serverMenu.remove(openItem);
 					serverMenu.add(closeItem, 0);
-					JOptionPane.showMessageDialog(frame, "server started on port " + ss.getLocalPort(), "Server Started",
-							JOptionPane.INFORMATION_MESSAGE);
+					JOptionPane.showMessageDialog(this.frame, "server started on port " + ss.getLocalPort(), "Server Started", JOptionPane.INFORMATION_MESSAGE);
 				} catch (Exception err) {
 					JOptionPane.showMessageDialog(dialog, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
 					return;
@@ -956,8 +1082,7 @@ public class SquareConquererGUI {
 	private void initMenuGeneralExit(JMenu generalMenu) {
 		JMenuItem exitItem = new JMenuItem("Exit");
 		exitItem.addActionListener(e -> {
-			int chosen = JOptionPane.showConfirmDialog(exitItem, "Exit Square Conquerer?", "Exit", JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE);
+			int chosen = JOptionPane.showConfirmDialog(exitItem, "Exit Square Conquerer?", "Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (chosen == JOptionPane.YES_OPTION) {
 				System.exit(0);
 			}
@@ -968,7 +1093,7 @@ public class SquareConquererGUI {
 	private void initMenuGeneralLoad(JMenu generalMenu, JFileChooser fc, boolean loadEverything) {
 		JMenuItem loadItem = new JMenuItem(loadEverything ? "Load Everything" : "Load");
 		loadItem.addActionListener(e -> {
-			int result = fc.showOpenDialog(frame);
+			int result = fc.showOpenDialog(this.frame);
 			if (result == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
 				if (loadEverything) {
@@ -982,26 +1107,26 @@ public class SquareConquererGUI {
 	}
 	
 	private void loadEverythingFromFile(File file) {
-		User     usr  = world.user();
+		User     usr  = this.world.user();
 		RootUser root = usr.rootClone();
 		try {
 			try (FileInputStream in = new FileInputStream(file); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, root)) {
 				World w = RootWorld.loadEverything(conn);
 				synchronized (SquareConquererGUI.this) {
-					while (updateThread != null) {
-						updateThread.interrupt();
+					while (this.updateThread != null) {
+						this.updateThread.interrupt();
 						try {
-							updateThread.join(10L);
+							this.updateThread.join(10L);
 						} catch (InterruptedException e1) {
 							e1.printStackTrace();
 						}
 					}
 					this.world = w;
 				}
-				SwingUtilities.invokeLater(() -> reload(loadFinishedHook, true, true));
+				SwingUtilities.invokeLater(() -> reload(this.loadFinishedHook, true, true));
 			} catch (IOException e) {
 				e.printStackTrace();
-				JOptionPane.showMessageDialog(frame, e.toString(), e.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(this.frame, e.toString(), e.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
 			}
 		} catch (Throwable t) {
 			root.close();
@@ -1010,7 +1135,7 @@ public class SquareConquererGUI {
 	}
 	
 	private void loadFromFile(File file) {
-		User usr = world.user();
+		User usr = this.world.user();
 		try (FileInputStream in = new FileInputStream(file); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 			Tile[][] tiles;
 			RootUser root = usr.rootClone();
@@ -1023,116 +1148,108 @@ public class SquareConquererGUI {
 			}
 			usr.close();
 			synchronized (SquareConquererGUI.this) {
-				while (updateThread != null) {
-					updateThread.interrupt();
+				while (this.updateThread != null) {
+					this.updateThread.interrupt();
 					try {
-						updateThread.join(100L);
+						this.updateThread.join(100L);
 					} catch (InterruptedException e1) {
 						e1.printStackTrace();
 					}
 				}
 				try {
 					this.world = RootWorld.Builder.create(root, tiles);
-				} catch (IllegalStateException err) {
+				} catch (@SuppressWarnings("unused") IllegalStateException err) {
 					this.world = RootWorld.Builder.createBuilder(root, tiles);
 				}
 			}
-			SwingUtilities.invokeLater(() -> reload(loadFinishedHook, true, true));
+			SwingUtilities.invokeLater(() -> reload(this.loadFinishedHook, true, true));
 		} catch (IOException | RuntimeException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(frame, e.toString(), e.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this.frame, e.toString(), e.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
 		}
 	}
 	
 	private void initMenuGeneralSave(JMenu generalMenu, JFileChooser fc, boolean saveAll) {
-		if (saveAll && !(world instanceof RootWorld)) return;
+		if (saveAll && !(this.world instanceof RootWorld)) return;
 		JMenuItem saveItem = new JMenuItem(saveAll ? "Save Everything" : "Save");
 		saveItem.addActionListener(e -> saveItemActionListener(fc, saveAll));
 		generalMenu.add(saveItem);
 	}
 	
 	private void saveItemActionListener(JFileChooser fc, boolean saveAll) {
-		if (!(world instanceof RootWorld)) {
+		if (!(this.world instanceof RootWorld)) {
 			if (saveAll) {
-				JOptionPane.showMessageDialog(frame, "the save everything buton should not exist, only root worlds can save everything", "ERROR",
-						JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(this.frame, "the save everything buton should not exist, only root worlds can save everything", "ERROR", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-			int choosen = JOptionPane.showConfirmDialog(frame,
-					"the world is no root world, it may not contain the full information and thus there may be unexplred tiles",
-					"save non root world", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-			if (choosen != JOptionPane.YES_OPTION) {
-				return;
-			}
+			int choosen = JOptionPane.showConfirmDialog(this.frame, "the world is no root world, it may not contain the full information and thus there may be unexplred tiles", "save non root world",
+				JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (choosen != JOptionPane.YES_OPTION) { return; }
 		}
-		int result = fc.showSaveDialog(frame);
+		int result = fc.showSaveDialog(this.frame);
 		if (result == JFileChooser.APPROVE_OPTION) {
 			File file = fc.getSelectedFile();
 			if (file.exists()) {
-				int chosen = JOptionPane.showConfirmDialog(frame, "overwrite '" + file + "'?", "overwrite file", JOptionPane.YES_NO_OPTION,
-						JOptionPane.QUESTION_MESSAGE);
-				if (chosen != JOptionPane.YES_OPTION) {
-					return;
-				}
+				int chosen = JOptionPane.showConfirmDialog(this.frame, "overwrite '" + file + "'?", "overwrite file", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+				if (chosen != JOptionPane.YES_OPTION) { return; }
 			}
 			try {
-				try (FileOutputStream out = new FileOutputStream(file);
-						Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, world.user());) {
+				try (FileOutputStream out = new FileOutputStream(file); Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, this.world.user());) {
 					if (saveAll) {
-						((RootWorld) world).saveEverything(conn);
+						((RootWorld) this.world).saveEverything(conn);
 					} else {
-						User u = world.user();
+						User u = this.world.user();
 						if (u instanceof RootUser root) {
 							root.save(conn);
 						} else {
 							RootUser.nopw().save(conn);
 						}
-						OpenWorld.saveWorld(world, conn);
+						OpenWorld.saveWorld(this.world, conn);
 					}
-					JOptionPane.showMessageDialog(frame, "finishd saving", "save", JOptionPane.INFORMATION_MESSAGE);
+					JOptionPane.showMessageDialog(this.frame, "finishd saving", "save", JOptionPane.INFORMATION_MESSAGE);
 				}
 			} catch (IOException e1) {
 				e1.printStackTrace();
-				JOptionPane.showMessageDialog(frame, e1.toString(), e1.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(this.frame, e1.toString(), e1.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
 			}
 		}
 	}
 	
 	private void reload(Runnable ufh, boolean reload, boolean addNTL) {
-		updateFinishHook = ufh;
+		this.updateFinishHook = ufh;
 		
 		ToolTipManager.sharedInstance().setInitialDelay(500);
 		
 		if (reload) {
-			frame.setEnabled(false);
+			this.frame.setEnabled(false);
 		}
 		
-		frame.setTitle(world.getClass().getSimpleName() + ": " + world.user().name() + " (" + world.xlen() + '|' + world.ylen() + ')');
+		this.frame.setTitle(this.world.getClass().getSimpleName() + ": " + this.world.user().name() + " (" + this.world.xlen() + '|' + this.world.ylen() + ')');
 		
 		initMenu();
 		System.out.println("reload: menu initialized");
-		int xlen     = world.xlen();
-		int ylen     = world.ylen();
+		int xlen     = this.world.xlen();
+		int ylen     = this.world.ylen();
 		int iconSize = Settings.iconSize();
-		panel = new JPanel();
-		panel.addMouseWheelListener(this::wheelScroll);
-		panel.setLayout(new GridLayout(ylen, xlen, 0, 0));
-		panel.applyComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+		this.panel = new JPanel();
+		this.panel.addMouseWheelListener(this::wheelScroll);
+		this.panel.setLayout(new GridLayout(ylen, xlen, 0, 0));
+		this.panel.applyComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
 		Dimension panelDim = new Dimension(xlen * iconSize, ylen * iconSize);
-		panel.setPreferredSize(panelDim);
-		scrollPane = new JScrollPane(panel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-		scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
-		frame.setContentPane(scrollPane);
+		this.panel.setPreferredSize(panelDim);
+		this.scrollPane = new JScrollPane(this.panel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		this.scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+		this.scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+		this.frame.setContentPane(this.scrollPane);
 		if (reload) {
-			frame.setEnabled(true);
+			this.frame.setEnabled(true);
 		}
-		btns = new JButton[xlen][ylen];
+		this.btns = new JButton[xlen][ylen];
 		for (int y = 0; y < ylen; y++) {
 			for (int x = 0; x < xlen; x++) {
 				final JButton btn = new JButton();
-				btns[x][y] = btn;
-				panel.add(btn);
+				this.btns[x][y] = btn;
+				this.panel.add(btn);
 				btn.setBorderPainted(false);
 				final int fx = x;
 				final int fy = y;
@@ -1153,8 +1270,13 @@ public class SquareConquererGUI {
 				btn.addMouseListener(new MouseAdapter() {
 					
 					@Override
+					public void mouseExited(MouseEvent e) {
+						btn.setBorderPainted(false);
+					}
+					
+					@Override
 					public void mousePressed(MouseEvent e) {
-						if (world instanceof RootWorld.Builder && myBuildMode != null && myBuildMode.isActive()) {
+						if (SquareConquererGUI.this.world instanceof RootWorld.Builder && SquareConquererGUI.this.myBuildMode != null && SquareConquererGUI.this.myBuildMode.isActive()) {
 							int mod = e.getModifiersEx();
 							if ((mod & InputEvent.BUTTON1_DOWN_MASK) != 0) {
 								pressed(fx, fy);
@@ -1165,7 +1287,7 @@ public class SquareConquererGUI {
 					@Override
 					public void mouseEntered(MouseEvent e) {
 						btn.requestFocusInWindow(Cause.MOUSE_EVENT);
-						if (world instanceof RootWorld.Builder && myBuildMode != null && myBuildMode.isActive()) {
+						if (SquareConquererGUI.this.world instanceof RootWorld.Builder && SquareConquererGUI.this.myBuildMode != null && SquareConquererGUI.this.myBuildMode.isActive()) {
 							int mod = e.getModifiersEx();
 							if ((mod & InputEvent.BUTTON1_DOWN_MASK) != 0) {
 								pressed(fx, fy);
@@ -1176,15 +1298,15 @@ public class SquareConquererGUI {
 				});
 			}
 		}
-		btns[0][0].addComponentListener(new ComponentAdapter() {
+		this.btns[0][0].addComponentListener(new ComponentAdapter() {
 			
 			@Override
 			public void componentResized(ComponentEvent e) {
-				if (btns[0][0].getWidth() != btns[0][0].getHeight()) {
-					int max = Math.max(btns[0][0].getWidth(), btns[0][0].getHeight());
+				if (SquareConquererGUI.this.btns[0][0].getWidth() != SquareConquererGUI.this.btns[0][0].getHeight()) {
+					int max = Math.max(SquareConquererGUI.this.btns[0][0].getWidth(), SquareConquererGUI.this.btns[0][0].getHeight());
 					Settings.iconSize(max);
-					Dimension dim = new Dimension(max * btns.length, max * btns[0].length);
-					panel.setPreferredSize(dim);
+					Dimension dim = new Dimension(max * SquareConquererGUI.this.btns.length, max * SquareConquererGUI.this.btns[0].length);
+					SquareConquererGUI.this.panel.setPreferredSize(dim);
 				}
 				update(null);
 			}
@@ -1192,26 +1314,24 @@ public class SquareConquererGUI {
 		});
 		System.out.println("reload: buttons initialized");
 		if (!reload) {
-			frame.setLocationByPlatform(true);
-		}
-		resizeFrame(panelDim);
-		if (!reload) {
+			this.frame.setLocationByPlatform(true);
 			System.out.println("set now visible");
 			long start = System.currentTimeMillis();
-			frame.setVisible(true);
+			this.frame.setVisible(true);
 			long end = System.currentTimeMillis();
 			System.out.println("needed " + (end - start) + "ms to make the frame visible");
 		}
+		resizeFrame(panelDim);
 		addHoveringBtn(iconSize);
 		update(ufh);
 		if (addNTL) {
-			world.addNextTurnListener(() -> update(null));
+			this.world.addNextTurnListener(() -> update(null));
 		}
 	}
 	
 	private void wheelScroll(MouseWheelEvent e) {
-		JScrollBar horizont = scrollPane.getHorizontalScrollBar();
-		JScrollBar vertical = scrollPane.getVerticalScrollBar();
+		JScrollBar horizont = this.scrollPane.getHorizontalScrollBar();
+		JScrollBar vertical = this.scrollPane.getVerticalScrollBar();
 		if ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) == 0 || e.getScrollType() != MouseWheelEvent.WHEEL_UNIT_SCROLL) {
 			JScrollBar sb;
 			if ((e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) == 0) {
@@ -1242,65 +1362,124 @@ public class SquareConquererGUI {
 		}
 		Settings.iconSize(Settings.between(2, w, 4096));
 		int       is  = Settings.iconSize();
-		Dimension dim = new Dimension(is * btns.length, is * btns[0].length);
-		panel.setPreferredSize(dim);
+		Dimension dim = new Dimension(is * this.btns.length, is * this.btns[0].length);
+		this.panel.setPreferredSize(dim);
 		resizeFrame(dim);
 		addHoveringBtn(is);
 		horizont.setValue((int) (relativeHorizont * horizont.getMaximum() - horizont.getVisibleAmount() * .5D));
 		vertical.setValue((int) (relativeVertical * vertical.getMaximum() - vertical.getVisibleAmount() * .5D));
-		panel.invalidate();
+		this.panel.invalidate();
 	}
 	
 	private void resizeFrame(Dimension panelDim) {
 		// the frame.pack() method is just to slow for large worlds
-		GraphicsConfiguration conf    = frame.getGraphicsConfiguration();
-		Rectangle             bounds  = conf.getBounds();
-		Insets                insets  = frame.getInsets();
-		Dimension             menuDim = menu.getPreferredSize();
-		int                   w       = Math.min(Math.max(panelDim.width, menuDim.width) + insets.left + insets.right, bounds.width);
-		int                   h       = Math.min(panelDim.height + menuDim.height + insets.bottom + insets.top, bounds.height);
+		GraphicsConfiguration conf = this.frame.getGraphicsConfiguration();
+		doReize(panelDim, conf, true);
+	}
+	
+	private void doReize(Dimension panelDim, GraphicsConfiguration conf, boolean firstCall) {
+		int x = this.frame.getX();
+		int y = this.frame.getY();
+		System.out.println("x=" + x + " y=" + y);
+		if (firstCall) conf = getConf(conf, x, y);
+		System.out.println("conf: conf=" + conf);
+		Rectangle bounds = conf.getBounds();
+		System.out.println("      bnds=" + bounds);
+		Insets confInsets = Toolkit.getDefaultToolkit().getScreenInsets(conf);
+		System.out.println("      cins=" + confInsets);
+		bounds.x      += confInsets.left;
+		bounds.y      += confInsets.top;
+		bounds.width  -= confInsets.left + confInsets.right;
+		bounds.height -= confInsets.top + confInsets.bottom;
+		Insets insets = this.frame.getInsets();
+		System.out.println("      fins=" + insets);
+		Dimension menuDim = this.menu.getPreferredSize();
+		int       w       = Math.min(Math.max(panelDim.width, menuDim.width) + insets.left + insets.right, bounds.width);
+		int       h       = Math.min(panelDim.height + menuDim.height + insets.bottom + insets.top, bounds.height);
 		if (w != bounds.width || h != bounds.height) { // small world, do pack (getInsets before pack or visible is useless)
-			frame.pack();
-			w = Math.min(frame.getWidth(), bounds.width);
-			h = Math.min(frame.getHeight(), bounds.height);
+			this.frame.pack();
+			w = Math.min(this.frame.getWidth(), bounds.width);
+			h = Math.min(this.frame.getHeight(), bounds.height);
 		}
-		frame.setSize(w, h);
+		if (this.frame.getWidth() != w || this.frame.getHeight() != h) {
+			this.frame.setSize(w, h);
+		}
+		x = this.frame.getX();
+		y = this.frame.getY();
+		System.out.println("x=" + x + " y=" + y);
+		GraphicsConfiguration conf2 = getConf(conf, x, y);
+		if (conf2 != conf && firstCall) {
+			doReize(panelDim, conf2, false);
+			return;
+		}
+		if (bounds.x > x) {
+			x = bounds.x;
+		} else if (bounds.x < x) {
+			int bw = bounds.width - x + bounds.x;
+			if (bw < w) {
+				x += bw - w;
+			}
+		}
+		if (bounds.y > y) {
+			y = bounds.y;
+		} else if (bounds.y < y) {
+			int bh = bounds.height - y + bounds.y;
+			if (bh < h) {
+				y += bh - h;
+			}
+		}
+		if (this.frame.getX() != x || this.frame.getY() != y) {
+			this.frame.setLocation(x, y);
+		}
+	}
+	
+	private GraphicsConfiguration getConf(GraphicsConfiguration conf, int x, int y) {
+		for (GraphicsDevice screen : GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()) {
+			GraphicsConfiguration screenConf = screen.getDefaultConfiguration();
+			Rectangle             bnds       = screenConf.getBounds();
+			if (bnds.contains(x + (this.frame.getWidth() >>> 1), y + (this.frame.getHeight() >>> 1))) {
+				System.out.println("found conf: conf=" + conf);
+				conf = screenConf;
+				break;
+			}
+		}
+		return conf;
 	}
 	
 	private void addHoveringBtn(int tileIconSize) {
-		if (hoveringButton == null) {
-			hoveringButton = new JButton();
-			hoveringButton.addActionListener(this::hoverBtnAction);
-			initHoverBtn(hoveringButton);
-			initHBMouseListeners(hoveringButton);
+		if (this.hoveringRigthButton == null) {
+			this.hoveringRigthButton = new JButton();
+			this.hoveringRigthButton.addActionListener(this::hoverBtnAction);
+			initHoverBtn(this.hoveringRigthButton);
+			initHBMouseListeners(this.hoveringRigthButton);
 		}
-		setHBImage(tileIconSize, hoveringButton);
-		if (world instanceof RootWorld.Builder) {
-			if (hoveringBuildModeButton == null) {
-				hoveringBuildModeButton = new JButton();
-				hoveringBuildModeButton.addActionListener(this::hoverBuildBtnAction);
-				initHoverBtn(hoveringBuildModeButton);
-				initHBMouseListeners(hoveringBuildModeButton);
+		setHBImage(tileIconSize, this.hoveringRigthButton);
+		if (this.world instanceof RootWorld.Builder || this.source != null) {
+			if (this.hoveringLeftButton == null) {
+				this.hoveringLeftButton = new JButton();
+				this.hoveringLeftButton.addActionListener(this::hoverLeftBtnAction);
+				initHoverBtn(this.hoveringLeftButton);
+				initHBMouseListeners(this.hoveringLeftButton);
 			}
-			setHBImage(tileIconSize, hoveringBuildModeButton);
+			setHBImage(tileIconSize, this.hoveringLeftButton);
 		}
 		JPanel p = new JPanel();
 		p.setLayout(null);
-		p.add(hoveringButton);
-		if (world instanceof RootWorld.Builder) p.add(hoveringBuildModeButton);
-		frame.setGlassPane(p);
-		p.setBounds(0, 0, scrollPane.getWidth(), scrollPane.getHeight() + menu.getHeight());
+		p.add(this.hoveringRigthButton);
+		if (this.world instanceof RootWorld.Builder || this.source != null) p.add(this.hoveringLeftButton);
+		this.frame.setGlassPane(p);
+		p.setBounds(0, 0, this.scrollPane.getWidth(), this.scrollPane.getHeight() + this.menu.getHeight());
 		p.setVisible(true);
 		p.setOpaque(false);
-		setHBLocation(hoveringButton);
-		if (world instanceof RootWorld.Builder) setHBLocation(hoveringBuildModeButton);
-		scrollPane.addComponentListener(new ComponentAdapter() {
+		setHBLocation(this.hoveringRigthButton);
+		if (this.world instanceof RootWorld.Builder || this.source != null) setHBLocation(this.hoveringLeftButton);
+		this.scrollPane.addComponentListener(new ComponentAdapter() {
 			
 			@Override
 			public void componentResized(ComponentEvent e) {
-				p.setBounds(0, 0, scrollPane.getWidth(), scrollPane.getHeight() + menu.getHeight());
-				setHBLocation(hoveringButton);
-				if (world instanceof RootWorld.Builder) setHBLocation(hoveringBuildModeButton);
+				p.setBounds(0, 0, SquareConquererGUI.this.scrollPane.getWidth(), SquareConquererGUI.this.scrollPane.getHeight() + SquareConquererGUI.this.menu.getHeight());
+				setHBLocation(SquareConquererGUI.this.hoveringRigthButton);
+				if (SquareConquererGUI.this.world instanceof RootWorld.Builder || SquareConquererGUI.this.source != null) setHBLocation(SquareConquererGUI.this.hoveringLeftButton);
 			}
 			
 		});
@@ -1308,18 +1487,18 @@ public class SquareConquererGUI {
 	}
 	
 	private void setHBLocation(JButton hoveringButton) {
-		int y = scrollPane.getY() + scrollPane.getHeight() - hoveringButton.getHeight();
-		if (scrollPane.getHorizontalScrollBar().isShowing()) {
-			y -= scrollPane.getHorizontalScrollBar().getHeight();
+		int y = this.scrollPane.getY() + this.scrollPane.getHeight() - hoveringButton.getHeight();
+		if (this.scrollPane.getHorizontalScrollBar().isShowing()) {
+			y -= this.scrollPane.getHorizontalScrollBar().getHeight();
 		}
-		if (hoveringButton == this.hoveringButton) {
-			int x = scrollPane.getWidth() - hoveringButton.getWidth();
-			if (scrollPane.getVerticalScrollBar().isShowing()) {
-				x -= scrollPane.getVerticalScrollBar().getWidth();
+		if (hoveringButton == this.hoveringRigthButton) {
+			int x = this.scrollPane.getWidth() - hoveringButton.getWidth();
+			if (this.scrollPane.getVerticalScrollBar().isShowing()) {
+				x -= this.scrollPane.getVerticalScrollBar().getWidth();
 			}
 			hoveringButton.setLocation(x, y);
 		} else {
-			hoveringButton.setLocation(scrollPane.getX(), y);
+			hoveringButton.setLocation(this.scrollPane.getX(), y);
 		}
 	}
 	
@@ -1329,8 +1508,7 @@ public class SquareConquererGUI {
 		hoveringButton.addMouseListener(val);
 		hoveringButton.addMouseWheelListener(e -> {
 			if (ignore(hoveringButton, e)) {
-				Component  comp = panel.findComponentAt(hoveringButton.getX() + e.getX() - panel.getX(),
-						hoveringButton.getY() + e.getY() - panel.getY());
+				Component  comp = this.panel.findComponentAt(hoveringButton.getX() + e.getX() - this.panel.getX(), hoveringButton.getY() + e.getY() - this.panel.getY());
 				MouseEvent newE = SwingUtilities.convertMouseEvent(hoveringButton, e, comp);
 				comp.dispatchEvent(newE);
 			}
@@ -1347,9 +1525,8 @@ public class SquareConquererGUI {
 				if (ignore(hoveringButton, e)) {
 					Component comp = findComp(hoveringButton, e);
 					if (comp instanceof JButton btn) {
-						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(),
-								hoveringButton.getX() + e.getX() - btn.getX(), hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(),
-								e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
+						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(), hoveringButton.getX() + e.getX() - btn.getX(), hoveringButton.getY() + e.getY() - btn.getY(),
+							e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 						btn.dispatchEvent(event);
 					}
 				}
@@ -1360,9 +1537,8 @@ public class SquareConquererGUI {
 				if (ignore(hoveringButton, e)) {
 					Component comp = findComp(hoveringButton, e);
 					if (comp instanceof JButton btn) {
-						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(),
-								hoveringButton.getX() + e.getX() - btn.getX(), hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(),
-								e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
+						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(), hoveringButton.getX() + e.getX() - btn.getX(), hoveringButton.getY() + e.getY() - btn.getY(),
+							e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 						btn.dispatchEvent(event);
 					}
 				}
@@ -1372,31 +1548,29 @@ public class SquareConquererGUI {
 			public void mouseMoved(MouseEvent e) {
 				if (ignore(hoveringButton, e)) {
 					Component comp = findComp(hoveringButton, e);
-					if (comp != lastbtn && lastbtn != null) {
-						lastbtn.setBorderPainted(false);
-					} else if (comp == lastbtn) {
+					if (comp != this.lastbtn && this.lastbtn != null) {
+						this.lastbtn.setBorderPainted(false);
+					} else if (comp == this.lastbtn) {
 						if (comp == null) return;
-						MouseEvent event = new MouseEvent(comp, e.getID(), e.getWhen(), e.getModifiersEx(),
-								hoveringButton.getX() + e.getX() - comp.getX(), hoveringButton.getY() + e.getY() - comp.getY(), e.getXOnScreen(),
-								e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
+						MouseEvent event = new MouseEvent(comp, e.getID(), e.getWhen(), e.getModifiersEx(), hoveringButton.getX() + e.getX() - comp.getX(),
+							hoveringButton.getY() + e.getY() - comp.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 						comp.dispatchEvent(event);
 						return;
 					}
 					if (comp == null) return;
 					if (comp instanceof JButton btn) {
 						btn.setBorderPainted(true);
-						lastbtn = btn;
+						this.lastbtn = btn;
 					}
-					MouseEvent event = new MouseEvent(comp, MouseEvent.MOUSE_ENTERED, e.getWhen(), e.getModifiersEx(),
-							hoveringButton.getX() + e.getX() - comp.getX(), hoveringButton.getY() + e.getY() - comp.getY(), e.getXOnScreen(),
-							e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
+					MouseEvent event = new MouseEvent(comp, MouseEvent.MOUSE_ENTERED, e.getWhen(), e.getModifiersEx(), hoveringButton.getX() + e.getX() - comp.getX(),
+						hoveringButton.getY() + e.getY() - comp.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 					comp.dispatchEvent(event); // send mouse enter event, so the button displays the correct border
 					// no need to send an mouse leave event (I only let the mouse hover border print
 					comp.requestFocusInWindow(Cause.MOUSE_EVENT);// or non border at all be displayed)
-				} else if (lastbtn != null) {
-					lastbtn.setBorderPainted(false);
+				} else if (this.lastbtn != null) {
+					this.lastbtn.setBorderPainted(false);
 					hoveringButton.requestFocusInWindow(Cause.MOUSE_EVENT);
-					lastbtn = null;
+					this.lastbtn = null;
 				}
 			}
 			
@@ -1407,14 +1581,14 @@ public class SquareConquererGUI {
 			
 			@Override
 			public void mouseEntered(MouseEvent e) {
-				lastbtn = null;
+				this.lastbtn = null;
 				mouseMoved(e);
 			}
 			
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (ignore(hoveringButton, e)) {
-					skipAction++;
+					SquareConquererGUI.this.skipAction++;
 				}
 			}
 			
@@ -1431,9 +1605,9 @@ public class SquareConquererGUI {
 	
 	private void setHBImage(int tileIconSize, JButton hoveringButton) {
 		try {
-			BufferedImage img        = ImageIO.read(getClass().getResource(switch (world) {
+			BufferedImage img        = ImageIO.read(getClass().getResource(switch (this.world) {
 										case RootWorld.Builder b -> {
-											if (hoveringButton == this.hoveringButton) {
+											if (hoveringButton == this.hoveringRigthButton) {
 												b.addNextTurnListener(() -> hoveringButton.setVisible(b.buildable()));
 												hoveringButton.setToolTipText("<html>build the world</html>");
 												hoveringButton.setVisible(b.buildable());
@@ -1444,10 +1618,22 @@ public class SquareConquererGUI {
 											}
 										}
 										case RootWorld rw -> {
-											rw.addNextTurnListener(() -> hoveringButton.setVisible(rw.running()));
-											hoveringButton.setVisible(!rw.running());
-											hoveringButton.setToolTipText("<html>start the game</html>");
-											yield "/img/START_GAME.png";
+											if (this.source != null) {
+												if (hoveringButton == this.hoveringRigthButton) {
+													hoveringButton.setVisible(true);
+													hoveringButton.setToolTipText("<html>goto the next turn</html>");
+													yield "/img/NEXT_TURN.png";
+												} else {
+													hoveringButton.setVisible(true);
+													hoveringButton.setToolTipText("<html>goto the previos turn</html>");
+													yield "/img/PREV_TURN.png";
+												}
+											} else {
+												rw.addNextTurnListener(() -> hoveringButton.setVisible(rw.running()));
+												hoveringButton.setVisible(!rw.running());
+												hoveringButton.setToolTipText("<html>start the game</html>");
+												yield "/img/START_GAME.png";
+											}
 										}
 										default -> {
 											hoveringButton.setToolTipText("<html>finish your turn</html>");
@@ -1467,9 +1653,7 @@ public class SquareConquererGUI {
 					int w   = hoveringButton.getWidth();
 					int h   = hoveringButton.getHeight();
 					int min = Math.min(w, h);
-					if (min == curw) {
-						return;
-					}
+					if (min == this.curw) { return; }
 					ImageIcon icon = new ImageIcon(img.getScaledInstance(min, min, Image.SCALE_SMOOTH));
 					hoveringButton.setIcon(icon);
 				}
@@ -1486,7 +1670,7 @@ public class SquareConquererGUI {
 	}
 	
 	private Component findComp(JButton hb, MouseEvent e) {
-		return panel.findComponentAt(hb.getX() + e.getX() - panel.getX(), hb.getY() + e.getY() - panel.getY());
+		return this.panel.findComponentAt(hb.getX() + e.getX() - this.panel.getX(), hb.getY() + e.getY() - this.panel.getY());
 	}
 	
 	private int skipAction;
@@ -1506,14 +1690,19 @@ public class SquareConquererGUI {
 		return relDist > 0.465D * len;
 	}
 	
-	private void hoverBuildBtnAction(ActionEvent ignore) {
-		if (skipAction > 0) {
-			skipAction--;
+	private void hoverLeftBtnAction(ActionEvent ignore) {
+		if (this.skipAction > 0) {
+			this.skipAction--;
 			return;
 		}
 		
-		if (myBuildMode == null) {
-			myBuildMode = new BuildMode();
+		if (this.source != null) {
+			gotoTurn(this.index - 1);
+			return;
+		}
+		
+		if (this.myBuildMode == null) {
+			this.myBuildMode = new BuildMode();
 		}
 		JDialog dialog = createDialog();
 		dialog.setTitle("change the build mode");
@@ -1524,28 +1713,28 @@ public class SquareConquererGUI {
 		btn.setToolTipText("<html>no build mode, open a dialog when clicking at a tile</html>");
 		dp.add(btn);
 		btn.addActionListener(e -> {
-			myBuildMode.makeInactive();
+			this.myBuildMode.makeInactive();
 			dialog.dispose();
 		});
 		btn = new JButton("+normal");
 		btn.setToolTipText("<html>change the tile type to a normal tile type (remove hills and make water non-deep)</html>");
 		dp.add(btn);
 		btn.addActionListener(e -> {
-			myBuildMode.makePlusNormal();
+			this.myBuildMode.makePlusNormal();
 			dialog.dispose();
 		});
 		btn = new JButton("+hill");
 		btn.setToolTipText("<html>add hills to the tile type (do nothing if the type does not support hills)</html>");
 		dp.add(btn);
 		btn.addActionListener(e -> {
-			myBuildMode.makePlusHill();
+			this.myBuildMode.makePlusHill();
 			dialog.dispose();
 		});
 		btn = new JButton("+deep");
 		btn.setToolTipText("<html>make (normal) water deep/ocean water (do nothing if the type does not support the deep mode)</html>");
 		dp.add(btn);
 		btn.addActionListener(e -> {
-			myBuildMode.makePlusDeep();
+			this.myBuildMode.makePlusDeep();
 			dialog.dispose();
 		});
 		String[] vals = new String[TileType.count() + 1];
@@ -1557,7 +1746,7 @@ public class SquareConquererGUI {
 		dp.add(ttcombo);
 		ttcombo.addActionListener(e -> {
 			if (ttcombo.getSelectedIndex() >= TileType.count()) return;
-			myBuildMode.makeSetGround(TileType.of(ttcombo.getSelectedIndex()));
+			this.myBuildMode.makeSetGround(TileType.of(ttcombo.getSelectedIndex()));
 			dialog.dispose();
 		});
 		vals = new String[OreResourceType.count() + 1];
@@ -1569,7 +1758,7 @@ public class SquareConquererGUI {
 		dp.add(ortcombo);
 		ortcombo.addActionListener(e -> {
 			if (ortcombo.getSelectedIndex() >= TileType.count()) return;
-			myBuildMode.makeSetGround(TileType.of(ortcombo.getSelectedIndex()));
+			this.myBuildMode.makeSetGround(TileType.of(ortcombo.getSelectedIndex()));
 			dialog.dispose();
 		});
 		initDialog(dialog, false);
@@ -1577,22 +1766,23 @@ public class SquareConquererGUI {
 	
 	private void hoverBtnAction(ActionEvent e) {
 		// Well I can't get the position of an action event
-		if (skipAction > 0) {
-			skipAction--;
+		if (this.skipAction > 0) {
+			this.skipAction--;
 			return;
 		}
 		
-		switch (world) {
+		switch (this.world) {
 		case RootWorld rw -> {
-			if (connects == null) {
-				JOptionPane.showMessageDialog(frame, "you need to start a server and all players need to be connected at game start",
-						"no server started", JOptionPane.ERROR_MESSAGE);
+			if (this.source != null) {
+				gotoTurn(this.index + 1);
 				return;
 			}
-			int chosen = JOptionPane.showConfirmDialog(frame, "start the game", "START", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-			if (chosen != JOptionPane.YES_OPTION) {
+			if (this.connects == null) {
+				JOptionPane.showMessageDialog(this.frame, "you need to start a server and all players need to be connected at game start", "no server started", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
+			int chosen = JOptionPane.showConfirmDialog(this.frame, "start the game", "START", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (chosen != JOptionPane.YES_OPTION) { return; }
 			synchronized (this) {
 				Map<User, Connection> conns = this.connects;
 				byte[]                seed  = new byte[(conns.size() + 1) << 4];
@@ -1605,53 +1795,43 @@ public class SquareConquererGUI {
 					Collections.sort(list, (a, b) -> a.usr.name().compareTo(b.usr.name()));
 					for (Iterator<Connection> iter = list.iterator(); iter.hasNext(); i += 16) {
 						final Connection conn = iter.next();
-						try {
-							conn.blocked(() -> RootWorld.fillRnd(conn, tmp));
-						} catch (IOException e1) {
-							JOptionPane.showMessageDialog(frame, "could not get the random value from a client", "start failed",
-									JOptionPane.ERROR_MESSAGE);
-						}
+						conn.blocked(() -> RootWorld.fillRnd(conn, tmp));
 						System.arraycopy(tmp, 0, seed, i, 16);
 					}
-					if (i < seed.length) {
-						throw new ConcurrentModificationException();
-					}
+					if (i < seed.length) { throw new ConcurrentModificationException(); }
 					rw.startGame(seed);
-				} catch (ConcurrentModificationException err) {
-					JOptionPane.showMessageDialog(frame, "accepted/lost a connection during the initilation", "start failed",
-							JOptionPane.ERROR_MESSAGE);
+				} catch (IOException e1) {
+					JOptionPane.showMessageDialog(this.frame, "could not get the random value from a client: " + e1.toString(), "start failed", JOptionPane.ERROR_MESSAGE);
+				} catch (@SuppressWarnings("unused") ConcurrentModificationException err) {
+					JOptionPane.showMessageDialog(this.frame, "accepted/lost a connection during the initilation", "start failed", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		}
 		case RootWorld.Builder b -> {
-			int chosen = JOptionPane.showConfirmDialog(frame, "build the world", "BUILD", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-			if (chosen != JOptionPane.YES_OPTION) {
-				return;
-			}
+			int chosen = JOptionPane.showConfirmDialog(this.frame, "build the world", "BUILD", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (chosen != JOptionPane.YES_OPTION) { return; }
 			RootWorld rw = b.create();
-			world = rw;
-			reload(buildFinishHook, true, true);
+			this.world = rw;
+			reload(this.buildFinishHook, true, true);
 		}
 		case RemoteWorld rw -> threadBuilder().start(this::finishTurn);
-		default -> throw new AssertionError("illegal world type: " + world.getClass());
+		default -> throw new AssertionError("illegal world type: " + this.world.getClass());
 		}
 	}
 	
 	private void finishTurn() throws AssertionError {
-		int chosen = JOptionPane.showConfirmDialog(frame, "finish your turn", "finish", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-		if (chosen != JOptionPane.YES_OPTION) {
-			return;
-		}
-		Turn t = new Turn(world);
-		for (int x = 0; x < turns.length; x++) {
-			EntityTurn[] ets = turns[x];
+		int chosen = JOptionPane.showConfirmDialog(this.frame, "finish your turn", "finish", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+		if (chosen != JOptionPane.YES_OPTION) { return; }
+		Turn t = new Turn(this.world);
+		for (int x = 0; x < this.turns.length; x++) {
+			EntityTurn[] ets = this.turns[x];
 			for (int y = 0; y < ets.length; y++) {
 				EntityTurn et = ets[y];
 				if (et == null) {
 					continue;
 				}
 				ets[y] = null;
-				Tile   tile = world.tile(x, y);
+				Tile   tile = this.world.tile(x, y);
 				Entity ett  = switch (et) {
 							case CarryTurn val -> tile.unit();
 							case MoveTurn val -> tile.unit();
@@ -1661,25 +1841,19 @@ public class SquareConquererGUI {
 				t.put(ett, et);
 			}
 		}
-		world.finish(t);
+		this.world.finish(t);
 	}
 	
 	public void visible(boolean b) {
-		if (frame == null) {
-			throw new IllegalStateException("not yet loaded!");
-		}
-		if (ensureGUIThread(() -> visible(b))) {
-			return;
-		}
-		if (frame.isVisible() == b) {
-			return;
-		}
+		if (this.frame == null) { throw new IllegalStateException("not yet loaded!"); }
+		if (ensureGUIThread(() -> visible(b))) { return; }
+		if (this.frame.isVisible() == b) { return; }
 		if (b) {
-			System.out.println("set now visible (large worlds may need some time) world size: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ')');
-			frame.setVisible(true);
+			System.out.println("set now visible (large worlds may need some time) world size: (xlen=" + this.world.xlen() + "|ylen=" + this.world.ylen() + ')');
+			this.frame.setVisible(true);
 			update(null);
 		} else {
-			frame.setVisible(false);
+			this.frame.setVisible(false);
 		}
 	}
 	
@@ -1687,26 +1861,20 @@ public class SquareConquererGUI {
 	private volatile Runnable updateFinishHook;
 	
 	private void update(Runnable ufh) {
-		if (frame == null) {
-			throw new IllegalStateException("not yet loaded!");
-		}
-		Runnable updateFin = updateFinishHook;
+		if (this.frame == null) { throw new IllegalStateException("not yet loaded!"); }
+		Runnable updateFin = this.updateFinishHook;
 		if (ufh != updateFin) {
 			assert ufh == null || updateFin == null;
 			return;
 		}
-		if (updateThread != null) {
+		if (this.updateThread != null) {
 			assert ufh == null;
 			return;
 		}
-		if (ensureNotGUIThread(() -> update(ufh))) {
-			return;
-		}
+		if (ensureNotGUIThread(() -> update(ufh))) { return; }
 		synchronized (SquareConquererGUI.this) {
-			if (updateThread != null) {
-				return;
-			}
-			updateThread = Thread.currentThread();
+			if (this.updateThread != null) { return; }
+			this.updateThread = Thread.currentThread();
 		}
 		try {
 			updateBtns();
@@ -1715,14 +1883,14 @@ public class SquareConquererGUI {
 			}
 			Runnable ufh0;
 			synchronized (SquareConquererGUI.this) {
-				ufh0 = updateFinishHook;
+				ufh0 = this.updateFinishHook;
 				if (ufh != null) {
-					updateFinishHook = null;
+					this.updateFinishHook = null;
 				}
 			}
 			SwingUtilities.invokeLater(() -> {
-				if (frame.isVisible()) { // invalidate and repaint does not work, setVisible does
-					frame.setVisible(true);
+				if (this.frame.isVisible()) { // invalidate and repaint does not work, setVisible does
+					this.frame.setVisible(true);
 				}
 				if (ufh0 != null) {
 					ufh0.run();
@@ -1730,7 +1898,7 @@ public class SquareConquererGUI {
 			});
 		} finally {
 			synchronized (SquareConquererGUI.this) {
-				updateThread = null;
+				this.updateThread = null;
 				SquareConquererGUI.this.notifyAll();
 			}
 		}
@@ -1738,15 +1906,13 @@ public class SquareConquererGUI {
 	
 	private void updateBtns() {
 		int       size = iconSize();
-		final int xlen = btns.length;
-		final int ylen = btns[0].length;
+		final int xlen = this.btns.length;
+		final int ylen = this.btns[0].length;
 		for (int x = 0; x < xlen; x++) {
-			JButton[] bs = btns[x];
+			JButton[] bs = this.btns[x];
 			for (int y = 0; y < ylen; y++) {
-				if (Thread.interrupted()) {
-					return;
-				}
-				Tile          t = world.tile(x, y);
+				if (Thread.interrupted()) { return; }
+				Tile          t = this.world.tile(x, y);
 				final Icon    i = t.icon(size, size);
 				StringBuilder b = new StringBuilder().append("<html>");
 				if (t.hasPage()) {
@@ -1772,19 +1938,19 @@ public class SquareConquererGUI {
 	
 	private int iconSize() {
 		int size = Settings.iconSize();
-		if (btns[0][0].getWidth() > 0 && btns[0][0].getHeight() > 0) {
-			size = Math.min(btns[0][0].getWidth(), btns[0][0].getHeight());
+		if (this.btns[0][0].getWidth() > 0 && this.btns[0][0].getHeight() > 0) {
+			size = Math.min(this.btns[0][0].getWidth(), this.btns[0][0].getHeight());
 		}
 		return size;
 	}
 	
 	private void pressed(int x, int y) {
-		if (world instanceof RootWorld.Builder b && myBuildMode != null && myBuildMode.isActive()) {
-			Tile t = myBuildMode.modify(b.tile(x, y));
+		if (this.world instanceof RootWorld.Builder b && this.myBuildMode != null && this.myBuildMode.isActive()) {
+			Tile t = this.myBuildMode.modify(b.tile(x, y));
 			b.set(x, y, t);
 			return;
 		}
-		Tile    t      = world.tile(x, y);
+		Tile    t      = this.world.tile(x, y);
 		JDialog dialog = createDialog();
 		dialog.setTitle("Tile at (" + x + '|' + y + ')');
 		JPanel dp = new JPanel();
@@ -1796,7 +1962,7 @@ public class SquareConquererGUI {
 			dp.add(pbtn);
 			pbtn.addActionListener(e -> showPage(new JDialog(dialog), t.page(), t.pageTitle(), null));
 		}
-		if (world instanceof RootWorld.Builder rb) {
+		if (this.world instanceof RootWorld.Builder rb) {
 			JComboBox<TileType>        cbt = new JComboBox<>(TileType.values());
 			JComboBox<OreResourceType> cbr = new JComboBox<>(OreResourceType.values());
 			cbt.setEditable(false);

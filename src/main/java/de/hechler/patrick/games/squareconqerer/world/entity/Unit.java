@@ -15,7 +15,7 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
-public sealed interface Unit extends Entity, ImageableObj, Comparable<Unit> permits UnitImpl {
+public interface Unit extends Entity, ImageableObj, Comparable<Unit> {
 	
 	/**
 	 * this value holds the amount of different unit types plus {@code 1} (for
