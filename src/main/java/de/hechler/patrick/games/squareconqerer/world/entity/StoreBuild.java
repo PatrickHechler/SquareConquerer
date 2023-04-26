@@ -1,6 +1,7 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
 import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
@@ -10,9 +11,11 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 public final class StoreBuild extends BuildingImpl {
 	
-	public static final String NAME = "Storage";
-
-	public static final int NUMBER = 0x5A1C58D0;
+	public static final String NAME   = "Storage";
+	public static final int    NUMBER = 0x5A1C58D0;
+	
+	private static final int ORIDINAL_BASE_VALUE = 1;
+	private static int       oridinal;
 	
 	private final EnumIntMap<OreResourceType>        ores       = new EnumIntMap<>(OreResourceType.class);
 	private final EnumIntMap<ProducableResourceType> producable = new EnumIntMap<>(ProducableResourceType.class);
@@ -22,7 +25,7 @@ public final class StoreBuild extends BuildingImpl {
 	}
 	
 	public StoreBuild(int x, int y, User usr, int lives, EnumIntMap<ProducableResourceType> neededBuildResources, int remainBuildTurns,
-			EnumIntMap<OreResourceType> ores, EnumIntMap<ProducableResourceType> producable) {
+		EnumIntMap<OreResourceType> ores, EnumIntMap<ProducableResourceType> producable) {
 		super(x, y, usr, 5, lives, neededBuildResources, remainBuildTurns);
 		this.ores.putAll(ores);
 		this.producable.putAll(producable);
@@ -88,6 +91,11 @@ public final class StoreBuild extends BuildingImpl {
 	}
 	
 	@Override
-	public int ordinal() { return 1; }
+	public int ordinal() {
+		if (oridinal == 0) {
+			oridinal = ORIDINAL_BASE_VALUE + SquareConquererAddon.theGame().oridinalOffsetBuilding();
+		}
+		return oridinal;
+	}
 	
 }

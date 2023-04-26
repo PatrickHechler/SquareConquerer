@@ -12,8 +12,6 @@ import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.world.PageWorld;
-import de.hechler.patrick.games.squareconqerer.world.entity.BuildingImpl;
-import de.hechler.patrick.games.squareconqerer.world.entity.UnitImpl;
 
 public final class TheGameAddon extends SquareConquererAddon {
 	
@@ -23,33 +21,33 @@ public final class TheGameAddon extends SquareConquererAddon {
 	private final TheGameEntities entities = new TheGameEntities();
 	
 	public TheGameAddon() {
-		super(SquareConquererAddon.GAME_ADDON_NAME, UnitImpl.MY_COUNT_NO_NULL + BuildingImpl.MY_COUNT_NO_NULL);
+		super(SquareConquererAddon.GAME_ADDON_NAME);
 	}
 	
 	private SCLicense myLicense;
 	
 	@Override
 	public SCLicense license() {
-		if (myLicense == null) {
+		if (this.myLicense == null) {
 			try (InputStream in = getClass().getResourceAsStream("/LICENSE")) {
 				byte[] bytes = in.readAllBytes();
 				String text  = new String(bytes, StandardCharsets.UTF_8);
-				myLicense = new SCLicense("AGPL v3+", text);
+				this.myLicense = new SCLicense("AGPL v3+", text);
 			} catch (IOException e) {
 				throw new IOError(e);
 			}
 		}
-		return myLicense;
+		return this.myLicense;
 	}
 	
 	private SCPage myHelp;
 	
 	@Override
 	public SCPage help() {
-		if (myHelp == null) {
-			myHelp = generateMyHelpPage(0);
+		if (this.myHelp == null) {
+			this.myHelp = generateMyHelpPage(0);
 		}
-		return myHelp;
+		return this.myHelp;
 	}
 	
 	private SCPage generateMyHelpPage(int deep) {
@@ -89,7 +87,7 @@ public final class TheGameAddon extends SquareConquererAddon {
 						/*		*/"Tutorials:"//
 				), //
 				new SCPageBlock.EntryBlock(//
-						new SCPageEntry.WorldEntry("\tSimple Tutorial", "Simple Tutorial", () -> new PageWorld(myCredits).createWorld())//
+						new SCPageEntry.WorldEntry("\tSimple Tutorial", "Simple Tutorial", () -> new PageWorld(this.myCredits).createWorld())//
 				)//
 		);
 	}
@@ -112,8 +110,8 @@ public final class TheGameAddon extends SquareConquererAddon {
 	// own add-on with your own credits
 	@Override
 	public SCPage credits() {
-		if (myCredits == null) {
-			myCredits = new SCPage(//
+		if (this.myCredits == null) {
+			this.myCredits = new SCPage(//
 					new SCPageBlock.TextBlock(//
 							/*		*/"Square Conquerer:\n"//
 									+ "\tHere are the credits for the\n"//
@@ -125,22 +123,12 @@ public final class TheGameAddon extends SquareConquererAddon {
 					) //
 			);
 		}
-		return myCredits;
+		return this.myCredits;
 	}
 	
 	@Override
 	public AddonEntities entities() {
-		return entities;
-	}
-	
-	@Override
-	protected void initOridinalOffset(int offset) {
-		throw new UnsupportedOperationException("the game addon does not support an offset diffferent than zero");
-	}
-	
-	@Override
-	public int oridinalOffset() {
-		return 0;
+		return this.entities;
 	}
 	
 }

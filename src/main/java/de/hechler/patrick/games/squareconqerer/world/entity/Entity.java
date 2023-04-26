@@ -5,7 +5,7 @@ import java.util.List;
 
 import de.hechler.patrick.games.squareconqerer.User;
 
-public interface Entity {
+public sealed interface Entity permits Unit, Building, EntityImpl {
 	
 	int x();
 	
