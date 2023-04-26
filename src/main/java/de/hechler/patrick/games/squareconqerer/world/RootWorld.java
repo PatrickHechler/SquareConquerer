@@ -230,6 +230,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		} else {
 			RootUser r = RootUser.create(new char[0]);
 			this.root.users().keySet().forEach(name -> r.add(name, new char[0]));
+			r.save(conn);
 		}
 		conn.writeInt(RWS_SUB1);
 		OpenWorld.saveWorld(this, conn);
@@ -321,6 +322,21 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 	}
 	
+	public boolean isSeed(User user, byte[] seedPart) {
+		if (seedPart.length != 16) throw new IllegalArgumentException("the seed part has an invalid length!");
+		byte[] mySeed = this.seed;
+		if (mySeed == null) throw new IllegalArgumentException("the game did not start yet");
+		Map<String, User> map = this.root.users();
+		map.remove(RootUser.ROOT_NAME);
+		Collection<User> values = map.values();
+		User[]           users  = values.toArray(new User[values.size()]);
+		Arrays.sort(users, null);
+		int i;
+		for (i = 1; user != users[i]; i++) {/**/}
+		i *= 16;
+		return Arrays.equals(seedPart, 0, 16, mySeed, i, i + 16);
+	}
+	
 	public void startGame(byte[] s) {
 		startGame0(s, true);
 	}
@@ -371,17 +387,15 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		return this.rnd != null;
 	}
 	
-	public static final int START_VAL_GAME = 0x7C6879B3;
+	public static final int RW_VAL_GAME = 0x7C6879B3;
 	public static final int SUB0_VAL_GAME  = 0xD597E0E5;
-	public static final int SUB1_VAL_GAME  = 0xF8777674;
 	public static final int FIN_VAL_GAME   = 0xF6DB6A6B;
 	
 	public synchronized void validateGame(Connection conn) throws IOException {
 		if (!conn.isBlocking()) throw new IllegalStateException("the connection has to be in block state");
-		conn.writeReadInt(START_VAL_GAME, SUB0_VAL_GAME);
+		conn.writeReadInt(RW_VAL_GAME, SUB0_VAL_GAME);
 		saveEverything(conn, false);
 		conn.writeInt(FIN_VAL_GAME);
-		conn.readInt(SUB1_VAL_GAME);
 	}
 	
 	@Override

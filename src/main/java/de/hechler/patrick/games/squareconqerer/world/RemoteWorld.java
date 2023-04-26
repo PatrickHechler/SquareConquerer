@@ -8,8 +8,10 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +46,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 	private long                    lastWorldUpdate;
 	private Map<User, List<Entity>> entities;
 	private Map<String, User>       users;
-	private byte[]                  myrnd;
+	private List<byte[]>            validateData;
 	
 	public RemoteWorld(Connection conn) {
 		this.conn = conn;
@@ -345,43 +347,11 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 					if (val == -1L) { return; }
 					int val0 = (int) val;
 					switch (val0) {
-					case RootWorld.REQ_RND -> {
-						if (this.myrnd != null) throw new AssertionError("I already have a random value!");
-						this.conn.writeInt(RootWorld.GIV_RND);
-						this.myrnd = new byte[16];
-						User.fillRandom(this.myrnd);
-						this.conn.writeArr(this.myrnd);
-					}
-					case OpenWorld.NOTIFY_WORLD_CHANGE -> {
-						this.conn.writeInt(OpenWorld.FIN_WORLD_CHANGE);
-						this.needUpdate = System.currentTimeMillis();
-						for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
-							r.accept(null, null);
-						}
-					}
-					case OpenWorld.NOTIFY_GAME_START -> {
-						this.conn.writeInt(OpenWorld.SUB0_GAME_START);
-						byte[] worldhash = new byte[256 / 8];
-						this.conn.readArr(worldhash);
-						this.conn.readInt(OpenWorld.FIN_GAME_START);
-						this.needUpdate = System.currentTimeMillis();
-						for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
-							r.accept(worldhash, null);
-						}
-					}
-					case OpenWorld.NOTIFY_NEXT_TURN -> {
-						this.conn.writeInt(OpenWorld.SUB0_NEXT_TURN);
-						byte[] worldhash = new byte[256 / 8];
-						this.conn.readArr(worldhash);
-						this.conn.readInt(OpenWorld.SUB1_NEXT_TURN);
-						byte[] turndhash = new byte[256 / 8];
-						this.conn.readArr(turndhash);
-						this.conn.readInt(OpenWorld.FIN_NEXT_TURN);
-						this.needUpdate = System.currentTimeMillis();
-						for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
-							r.accept(worldhash, null);
-						}
-					}
+					case RootWorld.REQ_RND -> deamonReqRnd();
+					case OpenWorld.NOTIFY_WORLD_CHANGE -> deamonNotifyWorldChange();
+					case OpenWorld.NOTIFY_GAME_START -> deamonNotifyGameStart();
+					case OpenWorld.NOTIFY_NEXT_TURN -> deamonNotifyNextTurn();
+					case RootWorld.RW_VAL_GAME -> deamonValidateGame();
 					default -> {
 						System.err.println("got an invalid notification: 0x" + Integer.toHexString(val0));
 						this.conn.close();
@@ -394,6 +364,119 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	private void deamonValidateGame() throws IOException, AssertionError {
+		this.conn.writeInt(RootWorld.SUB0_VAL_GAME);
+		RootWorld rw = RootWorld.loadEverything(this.conn);
+		this.conn.readInt(RootWorld.FIN_VAL_GAME);
+		if (this.validateData == null) {
+			System.out.println("remote world: skip validation, I have no validate data to check what the server told me");
+		} else {
+			Iterator<RootWorld> iter = rw.iterator();
+			RootWorld           irw  = iter.next();
+			if ((irw.iterCount() - 1) << 1 != this.validateData.size()) {
+				throw new AssertionError("the iter count of the given world is not expected");
+			}
+			irw.addNextTurnListener(new BiConsumer<byte[], byte[]>() {
+				
+				private int index;
+				
+				@Override
+				public void accept(byte[] wh, byte[] th) {
+					if (this.index == 0) {
+						if (th == null) throw new AssertionError("there is a turn hash");
+						if (!irw.isSeed(RemoteWorld.this.conn.usr, RemoteWorld.this.validateData.get(0))) {
+							throw new AssertionError("the world has a different seed for me!");
+						}
+						if (!Arrays.equals(wh, RemoteWorld.this.validateData.get(1))) {
+							throw new AssertionError("the world has not the expected start hash!");
+						}
+					} else {
+						if (!Arrays.equals(wh, RemoteWorld.this.validateData.get(this.index))) {
+							throw new AssertionError("the world has a different hash on turn " + (this.index >> 1) + "!");
+						}
+						if (!Arrays.equals(th, RemoteWorld.this.validateData.get(this.index + 1))) {
+							throw new AssertionError("the turn has a different hash on turn " + (this.index >> 1) + "!");
+						}
+					}
+					this.index += 2;
+				}
+				
+			});
+		}
+	}
+	
+	private void deamonNotifyNextTurn() throws IOException {
+		this.conn.writeInt(OpenWorld.SUB0_NEXT_TURN);
+		byte[] worldhash = new byte[256 / 8];
+		this.conn.readArr(worldhash);
+		this.conn.readInt(OpenWorld.SUB1_NEXT_TURN);
+		byte[] turnshash = new byte[256 / 8];
+		this.conn.readArr(turnshash);
+		this.conn.readInt(OpenWorld.FIN_NEXT_TURN);
+		this.needUpdate = System.currentTimeMillis();
+		if (this.validateData != null) {
+			this.validateData.add(worldhash);
+			this.validateData.add(turnshash);
+		}
+		System.out.println("remote world: next turn");
+		System.out.println("    world: " + hex(worldhash));
+		System.out.println("    turns: " + hex(turnshash));
+		worldhash = worldhash.clone();
+		turnshash = turnshash.clone();
+		for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
+			r.accept(worldhash, turnshash);
+		}
+	}
+	
+	private void deamonNotifyGameStart() throws IOException {
+		this.conn.writeInt(OpenWorld.SUB0_GAME_START);
+		byte[] worldhash = new byte[256 / 8];
+		this.conn.readArr(worldhash);
+		this.conn.readInt(OpenWorld.FIN_GAME_START);
+		this.needUpdate = System.currentTimeMillis();
+		if (this.validateData != null) this.validateData.add(worldhash);
+		System.out.println("remote world: game started");
+		System.out.println("    world: " + hex(worldhash));
+		worldhash = worldhash.clone();
+		for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
+			r.accept(worldhash, null);
+		}
+	}
+	
+	private void deamonNotifyWorldChange() throws IOException {
+		this.conn.writeInt(OpenWorld.FIN_WORLD_CHANGE);
+		this.needUpdate = System.currentTimeMillis();
+		for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
+			r.accept(null, null);
+		}
+	}
+	
+	private void deamonReqRnd() throws IOException {
+		this.conn.writeInt(RootWorld.GIV_RND);
+		if (this.validateData != null) throw new IllegalStateException("I already have validate data!");
+		ArrayList<byte[]> list = new ArrayList<>();
+		this.validateData = list;
+		byte[] myrnd = new byte[16];
+		User.fillRandom(myrnd);
+		this.conn.writeArr(myrnd);
+		list.add(myrnd);
+	}
+	
+	private static String hex(byte[] data) {
+		StringBuilder b = new StringBuilder(data.length << 1);
+		for (int i = 0; i < data.length; i++) {
+			int val = data[i];
+			b.append(hex((0xF0 & val) >> 4));
+			b.append(hex(0x0F & val));
+		}
+		return b.toString();
+	}
+	
+	private static char hex(int n) {
+		if (n >= 0xA) return (char) ('A' + n);
+		else return (char) ('0' + n);
 	}
 	
 	@Override
