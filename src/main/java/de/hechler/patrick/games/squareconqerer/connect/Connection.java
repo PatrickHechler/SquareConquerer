@@ -43,11 +43,8 @@ import de.hechler.patrick.games.squareconqerer.world.World;
 
 public class Connection implements Closeable, WrongInputHandler {
 	
-	private static final IntFunction<String> STRICT_POS_ERROR     = v -> "expected some strictly positive number, but got: " + v;
-	private static final IntFunction<String> NON_STRICT_POS_ERROR = v -> "expected some positive number (or zero), but got: " + v;
-	
 	/**
-	 * this {@link WrongInputHandler} just always throws an {@link StreamCorruptedException}
+	 * this {@link WrongInputHandler} just always throws an {@link StreamCorruptedException} (or {@link EOFException} in {@link WrongInputHandler#wrongInputEOF(int, int)})
 	 */
 	public static final WrongInputHandler DEFAULT_WRONG_INPUT = new WrongInputHandler() {
 		
@@ -56,22 +53,23 @@ public class Connection implements Closeable, WrongInputHandler {
 			throw new EOFException("invalid input! got: EOF but expected " + missingLen + " more bytes for something " + expectedTotalLen + " bytes big");
 		}
 		
+		@Override
 		public void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
 			throw new EOFException("got: " + read + " after I wrote " + wrote + " but expected " + expectedRead);
 		}
 		
 		@Override
-		public void wrongInputInt(int read, IntFunction<String> msgGen) throws StreamCorruptedException {
+		public int wrongInputInt(int read, int[] expected, IntFunction<String> msgGen) throws StreamCorruptedException {
 			throw new StreamCorruptedException(msgGen.apply(read));
 		}
 		
 		@Override
-		public void wrongInputInt(int read, int[] expected) throws StreamCorruptedException {
+		public int wrongInputInt(int read, int[] expected) throws StreamCorruptedException {
 			throw new StreamCorruptedException("invalid input! got: " + read + " but expected on of: " + Arrays.toString(expected));
 		}
 		
 		@Override
-		public void wrongInputInt(int read, int expected, int expected2) throws StreamCorruptedException {
+		public int wrongInputInt(int read, int expected, int expected2) throws StreamCorruptedException {
 			throw new StreamCorruptedException("invalid input! got: " + read + " but expected: " + expected + " or " + expected2);
 		}
 		
@@ -81,23 +79,29 @@ public class Connection implements Closeable, WrongInputHandler {
 		}
 		
 		@Override
-		public void wrongInputByte(int read, IntFunction<String> msgGen) throws IOException {
+		public int wrongInputByte(int read, int[] expected, IntFunction<String> msgGen) throws IOException {
 			throw new StreamCorruptedException(msgGen.apply(read));
 		}
 		
 		@Override
-		public void wrongInputByte(int read, int[] expected) throws IOException {
+		public int wrongInputByte(int read, int[] expected) throws IOException {
 			throw new StreamCorruptedException("invalid input! got: " + read + " but expected on of: " + Arrays.toString(expected));
 		}
 		
 		@Override
-		public void wrongInputByte(int read, int expected, int expected2) throws IOException {
+		public int wrongInputByte(int read, int expected, int expected2) throws IOException {
 			throw new StreamCorruptedException("invalid input! got: " + read + " but expected: " + expected + " or " + expected2);
 		}
 		
 		@Override
 		public void wrongInputByte(int read, int expected) throws IOException {
 			throw new StreamCorruptedException("invalid input! got: " + read + " but expected: " + expected);
+		}
+		
+		@Override
+		public int wrongInputPositive(int read, boolean strictlyPositive) throws IOException {
+			throw new StreamCorruptedException("invalid input! got: " + read + " but expected a " + (strictlyPositive ? "strict " : "") + "positive value"
+				+ (strictlyPositive ? "!" : " (or zero)!"));
 		}
 		
 	};
@@ -666,24 +670,24 @@ public class Connection implements Closeable, WrongInputHandler {
 	}
 	
 	@Override
-	public void wrongInputByte(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException {
+	public int wrongInputByte(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
-		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputByte(read, expected, expected2);
-		else cwih.wrongInputByte(read, expected, expected2);
+		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputByte(read, expected, expected2);
+		else return cwih.wrongInputByte(read, expected, expected2);
 	}
 	
 	@Override
-	public void wrongInputByte(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException {
+	public int wrongInputByte(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
-		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputByte(read, expected);
-		else cwih.wrongInputByte(read, expected);
+		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputByte(read, expected);
+		else return cwih.wrongInputByte(read, expected);
 	}
 	
 	@Override
-	public void wrongInputByte(int read, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException {
+	public int wrongInputByte(int read, int[] expected, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
-		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputByte(read, msgGen);
-		else cwih.wrongInputByte(read, msgGen);
+		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputByte(read, expected, msgGen);
+		else return cwih.wrongInputByte(read, expected, msgGen);
 	}
 	
 	@Override
@@ -701,24 +705,31 @@ public class Connection implements Closeable, WrongInputHandler {
 	}
 	
 	@Override
-	public void wrongInputInt(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException {
+	public int wrongInputInt(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
-		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputInt(read, expected, expected2);
-		else cwih.wrongInputInt(read, expected, expected2);
+		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputInt(read, expected, expected2);
+		else return cwih.wrongInputInt(read, expected, expected2);
 	}
 	
 	@Override
-	public void wrongInputInt(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException {
+	public int wrongInputInt(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
-		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputInt(read, expected);
-		else cwih.wrongInputInt(read, expected);
+		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputInt(read, expected);
+		else return cwih.wrongInputInt(read, expected);
 	}
 	
 	@Override
-	public void wrongInputInt(int read, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException {
+	public int wrongInputInt(int read, int[] expected, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
-		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputInt(read, msgGen);
-		else cwih.wrongInputInt(read, msgGen);
+		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputInt(read, expected, msgGen);
+		else return cwih.wrongInputInt(read, expected, msgGen);
+	}
+	
+	@Override
+	public int wrongInputPositive(int read, boolean strictlyPositive) throws IOException, StreamCorruptedException, EOFException {
+		WrongInputHandler cwih = this.wih;
+		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputPositive(read, strictlyPositive);
+		else return cwih.wrongInputPositive(read, strictlyPositive);
 	}
 	
 	public void setTimeout(int timeout) {
@@ -779,12 +790,10 @@ public class Connection implements Closeable, WrongInputHandler {
 	}
 	
 	public void writeReadInt(int write, int read) throws IOException {
-		while (true) {
-			writeInt(write);
-			int val = readInt();
-			if (val == read) return;
-			wrongInputWRInt(val, write, read);
-		}
+		writeInt(write);
+		int val = readInt();
+		if (val == read) return;
+		wrongInputWRInt(val, write, read);
 	}
 	
 	public int readInt() throws IOException {
@@ -798,11 +807,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	 * @throws IOException if an IO-error occurs
 	 */
 	public int readPos() throws IOException {
-		while (true) {
-			int val = readInt(this, this.in);
-			if (val >= 0) return val;
-			wrongInputInt(val, NON_STRICT_POS_ERROR);
-		}
+		return readPos(this, this.in);
 	}
 	
 	/**
@@ -812,11 +817,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	 * @throws IOException if an IO-error occurs
 	 */
 	public int readStrictPos() throws IOException {
-		while (true) {
-			int val = readInt(this, this.in);
-			if (val > 0) return val;
-			wrongInputInt(val, STRICT_POS_ERROR);
-		}
+		return readStrictPos(this, this.in);
 	}
 	
 	public int readByte() throws IOException {
@@ -848,31 +849,25 @@ public class Connection implements Closeable, WrongInputHandler {
 	}
 	
 	public int readInt(int... vals) throws IOException {
-		while (true) {
-			int reat = readInt(this, this.in);
-			for (int val : vals) {
-				if (reat == val) { return val; }
-			}
-			wrongInputInt(reat, vals);
+		int reat = readInt(this, this.in);
+		for (int val : vals) {
+			if (reat == val) { return val; }
 		}
+		return wrongInputInt(reat, vals);
 	}
 	
 	public int readInt(IntFunction<String> msg, int a, int b) throws IOException {
-		while (true) {
-			int reat = readInt(this, this.in);
-			if (a == reat || b == reat) return reat;
-			wrongInputInt(reat, msg);
-		}
+		int reat = readInt(this, this.in);
+		if (a == reat || b == reat) return reat;
+		return wrongInputInt(reat, new int[] { a, b }, msg);
 	}
 	
 	public int readInt(IntFunction<String> msg, int... vals) throws IOException {
-		while (true) {
-			int reat = readInt(this, this.in);
-			for (int val : vals) {
-				if (reat == val) { return val; }
-			}
-			wrongInputInt(reat, msg);
+		int reat = readInt(this, this.in);
+		for (int val : vals) {
+			if (reat == val) return val;
 		}
+		return wrongInputInt(reat, vals, msg);
 	}
 	
 	public void readArr(byte[] arr) throws IOException {
@@ -934,20 +929,17 @@ public class Connection implements Closeable, WrongInputHandler {
 	}
 	
 	private static int readByte(WrongInputHandler wih, InputStream in) throws IOException {
-		while (true) {
-			int val = in.read();
-			if (val != -1) return val;
-			wih.wrongInputEOF(1, 1);
-		}
+		int val = in.read();
+		if (val != -1) return val;
+		wih.wrongInputEOF(1, 1);
+		throw new AssertionError("EOF handler returned normally");
 	}
 	
 	private static int readByte(WrongInputHandler wih, InputStream in, int a, int b) throws IOException {
-		while (true) {
-			int val = in.read();
-			if (val == a || val == b) return val;
-			if (val == -1) wih.wrongInputEOF(1, 1);
-			wih.wrongInputByte(val, a, b);
-		}
+		int val = in.read();
+		if (val == a || val == b) return val;
+		if (val == -1) wih.wrongInputEOF(1, 1);
+		return wih.wrongInputByte(val, a, b);
 	}
 	
 	private static long readLong(WrongInputHandler wih, InputStream in) throws IOException {
@@ -974,15 +966,16 @@ public class Connection implements Closeable, WrongInputHandler {
 		return val;
 	}
 	
+	@SuppressWarnings("cast")
 	private static long readInt0(WrongInputHandler wih, InputStream in) throws IOException {
 		int val = in.read();
-		if (val == -1) { return -1L; }
+		if (val == -1) return -1L;
 		byte[] arr = new byte[3];
 		readArr(wih, in, arr);
 		val |= (0xFF & arr[0]) << 8;
 		val |= (0xFF & arr[1]) << 16;
 		val |= (0xFF & arr[2]) << 24;
-		return val;
+		return (long) val;
 	}
 	
 	private static void readArr(WrongInputHandler wih, InputStream in, byte[] arr) throws IOException {
@@ -995,26 +988,34 @@ public class Connection implements Closeable, WrongInputHandler {
 	}
 	
 	private static String readString(WrongInputHandler wih, InputStream in) throws IOException {
-		int    len     = readInt(wih, in);
+		int    len     = readPos(wih, in);
 		byte[] userArr = new byte[len];
 		readArr(wih, in, userArr);
 		return new String(userArr, StandardCharsets.UTF_8);
 	}
 	
+	private static int readPos(WrongInputHandler wih, InputStream in) throws IOException {
+		int val = readInt(wih, in);
+		if (val >= 0) return val;
+		return wih.wrongInputPositive(val, false);
+	}
+	
+	private static int readStrictPos(WrongInputHandler wih, InputStream in) throws IOException {
+		int val = readInt(wih, in);
+		if (val > 0) return val;
+		return wih.wrongInputPositive(val, true);
+	}
+	
 	private static void readInt(WrongInputHandler wih, InputStream in, int value) throws IOException {
-		while (true) {
-			int reat = readInt(wih, in);
-			if (reat == value) return;
-			wih.wrongInputInt(reat, value);
-		}
+		int reat = readInt(wih, in);
+		if (reat == value) return;
+		wih.wrongInputInt(reat, value);
 	}
 	
 	private static int readInt(WrongInputHandler wih, InputStream in, int valueA, int valueB) throws IOException {
-		while (true) {
-			int reat = readInt(wih, in);
-			if (reat == valueA || reat == valueB) return reat;
-			wih.wrongInputInt(reat, valueA, valueB);
-		}
+		int reat = readInt(wih, in);
+		if (reat == valueA || reat == valueB) return reat;
+		return wih.wrongInputInt(reat, valueA, valueB);
 	}
 	
 }

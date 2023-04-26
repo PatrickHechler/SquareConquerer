@@ -521,6 +521,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		}
 		T[] vals = this.cls.getEnumConstants();
 		for (int i = 0; i < vals.length; i++) {
+			@SuppressWarnings("unlikely-arg-type")
 			Object val = m.get(vals[i]);
 			if (!(val instanceof Integer ival)) return false;
 			if (this.arr[i] != ival.intValue()) return false;

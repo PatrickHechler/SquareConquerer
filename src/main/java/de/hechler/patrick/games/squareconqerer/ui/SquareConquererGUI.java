@@ -606,7 +606,7 @@ public class SquareConquererGUI {
 			}
 			oldUsr.close();
 			this.world = b;
-			b.addNextTurnListener(() -> update(null));
+			b.addNextTurnListener((wh, th) -> update(null));
 			reload(this.buildFinishHook, true, true);
 		});
 		buildMenu.add(toBuild);
@@ -751,7 +751,7 @@ public class SquareConquererGUI {
 			dialog.setContentPane(dp);
 			dp.setLayout(new GridLayout(1, 2));
 			dp.add(new JLabel("Select User: "));
-			Object[] usrs = this.logView.connects.keySet().toArray();
+			Object[] usrs = (this.logView == null ? this : this.logView).connects.keySet().toArray();
 			Arrays.sort(usrs);
 			String[] names = new String[usrs.length];
 			for (int i = 0; i < names.length; i++) {
@@ -760,7 +760,7 @@ public class SquareConquererGUI {
 			JComboBox<String> combo = new JComboBox<>(names);
 			dp.add(combo);
 			combo.addActionListener(e1 -> {
-				Connection conn = this.logView.connects.get(usrs[combo.getSelectedIndex()]);
+				Connection conn = (this.logView == null ? this : this.logView).connects.get(usrs[combo.getSelectedIndex()]);
 				if (conn == null) {
 					JOptionPane.showMessageDialog(combo, "the user seeems to be disconnected", "no connection", JOptionPane.ERROR_MESSAGE);
 					return;
@@ -1349,7 +1349,7 @@ public class SquareConquererGUI {
 		addHoveringBtn(iconSize);
 		update(ufh);
 		if (addNTL) {
-			this.world.addNextTurnListener(() -> update(null));
+			this.world.addNextTurnListener((wh, th) -> update(null));
 		}
 	}
 	
@@ -1637,7 +1637,7 @@ public class SquareConquererGUI {
 			BufferedImage img        = ImageIO.read(getClass().getResource(switch (this.world) {
 										case RootWorld.Builder b -> {
 											if (hoveringButton == this.hoveringRigthButton) {
-												b.addNextTurnListener(() -> hoveringButton.setVisible(b.buildable()));
+												b.addNextTurnListener((wh, th) -> hoveringButton.setVisible(b.buildable()));
 												hoveringButton.setToolTipText("<html>build the world</html>");
 												hoveringButton.setVisible(b.buildable());
 												yield "/img/BUILD.png";
@@ -1658,7 +1658,7 @@ public class SquareConquererGUI {
 													yield "/img/PREV_TURN.png";
 												}
 											} else {
-												rw.addNextTurnListener(() -> hoveringButton.setVisible(rw.running()));
+												rw.addNextTurnListener((wh, th) -> hoveringButton.setVisible(rw.running()));
 												hoveringButton.setVisible(!rw.running());
 												hoveringButton.setToolTipText("<html>start the game</html>");
 												yield "/img/START_GAME.png";

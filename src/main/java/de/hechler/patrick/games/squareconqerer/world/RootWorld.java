@@ -2,9 +2,13 @@ package de.hechler.patrick.games.squareconqerer.world;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOError;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,9 +16,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
+import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
@@ -39,16 +44,16 @@ import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 public final class RootWorld implements World, Iterable<RootWorld> {
 	
-	private final RootUser              root;
-	private final Tile[][]              tiles;
-	private final UserPlacer            placer;
-	private final Map<User, UserWorld>  subWorlds;
-	private final List<Runnable>        nextTurnListeneres;
-	private final Map<User, Turn>       userTurns;
-	private final List<Map<User, Turn>> allTurns;
-	private volatile Tile[][]           starttiles;
-	private volatile byte[]             seed;
-	private volatile Random2            rnd;
+	private final RootUser                         root;
+	private final Tile[][]                         tiles;
+	private final UserPlacer                       placer;
+	private final Map<User, UserWorld>             subWorlds;
+	private final List<BiConsumer<byte[], byte[]>> nextTurnListeneres;
+	private final Map<User, Turn>                  userTurns;
+	private final List<Map<User, Turn>>            allTurns;
+	private volatile Tile[][]                      starttiles;
+	private volatile byte[]                        seed;
+	private volatile Random2                       rnd;
 	
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
 		this.root               = root;
@@ -94,9 +99,36 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		return this.tiles[x][y];
 	}
 	
-	private void executeNTL() {
-		for (Runnable r : this.nextTurnListeneres) {
-			r.run();
+	private byte[] calcHash() {
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			throw new AssertionError("algo not found: " + e.toString(), e);
+		}
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		Connection            conn = Connection.createUnsecure(this.root, baos);
+		try {
+			saveEverything(conn, false);
+		} catch (IOException e) {
+			throw new IOError(e);
+		}
+		return digest.digest(baos.toByteArray());
+	}
+	
+	private static byte[] calcHash(byte[] data) {
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			throw new AssertionError("algo not found: " + e.toString(), e);
+		}
+		return digest.digest(data);
+	}
+	
+	private void executeNTL(byte[] myhash, byte[] turnhash) {
+		for (BiConsumer<byte[], byte[]> r : this.nextTurnListeneres) {
+			r.accept(myhash, turnhash);
 		}
 	}
 	
@@ -187,7 +219,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	}
 	
 	private /* synchronized */ void saveEverything(Connection conn, boolean savePWs) throws IOException {
-		if (this.seed == null) { throw new IllegalStateException("the world needs to be started for that"); }
+		if (this.seed == null) throw new IllegalStateException("the world needs to be started for that");
 		conn.writeInt(RWS_START);
 		conn.writeLong(this.rnd.getCurrentSeed());
 		conn.writeInt(this.seed.length);
@@ -222,7 +254,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				Turn t = e.getValue();
 				conn.writeString(u.name());
 				conn.writeInt(RWS_SUB7);
-				t.sendTurn(conn);
+				t.sendTurn(conn, false);
 			}
 		}
 		conn.writeInt(RWS_SUB7);
@@ -264,7 +296,8 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				User   usr  = root.get(name);
 				conn.readInt(RWS_SUB7);
 				Turn t = new Turn(res.usrOf(usr, 0));
-				t.retrieveTurn(conn);
+				conn.readInt(Turn.CMD_TURN);
+				t.retrieveTurn(conn, false);
 				add.put(usr, t);
 			}
 			res.allTurns.add(add);
@@ -295,7 +328,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private synchronized void startGame0(byte[] s, boolean modifyRoot) {
 		if (s == null) throw new NullPointerException("the given seed is null");
 		if (this.rnd != null) throw new IllegalStateException("the game already started");
+		byte[] hash;
 		synchronized (this.root) {
+			hash            = calcHash();
 			this.starttiles = new Tile[this.tiles.length][this.tiles[0].length];
 			for (int x = 0; x < this.starttiles.length; x++) {
 				for (int y = 0; y < this.starttiles[x].length; y++) {
@@ -314,7 +349,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			this.rnd  = new Random2(sval);
 			this.placer.initilize(this, users, this.rnd);
 		}
-		threadBuilder().start(this::executeNTL);
+		threadBuilder().start(() -> executeNTL(hash, null));
 	}
 	
 	private static long seed(byte[] s) {
@@ -350,12 +385,12 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	}
 	
 	@Override
-	public synchronized void addNextTurnListener(Runnable listener) {
+	public synchronized void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
 		this.nextTurnListeneres.add(listener);
 	}
 	
 	@Override
-	public synchronized void removeNextTurnListener(Runnable listener) {
+	public synchronized void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
 		this.nextTurnListeneres.remove(listener);
 	}
 	
@@ -369,15 +404,22 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		this.userTurns.put(t.usr, t);
 		if (this.userTurns.size() >= this.root.users().keySet().size()) {
-			threadBuilder().start(this::executeTurn);
+			executeTurn();
 		}
 	}
 	
-	private void executeTurn() {
-		List<EntityTurn> list = new ArrayList<>();
+	private synchronized void executeTurn() {
+		List<EntityTurn>      list = new ArrayList<>();                         // list is sorted: user names and then entity turns
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		Connection            conn = Connection.createUnsecure(this.root, baos);
 		for (Turn userturn : this.userTurns.values()) {
 			list.addAll(userturn.turns());
-		} // list is sorted: user names and then entity turns
+			try {
+				userturn.sendTurn(conn, false);
+			} catch (IOException e) {
+				throw new IOError(e);
+			}
+		}
 		this.allTurns.add(new HashMap<>(this.userTurns));
 		for (EntityTurn et : randomOrder(list)) {
 			try {
@@ -392,7 +434,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				e.printStackTrace();
 			}
 		}
-		executeNTL();
+		executeNTL(calcHash(), calcHash(baos.toByteArray()));
 	}
 	
 	@SuppressWarnings("preview")
@@ -487,10 +529,10 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			System.arraycopy(v, 1, TYPES, 0, len);
 		}
 		
-		private List<Runnable> nextTurnListeners = new ArrayList<>();
-		private final Tile[][] tiles;
-		private final Random2  rnd;
-		private final RootUser root;
+		private List<BiConsumer<byte[], byte[]>> nextTurnListeners = new ArrayList<>();
+		private final Tile[][]                   tiles;
+		private final Random2                    rnd;
+		private final RootUser                   root;
 		
 		private int resourceMask = 7;
 		
@@ -514,14 +556,14 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		private void executeNTL() {
-			for (Runnable r : this.nextTurnListeners) {
-				r.run();
+			for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
+				r.accept(null, null);
 			}
 		}
 		
 		public void fillRandom() {
 			placeSomePoints();
-			while (fillOnce());
+			while (fillOnce()) {/**/}
 			executeNTL();
 		}
 		
@@ -825,10 +867,10 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		@Override
-		public void addNextTurnListener(Runnable listener) { this.nextTurnListeners.add(listener); }
+		public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) { this.nextTurnListeners.add(listener); }
 		
 		@Override
-		public void removeNextTurnListener(Runnable listener) { this.nextTurnListeners.remove(listener); }
+		public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) { this.nextTurnListeners.remove(listener); }
 		
 		@Override
 		public Map<User, List<Entity>> entities() {

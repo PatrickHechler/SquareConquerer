@@ -66,8 +66,8 @@ public final class Turn {
 	private static final int ET_STORE  = 0xC9690B0E;
 	private static final int FIN_TURN  = 0x00E7B2EF;
 	
-	public void retrieveTurn(Connection conn) throws IOException {
-		conn.writeInt(SUB0_TURN);
+	public void retrieveTurn(Connection conn, boolean alsoWrite) throws IOException {
+		if (alsoWrite) conn.writeInt(SUB0_TURN);
 		if (!this.turns.isEmpty()) { throw new IllegalStateException("turns is not empty"); }
 		int len = conn.readPos();
 		while (len-- > 0) {
@@ -103,8 +103,9 @@ public final class Turn {
 	}
 	
 	@SuppressWarnings("preview")
-	public void sendTurn(Connection conn) throws IOException {
-		conn.writeReadInt(CMD_TURN, SUB0_TURN);
+	public void sendTurn(Connection conn, boolean alsoRead) throws IOException {
+		if (alsoRead) conn.writeReadInt(CMD_TURN, SUB0_TURN);
+		else conn.writeInt(CMD_TURN);
 		conn.writeInt(this.turns.size());
 		for (Entry<Entity, EntityTurn> turn : this.turns.entrySet()) {
 			Entity     e  = turn.getKey();

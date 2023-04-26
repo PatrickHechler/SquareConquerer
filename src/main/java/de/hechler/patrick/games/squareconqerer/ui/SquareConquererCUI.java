@@ -929,6 +929,7 @@ public class SquareConquererCUI implements Runnable {
 					return;
 				}
 				TileType type = switch (args.get(i - 2).toLowerCase()) {
+				case "not-explored" -> TileType.NOT_EXPLORED;
 				case "water", "water+normal" -> TileType.WATER_NORMAL;
 				case "sand", "sand+normal" -> TileType.SAND;
 				case "grass", "grass+normal" -> TileType.GRASS;

@@ -85,7 +85,7 @@ public sealed class Tile permits RemoteTile {
 					BufferedImage img0 = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
 					Graphics2D    g    = img0.createGraphics();
 					g.drawImage(img, 0, 0, null);
-					g.drawImage(notVisible, 0, 0, width, height, null);
+					g.drawImage(notVisible, 0, 0, img.getWidth(), img.getHeight(), null);
 					img = img0;
 				}
 			}

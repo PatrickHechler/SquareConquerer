@@ -14,10 +14,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.squareconqerer.User;
-import de.hechler.patrick.games.squareconqerer.connect.AbstractWrongInputHandler;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.connect.WrongInputHandler;
 import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
@@ -32,7 +33,7 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-public final class RemoteWorld extends AbstractWrongInputHandler implements World, Closeable {
+public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 	
 	private final Connection        conn;
 	private int                     xlen;
@@ -43,6 +44,7 @@ public final class RemoteWorld extends AbstractWrongInputHandler implements Worl
 	private long                    lastWorldUpdate;
 	private Map<User, List<Entity>> entities;
 	private Map<String, User>       users;
+	private byte[]                  myrnd;
 	
 	public RemoteWorld(Connection conn) {
 		this.conn = conn;
@@ -333,7 +335,7 @@ public final class RemoteWorld extends AbstractWrongInputHandler implements Worl
 		});
 	}
 	
-	private List<Runnable> nextTurnListeners = new LinkedList<>();
+	private List<BiConsumer<byte[], byte[]>> nextTurnListeners = new LinkedList<>();
 	
 	private void deamon() {
 		while (true) {
@@ -344,17 +346,40 @@ public final class RemoteWorld extends AbstractWrongInputHandler implements Worl
 					int val0 = (int) val;
 					switch (val0) {
 					case RootWorld.REQ_RND -> {
-						// TODO save my random value
+						if (this.myrnd != null) throw new AssertionError("I already have a random value!");
 						this.conn.writeInt(RootWorld.GIV_RND);
-						byte[] arr = new byte[16];
-						User.fillRandom(arr);
-						this.conn.writeArr(arr);
+						this.myrnd = new byte[16];
+						User.fillRandom(this.myrnd);
+						this.conn.writeArr(this.myrnd);
+					}
+					case OpenWorld.NOTIFY_WORLD_CHANGE -> {
+						this.conn.writeInt(OpenWorld.FIN_WORLD_CHANGE);
+						this.needUpdate = System.currentTimeMillis();
+						for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
+							r.accept(null, null);
+						}
+					}
+					case OpenWorld.NOTIFY_GAME_START -> {
+						this.conn.writeInt(OpenWorld.SUB0_GAME_START);
+						byte[] worldhash = new byte[256 / 8];
+						this.conn.readArr(worldhash);
+						this.conn.readInt(OpenWorld.FIN_GAME_START);
+						this.needUpdate = System.currentTimeMillis();
+						for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
+							r.accept(worldhash, null);
+						}
 					}
 					case OpenWorld.NOTIFY_NEXT_TURN -> {
-						this.conn.writeInt(OpenWorld.FIN_NEXT_TURN);
+						this.conn.writeInt(OpenWorld.SUB0_NEXT_TURN);
+						byte[] worldhash = new byte[256 / 8];
+						this.conn.readArr(worldhash);
+						this.conn.readInt(OpenWorld.SUB1_NEXT_TURN);
+						byte[] turndhash = new byte[256 / 8];
+						this.conn.readArr(turndhash);
+						this.conn.readInt(OpenWorld.FIN_NEXT_TURN);
 						this.needUpdate = System.currentTimeMillis();
-						for (Runnable r : this.nextTurnListeners) {
-							r.run();
+						for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
+							r.accept(worldhash, null);
 						}
 					}
 					default -> {
@@ -372,12 +397,12 @@ public final class RemoteWorld extends AbstractWrongInputHandler implements Worl
 	}
 	
 	@Override
-	public void addNextTurnListener(Runnable listener) {
+	public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
 		this.conn.blocked(() -> this.nextTurnListeners.add(listener));
 	}
 	
 	@Override
-	public void removeNextTurnListener(Runnable listener) {
+	public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
 		this.conn.blocked(() -> this.nextTurnListeners.remove(listener));
 	}
 	
@@ -402,7 +427,7 @@ public final class RemoteWorld extends AbstractWrongInputHandler implements Worl
 	public void finish(Turn t) {
 		if (t.usr != this.conn.usr) { throw new IllegalStateException("I can only finish my turns"); }
 		try {
-			t.sendTurn(this.conn);
+			t.sendTurn(this.conn, true);
 		} catch (IOException e) {
 			throw new IOError(e);
 		}

@@ -5,13 +5,14 @@ import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
 import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
-import de.hechler.patrick.games.squareconqerer.connect.AbstractWrongInputHandler;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.connect.WrongInputHandler;
 import de.hechler.patrick.games.squareconqerer.interfaces.Executable;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
@@ -20,7 +21,7 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-public class OpenWorld extends AbstractWrongInputHandler implements Executable<IOException> {
+public class OpenWorld implements WrongInputHandler, Executable<IOException> {
 	
 	/**
 	 * <ol>
@@ -144,8 +145,17 @@ public class OpenWorld extends AbstractWrongInputHandler implements Executable<I
 	static final int CMD_BUILD  = 0x1112CD5A;
 	static final int FIN_ENTITY = 0x5A96A583;
 	
-	static final int NOTIFY_NEXT_TURN = 0xE30212DB;
-	static final int FIN_NEXT_TURN    = 0xCFB3B299;
+	static final int NOTIFY_WORLD_CHANGE = 0xE30212DB;
+	static final int FIN_WORLD_CHANGE    = 0xCFB3B299;
+	
+	static final int NOTIFY_GAME_START = 0x1B03FBC8;
+	static final int SUB0_GAME_START   = 0xBD88D7E7;
+	static final int FIN_GAME_START    = 0x23A63D43;
+	
+	static final int NOTIFY_NEXT_TURN = 0xCEAA4F98;
+	static final int SUB0_NEXT_TURN   = 0x94F672EE;
+	static final int SUB1_NEXT_TURN   = 0xB5275604;
+	static final int FIN_NEXT_TURN    = 0x1102A735;
 	
 	private final Connection conn;
 	private final World      world;
@@ -161,9 +171,24 @@ public class OpenWorld extends AbstractWrongInputHandler implements Executable<I
 		return new OpenWorld(conn, world);
 	}
 	
-	private void nextTurn() {
+	private void nextTurn(byte[] worldHash, byte[] turnHash) {
 		try {
-			this.conn.blocked(250, () -> this.conn.writeReadInt(NOTIFY_NEXT_TURN, FIN_NEXT_TURN), Connection.NOP);
+			this.conn.blocked(250, () -> {
+				if (worldHash == null) {
+					assert turnHash == null;
+					this.conn.writeReadInt(NOTIFY_WORLD_CHANGE, FIN_WORLD_CHANGE);
+				} else if (turnHash == null) {
+					this.conn.writeReadInt(NOTIFY_GAME_START, SUB0_GAME_START);
+					this.conn.writeArr(worldHash);
+					this.conn.writeInt(FIN_GAME_START);
+				} else {
+					this.conn.writeReadInt(NOTIFY_NEXT_TURN, SUB0_NEXT_TURN);
+					this.conn.writeArr(worldHash);
+					this.conn.writeInt(SUB1_NEXT_TURN);
+					this.conn.writeArr(worldHash);
+					this.conn.writeInt(FIN_GAME_START);
+				}
+			}, Connection.NOP);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -175,9 +200,10 @@ public class OpenWorld extends AbstractWrongInputHandler implements Executable<I
 	public void execute() throws IOException {
 		this.conn.replaceWongInput(null, this);
 		this.conn.setTimeout(250);
-		Runnable ntl = this::nextTurn;
+		BiConsumer<byte[], byte[]> ntl = this::nextTurn;
 		this.world.addNextTurnListener(ntl);
 		try {
+			this.executing = true;
 			while (this.executing) singleExecute();
 		} finally {
 			this.world.removeNextTurnListener(ntl);
@@ -208,7 +234,7 @@ public class OpenWorld extends AbstractWrongInputHandler implements Executable<I
 		case CMD_GET_WORLD -> sendWorld(this.world, this.conn, true);
 		case Turn.CMD_TURN -> {
 			Turn t = new Turn(this.world);
-			t.retrieveTurn(this.conn);
+			t.retrieveTurn(this.conn, true);
 			this.world.finish(t);
 		}
 		default -> throw new StreamCorruptedException("read invalid data (username: '" + this.world.user().name() + "')");
@@ -220,14 +246,10 @@ public class OpenWorld extends AbstractWrongInputHandler implements Executable<I
 	 */
 	
 	@Override
-	protected void handleWrongInputInt(int value, boolean readwrite) throws IOException, StreamCorruptedException, EOFException {
-		if (!readwrite) { throw new StreamCorruptedException("read an unexpected value: " + value); }
-		exec(value);
-	}
-	
-	@Override
-	protected void handleWrongInputByte(int value) throws IOException, StreamCorruptedException, EOFException {
-		throw new StreamCorruptedException("read an unexpected value: " + value);
+	public void wrongInputWRInt(int got, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
+		exec(got);
+		// if the connection is really corrupt, the exec fails
+		this.conn.writeReadInt(wrote, expectedRead);
 	}
 	
 	private void sendTile() throws IOException {

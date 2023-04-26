@@ -7,36 +7,71 @@ import java.util.function.IntFunction;
 
 /**
  * this interface is there, so that race conditions where the server and the client both want to send something at the same time can be cleared without throwing an
- * error
+ * error<br>
+ * In such a race condition ({@link #wrongInputWRInt(int, int, int)}) the clients request is firstly executed and then the server can resent its message
  * <p>
  * except for the {@link #wrongInputEOF(int, int)} method all methods are allowed to return normally<br>
- * If a method returns normally, the Connection will retry the last operation.<br>
- * note that the retry implies that {@link #wrongInputEOF(int, int)} will result in a loop until it throws an error
+ * If a method returns normally, the Connection will return the value returned by the {@link WrongInputHandler}.<br>
+ * note that the {@link #wrongInputEOF(int, int)} is the only method which is not allowed to return normally.<br>
+ * if it does, the result is unspecified
+ * <p>
+ * note that the return value of the {@link WrongInputHandler} is directly returned by the {@link Connection}
  * 
  * @author pat
  */
 public interface WrongInputHandler {
 	
 	/**
-	 * this method should never return normally, otherwise the thread will come to an infinite loop (until this method does throw an exception or the underlying
-	 * stream does (because it was closed or so))
+	 * this method should never return normally, otherwise the behavior of the {@link Connection} is unspecified
 	 * 
 	 * @param expectedTotalLen the total length of the expected structure
 	 * @param missingLen       the missing length of the expected structure
-	 * @throws StreamCorruptedException always
+	 * @throws StreamCorruptedException if no {@link EOFException} is thrown
+	 * @throws EOFException             if no {@link StreamCorruptedException} is thrown
 	 */
-	void wrongInputEOF(int expectedTotalLen, int missingLen) throws StreamCorruptedException, EOFException;
+	default void wrongInputEOF(int expectedTotalLen, int missingLen) throws StreamCorruptedException, EOFException {
+		Connection.DEFAULT_WRONG_INPUT.wrongInputEOF(expectedTotalLen, missingLen);
+	}
 	
-	void wrongInputByte(int read, int expected) throws IOException, StreamCorruptedException, EOFException;
-	void wrongInputByte(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException;
-	void wrongInputByte(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException;
-	void wrongInputByte(int read, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException;
+	// this is the most interesting method
+	default void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
+		Connection.DEFAULT_WRONG_INPUT.wrongInputWRInt(read, wrote, expectedRead);
+	}
 	
-	void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException;
+	default void wrongInputByte(int read, int expected) throws IOException, StreamCorruptedException, EOFException {
+		Connection.DEFAULT_WRONG_INPUT.wrongInputByte(read, expected);
+	}
 	
-	void wrongInputInt(int read, int expected) throws IOException, StreamCorruptedException, EOFException;
-	void wrongInputInt(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException;
-	void wrongInputInt(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException;
-	void wrongInputInt(int read, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException;
+	default int wrongInputByte(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException {
+		return Connection.DEFAULT_WRONG_INPUT.wrongInputByte(read, expected, expected2);
+	}
+	
+	default int wrongInputByte(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException {
+		return Connection.DEFAULT_WRONG_INPUT.wrongInputByte(read, expected);
+	}
+	
+	default int wrongInputByte(int read, int[] expected, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException {
+		return Connection.DEFAULT_WRONG_INPUT.wrongInputByte(read, expected, msgGen);
+	}
+	
+	default void wrongInputInt(int read, int expected) throws IOException, StreamCorruptedException, EOFException {
+		Connection.DEFAULT_WRONG_INPUT.wrongInputInt(read, expected);
+	}
+	
+	default int wrongInputInt(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException {
+		return Connection.DEFAULT_WRONG_INPUT.wrongInputInt(read, expected, expected2);
+	}
+	
+	default int wrongInputInt(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException {
+		return Connection.DEFAULT_WRONG_INPUT.wrongInputInt(read, expected);
+	}
+	
+	default int wrongInputInt(int read, int[] expected, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException {
+		return Connection.DEFAULT_WRONG_INPUT.wrongInputInt(read, expected, msgGen);
+	}
+	
+	default int wrongInputPositive(int read, boolean strictlyPositive) throws IOException, StreamCorruptedException, EOFException {
+		return Connection.DEFAULT_WRONG_INPUT.wrongInputPositive(read, strictlyPositive);
+	}
 	
 }

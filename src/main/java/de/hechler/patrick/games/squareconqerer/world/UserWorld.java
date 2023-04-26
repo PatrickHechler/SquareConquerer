@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
@@ -108,10 +109,10 @@ public final class UserWorld implements World {
 	}
 	
 	@Override
-	public void addNextTurnListener(Runnable listener) { this.world.addNextTurnListener(listener); }
+	public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) { this.world.addNextTurnListener(listener); }
 	
 	@Override
-	public void removeNextTurnListener(Runnable listener) { this.world.removeNextTurnListener(listener); }
+	public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) { this.world.removeNextTurnListener(listener); }
 	
 	@Override
 	public Map<User, List<Entity>> entities() {
@@ -188,7 +189,7 @@ public final class UserWorld implements World {
 		}
 	}
 	
-	private void nextTurn() { this.entities = null; }
+	private void nextTurn(byte[] wh, byte[] th) { this.entities = null; }
 	
 	@Override
 	public void finish(Turn t) { this.world.finish(t); }
