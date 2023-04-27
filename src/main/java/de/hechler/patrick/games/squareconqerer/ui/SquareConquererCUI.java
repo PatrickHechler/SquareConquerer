@@ -1,6 +1,22 @@
+//This file is part of the Square Conquerer Project
+//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+//Copyright (C) 2023  Patrick Hechler
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU Affero General Public License as published
+//by the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU Affero General Public License for more details.
+//
+//You should have received a copy of the GNU Affero General Public License
+//along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.ui;
 
-import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
+import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
 
 import java.io.Console;
 import java.io.IOException;
@@ -123,7 +139,7 @@ public class SquareConquererCUI implements Runnable {
 		this.connects     = connects;
 		this.usr          = world.user();
 		if (serverThread != null) {
-			threadBuilder().start(() -> {
+			threadStart(() -> {
 				while (serverThread.isAlive()) {
 					try {
 						serverThread.join();
@@ -468,7 +484,7 @@ public class SquareConquererCUI implements Runnable {
 						serverPW = null;
 						Map<User, Connection> cs = new HashMap<>();
 						this.connects = cs;
-						serverThread  = threadBuilder().start(() -> {
+						serverThread  = threadStart(() -> {
 											try {
 												Connection.ServerAccept.accept(port, rw,
 														(conn, sok) -> c
@@ -611,7 +627,7 @@ public class SquareConquererCUI implements Runnable {
 				serverPW = null;
 				Map<User, Connection> cs = new HashMap<>();
 				connects = cs;
-				threadBuilder().start(() -> {
+				threadStart(() -> {
 					try {
 						Map<User, Connection> cs0 = new HashMap<>();
 						connects = cs0;
@@ -1516,7 +1532,7 @@ public class SquareConquererCUI implements Runnable {
 				final RootWorld       rw = (RootWorld) world;
 				Map<User, Connection> cs = new HashMap<>();
 				connects     = cs;
-				serverThread = threadBuilder().start(() -> {
+				serverThread = threadStart(() -> {
 									try {
 										Connection.ServerAccept.accept(sst.port, rw,
 												(conn, sok) -> c.writeLine(

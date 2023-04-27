@@ -1,6 +1,22 @@
+//This file is part of the Square Conquerer Project
+//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+//Copyright (C) 2023  Patrick Hechler
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU Affero General Public License as published
+//by the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU Affero General Public License for more details.
+//
+//You should have received a copy of the GNU Affero General Public License
+//along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world;
 
-import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
+import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOError;
@@ -21,6 +37,7 @@ import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
@@ -42,7 +59,36 @@ import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.StoreTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
+/**
+ * this world implementation can execute {@link Turn turns}, map {@link User users} to their {@link UserWorld sub-worlds} and iterate over the game history
+ * ({@link #iterator()}/{@link #iterCount()}) <br>
+ * this world can also be validated over a connection
+ * 
+ * @author Patrick Hechler
+ */
 public final class RootWorld implements World, Iterable<RootWorld> {
+	
+	private static final String BUILD_WORLD_NO_SUPPORT_TURNS = Messages.get("RootWorld.bw-no-turns"); //$NON-NLS-1$
+	private static final String NOT_EXPLORED_TILE            = Messages.get("RootWorld.not-explored-found"); //$NON-NLS-1$
+	private static final String NULL_TYPE_OR_RESOURCE        = Messages.get("RootWorld.tile-without-type/resource"); //$NON-NLS-1$
+	private static final String NULL_TILE                    = Messages.get("RootWorld.there-is-no-tile"); //$NON-NLS-1$
+	private static final String NON_RECTANGULAR_FORM         = Messages.get("RootWorld.non-rectangular-world"); //$NON-NLS-1$
+	private static final String RESOURCE_IS_NULL             = Messages.get("RootWorld.no-resource"); //$NON-NLS-1$
+	private static final String TYPE_IS_NULL                 = Messages.get("RootWorld.no-type"); //$NON-NLS-1$
+	private static final String UNKNOWN_TILE_TYPE            = Messages.get("RootWorld.unknown-type"); //$NON-NLS-1$
+	private static final String USR_IS_NULL                  = Messages.get("RootWorld.no-user"); //$NON-NLS-1$
+	private static final String RND_IS_NULL                  = Messages.get("RootWorld.no-random"); //$NON-NLS-1$
+	private static final String UNKNOWN_ENTITY_TURN_TYPE     = Messages.get("RootWorld.unknown-entyty-turn-type"); //$NON-NLS-1$
+	private static final String ERROR_EXEC_USER_TURN         = Messages.get("RootWorld.error-while-exex-usr-turn"); //$NON-NLS-1$
+	private static final String TURN_USES_NOT_OWNED_ENTITIES = Messages.get("RootWorld.turn-uses-not-owned-entities"); //$NON-NLS-1$
+	private static final String UNKNOWN_USER                 = Messages.get("RootWorld.unknown-usr"); //$NON-NLS-1$
+	private static final String ROOT_NO_EXEC_TURN            = Messages.get("RootWorld.root-no-exec-perm"); //$NON-NLS-1$
+	private static final String GAME_ALREADY_STARTED         = Messages.get("RootWorld.game-started"); //$NON-NLS-1$
+	private static final String SEED_IS_NULL                 = Messages.get("RootWorld.no-seed"); //$NON-NLS-1$
+	private static final String NO_MORE_ELEMENTS             = Messages.get("RootWorld.no-more-elements"); //$NON-NLS-1$
+	private static final String GAME_NOT_STARTED             = Messages.get("RootWorld.game-not-started"); //$NON-NLS-1$
+	private static final String INAVLID_RND_ARR_SIZE         = Messages.get("RootWorld.invalid-array-length"); //$NON-NLS-1$
+	private static final String SHA256_NOT_FOUND             = Messages.get("RootWorld.sha256-not-found"); //$NON-NLS-1$
 	
 	private final RootUser                         root;
 	private final Tile[][]                         tiles;
@@ -51,6 +97,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private final List<BiConsumer<byte[], byte[]>> nextTurnListeneres;
 	private final Map<User, Turn>                  userTurns;
 	private final List<Map<User, Turn>>            allTurns;
+	private volatile boolean                       allowRootTurns;
 	private volatile Tile[][]                      starttiles;
 	private volatile byte[]                        seed;
 	private volatile Random2                       rnd;
@@ -63,6 +110,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		this.nextTurnListeneres = new ArrayList<>();
 		this.userTurns          = new TreeMap<>();
 		this.allTurns           = new ArrayList<>();
+		this.allowRootTurns     = false;
 	}
 	
 	private RootWorld(RootWorld rw, UserPlacer placer) {
@@ -72,6 +120,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		this.subWorlds          = rw.subWorlds;
 		this.nextTurnListeneres = rw.nextTurnListeneres;
 		this.userTurns          = rw.userTurns;
+		this.allowRootTurns     = rw.allowRootTurns;
 		this.allTurns           = rw.allTurns;
 		this.starttiles         = rw.starttiles;
 		this.seed               = rw.seed;
@@ -79,21 +128,50 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		if (placer == null || !this.nextTurnListeneres.isEmpty()) throw new AssertionError();
 	}
 	
+	/**
+	 * returns <code>true</code> if the root user is allowed to execute turns and <code>false</code> if not
+	 * 
+	 * @return <code>true</code> if the root user is allowed to execute turns and <code>false</code> if not
+	 */
+	public boolean allowRootTurns() {
+		return this.allowRootTurns;
+	}
+	
+	/**
+	 * sets the {@link #allowRootTurns() allowRootTurns} value
+	 * 
+	 * @param allowRootTurns the new {@link #allowRootTurns() allowRootTurns} value
+	 * @throws IllegalStateException if the game already started
+	 */
+	public void allowRootTurns(boolean allowRootTurns) throws IllegalStateException {
+		if (this.rnd != null) throw new IllegalStateException(GAME_ALREADY_STARTED);
+		this.allowRootTurns = allowRootTurns;
+	}
+	
+	/** {@inheritDoc} */
 	@Override
 	public RootUser user() {
 		return this.root;
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public int xlen() {
 		return this.tiles.length;
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public int ylen() {
 		return this.tiles[0].length;
 	}
 	
+	/**
+	 * returns a modifiable tile of the given position<br>
+	 * the tile will be valid as long as the world is valid (even after the next turn/game start)
+	 * <p>
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Tile tile(int x, int y) {
 		return this.tiles[x][y];
@@ -102,9 +180,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private byte[] calcHash() {
 		MessageDigest digest;
 		try {
-			digest = MessageDigest.getInstance("SHA-256");
+			digest = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
 		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError("algo not found: " + e.toString(), e);
+			throw new AssertionError(SHA256_NOT_FOUND + e.toString(), e);
 		}
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		Connection            conn = Connection.createUnsecure(this.root, baos);
@@ -119,9 +197,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private static byte[] calcHash(byte[] data) {
 		MessageDigest digest;
 		try {
-			digest = MessageDigest.getInstance("SHA-256");
+			digest = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
 		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError("algo not found: " + e.toString(), e);
+			throw new AssertionError(SHA256_NOT_FOUND + e.toString(), e);
 		}
 		return digest.digest(data);
 	}
@@ -141,10 +219,22 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * </ol>
 	 */
 	public static final int REQ_RND = 0x558F7BB1;
+	/** @see #REQ_RND */
 	public static final int GIV_RND = 0x460C8B92;
 	
-	public static void fillRnd(Connection conn, byte[] arr) throws IOException {
-		if (arr.length != 16) throw new AssertionError("the given array has an inavlid size");
+	/**
+	 * request over the given connection random values and than fill the given array with these random values
+	 * <p>
+	 * this method fails if the array has not length <code>16</code>
+	 * 
+	 * @param conn the connection, which will be used to retrieve random values
+	 * @param arr  the array to be filled with random values
+	 * @throws IOException    if an IO error occurs
+	 * @throws AssertionError if the array has a size different than <code>16</code>
+	 * @see #REQ_RND
+	 */
+	public static void fillRnd(Connection conn, byte[] arr) throws IOException, AssertionError {
+		if (arr.length != 16) throw new AssertionError(INAVLID_RND_ARR_SIZE);
 		conn.blocked(() -> {
 			conn.writeReadInt(REQ_RND, GIV_RND);
 			conn.readArr(arr);
@@ -157,6 +247,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * @return the number of worlds the iterator can currently return
 	 */
 	public int iterCount() {
+		if (this.rnd == null) throw new IllegalStateException(GAME_NOT_STARTED);
 		return this.allTurns.size() + 2;
 	}
 	
@@ -171,7 +262,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * at the end the returned world should look like the current world
 	 */
 	public Iterator<RootWorld> iterator() {
-		if (this.rnd == null) throw new IllegalStateException("I can only iterate over all turns, when there is a running game!");
+		if (this.rnd == null) throw new IllegalStateException(GAME_NOT_STARTED);
 		return new Iterator<RootWorld>() {
 			
 			private Iterator<Map<User, Turn>> iter  = RootWorld.this.allTurns.iterator();
@@ -189,7 +280,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				} else if (!this.world.running()) {
 					this.world.startGame0(RootWorld.this.seed, false);
 				} else if (!this.iter.hasNext()) {
-					throw new NoSuchElementException("no more elements");
+					throw new NoSuchElementException(NO_MORE_ELEMENTS);
 				} else {
 					Map<User, Turn> val = this.iter.next();
 					for (Turn t : val.values()) {
@@ -214,12 +305,18 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private static final int RWS_SUB8   = 0xB6676572;
 	private static final int RWS_FINISH = 0x934ABD64;
 	
+	/**
+	 * saves the current world, the initial world, the random seed, all sub worlds and their users and the game history to the given connection
+	 * 
+	 * @param conn the connection which should be used to save everything
+	 * @throws IOException if an IO error occurs
+	 */
 	public synchronized void saveEverything(Connection conn) throws IOException {
-		saveEverything(conn, true);
+		conn.blocked(() -> saveEverything(conn, true));
 	}
 	
 	private /* synchronized */ void saveEverything(Connection conn, boolean savePWs) throws IOException {
-		if (this.seed == null) throw new IllegalStateException("the world needs to be started for that");
+		if (this.seed == null) throw new IllegalStateException(GAME_NOT_STARTED);
 		conn.writeInt(RWS_START);
 		conn.writeLong(this.rnd.getCurrentSeed());
 		conn.writeInt(this.seed.length);
@@ -265,6 +362,13 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		conn.writeInt(RWS_FINISH);
 	}
 	
+	/**
+	 * loads the current world, the initial world, the random seed, all sub worlds and their users and the game history from the given connection
+	 * 
+	 * @param conn the connection which stores everything
+	 * @return the loaded {@link RootWorld}
+	 * @throws IOException if an IO error occurs
+	 */
 	public static RootWorld loadEverything(Connection conn) throws IOException {
 		conn.readInt(RWS_START);
 		long   curSeed = conn.readLong();
@@ -307,7 +411,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		try {
 			Class<?> placerCls = Class.forName(conn.readString());
 			conn.readInt(RWS_SUB8);
-			Method     met    = placerCls.getMethod("readPlacer", Connection.class);
+			Method     met    = placerCls.getMethod("readPlacer", Connection.class); //$NON-NLS-1$
 			UserPlacer placer = (UserPlacer) met.invoke(null, conn);
 			conn.readInt(RWS_FINISH);
 			return new RootWorld(res, placer);
@@ -322,10 +426,17 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 	}
 	
+	/**
+	 * checks that the given seed was send by the given user
+	 * 
+	 * @param user     the user
+	 * @param seedPart the seed which was send by the user
+	 * @return <code>true</code> if the seeds are equal
+	 */
 	public boolean isSeed(User user, byte[] seedPart) {
-		if (seedPart.length != 16) throw new IllegalArgumentException("the seed part has an invalid length!");
+		if (seedPart.length != 16) throw new AssertionError(INAVLID_RND_ARR_SIZE);
 		byte[] mySeed = this.seed;
-		if (mySeed == null) throw new IllegalArgumentException("the game did not start yet");
+		if (mySeed == null) throw new IllegalStateException(GAME_NOT_STARTED);
 		Map<String, User> map = this.root.users();
 		map.remove(RootUser.ROOT_NAME);
 		Collection<User> values = map.values();
@@ -337,13 +448,22 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		return Arrays.equals(seedPart, 0, 16, mySeed, i, i + 16);
 	}
 	
+	/**
+	 * start the game with the given seed
+	 * <p>
+	 * the seed needs to be build the following way:<br>
+	 * the first 16 bytes are randomly generated by the root<br>
+	 * every 16 bytes are generated by a sub world user. the sub world users are ordered according to their name (sort them with {@link String#compareTo(String)}).
+	 * 
+	 * @param s the random seed
+	 */
 	public void startGame(byte[] s) {
 		startGame0(s, true);
 	}
 	
 	private synchronized void startGame0(byte[] s, boolean modifyRoot) {
-		if (s == null) throw new NullPointerException("the given seed is null");
-		if (this.rnd != null) throw new IllegalStateException("the game already started");
+		if (s == null) throw new NullPointerException(SEED_IS_NULL);
+		if (this.rnd != null) throw new IllegalStateException(GAME_ALREADY_STARTED);
 		byte[] hash;
 		synchronized (this.root) {
 			hash            = calcHash();
@@ -359,13 +479,13 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			Collection<User> values = map.values();
 			User[]           users  = values.toArray(new User[values.size()]);
 			Arrays.sort(users, null);
-			if ((users.length + 1) * 16 != s.length) throw new IllegalArgumentException("the given seed is illegal");
+			if ((users.length + 1) * 16 != s.length) throw new IllegalArgumentException(INAVLID_RND_ARR_SIZE);
 			long sval = seed(s);
 			this.seed = s;
 			this.rnd  = new Random2(sval);
 			this.placer.initilize(this, users, this.rnd);
 		}
-		threadBuilder().start(() -> executeNTL(hash, null));
+		threadStart(() -> executeNTL(hash, null));
 	}
 	
 	private static long seed(byte[] s) {
@@ -383,41 +503,78 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			| ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48) | ((s[i + 7] & 0xFFL) << 56);
 	}
 	
+	/**
+	 * returns <code>true</code> if the game is currently running and <code>false</code> if not
+	 * <p>
+	 * note that a game that once started can not be stopped
+	 * 
+	 * @return <code>true</code> if the game is currently running and <code>false</code> if not
+	 */
 	public synchronized boolean running() {
 		return this.rnd != null;
 	}
 	
-	public static final int RW_VAL_GAME = 0x7C6879B3;
-	public static final int SUB0_VAL_GAME  = 0xD597E0E5;
-	public static final int FIN_VAL_GAME   = 0xF6DB6A6B;
+	/**
+	 * value to send by the server to validate the game
+	 * <ol>
+	 * <li>Server: {@link #RW_VAL_GAME}</li>
+	 * <li>Client: {@link #SUB0_VAL_GAME}</li>
+	 * <li>Server: {@link #saveEverything(Connection)} (with empty passwords)</li>
+	 * <li>Server: {@link #FIN_VAL_GAME}</li>
+	 * </ol>
+	 */
+	public static final int RW_VAL_GAME   = 0x7C6879B3;
+	/** @see #RW_VAL_GAME */
+	public static final int SUB0_VAL_GAME = 0xD597E0E5;
+	/** @see #RW_VAL_GAME */
+	public static final int FIN_VAL_GAME  = 0xF6DB6A6B;
 	
+	/**
+	 * send all data needed to validate the game over the connection
+	 * 
+	 * @param conn the connection which should be used to validate the game
+	 * @throws IOException if an IO error occurs
+	 * @see #RW_VAL_GAME
+	 */
 	public synchronized void validateGame(Connection conn) throws IOException {
-		if (!conn.isBlocking()) throw new IllegalStateException("the connection has to be in block state");
-		conn.writeReadInt(RW_VAL_GAME, SUB0_VAL_GAME);
-		saveEverything(conn, false);
-		conn.writeInt(FIN_VAL_GAME);
+		conn.blocked(() -> {
+			conn.writeReadInt(RW_VAL_GAME, SUB0_VAL_GAME);
+			saveEverything(conn, false);
+			conn.writeInt(FIN_VAL_GAME);
+		});
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public synchronized void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
 		this.nextTurnListeneres.add(listener);
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public synchronized void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
 		this.nextTurnListeneres.remove(listener);
 	}
 	
+	/**
+	 * finish the turn.<br>
+	 * if the user is the root user this operation will fail if {@link #allowRootTurns()} is <code>false</code><br>
+	 * if the user does not belong to this world this operation will fail
+	 * <p>
+	 * when all users have finished their turn, all turns are executed in random order and then the next turn starts.
+	 * <p>
+	 * {@inheritDoc}
+	 */
 	@Override
 	public synchronized void finish(Turn t) {
-		if (t.usr == this.root) { throw new UnsupportedOperationException("the root can not execute turns"); }
-		if (this.rnd == null) { throw new IllegalStateException("not started"); }
-		if (!this.subWorlds.containsKey(t.usr)) { throw new AssertionError("this user is invalid"); }
+		if (t.usr == this.root && !this.allowRootTurns) throw new UnsupportedOperationException(ROOT_NO_EXEC_TURN);
+		if (this.rnd == null) throw new IllegalStateException(GAME_NOT_STARTED);
+		if (!this.subWorlds.containsKey(t.usr) && t.usr != this.root) throw new AssertionError(UNKNOWN_USER);
 		for (EntityTurn e : t.turns()) {
-			if (e.entity().owner() != t.usr) { throw new IllegalArgumentException("the turn wants to use not owned entities"); }
+			if (e.entity().owner() != t.usr) throw new IllegalArgumentException(TURN_USES_NOT_OWNED_ENTITIES);
 		}
 		this.userTurns.put(t.usr, t);
-		if (this.userTurns.size() >= this.root.users().keySet().size()) {
+		if (this.userTurns.size() >= (this.allowRootTurns ? this.root.users().keySet().size() + 1 : this.root.users().keySet().size())) {
 			executeTurn();
 		}
 	}
@@ -441,10 +598,10 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				Tile   t = this.tiles[e.x()][e.y()];
 				executeEntityTurn(et, e, t);
 			} catch (TurnExecutionException e) {
-				System.err.println("error while executing a turn for the user '" + et.entity().owner() + "': " + e.type);
+				System.err.println(ERROR_EXEC_USER_TURN + et.entity().owner() + "': " + e.type); //$NON-NLS-1$
 				e.printStackTrace();
 			} catch (Exception e) {
-				System.err.println("error while executing a turn for the user '" + et.entity().owner() + '\'');
+				System.err.println(ERROR_EXEC_USER_TURN + et.entity().owner() + '\'');
 				e.printStackTrace();
 			}
 		}
@@ -483,7 +640,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			if (!(e instanceof Unit u)) { throw new TurnExecutionException(ErrorType.INVALID_TURN); }
 			b.store(u, st.amount());
 		}
-		default -> throw new AssertionError("unknown entity turn type: " + turn.getClass());
+		default -> throw new AssertionError(UNKNOWN_ENTITY_TURN_TYPE + turn.getClass());
 		}
 	}
 	
@@ -497,6 +654,13 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		return arr;
 	}
 	
+	/**
+	 * orders the elements in the given array by random
+	 * 
+	 * @param <T> the type of the array
+	 * @param rnd the random to be used
+	 * @param arr the array to be shuffled
+	 */
 	public static <T> void shuffle(Random2 rnd, T[] arr) {
 		for (int i = 0; i < arr.length - 1; i++) {
 			int val = rnd.nextInt();
@@ -509,11 +673,20 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 	}
 	
+	/**
+	 * returns the World of the given user
+	 * <p>
+	 * if the user is the root user this world is returned, otherwise its {@link UserWorld} is returned
+	 * 
+	 * @param usr       the user
+	 * @param usrModCnt the users modify count
+	 * @return the world of the user
+	 */
 	public synchronized World of(User usr, int usrModCnt) {
 		if (usr == this.root) {
 			return this;
 		} else if (usr != this.root.get(usr.name())) {
-			throw new AssertionError("the user is not from my root");
+			throw new AssertionError(UNKNOWN_USER);
 		} else {
 			return usrOf(usr, usrModCnt);
 		}
@@ -521,16 +694,26 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	
 	private UserWorld usrOf(User usr, int usrModCnt) {
 		return this.subWorlds.compute(usr, (u, uw) -> {
-			if (uw != null && u.modifyCount() == uw.modCnt) { return uw; }
+			if (uw != null && u.modifyCount() == uw.modCnt) return uw;
 			return UserWorld.usrOf(this, usr, usrModCnt);
 		});
 	}
 	
+	/**
+	 * returns all entities on this world
+	 * <p>
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Map<User, List<Entity>> entities() {
 		return entities(this.tiles);
 	}
 	
+	/**
+	 * this class can be used to build a {@link RootWorld}
+	 * 
+	 * @author Patrick Hechler
+	 */
 	public static final class Builder implements World {
 		
 		private static final OreResourceType[] RES = OreResourceType.values();
@@ -550,14 +733,29 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		
 		private int resourceMask = 7;
 		
+		/**
+		 * creates a new {@link Building} with the given root, x-len and y-len
+		 * 
+		 * @param usr  the root user of the builder
+		 * @param xlen the x-len (width) of the builder
+		 * @param ylen the y-len (height) of the builder
+		 */
 		public Builder(RootUser usr, int xlen, int ylen) {
 			this(usr, xlen, ylen, new Random2());
 		}
 		
+		/**
+		 * creates a new {@link Building} with the given root, x-len, y-len and random
+		 * 
+		 * @param usr  the root user of the builder
+		 * @param xlen the x-len (width) of the builder
+		 * @param ylen the y-len (height) of the builder
+		 * @param rnd  the random of the builder
+		 */
 		public Builder(RootUser usr, int xlen, int ylen, Random2 rnd) {
-			if (xlen <= 0 || ylen <= 0) { throw new IllegalArgumentException("xlen=" + xlen + " ylen=" + ylen); }
-			if (rnd == null) { throw new NullPointerException("rnd is null"); }
-			if (usr == null) { throw new NullPointerException("usr is null"); }
+			if (xlen <= 0 || ylen <= 0) { throw new IllegalArgumentException("xlen=" + xlen + " ylen=" + ylen); } //$NON-NLS-1$ //$NON-NLS-2$
+			if (rnd == null) throw new NullPointerException(RND_IS_NULL);
+			if (usr == null) throw new NullPointerException(USR_IS_NULL);
 			this.root  = usr;
 			this.tiles = new Tile[xlen][ylen];
 			this.rnd   = rnd;
@@ -575,6 +773,10 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			}
 		}
 		
+		/**
+		 * replace all {@link Tile tiles} with <code>{@link Tile#type} = {@link TileType#NOT_EXPLORED not-explored}</code> to a random value.<br>
+		 * this method will try to generate random tiles which fit in their environment
+		 */
 		public void fillRandom() {
 			placeSomePoints();
 			while (fillOnce()) {/**/}
@@ -669,7 +871,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 						type = TileType.WATER_DEEP;
 					}
 				}
-			} else if (!type.isMountain()) throw new AssertionError("unknown type: " + type.name());
+			} else if (!type.isMountain()) throw new AssertionError(UNKNOWN_TILE_TYPE + type.name());
 			return type;
 		}
 		
@@ -698,7 +900,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			else if (type == null) type = TileType.GRASS;
 			if (rndVal0 >= posForest) rndVal0 -= posForest;
 			else if (type == null) type = TileType.FOREST;
-			if (rndVal0 >= posSwamp && type == null) throw new AssertionError("unexpected random value");
+			if (rndVal0 >= posSwamp && type == null) throw new AssertionError("illegal random value (this sould not be possible)"); //$NON-NLS-1$
 			else if (type == null) type = TileType.SWAMP;
 			return type;
 		}
@@ -738,6 +940,10 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			}
 		}
 		
+		/**
+		 * replace all {@link Tile tiles} with <code>{@link Tile#type} = {@link TileType#NOT_EXPLORED not-explored}</code> to a random value.<br>
+		 * unlike {@link #fillRandom()}, this method will just generate random tiles and ignores the environment of those tiles
+		 */
 		public void fillTotallyRandom() {
 			for (Tile[] ts : this.tiles) {
 				for (int i = 0; i < ts.length; i++) {
@@ -755,25 +961,47 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			executeNTL();
 		}
 		
+		/**
+		 * sets the resource mask<br>
+		 * the resource mask is used to check if a tile should get a resource or not<br>
+		 * every one bit adds a 50/50 chance
+		 * 
+		 * @param resourceMask the new resource mask
+		 */
 		public void resourceMask(int resourceMask) { this.resourceMask = resourceMask; }
 		
+		/**
+		 * returns the current resource mask
+		 * 
+		 * @return the current resource mask
+		 * @see #resourceMask(int)
+		 */
 		public int resourceMask() { return this.resourceMask; }
 		
+		/** {@inheritDoc} */
 		@Override
 		public RootUser user() {
 			return this.root;
 		}
 		
+		/** {@inheritDoc} */
 		@Override
 		public int xlen() {
 			return this.tiles.length;
 		}
 		
+		/** {@inheritDoc} */
 		@Override
 		public int ylen() {
 			return this.tiles[0].length;
 		}
 		
+		/**
+		 * returns the tile at the given position<br>
+		 * if there is no tile yet, a new visible {@link TileType#NOT_EXPLORED not-explored} tile {@link OreResourceType#NONE without} resource will be generated
+		 * <p>
+		 * {@inheritDoc}
+		 */
 		@Override
 		public Tile tile(int x, int y) {
 			if (this.tiles[x][y] == null) {
@@ -791,12 +1019,19 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @param x the x coordinate
 		 * @param y the y coordinate
 		 * 
-		 * @return
+		 * @return the at the given position or <code>null</code>, if there is not a tile (yet)
 		 */
 		public Tile get(int x, int y) {
 			return this.tiles[x][y];
 		}
 		
+		/**
+		 * sets the type of the tile at the given coordinates
+		 * 
+		 * @param x the x coordinate of the tile
+		 * @param y the y coordinate of the tile
+		 * @param t the new type of the tile
+		 */
 		public void set(int x, int y, TileType t) {
 			if (this.tiles[x][y] == null) {
 				this.tiles[x][y] = new Tile(t, OreResourceType.NONE, true);
@@ -806,36 +1041,77 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			executeNTL();
 		}
 		
+		/**
+		 * sets the resource of the tile at the given coordinates
+		 * 
+		 * @param x the x coordinate of the tile
+		 * @param y the y coordinate of the tile
+		 * @param r the new resource type of the tile
+		 */
 		public void set(int x, int y, OreResourceType r) {
 			if (this.tiles[x][y] == null) {
-				throw new NullPointerException("the tile does not already exist");
+				this.tiles[x][y] = new Tile(TileType.NOT_EXPLORED, r, true);
 			} else {
 				this.tiles[x][y] = new Tile(this.tiles[x][y].type, r, true);
 			}
 			executeNTL();
 		}
 		
+		/**
+		 * sets the type and resource of the tile at the given coordinates
+		 * 
+		 * @param x the x coordinate of the tile
+		 * @param y the y coordinate of the tile
+		 * @param t the new type of the tile
+		 * @param r the new resource of the tile
+		 */
 		public void set(int x, int y, TileType t, OreResourceType r) {
-			if (t == null) { throw new NullPointerException("type is null"); }
-			if (t == TileType.NOT_EXPLORED) { throw new NullPointerException("NOT_EXPLORED is not allowed"); }
-			if (r == null) { throw new NullPointerException("resource is null"); }
+			if (t == null) { throw new NullPointerException(TYPE_IS_NULL); }
+			if (r == null) { throw new NullPointerException(RESOURCE_IS_NULL); }
 			this.tiles[x][y] = new Tile(t, r, true);
 			executeNTL();
 		}
 		
+		/**
+		 * sets the tile at the given coordinates at a copy of the given tile
+		 * 
+		 * @param x the x coordinate of the tile
+		 * @param y the y coordinate of the tile
+		 * @param t the new original value of the tile
+		 */
 		public void set(int x, int y, Tile t) {
 			this.tiles[x][y] = t.copy();
 			executeNTL();
 		}
 		
-		public RootWorld create() throws IllegalStateException, NullPointerException {
+		/**
+		 * create a {@link RootWorld} from the current builder
+		 * 
+		 * @return the newly created {@link RootWorld}
+		 * @throws IllegalStateException if the world contains not yet explored tiles
+		 */
+		public RootWorld create() throws IllegalStateException {
 			return create(this.root, this.tiles);
 		}
 		
-		public static RootWorld create(RootUser root, Tile[][] tiles) throws IllegalStateException, NullPointerException {
+		/**
+		 * create a {@link RootWorld} from the given tiles
+		 * 
+		 * @param root  the root user of the new world
+		 * @param tiles the tiles of the new world
+		 * @return the newly created root world
+		 * @throws IllegalStateException if the tiles are not valid for a root world
+		 */
+		public static RootWorld create(RootUser root, Tile[][] tiles) throws IllegalStateException {
 			return create(root, tiles, null);
 		}
 		
+		/**
+		 * returns <code>true</code> if this {@link Builder} can currently {@link #create() create} a root world and <code>false</code> if an invocation to
+		 * {@link #create()} would result in an error
+		 * 
+		 * @return <code>true</code> if this {@link Builder} can currently {@link #create() create} a root world and <code>false</code> if not
+		 */
 		public boolean buildable() {
 			for (int x = 0; x < this.tiles.length; x++) {
 				Tile[] ts = this.tiles[x].clone();
@@ -850,57 +1126,107 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			return true;
 		}
 		
-		public static RootWorld create(RootUser root, Tile[][] tiles, UserPlacer placer) throws IllegalStateException, NullPointerException {
+		/**
+		 * create a new {@link RootWorld} using the given tiles, root user and user placer
+		 * 
+		 * @param root   the root user of the new world
+		 * @param tiles  the tiles of the new world
+		 * @param placer the placer of the world (or <code>null</code> if a {@link DefaultUserPlacer} should be used)
+		 * @return the newly created root world
+		 * @throws IllegalStateException if the tiles are not valid for a root world
+		 */
+		public static RootWorld create(RootUser root, Tile[][] tiles, UserPlacer placer) throws IllegalStateException {
 			Tile[][] copy = new Tile[tiles.length][tiles[0].length];
 			for (int x = 0; x < copy.length; x++) {
 				Tile[] ts  = copy[x];
 				Tile[] ots = tiles[x];
-				if (ts.length != ots.length) { throw new IllegalStateException("the world has the have an rectangular form!"); }
+				if (ts.length != ots.length) throw new IllegalStateException(NON_RECTANGULAR_FORM);
 				for (int y = 0; y < ts.length; y++) {
 					Tile t = ots[y].copy();
-					if (t == null) { throw new NullPointerException("no tile is allowed to be null"); }
-					if (t.type == null || t.resource == null) { throw new NullPointerException("a tile has a null type/resource"); }
-					if (t.type == TileType.NOT_EXPLORED) { throw new IllegalStateException("a tile with type NOT_EXPLORED was found"); }
+					if (t == null) throw new IllegalStateException(NULL_TILE);
+					if (t.type == null || t.resource == null) throw new NullPointerException(NULL_TYPE_OR_RESOURCE);
+					if (t.type == TileType.NOT_EXPLORED) throw new IllegalStateException(NOT_EXPLORED_TILE);
 					ts[y] = t;
 				}
 			}
 			return new RootWorld(root, copy, placer);
 		}
 		
+		/**
+		 * create a new {@link Builder} with the given tiles and root user
+		 * 
+		 * @param root  the root user of the builder
+		 * @param tiles the tiles of the builder
+		 * @return the newly created builder
+		 */
 		public static Builder createBuilder(RootUser root, Tile[][] tiles) {
 			return createBuilder(root, tiles, new Random2());
 		}
 		
+		/**
+		 * create a new {@link Builder} with the given tiles, root user and random
+		 * 
+		 * @param root  the root user of the new builder
+		 * @param tiles the tiles of the new builder
+		 * @param rnd   the random of the new builder
+		 * @return the newly created builder
+		 */
 		public static Builder createBuilder(RootUser root, Tile[][] tiles, Random2 rnd) {
 			Tile[][] copy = tiles.clone(); // do clone, so the rectangular form can not be destroyed
 			int      ylen = copy[0].length;
 			for (int x = 0; x < copy.length; x++) { // only enforce the rectangular form, the builder is allowed to contain invalid tiles
-				if (copy[x].length != ylen) throw new IllegalStateException("the world has the have an rectangular form!");
+				if (copy[x].length != ylen) throw new IllegalStateException(NON_RECTANGULAR_FORM);
 			}
 			return new Builder(root, tiles, rnd);
 		}
 		
+		/** {@inheritDoc} */
 		@Override
 		public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) { this.nextTurnListeners.add(listener); }
 		
+		/** {@inheritDoc} */
 		@Override
 		public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) { this.nextTurnListeners.remove(listener); }
 		
+		/**
+		 * returns all entities on this world
+		 * <p>
+		 * {@inheritDoc}
+		 */
 		@Override
 		public Map<User, List<Entity>> entities() {
 			return RootWorld.entities(this.tiles);
 		}
 		
+		/**
+		 * this operation is not supported, this method will always throw an {@link UnsupportedOperationException}
+		 * 
+		 * @throws UnsupportedOperationException always
+		 */
 		@Override
-		public void finish(Turn t) {
-			throw new UnsupportedOperationException("this is an build world");
+		public void finish(Turn t) throws UnsupportedOperationException {
+			throw new UnsupportedOperationException(BUILD_WORLD_NO_SUPPORT_TURNS);
 		}
 		
+		/**
+		 * sets the building at the given coordinates
+		 * 
+		 * @param x     the x coordinate of the building
+		 * @param y     the y coordinate of the building
+		 * @param build the building to be placed at the given position
+		 */
 		public void set(int x, int y, Building build) {
 			tile(x, y).build(build);
 			executeNTL();
 		}
 		
+		/**
+		 * sets the unit at the given coordinates
+		 * 
+		 * @param x    the x coordinate of the unit
+		 * @param y    the y coordinate of the unit
+		 * @param unit the unit to be placed at the given position
+		 */
 		public void set(int x, int y, Unit unit) {
 			tile(x, y).unit(unit);
 			executeNTL();

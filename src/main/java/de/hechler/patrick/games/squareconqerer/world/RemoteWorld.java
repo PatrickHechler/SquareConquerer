@@ -1,6 +1,22 @@
+//This file is part of the Square Conquerer Project
+//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+//Copyright (C) 2023  Patrick Hechler
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU Affero General Public License as published
+//by the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU Affero General Public License for more details.
+//
+//You should have received a copy of the GNU Affero General Public License
+//along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world;
 
-import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
+import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
 
 import java.io.Closeable;
 import java.io.EOFException;
@@ -50,7 +66,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 	
 	public RemoteWorld(Connection conn) {
 		this.conn = conn;
-		threadBuilder().start(this::deamon);
+		threadStart(this::deamon);
 	}
 	
 	/**
@@ -59,7 +75,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 	 * by default getWorld is <code>true</code><br>
 	 * if {@link #needUpdate()} is often called, this value might be set to <code>false</code>
 	 * 
-	 * @param getWorld the new value of {@link #this.getWorld}
+	 * @param getWorld the new value of {@link #getWorld() getWorld}
 	 */
 	public void getWorld(boolean getWorld) { this.getWorld = getWorld; }
 	
@@ -87,7 +103,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 	/**
 	 * this method should not be needed, because the world size (should be/)is immutable
 	 * 
-	 * @throws IOException
+	 * @throws IOException if an IO error occurs
 	 */
 	public synchronized void updateWorldSize() throws IOException {
 		this.conn.blocked(() -> {
@@ -507,8 +523,8 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 	}
 	
 	@Override
-	public void finish(Turn t) {
-		if (t.usr != this.conn.usr) { throw new IllegalStateException("I can only finish my turns"); }
+	public void finish(Turn t) throws IllegalStateException {
+		if (t.usr != this.conn.usr) throw new IllegalStateException("I can only finish my turns");
 		try {
 			t.sendTurn(this.conn, true);
 		} catch (IOException e) {

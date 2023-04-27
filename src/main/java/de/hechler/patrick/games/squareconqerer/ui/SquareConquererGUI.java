@@ -1,6 +1,22 @@
+//This file is part of the Square Conquerer Project
+//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+//Copyright (C) 2023  Patrick Hechler
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU Affero General Public License as published
+//by the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU Affero General Public License for more details.
+//
+//You should have received a copy of the GNU Affero General Public License
+//along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.ui;
 
-import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
+import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -618,11 +634,11 @@ public class SquareConquererGUI {
 			+ "note that then also not-explored tiles with a resource set may get their resource replaced<br>"
 			+ "the world builder may use rules, which change the possibility for some tiles (such as ocean tiles can only be placed near other water tiles)</html>");
 		fillRandom.addActionListener(e -> {
-			int chosen = JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION,
-				JOptionPane.QUESTION_MESSAGE);
+			int chosen =
+				JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (chosen != JOptionPane.YES_OPTION) { return; }
 			((RootWorld.Builder) this.world).fillRandom();
-			threadBuilder().start(() -> update(null));
+			threadStart(() -> update(null));
 			JOptionPane.showMessageDialog(this.frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
 		});
 		buildMenu.add(fillRandom);
@@ -630,8 +646,8 @@ public class SquareConquererGUI {
 		fillTotallyRandom.setToolTipText("<html>replace all tiles with type not-explored with random tiles<br>"
 			+ "note that then also not-explred tiles with a resource set may get their resource replaced</html>");
 		fillTotallyRandom.addActionListener(e -> {
-			int chosen = JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION,
-				JOptionPane.QUESTION_MESSAGE);
+			int chosen =
+				JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (chosen != JOptionPane.YES_OPTION) { return; }
 			((RootWorld.Builder) this.world).fillTotallyRandom();
 			JOptionPane.showMessageDialog(this.frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
@@ -912,11 +928,11 @@ public class SquareConquererGUI {
 			
 			delBtn.addActionListener(oe -> {
 				String name   = combo.getSelectedItem().toString();
-				int    chosen = JOptionPane.showConfirmDialog(dialog, "DELETE '" + name + "'?", "DELETE USER", JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE);
+				int    chosen =
+					JOptionPane.showConfirmDialog(dialog, "DELETE '" + name + "'?", "DELETE USER", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 				if (chosen != JOptionPane.YES_OPTION) { return; }
 				
-				threadBuilder().start(() -> {
+				threadStart(() -> {
 					root.remove(root.get(name));
 					SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.frame, "the user '" + name + "' was successfully deleted", "user DELETED",
 						JOptionPane.INFORMATION_MESSAGE));
@@ -991,7 +1007,7 @@ public class SquareConquererGUI {
 			this.serverThread = null;
 			st.interrupt();
 			serverMenu.remove(closeItem);
-			threadBuilder().start(() -> {
+			threadStart(() -> {
 				try {
 					st.join();
 				} catch (InterruptedException e1) {
@@ -1040,10 +1056,10 @@ public class SquareConquererGUI {
 					synchronized (SquareConquererGUI.this) {
 						final HashMap<User, Connection> hm = new HashMap<>();
 						this.connects     = hm;
-						this.serverThread = threadBuilder().start(() -> {
+						this.serverThread = threadStart(() -> {
 												try {
 													RootWorld rw = (RootWorld) this.world;
-													Connection.ServerAccept.accept(ss, rw, (conn, sok) -> threadBuilder().start(() -> {
+													Connection.ServerAccept.accept(ss, rw, (conn, sok) -> threadStart(() -> {
 																			InetAddress addr = sok.getInetAddress();
 																			String name = conn.usr.name();
 																			JOptionPane.showMessageDialog(this.frame, "'" + name + "' logged in from " + addr,
@@ -1116,9 +1132,9 @@ public class SquareConquererGUI {
 			if (result == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
 				if (loadEverything) {
-					threadBuilder().start(() -> loadEverythingFromFile(file));
+					threadStart(() -> loadEverythingFromFile(file));
 				} else {
-					threadBuilder().start(() -> loadFromFile(file));
+					threadStart(() -> loadFromFile(file));
 				}
 			}
 		});
@@ -1534,8 +1550,8 @@ public class SquareConquererGUI {
 		hoveringButton.addMouseListener(val);
 		hoveringButton.addMouseWheelListener(e -> {
 			if (ignore(hoveringButton, e)) {
-				Component  comp = this.panel.findComponentAt(hoveringButton.getX() + e.getX() - this.panel.getX(),
-					hoveringButton.getY() + e.getY() - this.panel.getY());
+				Component  comp =
+					this.panel.findComponentAt(hoveringButton.getX() + e.getX() - this.panel.getX(), hoveringButton.getY() + e.getY() - this.panel.getY());
 				MouseEvent newE = SwingUtilities.convertMouseEvent(hoveringButton, e, comp);
 				comp.dispatchEvent(newE);
 			}
@@ -1828,7 +1844,7 @@ public class SquareConquererGUI {
 						conn.blocked(() -> RootWorld.fillRnd(conn, tmp));
 						System.arraycopy(tmp, 0, seed, i, 16);
 					}
-					if (i < seed.length) { throw new ConcurrentModificationException(); }
+					if (i < seed.length) throw new ConcurrentModificationException();
 					rw.startGame(seed);
 				} catch (IOException e1) {
 					JOptionPane.showMessageDialog(this.frame, "could not get the random value from a client: " + e1.toString(), "start failed",
@@ -1845,7 +1861,7 @@ public class SquareConquererGUI {
 			this.world = rw;
 			reload(this.buildFinishHook, true, true);
 		}
-		case RemoteWorld rw -> threadBuilder().start(this::finishTurn);
+		case RemoteWorld rw -> threadStart(this::finishTurn);
 		default -> throw new AssertionError("illegal world type: " + this.world.getClass());
 		}
 	}
@@ -2121,7 +2137,7 @@ public class SquareConquererGUI {
 	
 	private static boolean ensureNotGUIThread(Runnable r) {
 		if (SwingUtilities.isEventDispatchThread()) {
-			Thread t = threadBuilder().start(r);
+			Thread t = threadStart(r);
 			try {
 				t.join();
 			} catch (InterruptedException e) {

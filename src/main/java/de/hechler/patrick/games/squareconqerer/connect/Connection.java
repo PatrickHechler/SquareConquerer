@@ -1,6 +1,22 @@
+//This file is part of the Square Conquerer Project
+//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+//Copyright (C) 2023  Patrick Hechler
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU Affero General Public License as published
+//by the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU Affero General Public License for more details.
+//
+//You should have received a copy of the GNU Affero General Public License
+//along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.connect;
 
-import static de.hechler.patrick.games.squareconqerer.Settings.threadBuilder;
+import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
 
 import java.io.Closeable;
 import java.io.EOFException;
@@ -44,7 +60,8 @@ import de.hechler.patrick.games.squareconqerer.world.World;
 public class Connection implements Closeable, WrongInputHandler {
 	
 	/**
-	 * this {@link WrongInputHandler} just always throws an {@link StreamCorruptedException} (or {@link EOFException} in {@link WrongInputHandler#wrongInputEOF(int, int)})
+	 * this {@link WrongInputHandler} just always throws an {@link StreamCorruptedException} (or {@link EOFException} in
+	 * {@link WrongInputHandler#wrongInputEOF(int, int)})
 	 */
 	public static final WrongInputHandler DEFAULT_WRONG_INPUT = new WrongInputHandler() {
 		
@@ -226,7 +243,7 @@ public class Connection implements Closeable, WrongInputHandler {
 					try {
 						Socket sok = ss.accept();
 						soks.add(sok);
-						threadBuilder().start(() -> {
+						threadStart(() -> {
 							try {
 								Connection conn = accept(sok, rw.user(), serverPW);
 								User       usr  = conn.usr;
@@ -738,7 +755,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	}
 	
 	/**
-	 * this is the same as {@link #blocked(DEFAULT_WRONG_INPUT, int, Executable, Executable) blocked(0, exec, null)}
+	 * this is the same as {@link #blocked(int, Executable, Executable) blocked(0, exec, null)}
 	 * 
 	 * @param exec the executable to execute
 	 * 
@@ -748,7 +765,10 @@ public class Connection implements Closeable, WrongInputHandler {
 		blocked(0, exec, null);
 	}
 	
-	public static final Executable<IOException> NOP = () -> {
+	public static final Executable<IOException> NOP = new Executable<>() {
+		
+		@Override
+		public void execute() throws IOException {/**/}
 	};
 	
 	/**
