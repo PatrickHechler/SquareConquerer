@@ -28,6 +28,7 @@ import java.awt.image.WritableRaster;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
@@ -37,8 +38,28 @@ import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 
+/**
+ * this class can be used to generate a {@link World} from a {@link SCPage}
+ * 
+ * @author Patrick Hechler
+ */
 @SuppressWarnings("preview")
 public class PageWorld {
+	
+	private static final String ERROR_ILLEGAL_LINE2        = Messages.get("PageWorld.illegal-line2");      //$NON-NLS-1$
+	private static final String PIXEL_NOT_FOUND_IN_PAGE    = Messages.get("PageWorld.pixel-behind-page");  //$NON-NLS-1$
+	private static final String ERROR_INVALID_LINE         = Messages.get("PageWorld.illegal-line1");      //$NON-NLS-1$
+	private static final String POSITION_NOT_FOUND         = Messages.get("PageWorld.pos-not-found");      //$NON-NLS-1$
+	private static final String UNKNOWN_COLOR              = Messages.get("PageWorld.unknown-color");      //$NON-NLS-1$
+	private static final String PAGE_WORLD_FINISH          = Messages.get("PageWorld.log-finish");         //$NON-NLS-1$
+	private static final String PAGE_WORLD_FINISH_DRAWING  = Messages.get("PageWorld.log-finish-draw");    //$NON-NLS-1$
+	private static final String PAGE_WORLD_FINISH_COUNTING = Messages.get("PageWorld.log-finish-cnt");     //$NON-NLS-1$
+	private static final String MAX_BOUNDS                 = Messages.get("PageWorld.log-max-char-bound"); //$NON-NLS-1$
+	private static final String OTHER_TILE_IS_NULL         = Messages.get("PageWorld.other-is-null");      //$NON-NLS-1$
+	private static final String TEXT_TILE_IS_NULL          = Messages.get("PageWorld.text-is-null");       //$NON-NLS-1$
+	private static final String WORLD_TILE_IS_NULL         = Messages.get("PageWorld.world-is-null");      //$NON-NLS-1$
+	private static final String LINK_TILE_IS_NULL          = Messages.get("PageWorld.link-is-null");       //$NON-NLS-1$
+	private static final String PAGE_TILE_IS_NULL          = Messages.get("PageWorld.page-is-null");       //$NON-NLS-1$
 	
 	private static final int   VAL_PAGE   = 255;
 	private static final int   VAL_LINK   = 190;
@@ -58,6 +79,11 @@ public class PageWorld {
 	private Tile textTile;
 	private Tile othrTile;
 	
+	/**
+	 * create a new {@link PageWorld} builder from the given page
+	 * 
+	 * @param page the page, which will be displayed on the created world
+	 */
 	public PageWorld(SCPage page) {
 		this.page = page;
 		randomTiles(false);
@@ -72,6 +98,79 @@ public class PageWorld {
 		return new Tile(tt, ort, true);
 	}
 	
+	
+	/**
+	 * @return the pageTile
+	 */
+	public Tile pageTile() { return this.pageTile; }
+	
+	/**
+	 * @param pageTile the pageTile to set
+	 */
+	public void pageTile(Tile pageTile) {
+		if (pageTile == null) throw new NullPointerException(PAGE_TILE_IS_NULL);
+		this.pageTile = pageTile;
+	}
+	
+	/**
+	 * @return the linkTile
+	 */
+	public Tile linkTile() { return this.linkTile; }
+	
+	/**
+	 * @param linkTile the linkTile to set
+	 */
+	public void linkTile(Tile linkTile) {
+		if (linkTile == null) throw new NullPointerException(LINK_TILE_IS_NULL);
+		this.linkTile = linkTile;
+	}
+	
+	/**
+	 * @return the worldTile
+	 */
+	public Tile worldTile() { return this.wrldTile; }
+	
+	/**
+	 * @param worldTile the worldTile to set
+	 */
+	public void worldTile(Tile worldTile) {
+		if (worldTile == null) throw new NullPointerException(WORLD_TILE_IS_NULL);
+		this.wrldTile = worldTile;
+	}
+	
+	/**
+	 * @return the textTile
+	 */
+	public Tile textTile() { return this.textTile; }
+	
+	/**
+	 * @param textTile the textTile to set
+	 */
+	public void textTile(Tile textTile) {
+		if (textTile == null) throw new NullPointerException(TEXT_TILE_IS_NULL);
+		this.textTile = textTile;
+	}
+	
+	/**
+	 * @return the otherTile
+	 */
+	public Tile otherTile() {
+		return this.othrTile;
+	}
+	
+	/**
+	 * @param otherTile the otherTile to set
+	 */
+	public void otherTile(Tile otherTile) {
+		if (otherTile == null) throw new NullPointerException(OTHER_TILE_IS_NULL);
+		this.othrTile = otherTile;
+	}
+	
+	/**
+	 * regenerate the tiles used by this builder randomly<br>
+	 * 
+	 * @param allowNotExplored if {@link TileType#NOT_EXPLORED} is allowed to be generated randomly
+	 */
 	public void randomTiles(boolean allowNotExplored) {
 		Random2 rnd = new Random2();
 		do {
@@ -80,7 +179,12 @@ public class PageWorld {
 			this.wrldTile = randomTile(rnd, allowNotExplored);
 			this.textTile = randomTile(rnd, allowNotExplored);
 			this.othrTile = randomTile(rnd, allowNotExplored);
-		} while (!maxOne(TileType::isForest) || !maxOne(TileType::isGrass) || !maxOne(TileType::isMountain) || !maxOne(TileType::isSand) || !maxOne(TileType::isSwamp) || !maxOne(TileType::isWater));
+		} while (sameTiles());
+	}
+	
+	private boolean sameTiles() {
+		return !maxOne(TileType::isForest) || !maxOne(TileType::isGrass) || !maxOne(TileType::isMountain) || !maxOne(TileType::isSand) || !maxOne(TileType::isSwamp)
+			|| !maxOne(TileType::isWater);
 	}
 	
 	private boolean maxOne(Predicate<TileType> t) {
@@ -98,24 +202,22 @@ public class PageWorld {
 		return true;
 	}
 	
+	/**
+	 * create a world from the page using the tiles
+	 * 
+	 * @return the created world
+	 */
 	public RootWorld.Builder createWorld() {
-		System.out.println("pageTiele: " + this.pageTile);
-		System.out.println("linkTiele: " + this.linkTile);
-		System.out.println("wrldTiele: " + this.wrldTile);
-		System.out.println("textTiele: " + this.textTile);
-		System.out.println("othrTiele: " + this.othrTile);
 		FontRenderContext frc       = new FontRenderContext(null, false, false);
-		Font              f         = new Font("Monospace", Font.PLAIN, 9);
+		Font              f         = new Font("Monospace", Font.PLAIN, 9);     //$NON-NLS-1$
 		Rectangle2D       maxBounds = f.getMaxCharBounds(frc);
-		System.out.println("maxBounds=" + maxBounds);
-		System.out.println("minX=" + (int) Math.ceil(-maxBounds.getMinX()) + " minY=" + (int) Math.ceil(-maxBounds.getMinY()) + " width=" + (int) Math.ceil(maxBounds.getWidth()) + " height="
-			+ (int) Math.ceil(maxBounds.getHeight()));
+		System.out.println(MAX_BOUNDS + maxBounds);
 		int xStartOff = (int) Math.ceil(-maxBounds.getMinX()) + 1;
 		int yStartOff = (int) Math.ceil(-maxBounds.getMinY()) + 1;
 		int ch        = (int) Math.ceil(maxBounds.getHeight());
 		if (xStartOff < 1 || yStartOff < 1 || ch <= 0) throw new AssertionError();
 		Dimension dim = countAll(frc, f, xStartOff, yStartOff, ch);
-		System.out.println("pageWorld: finish counting: " + dim);
+		System.out.println(PAGE_WORLD_FINISH_COUNTING + dim);
 		BufferedImage img = new BufferedImage(dim.width + 1, dim.height + 1, BufferedImage.TYPE_BYTE_GRAY);
 		Graphics2D    g   = img.createGraphics();
 		g.setFont(f);
@@ -123,18 +225,11 @@ public class PageWorld {
 		for (SCPageBlock block : this.page.blocks()) {
 			yoff = draw(g, block, f, frc, ch, xStartOff, yoff, dim.width, yStartOff - 1);
 		}
-		System.out.println("pageWorld: finish drawing");
+		System.out.println(PAGE_WORLD_FINISH_DRAWING);
 		WritableRaster    raster = img.getRaster();
 		RootWorld.Builder b      = new RootWorld.Builder(RootUser.create(new char[0]), dim.width, dim.height);
 		fill(raster, b, ch, f, frc, xStartOff, yStartOff);
-		System.out.println("pageWorld: finish");
-		int cnt = 0;
-		for (int x = 0; x < b.xlen(); x++) {
-			for (int y = 0; y < b.ylen(); y++) {
-				if (b.tile(x, y).hasPage()) cnt++;
-			}
-		}
-		System.out.println("there are " + cnt + " tiles with a page");
+		System.out.println(PAGE_WORLD_FINISH);
 		return b;
 	}
 	
@@ -161,7 +256,7 @@ public class PageWorld {
 				case VAL_TEXT -> t = this.textTile;
 				case VAL_NONE -> t = this.othrTile;
 				default -> {
-					System.out.println("a=" + a);
+					System.err.println(UNKNOWN_COLOR + a);
 					t = this.othrTile;
 				}
 				}
@@ -178,7 +273,7 @@ public class PageWorld {
 		int yPos = yStartOff - ch;
 		for (SCPageBlock block : this.page.blocks()) {
 			if (yPos >= y) {
-				System.err.println("error: did not found position");
+				System.err.println(POSITION_NOT_FOUND);
 				t.page(null, null);
 				return;
 			}
@@ -194,7 +289,7 @@ public class PageWorld {
 			case SCPageBlock.SeperatingBlock sb -> yPos += sbHigh(sb);
 			}
 		}
-		System.err.println("error: invalid line");
+		System.err.println(ERROR_INVALID_LINE);
 	}
 	
 	private static void fillFromEntryBlock(FontRenderContext frc, Font f, int x, Tile t, int xPos, SCPageBlock.EntryBlock eb) {
@@ -207,7 +302,7 @@ public class PageWorld {
 		case SCPageEntry.TextEntry te -> xPos += width(frc, f, te.text());
 		} < x) {
 			if (!iter.hasNext()) {
-				System.err.println("error: not enugh elements in the iterator");
+				System.err.println(PIXEL_NOT_FOUND_IN_PAGE);
 				return;
 			}
 			e = iter.next();
@@ -217,7 +312,7 @@ public class PageWorld {
 		case SCPageEntry.PageEntry pe -> t.page(pe.page(), pe.title());
 		case SCPageEntry.WorldEntry we -> t.page(() -> new SCPage(new SCPageBlock.EntryBlock(we)), we.worldName());
 		case SCPageEntry.TextEntry te -> {
-			System.err.println("error: text entry");
+			System.err.println(ERROR_ILLEGAL_LINE2);
 			t.page(null, null);
 		}
 		}
@@ -248,7 +343,7 @@ public class PageWorld {
 			} else yoff += 3;
 		}
 		case SCPageBlock.TextBlock tb -> {
-			for (String line : tb.text().replace("\t", "  ").split("\r\n?|\n")) {
+			for (String line : tb.text().replace("\t", "  ").split("\r\n?|\n")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				draw(g, line, f, frc, xStartOff, yoff, COLOR_TEXT);
 				yoff += ch;
 			}
@@ -259,7 +354,7 @@ public class PageWorld {
 	
 	@SuppressWarnings("cast")
 	private static int draw(Graphics2D g, String text, Font f, FontRenderContext frc, int xoff, int yoff, Color c) {
-		text = text.replace("\t", "  ");
+		text = text.replace("\t", "  "); //$NON-NLS-1$ //$NON-NLS-2$
 		g.setColor(c);
 		TextLayout layout = new TextLayout(text, f, frc);
 		layout.draw(g, (float) xoff, (float) yoff);
@@ -274,10 +369,10 @@ public class PageWorld {
 			int xlen = xStartOff;
 			for (SCPageEntry entry : eb.entries()) {
 				String text = switch (entry) {
-				case SCPageEntry.PageEntry pe -> pe.text().replace("\t", "  ");
-				case SCPageEntry.LinkEntry le -> le.text().replace("\t", "  ");
-				case SCPageEntry.TextEntry te -> te.text().replace("\t", "  ");
-				case SCPageEntry.WorldEntry we -> we.text().replace("\t", "  ");
+				case SCPageEntry.PageEntry pe -> pe.text().replace("\t", "  "); //$NON-NLS-1$ //$NON-NLS-2$
+				case SCPageEntry.LinkEntry le -> le.text().replace("\t", "  "); //$NON-NLS-1$ //$NON-NLS-2$
+				case SCPageEntry.TextEntry te -> te.text().replace("\t", "  "); //$NON-NLS-1$ //$NON-NLS-2$
+				case SCPageEntry.WorldEntry we -> we.text().replace("\t", "  "); //$NON-NLS-1$ //$NON-NLS-2$
 				};
 				xlen += width(frc, f, text);
 			}
@@ -286,7 +381,8 @@ public class PageWorld {
 		case SCPageBlock.SeperatingBlock sb -> dim.height += sbHigh(sb);
 		case SCPageBlock.TextBlock tb -> {
 			dim.height += tb.text().lines().count() * ch;
-			dim.width   = Math.max(dim.width, xStartOff + tb.text().lines().mapToInt(str -> (int) Math.ceil(new TextLayout(str.replace("\t", "  "), f, frc).getBounds().getWidth())).max().getAsInt());
+			dim.width   = Math.max(dim.width, xStartOff
+				+ tb.text().lines().mapToInt(str -> (int) Math.ceil(new TextLayout(str.replace("\t", "  "), f, frc).getBounds().getWidth())).max().getAsInt()); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		}
 	}

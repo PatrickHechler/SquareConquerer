@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
@@ -37,7 +38,16 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-public class OpenWorld implements WrongInputHandler, Executable<IOException> {
+/**
+ * this class is used to allow remote locations to operate on a world not on their system (they use {@link RemoteWorld})
+ * 
+ * @author Patrick Hechler
+ */
+public final class OpenWorld implements Executable<IOException> {
+	
+	private static final String ENTITY_IS_NULL            = Messages.get("OpenWorld.no-entity"); //$NON-NLS-1$
+	private static final String NEITHER_UNIT_NOR_BUILDING = Messages.get("OpenWorld.unknown-entity-type"); //$NON-NLS-1$
+	private static final String GOT_INVALID_DATA          = Messages.get("OpenWorld.invalid-data"); //$NON-NLS-1$
 	
 	/**
 	 * <ol>
@@ -183,6 +193,13 @@ public class OpenWorld implements WrongInputHandler, Executable<IOException> {
 	
 	// maybe delegate later to different constructors for different worlds (root
 	// world or non root world for example)
+	/**
+	 * return an {@link OpenWorld} for the given world, which operates on the given connection
+	 * 
+	 * @param conn  the connection of the open world
+	 * @param world the world to be opened
+	 * @return the newly created open world
+	 */
 	public static OpenWorld of(Connection conn, World world) {
 		return new OpenWorld(conn, world);
 	}
@@ -212,10 +229,25 @@ public class OpenWorld implements WrongInputHandler, Executable<IOException> {
 	
 	private boolean executing;
 	
+	/**
+	 * executes the open world<br>
+	 * this method allows the remote connection to operate on the backing world of this open world
+	 */
 	@Override
 	public void execute() throws IOException {
-		this.conn.replaceWongInput(null, this);
-		this.conn.setTimeout(250);
+		this.conn.replaceWongInput(null, new WrongInputHandler() {
+			/*
+			 * when there is a race condition, the client gets its action executed first, then the server needs to retry its action from the beginning
+			 */
+			
+			@Override
+			public void wrongInputWRInt(int got, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
+				exec(got);
+				// if the connection is really corrupt, the exec fails
+				OpenWorld.this.conn.writeReadInt(wrote, expectedRead);
+			}
+			
+		});
 		BiConsumer<byte[], byte[]> ntl = this::nextTurn;
 		this.world.addNextTurnListener(ntl);
 		try {
@@ -253,19 +285,8 @@ public class OpenWorld implements WrongInputHandler, Executable<IOException> {
 			t.retrieveTurn(this.conn, true);
 			this.world.finish(t);
 		}
-		default -> throw new StreamCorruptedException("read invalid data (username: '" + this.world.user().name() + "')");
+		default -> throw new StreamCorruptedException(GOT_INVALID_DATA + this.world.user().name() + "')"); //$NON-NLS-1$
 		}
-	}
-	
-	/*
-	 * when there is a race condition, the client gets its action executed first, then the server needs to retry its action from the beginning
-	 */
-	
-	@Override
-	public void wrongInputWRInt(int got, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
-		exec(got);
-		// if the connection is really corrupt, the exec fails
-		this.conn.writeReadInt(wrote, expectedRead);
 	}
 	
 	private void sendTile() throws IOException {
@@ -305,6 +326,13 @@ public class OpenWorld implements WrongInputHandler, Executable<IOException> {
 		this.conn.writeByte(t.visible() ? 1 : 0);
 	}
 	
+	/**
+	 * saves the given world to the given connection
+	 * 
+	 * @param world the world to be saved
+	 * @param conn  the connection
+	 * @throws IOException if an IO error occurs
+	 */
 	public static void saveWorld(World world, Connection conn) throws IOException {
 		sendWorld(world, conn, false);
 	}
@@ -346,7 +374,7 @@ public class OpenWorld implements WrongInputHandler, Executable<IOException> {
 					conn.writeInt(CMD_BUILD);
 					sendBuilding(b, conn);
 				} else {
-					throw new AssertionError("the entity is neither an unit nor a building: " + (e == null ? "null" : e.getClass()));
+					throw new AssertionError(NEITHER_UNIT_NOR_BUILDING + (e == null ? ENTITY_IS_NULL : e.getClass()));
 				}
 			}
 			conn.writeInt(SUB3_GET_WORLD);
@@ -357,11 +385,18 @@ public class OpenWorld implements WrongInputHandler, Executable<IOException> {
 		}
 	}
 	
-	public static void writeRes(Connection conn, Resource r) throws AssertionError, IOException {
+	/**
+	 * writes the given resource to the given connection
+	 * 
+	 * @param conn the connection
+	 * @param r    the resource to be send
+	 * @throws IOException if an IO error occurs
+	 */
+	public static void writeRes(Connection conn, Resource r) throws IOException {
 		Class<? extends Resource> cls = r.getClass();
-		if (!cls.isEnum()) { throw new AssertionError("resource class is no enum"); }
+		if (!cls.isEnum()) { throw new AssertionError("resource class is no enum (this should never happen)"); } //$NON-NLS-1$
 		try {
-			conn.writeInt(cls.getDeclaredField("NUMBER").getInt(null));
+			conn.writeInt(cls.getDeclaredField("NUMBER").getInt(null)); //$NON-NLS-1$
 			conn.writeInt(((Enum<?>) r).ordinal());
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			throw new AssertionError(e.toString(), e);

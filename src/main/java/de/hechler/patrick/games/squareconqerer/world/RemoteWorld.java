@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.connect.WrongInputHandler;
@@ -51,21 +52,63 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
-public final class RemoteWorld implements WrongInputHandler, World, Closeable {
+/**
+ * this world implementation uses a {@link Connection} to allow together with {@link OpenWorld} remote Worlds, which are not from the local system
+ * 
+ * @author Patrick Hechler
+ */
+public final class RemoteWorld implements World, Closeable {
+	
+	private static final String ONLY_MY_TURNS                    = Messages.get("RemoteWorld.only-my-turns");                    //$NON-NLS-1$
+	private static final String HAVE_ALREADY_VALIDATE_DATA       = Messages.get("RemoteWorld.already-have-val-data");            //$NON-NLS-1$
+	private static final String GAME_STARTED                     = Messages.get("RemoteWorld.log-game-started");                 //$NON-NLS-1$
+	private static final String TAB_TURNS                        = Messages.get("RemoteWorld.log--turns");                       //$NON-NLS-1$
+	private static final String TAB_WORLD                        = Messages.get("RemoteWorld.log--world");                       //$NON-NLS-1$
+	private static final String NEXT_TURN                        = Messages.get("RemoteWorld.log-next-turn");                    //$NON-NLS-1$
+	private static final String TURN_DIFFERENT_HASH              = Messages.get("RemoteWorld.error-different-turn-hash");        //$NON-NLS-1$
+	private static final String WORLD_DIFFERENT_HASH             = Messages.get("RemoteWorld.error-different-world-hash");       //$NON-NLS-1$
+	private static final String NOT_EXPECTED_START_HASH          = Messages.get("RemoteWorld.error-different-start-world-hash"); //$NON-NLS-1$
+	private static final String DIFFERENT_SEED_FOR_ME            = Messages.get("RemoteWorld.error-not-my-seed");                //$NON-NLS-1$
+	private static final String ITER_COUNT_OF_WORLD_NOT_EXPECTED = Messages.get("RemoteWorld.error-different-turn-count");       //$NON-NLS-1$
+	private static final String SKIP_VALIDATION_NO_DATA_TO_CHECK = Messages.get("RemoteWorld.log-skip-check-no-val");            //$NON-NLS-1$
+	private static final String INVALID_NOTIFICATION             = Messages.get("RemoteWorld.invalid-notify");                   //$NON-NLS-1$
+	private static final String KNOWN_USERS                      = Messages.get("RemoteWorld.known-users");                      //$NON-NLS-1$
+	private static final String UNKNOWN_USERNAME                 = Messages.get("RemoteWorld.unknown-username");                 //$NON-NLS-1$
+	private static final String NO_RECTANGULAR_FORM              = Messages.get("RemoteWorld.no-rect-form");                     //$NON-NLS-1$
+	private static final String NEW                              = Messages.get("RemoteWorld.new");                              //$NON-NLS-1$
+	private static final String WARN_WORLD_SIZE_CHANGED          = Messages.get("RemoteWorld.warn-size-change");                 //$NON-NLS-1$
+	private static final String DIFFERENT_WORLD_SIZES            = Messages.get("RemoteWorld.diff-world-size");                  //$NON-NLS-1$
+	private static final String NEGATIVE_COORDINATE              = Messages.get("RemoteWorld.negative-coordinate");              //$NON-NLS-1$
 	
 	private final Connection        conn;
 	private int                     xlen;
 	private int                     ylen;
 	private RemoteTile[][]          tiles;
 	private long                    needUpdate;
-	private boolean                 getWorld = true;
 	private long                    lastWorldUpdate;
+	private boolean                 getWorld = true;
 	private Map<User, List<Entity>> entities;
 	private Map<String, User>       users;
 	private List<byte[]>            validateData;
 	
+	/**
+	 * create a new Remote world using the given {@link Connection}
+	 * 
+	 * @param conn the connection of the remote world
+	 */
 	public RemoteWorld(Connection conn) {
 		this.conn = conn;
+		this.conn.replaceWongInput(null, new WrongInputHandler() {
+			/*
+			 * on race condition input, the client has priority, its request gets executed, than the server can send its request again
+			 */
+			
+			@Override
+			public void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
+				RemoteWorld.this.conn.readInt(expectedRead);
+			}
+			
+		});
 		threadStart(this::deamon);
 	}
 	
@@ -79,15 +122,29 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 	 */
 	public void getWorld(boolean getWorld) { this.getWorld = getWorld; }
 	
+	/**
+	 * returns <code>true</code> if the entire world should be updated, when an out-dated tile is needed and <code>false</code> if only the needed tile should be
+	 * updated
+	 * 
+	 * @return <code>true</code> if the entire world should be updated, when an out-dated tile is needed and <code>false</code> if only the needed tile should be
+	 *         updated
+	 */
 	public boolean getWorld() { return this.getWorld; }
 	
+	/**
+	 * marks everything as out-dated
+	 */
 	public void needUpdate() { this.needUpdate = System.currentTimeMillis(); }
 	
+	/**
+	 * returns the {@link Connection#usr}
+	 */
 	@Override
 	public User user() {
 		return this.conn.usr;
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public int xlen() {
 		if (this.xlen == 0) {
@@ -114,6 +171,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		});
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public int ylen() {
 		if (this.ylen == 0) {
@@ -122,16 +180,42 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		return this.ylen;
 	}
 	
+	/**
+	 * returns <code>true</code> if the world bounds ({@link #xlen()}/{@link #ylen()}) are already loaded from the remote location and <code>false</code> if they are
+	 * not yet known
+	 * 
+	 * @return <code>true</code> if the world bounds ({@link #xlen()}/{@link #ylen()}) are already loaded from the remote location and <code>false</code> if they are
+	 *         not yet known
+	 */
 	public boolean loadedBounds() {
 		return this.xlen != 0;
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this method will get the world size of the remote location, if they are not yet known<br>
+	 * if the tile at the given coordinates is not known or out-dated it will be updated:
+	 * <ul>
+	 * <li>if {@link #getWorld()} is <code>true</code>: {@link #updateWorld()} will be called</li>
+	 * <li>if {@link #getWorld()} is <code>false</code>: {@link #updateSingleTile(int, int) updateSingleTile(x,y)} will be called</li>
+	 * </ul>
+	 */
 	@Override
 	public Tile tile(int x, int y) {
-		if (x < 0 || y < 0) { throw new IndexOutOfBoundsException("negative coordinate: x=" + x + " y=" + y); }
-		if (x >= xlen() || y >= this.ylen) { throw new IndexOutOfBoundsException("x=" + x + " y=" + y + " xlen=" + this.xlen + " ylen=" + this.ylen); }
+		if (x < 0 || y < 0) throw new IndexOutOfBoundsException(NEGATIVE_COORDINATE + " x=" + x + " y=" + y); //$NON-NLS-1$ //$NON-NLS-2$
 		try {
-			if (this.tiles[x][y] == null || this.tiles[x][y].created <= this.needUpdate) {
+			boolean updated = false;
+			if (this.xlen == 0) {
+				if (this.getWorld) {
+					updateWorld();
+					updated = true;
+				} else {
+					updateWorldSize();
+				}
+			}
+			if (x >= this.xlen || y >= this.ylen) throw new IndexOutOfBoundsException("x=" + x + " y=" + y + " xlen=" + this.xlen + " ylen=" + this.ylen); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			if (this.tiles[x][y] == null || (this.tiles[x][y].created <= this.needUpdate && !updated)) {
 				if (this.getWorld) {
 					updateWorld();
 				} else {
@@ -144,9 +228,15 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		}
 	}
 	
+	/**
+	 * updates the entire world from the remote location
+	 * 
+	 * @throws IOException if an IO error occurred
+	 */
 	public synchronized void updateWorld() throws IOException {
 		this.conn.blocked(() -> {
 			this.lastWorldUpdate = System.currentTimeMillis();
+			this.needUpdate      = this.lastWorldUpdate - 1L; // if needs update was set previously
 			if (this.entities == null) {
 				this.entities = new HashMap<>();
 				this.users    = new HashMap<>();
@@ -170,21 +260,34 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		});
 	}
 	
-	/*
-	 * on race condition input, the client has priority, its request gets executed, than the server can send its request again
+	/**
+	 * load the world from the given connection.
+	 * <p>
+	 * if the world from the connection has users, which are not in the map, this operation will fail
+	 * 
+	 * @param conn  the connection
+	 * @param users the users with their {@link User#name()} as key
+	 * @return the loaded world
+	 * @throws IOException if an IO error occurred
 	 */
-	
-	@Override
-	public void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
-		this.conn.readInt(expectedRead);
+	public static Tile[][] loadWorld(Connection conn, Map<String, User> users) throws IOException {
+		return readWorld(conn, null, -1L, null, users);
 	}
 	
-	public static Tile[][] loadWorld(Connection c, Map<String, User> users) throws IOException {
-		return readWorld(c, null, -1L, null, users);
-	}
-	
-	public static void loadWorld(Connection c, Map<String, User> users, Tile[][] tiles) throws IOException {
-		readWorld(c, tiles, -1L, null, users);
+	/**
+	 * load the world from the given connection.
+	 * <p>
+	 * if the world from the connection has users, which are not in the map, this operation will fail<br>
+	 * if the world from the connection has different borders, that the given tiles, this operation will fail<br>
+	 * if the given tiles array has no rectangular form this operation will fail
+	 * 
+	 * @param conn  the connection
+	 * @param users the users with their {@link User#name()} as key
+	 * @param tiles the <code>Tile[][]</code> which will contain the loaded world after this method
+	 * @throws IOException if an IO error occurs
+	 */
+	public static void loadWorld(Connection conn, Map<String, User> users, Tile[][] tiles) throws IOException {
+		readWorld(conn, tiles, -1L, null, users);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -200,14 +303,13 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		if (tiles == null) {
 			tiles = (T[][]) (entities != null ? new RemoteTile[xlen][ylen] : new Tile[xlen][ylen]);
 		} else if (xlen != tiles.length || ylen != tiles[0].length) {
-			if (entities == null) throw new IllegalArgumentException("different world sizes");
-			System.err.println(
-				"[RemoteWorld]: WARN: world size changed (old xlen=" + tiles.length + " ylen=" + tiles[0].length + " new xlen=" + xlen + " ylen=" + ylen + ')');
+			if (entities == null) throw new IllegalArgumentException(DIFFERENT_WORLD_SIZES);
+			System.err.println(WARN_WORLD_SIZE_CHANGED + tiles.length + " ylen=" + tiles[0].length + NEW + " xlen=" + xlen + " ylen=" + ylen + ')'); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			tiles = (T[][]) (new RemoteTile[xlen][ylen]);
 		}
 		for (int x = 0; x < xlen; x++) {
+			if (tiles[x].length != ylen) throw new IllegalArgumentException(NO_RECTANGULAR_FORM);
 			for (int y = 0; y < ylen; y++) {
-				if (tiles[x].length != ylen) throw new IllegalArgumentException("world has no rectangular form!");
 				int             tto = conn.readInt();
 				int             rto = conn.readInt();
 				TileType        tt  = TileType.of(tto);
@@ -222,7 +324,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		while (players-- > 0) {
 			String username = conn.readString();
 			User   usr      = entities == null ? users.get(username) : users.computeIfAbsent(username, User::nopw);
-			if (usr == null) { throw new IllegalStateException("got an unknown username (not in map: '" + username + "')"); }
+			if (usr == null) { throw new IllegalStateException(UNKNOWN_USERNAME + username + KNOWN_USERS + users + "')"); } //$NON-NLS-1$
 			List<Entity> list = entities == null ? null : entities.computeIfAbsent(usr, u -> new ArrayList<>());
 			for (int i = conn.readInt(); i > 0; i--) {
 				List<Entity> l = list;
@@ -259,11 +361,18 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		return new Carrier(x, y, usr, lives, res, ca);
 	}
 	
+	/**
+	 * reads a resource from the connection
+	 * 
+	 * @param conn the connection
+	 * @return the resource, which was read from the connection
+	 * @throws IOException if an IO error occurs
+	 */
 	public static Resource readRes(Connection conn) throws IOException {
 		return switch (conn.readInt(ProducableResourceType.NUMBER, OreResourceType.NUMBER)) {
 		case ProducableResourceType.NUMBER -> ProducableResourceType.of(conn.readInt());
 		case OreResourceType.NUMBER -> OreResourceType.of(conn.readInt());
-		default -> throw new AssertionError("invalid return type of conn.readInt(int,int)");
+		default -> throw new AssertionError("invalid return type of conn.readInt(int,int) (this should never happen)"); //$NON-NLS-1$
 		};
 	}
 	
@@ -304,8 +413,19 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		return new StoreBuild(x, y, usr, lives, neededBuildRes, remainTurns, ores, producable);
 	}
 	
+	/**
+	 * updates a single tile from the world<br>
+	 * if the given coordinates are outside of the world borders, this operation will fail.
+	 * 
+	 * @param x the x coordinate of the tile
+	 * @param y the y coordinate of the tile
+	 * @throws IOException if an IO error occurs
+	 */
 	public synchronized void updateSingleTile(int x, int y) throws IOException {
 		this.conn.blocked(() -> {
+			if (x < 0 || y < 0 || x >= xlen() || y >= this.ylen) {
+				throw new IllegalArgumentException("x=" + x + " y=" + y + " xlen=" + this.xlen + " ylen=" + this.ylen); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			}
 			this.conn.writeReadInt(OpenWorld.CMD_GET_TILE, OpenWorld.SUB0_GET_TILE);
 			this.conn.writeInt(x);
 			this.conn.writeInt(y);
@@ -329,7 +449,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 				unit  = true;
 				build = true;
 			}
-			default -> throw new AssertionError("illegal return value from readInt(int...)");
+			default -> throw new AssertionError("illegal return value from readInt(int...) (this should never happen)"); //$NON-NLS-1$
 			}
 			Unit     u = null;
 			Building b = null;
@@ -369,7 +489,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 					case OpenWorld.NOTIFY_NEXT_TURN -> deamonNotifyNextTurn();
 					case RootWorld.RW_VAL_GAME -> deamonValidateGame();
 					default -> {
-						System.err.println("got an invalid notification: 0x" + Integer.toHexString(val0));
+						System.err.println(INVALID_NOTIFICATION + Integer.toHexString(val0));
 						this.conn.close();
 					}
 					}
@@ -387,12 +507,12 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		RootWorld rw = RootWorld.loadEverything(this.conn);
 		this.conn.readInt(RootWorld.FIN_VAL_GAME);
 		if (this.validateData == null) {
-			System.out.println("remote world: skip validation, I have no validate data to check what the server told me");
+			System.out.println(SKIP_VALIDATION_NO_DATA_TO_CHECK);
 		} else {
 			Iterator<RootWorld> iter = rw.iterator();
 			RootWorld           irw  = iter.next();
 			if ((irw.iterCount() - 1) << 1 != this.validateData.size()) {
-				throw new AssertionError("the iter count of the given world is not expected");
+				throw new AssertionError(ITER_COUNT_OF_WORLD_NOT_EXPECTED);
 			}
 			irw.addNextTurnListener(new BiConsumer<byte[], byte[]>() {
 				
@@ -401,19 +521,19 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 				@Override
 				public void accept(byte[] wh, byte[] th) {
 					if (this.index == 0) {
-						if (th == null) throw new AssertionError("there is a turn hash");
+						if (th == null) throw new AssertionError("there is a turn hash (this should never happen)"); //$NON-NLS-1$
 						if (!irw.isSeed(RemoteWorld.this.conn.usr, RemoteWorld.this.validateData.get(0))) {
-							throw new AssertionError("the world has a different seed for me!");
+							throw new AssertionError(DIFFERENT_SEED_FOR_ME);
 						}
 						if (!Arrays.equals(wh, RemoteWorld.this.validateData.get(1))) {
-							throw new AssertionError("the world has not the expected start hash!");
+							throw new AssertionError(NOT_EXPECTED_START_HASH);
 						}
 					} else {
 						if (!Arrays.equals(wh, RemoteWorld.this.validateData.get(this.index))) {
-							throw new AssertionError("the world has a different hash on turn " + (this.index >> 1) + "!");
+							throw new AssertionError(WORLD_DIFFERENT_HASH + (this.index >> 1) + '!');
 						}
 						if (!Arrays.equals(th, RemoteWorld.this.validateData.get(this.index + 1))) {
-							throw new AssertionError("the turn has a different hash on turn " + (this.index >> 1) + "!");
+							throw new AssertionError(TURN_DIFFERENT_HASH + (this.index >> 1) + '!');
 						}
 					}
 					this.index += 2;
@@ -436,9 +556,9 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 			this.validateData.add(worldhash);
 			this.validateData.add(turnshash);
 		}
-		System.out.println("remote world: next turn");
-		System.out.println("    world: " + hex(worldhash));
-		System.out.println("    turns: " + hex(turnshash));
+		System.out.println(NEXT_TURN);
+		System.out.println(TAB_WORLD + hex(worldhash));
+		System.out.println(TAB_TURNS + hex(turnshash));
 		worldhash = worldhash.clone();
 		turnshash = turnshash.clone();
 		for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
@@ -453,8 +573,8 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		this.conn.readInt(OpenWorld.FIN_GAME_START);
 		this.needUpdate = System.currentTimeMillis();
 		if (this.validateData != null) this.validateData.add(worldhash);
-		System.out.println("remote world: game started");
-		System.out.println("    world: " + hex(worldhash));
+		System.out.println(GAME_STARTED);
+		System.out.println(TAB_WORLD + hex(worldhash));
 		worldhash = worldhash.clone();
 		for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
 			r.accept(worldhash, null);
@@ -471,7 +591,7 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 	
 	private void deamonReqRnd() throws IOException {
 		this.conn.writeInt(RootWorld.GIV_RND);
-		if (this.validateData != null) throw new IllegalStateException("I already have validate data!");
+		if (this.validateData != null) throw new IllegalStateException(HAVE_ALREADY_VALIDATE_DATA);
 		ArrayList<byte[]> list = new ArrayList<>();
 		this.validateData = list;
 		byte[] myrnd = new byte[16];
@@ -495,16 +615,23 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		else return (char) ('0' + n);
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
 		this.conn.blocked(() -> this.nextTurnListeners.add(listener));
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
 		this.conn.blocked(() -> this.nextTurnListeners.remove(listener));
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this method will update the complete world if {@link #needUpdate()} was called since the last {@link #updateWorld()} call
+	 */
 	@Override
 	public Map<User, List<Entity>> entities() {
 		if (this.needUpdate >= this.lastWorldUpdate) {
@@ -517,14 +644,24 @@ public final class RemoteWorld implements WrongInputHandler, World, Closeable {
 		return this.entities;
 	}
 	
+	/**
+	 * this method just calls {@link Connection#close()}
+	 * <p>
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void close() throws IOException {
 		this.conn.close();
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this world only supports executing turns of the worlds {@link #user() user}
+	 */
 	@Override
 	public void finish(Turn t) throws IllegalStateException {
-		if (t.usr != this.conn.usr) throw new IllegalStateException("I can only finish my turns");
+		if (t.usr != this.conn.usr) throw new IllegalStateException(ONLY_MY_TURNS);
 		try {
 			t.sendTurn(this.conn, true);
 		} catch (IOException e) {

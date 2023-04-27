@@ -56,12 +56,6 @@ public sealed interface World permits RootWorld, RootWorld.Builder, RemoteWorld,
 	
 	/**
 	 * returns the tile at the given position
-	 * <p>
-	 * if the world supports changes:<br>
-	 * until the next turn/(next) game start changes to the world are visible to the tile and changes to the tile are also made in the world<br>
-	 * after the next turn/(next) game start the behavior is undefined if the tile is still used<br>
-	 * if the world does not supports changes:<br>
-	 * changes to the returned tile lead to unspecified behavior
 	 * 
 	 * @param x the x coordinate of the tile
 	 * @param y the y coordinate of the tile
