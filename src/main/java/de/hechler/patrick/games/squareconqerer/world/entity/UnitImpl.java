@@ -25,7 +25,7 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 public abstract sealed class UnitImpl extends EntityImpl implements Unit permits Carrier, MyUnit {
 	
 	public static final int MY_COUNT_NO_NULL = 1;
-
+	
 	protected Resource  carryResource;
 	protected int       carryAmount;
 	protected final int carryMaxAmount;
@@ -50,7 +50,7 @@ public abstract sealed class UnitImpl extends EntityImpl implements Unit permits
 	}
 	
 	protected void checkValid(Tile checkCanTile) throws TurnExecutionException {
-		if (!checkCanTile.type.isLand()) {
+		if (!checkCanTile.ground.isLand()) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 	}
@@ -86,8 +86,11 @@ public abstract sealed class UnitImpl extends EntityImpl implements Unit permits
 	}
 	
 	@Override
-	public void uncarry(int amount) throws TurnExecutionException {
+	public void uncarry(Resource res, int amount) throws TurnExecutionException {
 		if (amount <= 0) {
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		}
+		if (res != this.carryResource) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		if (this.carryAmount < amount) {

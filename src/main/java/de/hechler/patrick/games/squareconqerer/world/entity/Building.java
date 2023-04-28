@@ -62,7 +62,7 @@ public non-sealed interface Building extends Entity, ImageableObj {
 	
 	int remainingBuildTurns();
 	
-	void store(Unit u, int amount) throws TurnExecutionException;
+	void store(Unit u, Resource res, int amount) throws TurnExecutionException;
 	
 	EnumIntMap<ProducableResourceType> neededResources();
 	

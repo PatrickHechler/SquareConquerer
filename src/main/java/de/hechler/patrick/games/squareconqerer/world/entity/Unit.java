@@ -71,7 +71,7 @@ public non-sealed interface Unit extends Entity, ImageableObj, Comparable<Unit> 
 	
 	void carry(Resource res, int amount) throws TurnExecutionException;
 	
-	void uncarry(int amount) throws TurnExecutionException;
+	void uncarry(Resource res, int amount) throws TurnExecutionException;
 	
 	int moveRange();
 	

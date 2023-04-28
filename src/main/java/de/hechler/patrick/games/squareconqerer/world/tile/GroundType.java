@@ -18,58 +18,107 @@ package de.hechler.patrick.games.squareconqerer.world.tile;
 
 import java.awt.image.BufferedImage;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
-public enum TileType implements ImageableObj {
+/**
+ * this class is used to describe what type of ground a tile has
+ * 
+ * @author Patrick Hechler
+ */
+public enum GroundType implements ImageableObj {
 	
-	/**
-	 * this type is used for tiles which are not yet visible to the player
-	 */
+	/** this type is used for tiles which are not yet visible to the player */
 	NOT_EXPLORED,
 	
-	WATER_DEEP, WATER_NORMAL,
+	/** deep water or ocean tiles */
+	WATER_DEEP,
+	/** normal water tiles */
+	WATER_NORMAL,
 	
-	SAND, SAND_HILL,
+	/** sand tiles */
+	SAND,
+	/** sand tiles with hills */
+	SAND_HILL,
 	
-	GRASS, GRASS_HILL,
+	/** grass tiles */
+	GRASS,
+	/** grass tiles with hills */
+	GRASS_HILL,
 	
-	FOREST, FOREST_HILL,
+	/** forest tiles */
+	FOREST,
+	/** forest tiles with hills */
+	FOREST_HILL,
 	
-	SWAMP, SWAMP_HILL,
+	/** swamp tiles */
+	SWAMP,
+	/** swamp tiles with hills */
+	SWAMP_HILL,
 	
+	/** mountain tiles */
 	MOUNTAIN,
 	
 	;
 	
-	private static final TileType[] VALS = values();
+	private static final String STR_MOUNTAIN     = Messages.get("GroundType.str-mountain"); //$NON-NLS-1$
+	private static final String STR_SWAMP_HILL   = Messages.get("GroundType.str-swamp-hill"); //$NON-NLS-1$
+	private static final String STR_SWAMP        = Messages.get("GroundType.str-swamp"); //$NON-NLS-1$
+	private static final String STR_FOREST_HILL  = Messages.get("GroundType.str-forest-hill"); //$NON-NLS-1$
+	private static final String STR_FOREST       = Messages.get("GroundType.str-forest"); //$NON-NLS-1$
+	private static final String STR_GRASS_HILL   = Messages.get("GroundType.str-grass-hill"); //$NON-NLS-1$
+	private static final String STR_GRASS        = Messages.get("GroundType.str-grass"); //$NON-NLS-1$
+	private static final String STR_SAND_HILL    = Messages.get("GroundType.str-sand-hill"); //$NON-NLS-1$
+	private static final String STR_SAND         = Messages.get("GroundType.str-sand"); //$NON-NLS-1$
+	private static final String STR_WATER        = Messages.get("GroundType.str-water"); //$NON-NLS-1$
+	private static final String STR_WATER_DEEP   = Messages.get("GroundType.str-water-deep"); //$NON-NLS-1$
+	private static final String STR_NOT_EXPLORED = Messages.get("GroundType.str-not-explred"); //$NON-NLS-1$
+	private static final String NOT_ADD_HILLS    = Messages.get("GroundType.not-add-hill"); //$NON-NLS-1$
+	private static final String NOT_ADD_DEEP     = Messages.get("GroundType.not-add-deep"); //$NON-NLS-1$
+	private static final String NOT_ADD_NORMAL   = Messages.get("GroundType.not-add-normal"); //$NON-NLS-1$
 	
-	public static TileType of(int oridinal) {
-		return VALS[oridinal];
+	private static final GroundType[] VALS = values();
+	
+	/**
+	 * returns the ground type of the given ordinal
+	 * 
+	 * @param ordinal the ordinal value
+	 * @return the ground type with the given ordinal
+	 */
+	public static GroundType of(int ordinal) {
+		return VALS[ordinal];
 	}
 	
+	/**
+	 * returns the number of different ground types
+	 * 
+	 * @return the number of different ground types
+	 */
 	public static int count() {
 		return VALS.length;
 	}
 	
 	private volatile BufferedImage resource;
 	
+	/** {@inheritDoc} */
 	@Override
-	public BufferedImage resource() { return resource; }
+	public BufferedImage resource() { return this.resource; }
 	
+	/** {@inheritDoc} */
 	@Override
 	public void resource(BufferedImage nval) { this.resource = nval; }
 	
 	/**
-	 * returns <code>true</code> if this is a ocean/deep water tile
+	 * returns <code>true</code> if this is a deep tile
 	 * <p>
-	 * only the following tile is an ocean tile:
+	 * only the following tile is an deep tile:
 	 * <ul>
 	 * <li>{@link #WATER_DEEP}</li>
 	 * </ul>
 	 * 
 	 * @return <code>true</code> if this is a water tile
 	 */
-	public boolean isOcean() {
+	public boolean isDeep() {
 		return switch (this) {
 		case WATER_DEEP -> true;
 		case FOREST, FOREST_HILL, GRASS, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND, SAND_HILL, SWAMP, SWAMP_HILL, WATER_NORMAL -> false;
@@ -111,9 +160,7 @@ public enum TileType implements ImageableObj {
 	/**
 	 * returns <code>true</code> if this is a flat tile
 	 * <p>
-	 * a flat tile is a tile, which is <b>no</b> {@link #isHill() hill}, <b>no</b>
-	 * {@link #isMountain() mountain} and
-	 * <b>no</b> {@link #isWater() water}
+	 * a flat tile is a tile, which is <b>no</b> {@link #isHill() hill}, <b>no</b> {@link #isMountain() mountain} and <b>no</b> {@link #isWater() water}
 	 * 
 	 * @return <code>true</code> if this is a flat tile
 	 */
@@ -156,12 +203,9 @@ public enum TileType implements ImageableObj {
 	/**
 	 * returns <code>true</code> if this is a not-flat tile
 	 * <p>
-	 * a not-flat tile is a tile, which is a {@link #isHill() hill} or a
-	 * {@link #isMountain() mountain} tile
+	 * a not-flat tile is a tile, which is a {@link #isHill() hill} or a {@link #isMountain() mountain} tile
 	 * <p>
-	 * note that {@link #isWater() water} tiles are <b>no</b> {@link #isFlat() flat}
-	 * tiles and also <b>no</b>
-	 * {@link #isNotFlat() not-flat}
+	 * note that {@link #isWater() water} tiles are <b>no</b> {@link #isFlat() flat} tiles and also <b>no</b> {@link #isNotFlat() not-flat}
 	 * 
 	 * @return <code>true</code> if this is a mountain tile
 	 */
@@ -223,7 +267,20 @@ public enum TileType implements ImageableObj {
 		};
 	}
 	
-	public TileType addNormal(boolean fail) {
+	/**
+	 * returns the normalized version of this ground
+	 * <ul>
+	 * <li>if this ground is deep ({@link #isDeep()}), the non deep version will be returned</li>
+	 * <li>if this ground has hills ({@link #isHill()}), the version without hills will be returned ({@link #isFlat()})</li>
+	 * <li>if <code>fail</code> is <code>false</code> and this ground does not support normal or is already normal no action is taken and this ground is
+	 * returned</li>
+	 * <li>if <code>fail</code> is <code>true</code> and this ground does not support normal or is already normal an {@link IllegalStateException} is thrown</li>
+	 * </ul>
+	 * 
+	 * @param fail if this operation should fail if the ground is already normalized
+	 * @return the normalized type
+	 */
+	public GroundType addNormal(boolean fail) {
 		return switch (this) {
 		case WATER_DEEP -> WATER_NORMAL;
 		case FOREST_HILL -> FOREST;
@@ -231,51 +288,78 @@ public enum TileType implements ImageableObj {
 		case SAND_HILL -> SAND;
 		case SWAMP_HILL -> SWAMP;
 		case NOT_EXPLORED, FOREST, MOUNTAIN, SAND, SWAMP, WATER_NORMAL, GRASS -> {
-			if (fail) throw new IllegalStateException("can not add normal to this type (" + name() + ")");
+			if (fail) throw new IllegalStateException(NOT_ADD_NORMAL + name() + ")"); //$NON-NLS-1$
 			else yield this;
 		}
 		};
 	}
 	
-	public TileType addDeep(boolean fail) {
+	/**
+	 * returns the {@link #isDeep() deep} version of this ground
+	 * <ul>
+	 * <li>if <code>fail</code> is <code>false</code> and this ground does not support {@link #isDeep() deep} or is already {@link #isDeep() deep} no action is taken
+	 * and this ground is returned</li>
+	 * <li>if <code>fail</code> is <code>true</code> and this ground does not support {@link #isDeep() deep} or is already {@link #isDeep() deep} an
+	 * {@link IllegalStateException} is thrown</li>
+	 * </ul>
+	 * 
+	 * @param fail if this operation should fail if the ground is already normalized
+	 * @return the normalized type
+	 */
+	public GroundType addDeep(boolean fail) {
 		return switch (this) {
 		case WATER_NORMAL -> WATER_DEEP;
 		case GRASS, FOREST, SWAMP, FOREST_HILL, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND_HILL, SWAMP_HILL, WATER_DEEP, SAND -> {
-			if (fail) throw new IllegalStateException("can not add deep to this type (" + name() + ")");
+			if (fail) throw new IllegalStateException(NOT_ADD_DEEP + name() + ")"); //$NON-NLS-1$
 			else yield this;
 		}
 		};
 	}
 	
-	public TileType addHill(boolean fail) {
+	/**
+	 * returns the {@link #isHill() hill} version of this ground
+	 * <ul>
+	 * <li>if <code>fail</code> is <code>false</code> and this ground does not support {@link #isHill() hill} or is already {@link #isHill() hill} no action is taken
+	 * and this ground is returned</li>
+	 * <li>if <code>fail</code> is <code>true</code> and this ground does not support {@link #isHill() hill} or is already {@link #isHill() hill} an
+	 * {@link IllegalStateException} is thrown</li>
+	 * </ul>
+	 * 
+	 * @param fail if this operation should fail if the ground is already normalized
+	 * @return the normalized type
+	 */
+	public GroundType addHill(boolean fail) {
 		return switch (this) {
 		case SAND -> SAND_HILL;
 		case GRASS -> GRASS_HILL;
 		case FOREST -> FOREST_HILL;
 		case SWAMP -> SWAMP_HILL;
 		case FOREST_HILL, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND_HILL, SWAMP_HILL, WATER_DEEP, WATER_NORMAL -> {
-			if (fail) throw new IllegalStateException("can not add hills to this type (" + name() + ")");
+			if (fail) throw new IllegalStateException(NOT_ADD_HILLS + name() + ")"); //$NON-NLS-1$
 			else yield this;
 		}
 		};
 	}
 	
+	/**
+	 * returns a string describing this ground type<br>
+	 * the returned string is already localized
+	 */
 	@Override
 	public String toString() {
 		return switch (this) {
-		case NOT_EXPLORED -> "not yet explored";
-		case WATER_DEEP -> "Deep Water/Ocean";
-		case WATER_NORMAL -> "Water";
-		case SAND -> "Sand";
-		case SAND_HILL -> "Sand Hills";
-		case GRASS -> "Grassland";
-		case GRASS_HILL -> "Grassland with Hills";
-		case FOREST -> "Forest";
-		case FOREST_HILL -> "Forest Hills";
-		case SWAMP -> "Swampland";
-		case SWAMP_HILL -> "Swamp Hills";
-		case MOUNTAIN -> "Mountains";
-		default -> throw new AssertionError(name());
+		case NOT_EXPLORED -> STR_NOT_EXPLORED;
+		case WATER_DEEP -> STR_WATER_DEEP;
+		case WATER_NORMAL -> STR_WATER;
+		case SAND -> STR_SAND;
+		case SAND_HILL -> STR_SAND_HILL;
+		case GRASS -> STR_GRASS;
+		case GRASS_HILL -> STR_GRASS_HILL;
+		case FOREST -> STR_FOREST;
+		case FOREST_HILL -> STR_FOREST_HILL;
+		case SWAMP -> STR_SWAMP;
+		case SWAMP_HILL -> STR_SWAMP_HILL;
+		case MOUNTAIN -> STR_MOUNTAIN;
 		};
 	}
 	

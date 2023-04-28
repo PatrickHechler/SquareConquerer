@@ -126,7 +126,7 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
-import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 import de.hechler.patrick.games.squareconqerer.world.turn.CarryTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.EntityTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
@@ -1782,28 +1782,28 @@ public class SquareConquererGUI {
 			this.myBuildMode.makePlusDeep();
 			dialog.dispose();
 		});
-		String[] vals = new String[TileType.count() + 1];
-		for (int i = 0; i < vals.length - 1; i++) { vals[i] = TileType.of(i).toString(); }
+		String[] vals = new String[GroundType.count() + 1];
+		for (int i = 0; i < vals.length - 1; i++) { vals[i] = GroundType.of(i).toString(); }
 		vals[vals.length - 1] = "set the ground";
 		JComboBox<String> ttcombo = new JComboBox<>(vals);
 		ttcombo.setSelectedIndex(vals.length - 1);
 		ttcombo.setEditable(false);
 		dp.add(ttcombo);
 		ttcombo.addActionListener(e -> {
-			if (ttcombo.getSelectedIndex() >= TileType.count()) return;
-			this.myBuildMode.makeSetGround(TileType.of(ttcombo.getSelectedIndex()));
+			if (ttcombo.getSelectedIndex() >= GroundType.count()) return;
+			this.myBuildMode.makeSetGround(GroundType.of(ttcombo.getSelectedIndex()));
 			dialog.dispose();
 		});
 		vals = new String[OreResourceType.count() + 1];
-		for (int i = 0; i < vals.length - 1; i++) { vals[i] = TileType.of(i).toString(); }
+		for (int i = 0; i < vals.length - 1; i++) { vals[i] = GroundType.of(i).toString(); }
 		vals[vals.length - 1] = "set the ore";
 		JComboBox<String> ortcombo = new JComboBox<>(vals);
 		ortcombo.setSelectedIndex(vals.length - 1);
 		ortcombo.setEditable(false);
 		dp.add(ortcombo);
 		ortcombo.addActionListener(e -> {
-			if (ortcombo.getSelectedIndex() >= TileType.count()) return;
-			this.myBuildMode.makeSetGround(TileType.of(ortcombo.getSelectedIndex()));
+			if (ortcombo.getSelectedIndex() >= GroundType.count()) return;
+			this.myBuildMode.makeSetGround(GroundType.of(ortcombo.getSelectedIndex()));
 			dialog.dispose();
 		});
 		initDialog(dialog, false);
@@ -1965,7 +1965,7 @@ public class SquareConquererGUI {
 				if (t.hasPage()) {
 					b.append("page: ").append(t.pageTitle()).append("<br>");
 				}
-				b.append("ground: ").append(t.type);
+				b.append("ground: ").append(t.ground);
 				switch (t.resource) {
 				case GOLD_ORE -> b.append("<br>resource: Gold Ore");
 				case IRON_ORE -> b.append("<br>resource: Iron Ore");
@@ -2010,13 +2010,13 @@ public class SquareConquererGUI {
 			pbtn.addActionListener(e -> showPage(new JDialog(dialog), t.page(), t.pageTitle(), null));
 		}
 		if (this.world instanceof RootWorld.Builder rb) {
-			JComboBox<TileType>        cbt = new JComboBox<>(TileType.values());
+			JComboBox<GroundType>        cbt = new JComboBox<>(GroundType.values());
 			JComboBox<OreResourceType> cbr = new JComboBox<>(OreResourceType.values());
 			cbt.setEditable(false);
 			cbr.setEditable(false);
-			cbt.setSelectedIndex(t.type.ordinal());
+			cbt.setSelectedIndex(t.ground.ordinal());
 			cbr.setSelectedIndex(t.resource.ordinal());
-			cbt.addActionListener(e -> rb.set(x, y, TileType.of(cbt.getSelectedIndex())));
+			cbt.addActionListener(e -> rb.set(x, y, GroundType.of(cbt.getSelectedIndex())));
 			cbr.addActionListener(e -> rb.set(x, y, OreResourceType.of(cbr.getSelectedIndex())));
 			dp.add(new JLabel("ground:"));
 			dp.add(cbt);
@@ -2024,7 +2024,7 @@ public class SquareConquererGUI {
 			dp.add(cbr);
 		} else {
 			dp.add(new JLabel("ground:"));
-			dp.add(new JLabel(t.type.toString()));
+			dp.add(new JLabel(t.ground.toString()));
 			dp.add(new JLabel("resource:"));
 			dp.add(new JLabel(t.resource.toString()));
 		}

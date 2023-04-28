@@ -14,19 +14,10 @@
 //
 //You should have received a copy of the GNU Affero General Public License
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.squareconqerer.world.turn;
-
-import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
-import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 /**
- * this {@link EntityTurn} class is used to let an unit carry resources stored in a building
- * 
- * @author Patrick Hechler
- * @param entity the unit which should carry the resources
- * @param res    the resource type
- * @param amount how much more the unit should carry after the turn finished
+ * this package is used to let users operate on the world
+ * <p>
+ * the {@link de.hechler.patrick.games.squareconqerer.world.turn.Turn Turn} class stores the information what a user wants to do in its turn
  */
-public record CarryTurn(Unit entity, Resource res, int amount) implements EntityTurn {
-	
-}
+package de.hechler.patrick.games.squareconqerer.world.turn;

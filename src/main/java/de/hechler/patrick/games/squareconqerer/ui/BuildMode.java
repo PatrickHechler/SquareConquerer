@@ -20,7 +20,7 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
-import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 
 public class BuildMode {
 	
@@ -41,11 +41,11 @@ public class BuildMode {
 	public Tile modify(Tile t) {
 		return switch (this.state) {
 		case STATE_INACTIVE -> throw new IllegalStateException("I am inactive");
-		case STATE_DEEP -> new Tile(t.type.addDeep(false), t.resource, t.visible());
-		case STATE_HILL -> new Tile(t.type.addHill(false), t.resource, t.visible());
-		case STATE_NORMAL -> new Tile(t.type.addNormal(false), t.resource, t.visible());
-		case STATE_SET_GROUND -> new Tile((TileType) this.obj, t.resource, t.visible());
-		case STATE_SET_ORE -> new Tile(t.type, (OreResourceType) this.obj, t.visible());
+		case STATE_DEEP -> new Tile(t.ground.addDeep(false), t.resource, t.visible());
+		case STATE_HILL -> new Tile(t.ground.addHill(false), t.resource, t.visible());
+		case STATE_NORMAL -> new Tile(t.ground.addNormal(false), t.resource, t.visible());
+		case STATE_SET_GROUND -> new Tile((GroundType) this.obj, t.resource, t.visible());
+		case STATE_SET_ORE -> new Tile(t.ground, (OreResourceType) this.obj, t.visible());
 		case STATE_SET_UNIT -> {
 			t.unit((Unit) this.obj);
 			yield t;
@@ -72,7 +72,7 @@ public class BuildMode {
 		this.obj   = res;
 	}
 	
-	public void makeSetGround(TileType grd) {
+	public void makeSetGround(GroundType grd) {
 		if (grd == null) throw new NullPointerException("ground is null");
 		this.state = STATE_SET_GROUND;
 		this.obj   = grd;

@@ -18,8 +18,18 @@ package de.hechler.patrick.games.squareconqerer.world.turn;
 
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 
+/**
+ * this interface is used to let an entity do stuff
+ * 
+ * @author Patrick Hechler
+ */
 public sealed interface EntityTurn permits CarryTurn, MoveTurn, StoreTurn {
 	
+	/**
+	 * returns the (main) entity on which this turn operates
+	 * 
+	 * @return the (main) entity on which this turn operates
+	 */
 	Entity entity();
 	
 }

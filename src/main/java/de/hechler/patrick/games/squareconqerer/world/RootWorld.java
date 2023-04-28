@@ -52,7 +52,7 @@ import de.hechler.patrick.games.squareconqerer.world.placer.DefaultUserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.stuff.UserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
-import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 import de.hechler.patrick.games.squareconqerer.world.turn.CarryTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.EntityTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
@@ -567,13 +567,13 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 */
 	@Override
 	public synchronized void finish(Turn t) {
-		if (t.usr == this.root && !this.allowRootTurns) throw new UnsupportedOperationException(ROOT_NO_EXEC_TURN);
+		if (t.world.user() == this.root && !this.allowRootTurns) throw new UnsupportedOperationException(ROOT_NO_EXEC_TURN);
 		if (this.rnd == null) throw new IllegalStateException(GAME_NOT_STARTED);
-		if (!this.subWorlds.containsKey(t.usr) && t.usr != this.root) throw new AssertionError(UNKNOWN_USER);
+		if (!this.subWorlds.containsKey(t.world.user()) && t.world.user() != this.root) throw new AssertionError(UNKNOWN_USER);
 		for (EntityTurn e : t.turns()) {
-			if (e.entity().owner() != t.usr) throw new IllegalArgumentException(TURN_USES_NOT_OWNED_ENTITIES);
+			if (e.entity().owner() != t.world.user()) throw new IllegalArgumentException(TURN_USES_NOT_OWNED_ENTITIES);
 		}
-		this.userTurns.put(t.usr, t);
+		this.userTurns.put(t.world.user(), t);
 		if (this.userTurns.size() >= (this.allowRootTurns ? this.root.users().keySet().size() + 1 : this.root.users().keySet().size())) {
 			executeTurn();
 		}
@@ -638,7 +638,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			Building b = t.building();
 			if (b == null) { throw new TurnExecutionException(ErrorType.INVALID_TURN); }
 			if (!(e instanceof Unit u)) { throw new TurnExecutionException(ErrorType.INVALID_TURN); }
-			b.store(u, st.amount());
+			b.store(u, st.resource(), st.amount());
 		}
 		default -> throw new AssertionError(UNKNOWN_ENTITY_TURN_TYPE + turn.getClass());
 		}
@@ -717,12 +717,12 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	public static final class Builder implements World {
 		
 		private static final OreResourceType[] RES = OreResourceType.values();
-		private static final TileType[]        TYPES;
+		private static final GroundType[]        TYPES;
 		
 		static {
-			TileType[] v   = TileType.values();
+			GroundType[] v   = GroundType.values();
 			int        len = v.length - 1;
-			TYPES = new TileType[len];
+			TYPES = new GroundType[len];
 			System.arraycopy(v, 1, TYPES, 0, len);
 		}
 		
@@ -774,7 +774,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		/**
-		 * replace all {@link Tile tiles} with <code>{@link Tile#type} = {@link TileType#NOT_EXPLORED not-explored}</code> to a random value.<br>
+		 * replace all {@link Tile tiles} with <code>{@link Tile#ground} = {@link GroundType#NOT_EXPLORED not-explored}</code> to a random value.<br>
 		 * this method will try to generate random tiles which fit in their environment
 		 */
 		public void fillRandom() {
@@ -787,7 +787,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			boolean unfilledTile = false;
 			for (int x = 0; x < this.tiles.length; x++) {
 				for (int y = 0; y < this.tiles[x].length; y++) {
-					if (this.tiles[x][y] != null && this.tiles[x][y].type != TileType.NOT_EXPLORED) {
+					if (this.tiles[x][y] != null && this.tiles[x][y].ground != GroundType.NOT_EXPLORED) {
 						continue;
 					}
 					Tile xDown = null;
@@ -809,7 +809,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		private Tile tile(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
-			TileType        type = type(xDown, xUp, yDown, yUp);
+			GroundType        type = type(xDown, xUp, yDown, yUp);
 			OreResourceType ore  = resource(xDown, xUp, yDown, yUp);
 			return new Tile(type, ore, true);
 		}
@@ -846,14 +846,14 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		private static int coal(Tile t) { return t != null && t.resource == OreResourceType.COAL_ORE ? 1 : 0; }
 		// @formatter:on
 		
-		private TileType type(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
+		private GroundType type(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
 			int ocean = ocean(xDown) + ocean(xUp) + ocean(yDown) + ocean(yUp);
 			int land  = land(xDown) + land(xUp) + land(yDown) + land(yUp);
-			if (ocean != 0 && land != 0) { return TileType.WATER_NORMAL; }
+			if (ocean != 0 && land != 0) { return GroundType.WATER_NORMAL; }
 			int      water    = water(xDown) + water(xUp) + water(yDown) + water(yUp);
 			int      flat     = flat(xDown) + flat(xUp) + flat(yDown) + flat(yUp);
 			int      mountain = mountain(xDown) + mountain(xUp) + mountain(yDown) + mountain(yUp);
-			TileType type     = rawType(xDown, xUp, yDown, yUp, ocean, water, flat, mountain);
+			GroundType type     = rawType(xDown, xUp, yDown, yUp, ocean, water, flat, mountain);
 			if (type.isLand() && !type.isMountain()) {
 				int hill    = hill(xDown) + hill(xUp) + hill(yDown) + hill(yUp);
 				int posHill = (mountain * 4) + (hill * 2) + 1;
@@ -868,14 +868,14 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 					int posNormal = Math.max((water - ocean) * 2 + 1, 1);
 					int rndVal1   = this.rnd.nextInt(posOcean + posNormal);
 					if (rndVal1 < posOcean) {
-						type = TileType.WATER_DEEP;
+						type = GroundType.WATER_DEEP;
 					}
 				}
 			} else if (!type.isMountain()) throw new AssertionError(UNKNOWN_TILE_TYPE + type.name());
 			return type;
 		}
 		
-		private TileType rawType(Tile xDown, Tile xUp, Tile yDown, Tile yUp, int ocean, int water, int flat, int mountain) {
+		private GroundType rawType(Tile xDown, Tile xUp, Tile yDown, Tile yUp, int ocean, int water, int flat, int mountain) {
 			int sand   = sand(xDown) + sand(xUp) + sand(yDown) + sand(yUp);
 			int grass  = grass(xDown) + grass(xUp) + grass(yDown) + grass(yUp);
 			int forest = forest(xDown) + forest(xUp) + forest(yDown) + forest(yUp);
@@ -889,48 +889,48 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			int      posForest   = ocean == 0 ? (forest * 2) + 1 : 0;
 			int      posSwamp    = ocean == 0 ? (swamp * 2) + 1 : 0;
 			int      rndVal0     = this.rnd.nextInt(posWater + posMountain + posSand + posGrass + posForest + posSwamp);
-			TileType type        = null;
+			GroundType type        = null;
 			if (rndVal0 >= posWater) rndVal0 -= posWater;
-			else type = TileType.WATER_NORMAL;
+			else type = GroundType.WATER_NORMAL;
 			if (rndVal0 >= posMountain) rndVal0 -= posMountain;
-			else if (type == null) type = TileType.MOUNTAIN;
+			else if (type == null) type = GroundType.MOUNTAIN;
 			if (rndVal0 >= posSand) rndVal0 -= posSand;
-			else if (type == null) type = TileType.SAND;
+			else if (type == null) type = GroundType.SAND;
 			if (rndVal0 >= posGrass) rndVal0 -= posGrass;
-			else if (type == null) type = TileType.GRASS;
+			else if (type == null) type = GroundType.GRASS;
 			if (rndVal0 >= posForest) rndVal0 -= posForest;
-			else if (type == null) type = TileType.FOREST;
+			else if (type == null) type = GroundType.FOREST;
 			if (rndVal0 >= posSwamp && type == null) throw new AssertionError("illegal random value (this sould not be possible)"); //$NON-NLS-1$
-			else if (type == null) type = TileType.SWAMP;
+			else if (type == null) type = GroundType.SWAMP;
 			return type;
 		}
 		
 		// @formatter:off
-		private static int swamp(Tile t)    { return t != null && t.type.isSwamp()    ? 1 : 0; }
-		private static int forest(Tile t)   { return t != null && t.type.isForest()   ? 1 : 0; }
-		private static int grass(Tile t)    { return t != null && t.type.isGrass()    ? 1 : 0; }
-		private static int sand(Tile t)     { return t != null && t.type.isSand()     ? 1 : 0; }
-		private static int land(Tile t)     { return t != null && t.type.isLand()     ? 1 : 0; }
-		private static int flat(Tile t)     { return t != null && t.type.isFlat()     ? 1 : 0; }
-		private static int hill(Tile t)     { return t != null && t.type.isHill()     ? 1 : 0; }
-		private static int ocean(Tile t)    { return t != null && t.type.isOcean()    ? 1 : 0; }
-		private static int water(Tile t)    { return t != null && t.type.isWater()    ? 1 : 0; }
-		private static int mountain(Tile t) { return t != null && t.type.isMountain() ? 1 : 0; }
+		private static int swamp(Tile t)    { return t != null && t.ground.isSwamp()    ? 1 : 0; }
+		private static int forest(Tile t)   { return t != null && t.ground.isForest()   ? 1 : 0; }
+		private static int grass(Tile t)    { return t != null && t.ground.isGrass()    ? 1 : 0; }
+		private static int sand(Tile t)     { return t != null && t.ground.isSand()     ? 1 : 0; }
+		private static int land(Tile t)     { return t != null && t.ground.isLand()     ? 1 : 0; }
+		private static int flat(Tile t)     { return t != null && t.ground.isFlat()     ? 1 : 0; }
+		private static int hill(Tile t)     { return t != null && t.ground.isHill()     ? 1 : 0; }
+		private static int ocean(Tile t)    { return t != null && t.ground.isDeep()    ? 1 : 0; }
+		private static int water(Tile t)    { return t != null && t.ground.isWater()    ? 1 : 0; }
+		private static int mountain(Tile t) { return t != null && t.ground.isMountain() ? 1 : 0; }
 		// @formatter:on
 		
 		private void placeSomePoints() {
 			for (int x = 0; x < this.tiles.length; x += 8) {
 				for (int y = x % 16 == 0 ? 0 : 4; y < this.tiles[x].length; y += 8) {
-					if ((this.tiles[x][y] != null && this.tiles[x][y].type != TileType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
+					if ((this.tiles[x][y] != null && this.tiles[x][y].ground != GroundType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
 						// tiles
-						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].type != TileType.NOT_EXPLORED))
-						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].type != TileType.NOT_EXPLORED))
-						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].type != TileType.NOT_EXPLORED))
-						|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].type != TileType.NOT_EXPLORED))) {
+						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground != GroundType.NOT_EXPLORED))
+						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground != GroundType.NOT_EXPLORED))
+						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground != GroundType.NOT_EXPLORED))
+						|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground != GroundType.NOT_EXPLORED))) {
 						continue;
 					}
 					int             rndVal = this.rnd.nextInt(TYPES.length << 1);
-					TileType        t      = rndVal >= TYPES.length ? TileType.WATER_DEEP : TYPES[rndVal];
+					GroundType        t      = rndVal >= TYPES.length ? GroundType.WATER_DEEP : TYPES[rndVal];
 					OreResourceType r      = OreResourceType.NONE;
 					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
 						r = RES[this.rnd.nextInt(RES.length)];
@@ -941,16 +941,16 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		/**
-		 * replace all {@link Tile tiles} with <code>{@link Tile#type} = {@link TileType#NOT_EXPLORED not-explored}</code> to a random value.<br>
+		 * replace all {@link Tile tiles} with <code>{@link Tile#ground} = {@link GroundType#NOT_EXPLORED not-explored}</code> to a random value.<br>
 		 * unlike {@link #fillRandom()}, this method will just generate random tiles and ignores the environment of those tiles
 		 */
 		public void fillTotallyRandom() {
 			for (Tile[] ts : this.tiles) {
 				for (int i = 0; i < ts.length; i++) {
-					if (ts[i] != null && ts[i].type != TileType.NOT_EXPLORED) {
+					if (ts[i] != null && ts[i].ground != GroundType.NOT_EXPLORED) {
 						continue;
 					}
-					TileType        t = TYPES[this.rnd.nextInt(TYPES.length)]; // skip not explored
+					GroundType        t = TYPES[this.rnd.nextInt(TYPES.length)]; // skip not explored
 					OreResourceType r = OreResourceType.NONE;
 					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
 						r = RES[this.rnd.nextInt(RES.length)];
@@ -998,14 +998,14 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		
 		/**
 		 * returns the tile at the given position<br>
-		 * if there is no tile yet, a new visible {@link TileType#NOT_EXPLORED not-explored} tile {@link OreResourceType#NONE without} resource will be generated
+		 * if there is no tile yet, a new visible {@link GroundType#NOT_EXPLORED not-explored} tile {@link OreResourceType#NONE without} resource will be generated
 		 * <p>
 		 * {@inheritDoc}
 		 */
 		@Override
 		public Tile tile(int x, int y) {
 			if (this.tiles[x][y] == null) {
-				this.tiles[x][y] = new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE, true);
+				this.tiles[x][y] = new Tile(GroundType.NOT_EXPLORED, OreResourceType.NONE, true);
 			}
 			return this.tiles[x][y];
 		}
@@ -1032,7 +1032,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @param y the y coordinate of the tile
 		 * @param t the new type of the tile
 		 */
-		public void set(int x, int y, TileType t) {
+		public void set(int x, int y, GroundType t) {
 			if (this.tiles[x][y] == null) {
 				this.tiles[x][y] = new Tile(t, OreResourceType.NONE, true);
 			} else {
@@ -1050,9 +1050,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 */
 		public void set(int x, int y, OreResourceType r) {
 			if (this.tiles[x][y] == null) {
-				this.tiles[x][y] = new Tile(TileType.NOT_EXPLORED, r, true);
+				this.tiles[x][y] = new Tile(GroundType.NOT_EXPLORED, r, true);
 			} else {
-				this.tiles[x][y] = new Tile(this.tiles[x][y].type, r, true);
+				this.tiles[x][y] = new Tile(this.tiles[x][y].ground, r, true);
 			}
 			executeNTL();
 		}
@@ -1065,7 +1065,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @param t the new type of the tile
 		 * @param r the new resource of the tile
 		 */
-		public void set(int x, int y, TileType t, OreResourceType r) {
+		public void set(int x, int y, GroundType t, OreResourceType r) {
 			if (t == null) { throw new NullPointerException(TYPE_IS_NULL); }
 			if (r == null) { throw new NullPointerException(RESOURCE_IS_NULL); }
 			this.tiles[x][y] = new Tile(t, r, true);
@@ -1119,8 +1119,8 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				for (int y = 0; y < ts.length; y++) {
 					Tile t = ts[y];
 					if (t == null) { return false; }
-					if (t.type == null || t.resource == null) { return false; }
-					if (t.type == TileType.NOT_EXPLORED) { return false; }
+					if (t.ground == null || t.resource == null) { return false; }
+					if (t.ground == GroundType.NOT_EXPLORED) { return false; }
 				}
 			}
 			return true;
@@ -1144,8 +1144,8 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				for (int y = 0; y < ts.length; y++) {
 					Tile t = ots[y].copy();
 					if (t == null) throw new IllegalStateException(NULL_TILE);
-					if (t.type == null || t.resource == null) throw new NullPointerException(NULL_TYPE_OR_RESOURCE);
-					if (t.type == TileType.NOT_EXPLORED) throw new IllegalStateException(NOT_EXPLORED_TILE);
+					if (t.ground == null || t.resource == null) throw new NullPointerException(NULL_TYPE_OR_RESOURCE);
+					if (t.ground == GroundType.NOT_EXPLORED) throw new IllegalStateException(NOT_EXPLORED_TILE);
 					ts[y] = t;
 				}
 			}

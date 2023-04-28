@@ -31,7 +31,7 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
-import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 /**
@@ -156,7 +156,7 @@ public final class UserWorld implements World {
 	 * <li>if the user saw the tile at least once, an cached tile will be returned
 	 * <ul>
 	 * <li>the cached tile will be set to not-visible</li>
-	 * <li>the cached tile will contain the {@link Tile#type} and {@link Tile#resource} from the last time the user saw the tile</li>
+	 * <li>the cached tile will contain the {@link Tile#ground} and {@link Tile#resource} from the last time the user saw the tile</li>
 	 * <li>if there is an entity of the user at the given tile it will also be on the cached tile</li>
 	 * <li>everything else will not be on the cached</li>
 	 * </ul>
@@ -175,7 +175,7 @@ public final class UserWorld implements World {
 		if (this.visible != null && this.visible[x][y]) {
 			return this.cach[x][y];
 		} else {
-			Tile t = this.cach != null && this.cach[x][y] != null ? this.cach[x][y] : new Tile(TileType.NOT_EXPLORED, OreResourceType.NONE, false);
+			Tile t = this.cach != null && this.cach[x][y] != null ? this.cach[x][y] : new Tile(GroundType.NOT_EXPLORED, OreResourceType.NONE, false);
 			addMyEntities(x, y, t);
 			return t;
 		}

@@ -49,7 +49,7 @@ import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResource
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.tile.RemoteTile;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
-import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 /**
@@ -312,7 +312,7 @@ public final class RemoteWorld implements World, Closeable {
 			for (int y = 0; y < ylen; y++) {
 				int             tto = conn.readInt();
 				int             rto = conn.readInt();
-				TileType        tt  = TileType.of(tto);
+				GroundType        tt  = GroundType.of(tto);
 				OreResourceType rt  = OreResourceType.of(rto);
 				boolean         v   = conn.readByte(0, 1) != 0;
 				tiles[x][y] = (T) (entities != null ? new RemoteTile(timestamp, tt, rt, v) : new Tile(tt, rt, v));
@@ -463,7 +463,7 @@ public final class RemoteWorld implements World, Closeable {
 			}
 			int             typeOrid = this.conn.readInt();
 			int             resOrid  = this.conn.readInt();
-			TileType        tt       = TileType.of(typeOrid);
+			GroundType        tt       = GroundType.of(typeOrid);
 			OreResourceType rt       = OreResourceType.of(resOrid);
 			boolean         v        = this.conn.readByte(0, 1) != 0;
 			RemoteTile      t        = new RemoteTile(tt, rt, v);
@@ -661,7 +661,7 @@ public final class RemoteWorld implements World, Closeable {
 	 */
 	@Override
 	public void finish(Turn t) throws IllegalStateException {
-		if (t.usr != this.conn.usr) throw new IllegalStateException(ONLY_MY_TURNS);
+		if (t.world.user() != this.conn.usr) throw new IllegalStateException(ONLY_MY_TURNS);
 		try {
 			t.sendTurn(this.conn, true);
 		} catch (IOException e) {

@@ -45,7 +45,7 @@ import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
-import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 
 public class SquareConquererCUI implements Runnable {
 	
@@ -944,46 +944,46 @@ public class SquareConquererCUI implements Runnable {
 					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
 					return;
 				}
-				TileType type = switch (args.get(i - 2).toLowerCase()) {
-				case "not-explored" -> TileType.NOT_EXPLORED;
-				case "water", "water+normal" -> TileType.WATER_NORMAL;
-				case "sand", "sand+normal" -> TileType.SAND;
-				case "grass", "grass+normal" -> TileType.GRASS;
-				case "forest", "forest+normal" -> TileType.FOREST;
-				case "swamp", "swamp+normal" -> TileType.SWAMP;
-				case "mountain", "mountain+normal" -> TileType.MOUNTAIN;
+				GroundType type = switch (args.get(i - 2).toLowerCase()) {
+				case "not-explored" -> GroundType.NOT_EXPLORED;
+				case "water", "water+normal" -> GroundType.WATER_NORMAL;
+				case "sand", "sand+normal" -> GroundType.SAND;
+				case "grass", "grass+normal" -> GroundType.GRASS;
+				case "forest", "forest+normal" -> GroundType.FOREST;
+				case "swamp", "swamp+normal" -> GroundType.SWAMP;
+				case "mountain", "mountain+normal" -> GroundType.MOUNTAIN;
 				case "+normal" -> {
 					Tile old = b.get(x, y);
-					if (old == null || old.type == null || old.type == TileType.NOT_EXPLORED) {
+					if (old == null || old.ground == null || old.ground == GroundType.NOT_EXPLORED) {
 						c.writeLine("the current type does not accept the +normal suffix");
 						yield null;
 					}
-					yield switch (old.type) {
+					yield switch (old.ground) {
 					case NOT_EXPLORED -> throw new IllegalStateException("tile type is not-explored does not support +normal");
-					default -> old.type.addNormal(false);
+					default -> old.ground.addNormal(false);
 					};
 				}
-				case "water+deep" -> TileType.WATER_DEEP;
+				case "water+deep" -> GroundType.WATER_DEEP;
 				case "+deep" -> {
 					Tile old = b.get(x, y);
-					if (old == null || old.type == null || !old.type.isWater()) {
+					if (old == null || old.ground == null || !old.ground.isWater()) {
 						c.writeLine("the current type does not accept the +deep suffix");
 						yield null;
 					}
-					yield TileType.WATER_DEEP;
+					yield GroundType.WATER_DEEP;
 				}
-				case "sand+hill" -> TileType.SAND_HILL;
-				case "grass+hill" -> TileType.GRASS_HILL;
-				case "forest+hill" -> TileType.FOREST_HILL;
-				case "swamp+hill" -> TileType.SWAMP_HILL;
+				case "sand+hill" -> GroundType.SAND_HILL;
+				case "grass+hill" -> GroundType.GRASS_HILL;
+				case "forest+hill" -> GroundType.FOREST_HILL;
+				case "swamp+hill" -> GroundType.SWAMP_HILL;
 				case "+hill" -> {
 					Tile old = b.get(x, y);
-					if (old == null || old.type == null || !old.type.isHill() && !old.type.isFlat()) {
+					if (old == null || old.ground == null || !old.ground.isHill() && !old.ground.isFlat()) {
 						c.writeLine("the current type does not accept the +hill suffix");
 						yield null;
 					}
-					if (old.type.isHill()) yield old.type;
-					else yield old.type.addHill(true);
+					if (old.ground.isHill()) yield old.ground;
+					else yield old.ground.addHill(true);
 				}
 				default -> {
 					c.writeLine("unknown type: '" + args.get(i - 2) + '\'');
@@ -1083,7 +1083,7 @@ public class SquareConquererCUI implements Runnable {
 	private void writeTile(int x, int y) {
 		Tile tile = world.tile(x, y);
 		c.writeLine("Tile: (" + x + '|' + y + ')');
-		c.writeLine("  Type: " + tile.type);
+		c.writeLine("  Type: " + tile.ground);
 		c.writeLine("  Resource: " + tile.resource);
 	}
 	
@@ -1182,7 +1182,7 @@ public class SquareConquererCUI implements Runnable {
 			StringBuilder b = new StringBuilder(xlen);
 			for (int x = 0; x < xlen; x++) {
 				Tile t = world.tile(x, y);
-				b.append(switch (t.type) {
+				b.append(switch (t.ground) {
 				case NOT_EXPLORED -> '#';
 				case WATER_NORMAL -> 'w';
 				case WATER_DEEP -> 'W';
@@ -1195,7 +1195,7 @@ public class SquareConquererCUI implements Runnable {
 				case SWAMP -> 's';
 				case SWAMP_HILL -> 'S';
 				case MOUNTAIN -> 'm';
-				default -> throw new AssertionError("unknown tile type: " + t.type.name());
+				default -> throw new AssertionError("unknown tile type: " + t.ground.name());
 				});
 			}
 			c.writeLine(b.toString());

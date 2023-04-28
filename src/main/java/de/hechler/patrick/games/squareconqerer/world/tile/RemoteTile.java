@@ -18,17 +18,43 @@ package de.hechler.patrick.games.squareconqerer.world.tile;
 
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 
+/**
+ * this class adds an {@link #created} time-stamp to the tile
+ * 
+ * @author Patrick Hechler
+ */
 public final class RemoteTile extends Tile {
 	
+	/**
+	 * the time when this {@link RemoteTile} was created<br>
+	 * 
+	 * @see System#currentTimeMillis()
+	 * @see #RemoteTile(GroundType,OreResourceType,boolean)
+	 */
 	public final long created;
 	
-	public RemoteTile(TileType type, OreResourceType resource, boolean visible) {
-		this(System.currentTimeMillis(), type, resource, visible);
+	/**
+	 * creates a new remote tile with the given ground, resource and initial visibility
+	 * 
+	 * @param ground   the ground
+	 * @param resource the resource
+	 * @param visible  the initial visibility
+	 */
+	public RemoteTile(GroundType ground, OreResourceType resource, boolean visible) {
+		this(System.currentTimeMillis(), ground, resource, visible);
 	}
 	
-	public RemoteTile(long time, TileType type, OreResourceType resource, boolean visible) {
-		super(type, resource, visible);
-		created = time;
+	/**
+	 * creates a new remote tile with the given ground, resource, initial visibility and time-stamp
+	 * 
+	 * @param time     the time-stamp when this tile thinks it creation was
+	 * @param ground   the ground
+	 * @param resource the resource
+	 * @param visible  the initial visibility
+	 */
+	public RemoteTile(long time, GroundType ground, OreResourceType resource, boolean visible) {
+		super(ground, resource, visible);
+		this.created = time;
 	}
 	
 }

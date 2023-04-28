@@ -36,7 +36,7 @@ import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.objects.Random2;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
-import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 
 /**
  * this class can be used to generate a {@link World} from a {@link SCPage}
@@ -91,10 +91,10 @@ public class PageWorld {
 	
 	private static Tile randomTile(Random2 rnd, boolean allowNotExplored) {
 		OreResourceType ort = OreResourceType.of(rnd.nextInt(OreResourceType.count()));
-		TileType        tt;
+		GroundType        tt;
 		do {
-			tt = TileType.of(rnd.nextInt(TileType.count()));
-		} while (!allowNotExplored && tt == TileType.NOT_EXPLORED);
+			tt = GroundType.of(rnd.nextInt(GroundType.count()));
+		} while (!allowNotExplored && tt == GroundType.NOT_EXPLORED);
 		return new Tile(tt, ort, true);
 	}
 	
@@ -169,7 +169,7 @@ public class PageWorld {
 	/**
 	 * regenerate the tiles used by this builder randomly<br>
 	 * 
-	 * @param allowNotExplored if {@link TileType#NOT_EXPLORED} is allowed to be generated randomly
+	 * @param allowNotExplored if {@link GroundType#NOT_EXPLORED} is allowed to be generated randomly
 	 */
 	public void randomTiles(boolean allowNotExplored) {
 		Random2 rnd = new Random2();
@@ -183,17 +183,17 @@ public class PageWorld {
 	}
 	
 	private boolean sameTiles() {
-		return !maxOne(TileType::isForest) || !maxOne(TileType::isGrass) || !maxOne(TileType::isMountain) || !maxOne(TileType::isSand) || !maxOne(TileType::isSwamp)
-			|| !maxOne(TileType::isWater);
+		return !maxOne(GroundType::isForest) || !maxOne(GroundType::isGrass) || !maxOne(GroundType::isMountain) || !maxOne(GroundType::isSand) || !maxOne(GroundType::isSwamp)
+			|| !maxOne(GroundType::isWater);
 	}
 	
-	private boolean maxOne(Predicate<TileType> t) {
-		return maxOne(t, this.pageTile.type, this.linkTile.type, this.wrldTile.type, this.textTile.type, this.othrTile.type);
+	private boolean maxOne(Predicate<GroundType> t) {
+		return maxOne(t, this.pageTile.ground, this.linkTile.ground, this.wrldTile.ground, this.textTile.ground, this.othrTile.ground);
 	}
 	
-	private static boolean maxOne(Predicate<TileType> t, TileType... types) {
+	private static boolean maxOne(Predicate<GroundType> t, GroundType... types) {
 		boolean matched = false;
-		for (TileType tt : types) {
+		for (GroundType tt : types) {
 			if (t.test(tt)) {
 				if (matched) return false;
 				matched = true;

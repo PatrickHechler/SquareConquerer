@@ -321,7 +321,7 @@ public final class OpenWorld implements Executable<IOException> {
 			this.conn.writeString(usr != null ? usr.name() : RootUser.ROOT_NAME);
 			sendBuilding(b, this.conn);
 		}
-		this.conn.writeInt(t.type.ordinal());
+		this.conn.writeInt(t.ground.ordinal());
 		this.conn.writeInt(t.resource.ordinal());
 		this.conn.writeByte(t.visible() ? 1 : 0);
 	}
@@ -350,7 +350,7 @@ public final class OpenWorld implements Executable<IOException> {
 		for (int x = 0; x < xlen; x++) {
 			for (int y = 0; y < ylen; y++) {
 				Tile t = world.tile(x, y);
-				conn.writeInt(t.type.ordinal());
+				conn.writeInt(t.ground.ordinal());
 				conn.writeInt(t.resource.ordinal());
 				conn.writeByte(t.visible() ? 1 : 0);
 			}

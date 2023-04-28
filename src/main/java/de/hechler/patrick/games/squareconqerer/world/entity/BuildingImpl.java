@@ -56,7 +56,7 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	public EnumIntMap<ProducableResourceType> neededResources() { return this.neededResources == null ? null : this.neededResources.copy(); }
 	
 	@Override
-	public void store(Unit u, int amount) throws TurnExecutionException {
+	public void store(Unit u, Resource res, int amount) throws TurnExecutionException {
 		checkOwner(u);
 		if (u.carryAmount() < amount) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
@@ -65,23 +65,17 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 		if (this.neededResources == null) {
-			finishedBuildStore(u.carryRes(), amount);
-			u.uncarry(amount);
+			finishedBuildStore(res, amount);
+			u.uncarry(res, amount);
 			return;
 		}
-		Resource r = u.carryRes();
-		if (!(r instanceof ProducableResourceType prt)) {
+		if (!(res instanceof ProducableResourceType prt)) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		int amt = this.neededResources.get(prt);
-		if (amt == 0) {
+		if (this.neededResources.subBy(prt, amount) < 0) {
+			this.neededResources.addBy(prt, amount);
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		if (amt < amount) {
-			throw new TurnExecutionException(ErrorType.INVALID_TURN);
-		}
-		amt -= amount;
-		this.neededResources.set(prt, amt);
 	}
 	
 	protected void finishedBuildStore(Resource r, int amount) throws TurnExecutionException {

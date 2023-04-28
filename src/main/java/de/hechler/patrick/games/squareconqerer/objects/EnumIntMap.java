@@ -106,7 +106,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 	 */
 	public int dec(T e) {
 		if (!this.cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls); //$NON-NLS-1$
 		}
 		return --this.arr[e.ordinal()];
 	}
@@ -116,7 +116,7 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 			throw new IllegalArgumentException("sub is not greather than zero: sub=" + val);
 		}
 		if (!this.cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls); //$NON-NLS-1$
 		}
 		int o = e.ordinal();
 		this.arr[o] -= val;

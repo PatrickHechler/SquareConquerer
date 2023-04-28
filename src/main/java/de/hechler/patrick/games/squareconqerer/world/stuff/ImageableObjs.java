@@ -26,7 +26,7 @@ import javax.imageio.ImageIO;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.tile.TileType;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 
 public class ImageableObjs {
 	
@@ -34,9 +34,9 @@ public class ImageableObjs {
 	
 	private static BufferedImage[] imgs;
 	
-	public static BufferedImage immage(TileType tile, OreResourceType res, Building b, Unit u) {
+	public static BufferedImage immage(GroundType tile, OreResourceType res, Building b, Unit u) {
 		if (imgs == null) {
-			imgs = new BufferedImage[OreResourceType.count() * TileType.count() * (Building.COUNT) * (Unit.COUNT)];
+			imgs = new BufferedImage[OreResourceType.count() * GroundType.count() * (Building.COUNT) * (Unit.COUNT)];
 		}
 		int to    = tile.ordinal();
 		int ro    = res.ordinal();

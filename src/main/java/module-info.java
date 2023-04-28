@@ -31,6 +31,7 @@ import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
 module de.hechler.patrick.games.squareconqerer {
 	
 	requires transitive java.desktop;
+	requires jdk.incubator.concurrent;
 	
 	exports de.hechler.patrick.games.squareconqerer;
 	exports de.hechler.patrick.games.squareconqerer.addons;

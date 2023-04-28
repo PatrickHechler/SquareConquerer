@@ -24,11 +24,18 @@ import java.util.List;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.enums.Direction;
 
+/**
+ * this {@link EntityTurn} is used to let an unit move in the world
+ * 
+ * @author Patrick Hechler
+ * @param entity the unit which should be moved
+ * @param dirs   the directions in which the entity should be moved
+ */
 public record MoveTurn(Unit entity, List<Direction> dirs) implements EntityTurn {
 	
 	public MoveTurn(Unit entity, List<Direction> dirs) {
 		this.entity = entity;
-		this.dirs = Collections.unmodifiableList(new ArrayList<>(dirs));
+		this.dirs   = Collections.unmodifiableList(new ArrayList<>(dirs));
 	}
 	
 	public MoveTurn(Unit entity, Direction... dirs) {

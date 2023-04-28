@@ -24,15 +24,26 @@ import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.objects.Random2;
 import de.hechler.patrick.games.squareconqerer.world.World;
 
+/**
+ * the user placer is used at the start of a game to place some initial entities for all users
+ * 
+ * @author Patrick Hechler
+ */
 public interface UserPlacer {
 	
+	/**
+	 * Initialize the given world
+	 * 
+	 * @param world
+	 * @param usrs
+	 * @param rnd
+	 */
 	void initilize(World world, User[] usrs, Random2 rnd);
 	
 	void writePlacer(Connection conn) throws IOException;
 	
 	/*
-	 * note that also the static readPlacer method needs to be implemented
-	 * signature: public static UserPlacer readPlacer(Connection) throws IOException
+	 * note that also the static readPlacer method needs to be implemented signature: public static UserPlacer readPlacer(Connection) throws IOException
 	 */
 	
 }

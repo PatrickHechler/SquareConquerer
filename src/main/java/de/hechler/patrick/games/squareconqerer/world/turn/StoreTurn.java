@@ -17,7 +17,16 @@
 package de.hechler.patrick.games.squareconqerer.world.turn;
 
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
+import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
-public record StoreTurn(Unit entity, int amount) implements EntityTurn {
-
+/**
+ * this {@link EntityTurn} class is used to let an unit store resources in a building
+ * 
+ * @author Patrick Hechler
+ * @param entity   the unit which should make the store operation
+ * @param resource the resource which should be stored
+ * @param amount   how much should be stored
+ */
+public record StoreTurn(Unit entity, Resource resource, int amount) implements EntityTurn {
+	
 }
