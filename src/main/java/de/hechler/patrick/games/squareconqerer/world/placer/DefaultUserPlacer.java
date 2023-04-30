@@ -1,27 +1,34 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world.placer;
 
 import java.awt.Point;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
+import de.hechler.patrick.games.squareconqerer.addons.entities.EntityTraitWithVal;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.stuff.Random2;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
@@ -33,30 +40,64 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
 public class DefaultUserPlacer implements UserPlacer {
 	
-	private final EnumIntMap<EntityType> entityAmounts;
+	private final Map<String, List<Map<String, EntityTraitWithVal>>> entityAmounts;
 	
 	public DefaultUserPlacer() {
-		this.entityAmounts = new EnumIntMap<>(EntityType.class);
+		this.entityAmounts = new HashMap<>();
 		// TODO default values
 	}
 	
-	public DefaultUserPlacer(EnumIntMap<EntityType> entityAmounts) {
-		this.entityAmounts = entityAmounts;
-	}
+	private static final int SUB0_USR_PLCR = 0x2EDA1FC3;
+	private static final int SUB1_USR_PLCR = 0x796C2612;
+	private static final int SUB2_USR_PLCR = 0x9871F044;
+	private static final int SUB3_USR_PLCR = 0x209ABC36;
+	private static final int FIN_USR_PLCR  = 0xDADA38F3;
 	
 	@Override
 	public void writePlacer(Connection conn) throws IOException {
-		int[] arr = this.entityAmounts.array();
-		conn.writeInt(arr.length);
-		for (int i = 0; i < arr.length; i++) {
-			if (arr[i] < 0) throw new IllegalStateException("value is negative");
-			conn.writeInt(arr[i]);
+		int len = this.entityAmounts.size();
+		conn.writeInt(len);
+		for (Entry<String, List<Map<String, EntityTraitWithVal>>> entry : this.entityAmounts.entrySet()) {
+			if (--len < 0) throw new ConcurrentModificationException();
+			conn.writeInt(SUB0_USR_PLCR);
+			String                                type      = entry.getKey();
+			List<Map<String, EntityTraitWithVal>> entities  = entry.getValue();
+			String                                addonName = type.substring(0, type.indexOf('\0'));
+			String                                clsName   = type.substring(addonName.length() + 1);
+			SquareConquererAddon                  addon     = SquareConquererAddon.addon(addonName);
+			List<String>                          traits    = new ArrayList<>(addon.entities().traits(clsName).keySet());
+			int                                   tlen      = traits.size();
+			Map<String, Integer>                  is        = new HashMap<>(tlen);
+			conn.writeInt(tlen);
+			for (int i = 0; i < traits.size(); i++) {
+				String traitName = traits.get(i);
+				if (--tlen < 0) throw new ConcurrentModificationException();
+				conn.writeString(traitName);
+				is.put(traitName, Integer.valueOf(i));
+			}
+			if (tlen != 0) throw new ConcurrentModificationException();
+			conn.writeInt(SUB1_USR_PLCR);
+			int elen = entities.size();
+			conn.writeInt(elen);
+			for (Map<String, EntityTraitWithVal> vals : entities) {
+				if (--elen < 0) throw new ConcurrentModificationException();
+				conn.writeInt(SUB2_USR_PLCR);
+				if (vals.size() != traits.size()) throw new IllegalStateException("the entity traits have a different size than the addon says");
+				for (String traitName : traits) {
+					EntityTraitWithVal tn = vals.get(traitName);
+					EntityTraitWithVal.writeTrait(tn, conn);
+				}
+			}
+			if (elen != 0) throw new ConcurrentModificationException();
+			conn.writeInt(SUB3_USR_PLCR);
 		}
+		if (len != 0) throw new ConcurrentModificationException();
+		conn.writeInt(FIN_USR_PLCR);
 	}
 	
 	public static UserPlacer readPlacer(Connection conn) throws IOException {
 		DefaultUserPlacer dup = new DefaultUserPlacer();
-		int[] arr = dup.entityAmounts.array();
+		int[]             arr = dup.entityAmounts.array();
 		conn.readInt(arr.length);
 		for (int i = 0; i < arr.length; i++) {
 			arr[i] = conn.readPos();
@@ -152,17 +193,5 @@ public class DefaultUserPlacer implements UserPlacer {
 		}
 		return false;
 	}
-	
-	public int get(EntityType e) { return this.entityAmounts.get(e); }
-	
-	public void set(EntityType e, int val) { this.entityAmounts.set(e, val); }
-	
-	public int add(EntityType e, int val) { return this.entityAmounts.addBy(e, val); }
-	
-	public int sub(EntityType e, int val) { return this.entityAmounts.subBy(e, val); }
-	
-	public int inc(EntityType e) { return this.entityAmounts.inc(e); }
-	
-	public int dec(EntityType e) { return this.entityAmounts.dec(e); }
 	
 }

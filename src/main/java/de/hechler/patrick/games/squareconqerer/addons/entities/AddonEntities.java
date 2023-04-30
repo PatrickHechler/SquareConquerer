@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons.entities;
 
 import java.io.IOException;
@@ -124,12 +124,13 @@ public interface AddonEntities {
 	 * creates and returns a new entity with the given traits
 	 * <p>
 	 * executing
-	 * <code>({@link #entityClassses() entityClassses}().{@link Map#get(Object) get}({@link #createEntity(String, Map) createEntity}(clsName, traits)).{@link String#equals(Object) equals}(clsName))</code>
+	 * <code>({@link #entityClassses() entityClassses}().{@link Map#get(Object) get}({@link #createEntity(String, User, Map, int, int) createEntity}(clsName, traits)).{@link String#equals(Object) equals}(clsName))</code>
 	 * has to result in <code>true</code> (and unused object allocation)
 	 * 
 	 * @param <E>     the entity type
 	 * @param clsName the class name of the entity to create (see
 	 *                {@link #entityClassses()})
+	 * @param usr     the {@link Entity#owner() owner}
 	 * @param traits  the traits of the entity (see {@link #traits(String)})
 	 * 				
 	 * @return the newly created entity with the given traits

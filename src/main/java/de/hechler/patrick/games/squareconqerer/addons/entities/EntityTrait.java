@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons.entities;
 
 
@@ -32,22 +32,32 @@ public sealed interface EntityTrait {
 	String name();
 	
 	/**
+	 * returns this trait with its default value
+	 * 
+	 * @return this trait with its default value
+	 */
+	EntityTraitWithVal defaultValue();
+	
+	/**
 	 * a number trait<br>
 	 * for example something like max lives for example
 	 */
-	public record NumberTrait(String name, int minValue, int maxValue) implements EntityTrait {
+	public record NumberTrait(String name, int minValue, int maxValue, int defaultIntValue) implements EntityTrait {
 		
 		public NumberTrait {
 			if (name == null) throw new NullPointerException("name is null");
-			if (minValue > maxValue) {
-				throw new IllegalStateException("minValue is greather than maxValue");
-			}
+			if (minValue > maxValue) throw new IllegalArgumentException("minValue is greather than maxValue");
+			if (minValue > defaultIntValue || defaultIntValue > maxValue) throw new IllegalArgumentException("the default value is invalid");
 		}
 		
 		public EntityTraitWithVal withVal(int value) {
 			if (value < minValue) throw new IllegalArgumentException("the given value is too small");
 			if (value > maxValue) throw new IllegalArgumentException("the given value is too large");
 			return new EntityTraitWithVal.NumberTrait(this, value);
+		}
+		
+		public EntityTraitWithVal defaultValue() {
+			return new EntityTraitWithVal.NumberTrait(this, this.defaultIntValue);
 		}
 		
 	}
@@ -57,17 +67,25 @@ public sealed interface EntityTrait {
 	 *
 	 * @param <E> the enum type
 	 */
-	public record EnumTrait<E extends Enum<?>>(String name, Class<E> cls) implements EntityTrait {
+	public record EnumTrait<E extends Enum<?>>(String name, Class<E> cls, E defaultEnumValue) implements EntityTrait {
 		
 		public EnumTrait {
 			if (name == null) throw new NullPointerException("name is null");
 			if (cls == null) throw new NullPointerException("cls is null");
+			if (defaultEnumValue == null) throw new NullPointerException("default value is null");
 			if (!cls.isEnum()) throw new IllegalArgumentException("cls is no enum class");
+			if (!cls.isInstance(defaultEnumValue)) throw new IllegalArgumentException("default value is no instance of the given class");
 		}
 		
-		public EntityTraitWithVal withVal(E value) {
-			if (value == null) throw new NullPointerException("value is null");
-			return new EntityTraitWithVal.EnumTrait<>(this, value);
+		@SuppressWarnings("unchecked")
+		public EntityTraitWithVal withVal(Enum<?> enum1) {
+			if (enum1 == null) throw new NullPointerException("value is null");
+			if (!this.cls.isInstance(enum1)) throw new IllegalArgumentException("the value is no instance of the given class");
+			return new EntityTraitWithVal.EnumTrait<>(this, (E) enum1);
+		}
+		
+		public EntityTraitWithVal defaultValue() {
+			return new EntityTraitWithVal.EnumTrait<E>(this, this.defaultEnumValue);
 		}
 		
 	}
@@ -76,7 +94,7 @@ public sealed interface EntityTrait {
 	 * a boolean trait<br>
 	 * for example something like has the trait or not
 	 */
-	public record BooleanTrait(String name) implements EntityTrait {
+	public record BooleanTrait(String name, boolean defaultBoolValue) implements EntityTrait {
 		
 		public BooleanTrait {
 			if (name == null) throw new NullPointerException("name is null");
@@ -84,6 +102,10 @@ public sealed interface EntityTrait {
 		
 		public EntityTraitWithVal withVal(boolean value) {
 			return new EntityTraitWithVal.BooleanTrait(this, value);
+		}
+		
+		public EntityTraitWithVal defaultValue() {
+			return new EntityTraitWithVal.BooleanTrait(this, this.defaultBoolValue);
 		}
 		
 	}
@@ -100,6 +122,10 @@ public sealed interface EntityTrait {
 		}
 		
 		public EntityTraitWithVal withVal() {
+			return new EntityTraitWithVal.JustATrait(this);
+		}
+		
+		public EntityTraitWithVal defaultValue() {
 			return new EntityTraitWithVal.JustATrait(this);
 		}
 		

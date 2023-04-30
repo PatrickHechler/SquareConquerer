@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons;
 
 import java.util.Collection;
@@ -104,12 +104,13 @@ public abstract class SquareConquererAddon {
 	 * ignored.<br>
 	 * see {@link #RENAME_ADDON_PROPERTY_START} for details.
 	 * 
-	 * @param name the {@link #this.name} of the add-on
+	 * @param name the {@link #name} of the add-on
 	 */
 	public SquareConquererAddon(String name) {
 		String overwrittenName = System.getProperty(renameAddonPropertyKey(getClass()));
 		if (overwrittenName != null) this.name = overwrittenName;
 		else this.name = name;
+		if (this.name.lastIndexOf('\0') != -1) throw new IllegalStateException("the addon name is not allowed to contain a \\0 character");
 	}
 	
 	protected void initOridinalOffset(int unitOff, int buildOff) {
@@ -156,7 +157,7 @@ public abstract class SquareConquererAddon {
 	/**
 	 * returns a unmodifiable map containing almost all add-ons (excluding the game add-on)
 	 * <p>
-	 * the add-ons are mapped with their {@link #this.name} as keys
+	 * the add-ons are mapped with their {@link #name} as keys
 	 * 
 	 * @return a unmodifiable map containing almost all add-ons (excluding the game add-on)
 	 */
@@ -180,7 +181,7 @@ public abstract class SquareConquererAddon {
 	/**
 	 * returns a unmodifiable map containing all add-ons (including the game add-on)
 	 * <p>
-	 * the add-ons are mapped with their {@link #this.name} as keys
+	 * the add-ons are mapped with their {@link #name} as keys
 	 * 
 	 * @return a unmodifiable map containing all add-ons (including the game add-on)
 	 */
@@ -223,6 +224,18 @@ public abstract class SquareConquererAddon {
 			theGame = g;
 			return a;
 		}
+	}
+	
+	public static SquareConquererAddon addon(String name) {
+		Map<String, SquareConquererAddon> as = addons;
+		if (as == null) {
+			as = addonsMap();
+		}
+		SquareConquererAddon a = as.get(name);
+		if (a == null) {
+			throw new AssertionError("unknown addon name: '" + name + '\'');
+		}
+		return a;
 	}
 	
 	public static SquareConquererAddon addon(Entity e) {
@@ -281,7 +294,7 @@ public abstract class SquareConquererAddon {
 						switch (c) {
 						case '\\', ':' -> b.append(c);
 						default -> throw new AssertionError(
-							"the property '" + DISABLED_ADDONS_PROPERTY + "' has an invalid escape sequence: \"\\" + c + "\" at char " + (i - 1));
+								"the property '" + DISABLED_ADDONS_PROPERTY + "' has an invalid escape sequence: \"\\" + c + "\" at char " + (i - 1));
 						}
 					}
 					case ':' -> {

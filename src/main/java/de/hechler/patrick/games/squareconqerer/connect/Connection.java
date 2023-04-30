@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.connect;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
@@ -118,7 +118,7 @@ public class Connection implements Closeable, WrongInputHandler {
 		@Override
 		public int wrongInputPositive(int read, boolean strictlyPositive) throws IOException {
 			throw new StreamCorruptedException("invalid input! got: " + read + " but expected a " + (strictlyPositive ? "strict " : "") + "positive value"
-				+ (strictlyPositive ? "!" : " (or zero)!"));
+					+ (strictlyPositive ? "!" : " (or zero)!"));
 		}
 		
 	};
@@ -226,7 +226,7 @@ public class Connection implements Closeable, WrongInputHandler {
 		private ServerAccept() {}
 		
 		public static void accept(int port, RootWorld rw, ThrowBiConsumer<Connection, Socket, IOException> logConnect, Map<User, Connection> connects,
-			char[] serverPW) throws IOException {
+				char[] serverPW) throws IOException {
 			try (ServerSocket ss = new ServerSocket(port)) {
 				System.err.println("[Connect.ServerAccept]: accept connections at " + ss.getInetAddress() + " : " + ss.getLocalPort());
 				accept(ss, rw, logConnect, connects, serverPW);
@@ -234,7 +234,7 @@ public class Connection implements Closeable, WrongInputHandler {
 		}
 		
 		public static void accept(ServerSocket ss, RootWorld rw, ThrowBiConsumer<Connection, Socket, IOException> logConnect, Map<User, Connection> connects,
-			char[] serverPW) throws IOException {
+				char[] serverPW) throws IOException {
 			List<Socket> soks = new ArrayList<>();
 			IOException  err;
 			try {
@@ -769,6 +769,7 @@ public class Connection implements Closeable, WrongInputHandler {
 		
 		@Override
 		public void execute() throws IOException {/**/}
+		
 	};
 	
 	/**
@@ -824,6 +825,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	 * reads a non-strict positive number (zero is allowed)
 	 * 
 	 * @return the positive number which was read
+	 * 
 	 * @throws IOException if an IO-error occurs
 	 */
 	public int readPos() throws IOException {
@@ -834,6 +836,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	 * reads a strictly positive number (zero is not allowed)
 	 * 
 	 * @return the strict positive number which was read
+	 * 
 	 * @throws IOException if an IO-error occurs
 	 */
 	public int readStrictPos() throws IOException {
@@ -888,6 +891,34 @@ public class Connection implements Closeable, WrongInputHandler {
 			if (reat == val) return val;
 		}
 		return wrongInputInt(reat, vals, msg);
+	}
+	
+	private static final int CLS_NAMED   = 0x0621BAC4;
+	private static final int CLS_UNNAMED = 0xA216458E;
+	
+	public Class<?> readClass() throws IOException {
+		try {
+			if (readInt(CLS_NAMED, CLS_UNNAMED) == CLS_NAMED) {
+				String modName = readString();
+				Module mod     = ModuleLayer.boot().findModule(modName).orElseThrow(() -> new StreamCorruptedException("could not find module: " + modName));
+				return Class.forName(mod, readString());
+			} else {
+				return Class.forName(readString());
+			}
+		} catch (ClassNotFoundException cnfe) {
+			throw new NoClassDefFoundError(cnfe.toString());
+		}
+	}
+	
+	public void writeClass(Class<?> cls) throws IOException {
+		Module mod = cls.getModule();
+		if (mod.isNamed()) {
+			writeInt(CLS_NAMED);
+			writeString(this.out, mod.getName());
+		} else {
+			writeInt(CLS_UNNAMED);
+		}
+		writeString(this.out, cls.getName());
 	}
 	
 	public void readArr(byte[] arr) throws IOException {
@@ -945,7 +976,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	
 	private static void writeLong(OutputStream out, long value) throws IOException {
 		out.write(new byte[] { (byte) value, (byte) (value >>> 8), (byte) (value >>> 16), (byte) (value >>> 24), (byte) (value >>> 32), (byte) (value >>> 40),
-			(byte) (value >>> 48), (byte) (value >>> 56) });
+				(byte) (value >>> 48), (byte) (value >>> 56) });
 	}
 	
 	private static int readByte(WrongInputHandler wih, InputStream in) throws IOException {
