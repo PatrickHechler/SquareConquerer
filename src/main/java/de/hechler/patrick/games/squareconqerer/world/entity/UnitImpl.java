@@ -103,6 +103,6 @@ public abstract sealed class UnitImpl extends EntityImpl implements Unit permits
 	}
 	
 	@Override
-	public final String cls() { return "Unit"; }
+	public final String type() { return "Unit"; }
 	
 }

@@ -17,7 +17,7 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.User;
-import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 
 public abstract non-sealed class MyBuild extends BuildingImpl {

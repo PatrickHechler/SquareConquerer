@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
-import de.hechler.patrick.games.squareconqerer.objects.Random2;
+import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.stuff.Random2;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;

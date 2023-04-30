@@ -23,12 +23,12 @@ import java.util.Set;
 
 import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
-import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
-public non-sealed interface Building extends Entity, ImageableObj {
+public non-sealed interface Building extends Entity {
 	
 	/**
 	 * this value holds the amount of different building types plus {@code 1} (for

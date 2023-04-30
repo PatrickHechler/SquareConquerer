@@ -43,7 +43,7 @@ import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
-import de.hechler.patrick.games.squareconqerer.objects.Random2;
+import de.hechler.patrick.games.squareconqerer.stuff.Random2;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
@@ -261,6 +261,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * then every time {@link Iterator#next()} is called, one turn more will executed in the returned world<br>
 	 * at the end the returned world should look like the current world
 	 */
+	@Override
 	public Iterator<RootWorld> iterator() {
 		if (this.rnd == null) throw new IllegalStateException(GAME_NOT_STARTED);
 		return new Iterator<RootWorld>() {
@@ -478,11 +479,12 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			map.remove(RootUser.ROOT_NAME);
 			Collection<User> values = map.values();
 			User[]           users  = values.toArray(new User[values.size()]);
-			Arrays.sort(users, null);
 			if ((users.length + 1) * 16 != s.length) throw new IllegalArgumentException(INAVLID_RND_ARR_SIZE);
 			long sval = seed(s);
 			this.seed = s;
 			this.rnd  = new Random2(sval);
+			Arrays.sort(users, null);
+			shuffle(this.rnd, users);
 			this.placer.initilize(this, users, this.rnd);
 		}
 		threadStart(() -> executeNTL(hash, null));
@@ -860,7 +862,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				int posFlat = (flat * 2) + 1;
 				int rndVal1 = this.rnd.nextInt(posHill + posFlat);
 				if (rndVal1 < posHill) {
-					type = type.addHill(true);
+					type = type.addHill(true, true);
 				}
 			} else if (type.isWater()) {
 				if (land == 0) {

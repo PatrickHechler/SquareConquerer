@@ -76,9 +76,9 @@ public abstract sealed class EntityImpl implements Entity permits BuildingImpl, 
 	
 	private volatile BufferedImage resource;
 	
-	public BufferedImage resource() { return this.resource; }
+	public BufferedImage image() { return this.resource; }
 	
-	public void resource(BufferedImage nval) { this.resource = nval; }
+	public void image(BufferedImage nval) { this.resource = nval; }
 	
 	public String name() { return getClass().getSimpleName(); }
 	

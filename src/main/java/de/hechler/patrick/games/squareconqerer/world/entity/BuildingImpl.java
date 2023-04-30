@@ -19,7 +19,7 @@ package de.hechler.patrick.games.squareconqerer.world.entity;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
-import de.hechler.patrick.games.squareconqerer.objects.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
@@ -105,6 +105,6 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	}
 	
 	@Override
-	public final String cls() { return "Building"; }
+	public final String type() { return "Building"; }
 	
 }

@@ -41,7 +41,7 @@ module de.hechler.patrick.games.squareconqerer {
 	exports de.hechler.patrick.games.squareconqerer.exceptions;
 	exports de.hechler.patrick.games.squareconqerer.exceptions.enums;
 	exports de.hechler.patrick.games.squareconqerer.interfaces;
-	exports de.hechler.patrick.games.squareconqerer.objects;
+	exports de.hechler.patrick.games.squareconqerer.stuff;
 	exports de.hechler.patrick.games.squareconqerer.ui;
 	exports de.hechler.patrick.games.squareconqerer.world;
 	exports de.hechler.patrick.games.squareconqerer.world.entity;

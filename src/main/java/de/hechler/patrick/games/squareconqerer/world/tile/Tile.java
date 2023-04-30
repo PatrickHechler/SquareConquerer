@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world.tile;
 
 import java.awt.Graphics2D;
@@ -112,6 +112,7 @@ public sealed class Tile permits RemoteTile {
 	 * 
 	 * @param width  the width of the icon
 	 * @param height the height of the icon
+	 * 
 	 * @return an {@link Icon} representing this tile with the given sizes
 	 */
 	public Icon icon(int width, int height) {
@@ -163,7 +164,7 @@ public sealed class Tile permits RemoteTile {
 	 */
 	public Tile copy() {
 		return new Tile(this.ground, this.resource, this.visible, this.build == null ? null : this.build.copy(), this.unit == null ? null : this.unit.copy(),
-			this.page, this.title);
+				this.page, this.title);
 	}
 	
 	/**
@@ -177,6 +178,7 @@ public sealed class Tile permits RemoteTile {
 	 * returns the page associated with the tile
 	 * 
 	 * @return the page associated with the tile
+	 * 
 	 * @throws IllegalStateException if this tile has no page
 	 */
 	public SCPage page() throws IllegalStateException {
@@ -188,6 +190,7 @@ public sealed class Tile permits RemoteTile {
 	 * returns the title of the pages associated with the tile
 	 * 
 	 * @return the title of the pages associated with the tile
+	 * 
 	 * @throws IllegalStateException if this tile has no page
 	 */
 	public String pageTitle() throws IllegalStateException {
@@ -232,16 +235,10 @@ public sealed class Tile permits RemoteTile {
 		Unit     u = this.unit;
 		Building b = this.build;
 		if (u == null) {
-			if (b == null) {
-				return Collections.emptyList();
-			} else {
-				return List.of(b);
-			}
-		} else if (b == null) {
-			return List.of(u);
-		} else {
-			return List.of(b, u);
-		}
+			if (b == null) return Collections.emptyList();
+			else return List.of(b);
+		} else if (b == null) return List.of(u);
+		else return List.of(b, u);
 	}
 	
 	/**
@@ -340,11 +337,11 @@ public sealed class Tile permits RemoteTile {
 	@Override
 	public String toString() {
 		return new StringBuilder()//
-			.append("Tile [type=").append(this.ground) //$NON-NLS-1$
-			.append(", resource=").append(this.resource) //$NON-NLS-1$
-			.append(", visible=").append(this.visible) //$NON-NLS-1$
-			.append(", build=").append(this.build) //$NON-NLS-1$
-			.append(", unit=").append(this.unit).append(']').toString(); //$NON-NLS-1$
+				.append("Tile [type=").append(this.ground) //$NON-NLS-1$
+				.append(", resource=").append(this.resource) //$NON-NLS-1$
+				.append(", visible=").append(this.visible) //$NON-NLS-1$
+				.append(", build=").append(this.build) //$NON-NLS-1$
+				.append(", unit=").append(this.unit).append(']').toString(); //$NON-NLS-1$
 	}
 	
 }

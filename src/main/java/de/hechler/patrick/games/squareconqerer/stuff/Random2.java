@@ -14,7 +14,7 @@
 //
 //You should have received a copy of the GNU Affero General Public License
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.squareconqerer.objects;
+package de.hechler.patrick.games.squareconqerer.stuff;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.random.RandomGenerator;

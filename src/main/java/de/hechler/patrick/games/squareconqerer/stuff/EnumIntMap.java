@@ -14,7 +14,7 @@
 //
 //You should have received a copy of the GNU Affero General Public License
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.squareconqerer.objects;
+package de.hechler.patrick.games.squareconqerer.stuff;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
@@ -537,7 +537,6 @@ public class EnumIntMap<T extends Enum<?>> implements Map<T, Integer> {
 		}
 		T[] vals = this.cls.getEnumConstants();
 		for (int i = 0; i < vals.length; i++) {
-			@SuppressWarnings("unlikely-arg-type")
 			Object val = m.get(vals[i]);
 			if (!(val instanceof Integer ival)) return false;
 			if (this.arr[i] != ival.intValue()) return false;

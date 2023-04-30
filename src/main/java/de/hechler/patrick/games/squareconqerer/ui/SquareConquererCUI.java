@@ -958,10 +958,7 @@ public class SquareConquererCUI implements Runnable {
 						c.writeLine("the current type does not accept the +normal suffix");
 						yield null;
 					}
-					yield switch (old.ground) {
-					case NOT_EXPLORED -> throw new IllegalStateException("tile type is not-explored does not support +normal");
-					default -> old.ground.addNormal(false);
-					};
+					yield old.ground.addNormal(false, true);
 				}
 				case "water+deep" -> GroundType.WATER_DEEP;
 				case "+deep" -> {
@@ -982,8 +979,7 @@ public class SquareConquererCUI implements Runnable {
 						c.writeLine("the current type does not accept the +hill suffix");
 						yield null;
 					}
-					if (old.ground.isHill()) yield old.ground;
-					else yield old.ground.addHill(true);
+					yield old.ground.addHill(false, true);
 				}
 				default -> {
 					c.writeLine("unknown type: '" + args.get(i - 2) + '\'');

@@ -41,9 +41,9 @@ public class BuildMode {
 	public Tile modify(Tile t) {
 		return switch (this.state) {
 		case STATE_INACTIVE -> throw new IllegalStateException("I am inactive");
-		case STATE_DEEP -> new Tile(t.ground.addDeep(false), t.resource, t.visible());
-		case STATE_HILL -> new Tile(t.ground.addHill(false), t.resource, t.visible());
-		case STATE_NORMAL -> new Tile(t.ground.addNormal(false), t.resource, t.visible());
+		case STATE_DEEP -> new Tile(t.ground.addDeep(false, false), t.resource, t.visible());
+		case STATE_HILL -> new Tile(t.ground.addHill(false, false), t.resource, t.visible());
+		case STATE_NORMAL -> new Tile(t.ground.addNormal(false, false), t.resource, t.visible());
 		case STATE_SET_GROUND -> new Tile((GroundType) this.obj, t.resource, t.visible());
 		case STATE_SET_ORE -> new Tile(t.ground, (OreResourceType) this.obj, t.visible());
 		case STATE_SET_UNIT -> {

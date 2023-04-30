@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world.tile;
 
 import java.awt.image.BufferedImage;
@@ -61,21 +61,21 @@ public enum GroundType implements ImageableObj {
 	
 	;
 	
-	private static final String STR_MOUNTAIN     = Messages.get("GroundType.str-mountain"); //$NON-NLS-1$
-	private static final String STR_SWAMP_HILL   = Messages.get("GroundType.str-swamp-hill"); //$NON-NLS-1$
-	private static final String STR_SWAMP        = Messages.get("GroundType.str-swamp"); //$NON-NLS-1$
+	private static final String STR_MOUNTAIN     = Messages.get("GroundType.str-mountain");    //$NON-NLS-1$
+	private static final String STR_SWAMP_HILL   = Messages.get("GroundType.str-swamp-hill");  //$NON-NLS-1$
+	private static final String STR_SWAMP        = Messages.get("GroundType.str-swamp");       //$NON-NLS-1$
 	private static final String STR_FOREST_HILL  = Messages.get("GroundType.str-forest-hill"); //$NON-NLS-1$
-	private static final String STR_FOREST       = Messages.get("GroundType.str-forest"); //$NON-NLS-1$
-	private static final String STR_GRASS_HILL   = Messages.get("GroundType.str-grass-hill"); //$NON-NLS-1$
-	private static final String STR_GRASS        = Messages.get("GroundType.str-grass"); //$NON-NLS-1$
-	private static final String STR_SAND_HILL    = Messages.get("GroundType.str-sand-hill"); //$NON-NLS-1$
-	private static final String STR_SAND         = Messages.get("GroundType.str-sand"); //$NON-NLS-1$
-	private static final String STR_WATER        = Messages.get("GroundType.str-water"); //$NON-NLS-1$
-	private static final String STR_WATER_DEEP   = Messages.get("GroundType.str-water-deep"); //$NON-NLS-1$
+	private static final String STR_FOREST       = Messages.get("GroundType.str-forest");      //$NON-NLS-1$
+	private static final String STR_GRASS_HILL   = Messages.get("GroundType.str-grass-hill");  //$NON-NLS-1$
+	private static final String STR_GRASS        = Messages.get("GroundType.str-grass");       //$NON-NLS-1$
+	private static final String STR_SAND_HILL    = Messages.get("GroundType.str-sand-hill");   //$NON-NLS-1$
+	private static final String STR_SAND         = Messages.get("GroundType.str-sand");        //$NON-NLS-1$
+	private static final String STR_WATER        = Messages.get("GroundType.str-water");       //$NON-NLS-1$
+	private static final String STR_WATER_DEEP   = Messages.get("GroundType.str-water-deep");  //$NON-NLS-1$
 	private static final String STR_NOT_EXPLORED = Messages.get("GroundType.str-not-explred"); //$NON-NLS-1$
-	private static final String NOT_ADD_HILLS    = Messages.get("GroundType.not-add-hill"); //$NON-NLS-1$
-	private static final String NOT_ADD_DEEP     = Messages.get("GroundType.not-add-deep"); //$NON-NLS-1$
-	private static final String NOT_ADD_NORMAL   = Messages.get("GroundType.not-add-normal"); //$NON-NLS-1$
+	private static final String NOT_ADD_HILLS    = Messages.get("GroundType.not-add-hill");    //$NON-NLS-1$
+	private static final String NOT_ADD_DEEP     = Messages.get("GroundType.not-add-deep");    //$NON-NLS-1$
+	private static final String NOT_ADD_NORMAL   = Messages.get("GroundType.not-add-normal");  //$NON-NLS-1$
 	
 	private static final GroundType[] VALS = values();
 	
@@ -83,6 +83,7 @@ public enum GroundType implements ImageableObj {
 	 * returns the ground type of the given ordinal
 	 * 
 	 * @param ordinal the ordinal value
+	 * 
 	 * @return the ground type with the given ordinal
 	 */
 	public static GroundType of(int ordinal) {
@@ -102,11 +103,11 @@ public enum GroundType implements ImageableObj {
 	
 	/** {@inheritDoc} */
 	@Override
-	public BufferedImage resource() { return this.resource; }
+	public BufferedImage image() { return this.resource; }
 	
 	/** {@inheritDoc} */
 	@Override
-	public void resource(BufferedImage nval) { this.resource = nval; }
+	public void image(BufferedImage nval) { this.resource = nval; }
 	
 	/**
 	 * returns <code>true</code> if this is a deep tile
@@ -272,24 +273,31 @@ public enum GroundType implements ImageableObj {
 	 * <ul>
 	 * <li>if this ground is deep ({@link #isDeep()}), the non deep version will be returned</li>
 	 * <li>if this ground has hills ({@link #isHill()}), the version without hills will be returned ({@link #isFlat()})</li>
-	 * <li>if <code>fail</code> is <code>false</code> and this ground does not support normal or is already normal no action is taken and this ground is
-	 * returned</li>
-	 * <li>if <code>fail</code> is <code>true</code> and this ground does not support normal or is already normal an {@link IllegalStateException} is thrown</li>
+	 * <li>if <code>failIfAlreadyNormal</code> is <code>false</code> and this ground is already normal no action is taken and this ground is returned</li>
+	 * <li>if <code>failIfAlreadyNormal</code> is <code>true</code> and this ground is already normal an {@link IllegalStateException} is thrown</li>
+	 * <li>if <code>failIfNoNormal</code> is <code>false</code> and this ground does not support normal no action is taken and this ground is returned</li>
+	 * <li>if <code>failIfNoNormal</code> is <code>true</code> and this ground does not support normal an {@link IllegalStateException} is thrown</li>
 	 * </ul>
 	 * 
-	 * @param fail if this operation should fail if the ground is already normalized
+	 * @param failIfAlreadyNormal if this operation should fail if the ground is already normalized
+	 * @param failIfNoNormal      if this operation should fail if the ground does not have a normal version
+	 * 
 	 * @return the normalized type
 	 */
-	public GroundType addNormal(boolean fail) {
+	public GroundType addNormal(boolean failIfAlreadyNormal, boolean failIfNoNormal) {
 		return switch (this) {
 		case WATER_DEEP -> WATER_NORMAL;
 		case FOREST_HILL -> FOREST;
 		case GRASS_HILL -> GRASS;
 		case SAND_HILL -> SAND;
 		case SWAMP_HILL -> SWAMP;
-		case NOT_EXPLORED, FOREST, MOUNTAIN, SAND, SWAMP, WATER_NORMAL, GRASS -> {
-			if (fail) throw new IllegalStateException(NOT_ADD_NORMAL + name() + ")"); //$NON-NLS-1$
-			else yield this;
+		case FOREST, MOUNTAIN, SAND, SWAMP, WATER_NORMAL, GRASS -> {
+			if (failIfAlreadyNormal) throw new IllegalStateException(NOT_ADD_NORMAL + toString() + ")"); //$NON-NLS-1$
+			yield this;
+		}
+		case NOT_EXPLORED -> {
+			if (failIfNoNormal) throw new IllegalStateException(NOT_ADD_NORMAL + toString() + ")"); //$NON-NLS-1$
+			yield this;
 		}
 		};
 	}
@@ -297,21 +305,29 @@ public enum GroundType implements ImageableObj {
 	/**
 	 * returns the {@link #isDeep() deep} version of this ground
 	 * <ul>
-	 * <li>if <code>fail</code> is <code>false</code> and this ground does not support {@link #isDeep() deep} or is already {@link #isDeep() deep} no action is taken
-	 * and this ground is returned</li>
-	 * <li>if <code>fail</code> is <code>true</code> and this ground does not support {@link #isDeep() deep} or is already {@link #isDeep() deep} an
-	 * {@link IllegalStateException} is thrown</li>
+	 * <li>if <code>failAlreadyDeep</code> is <code>false</code> and this ground is already {@link #isDeep() deep} no action is taken and this ground is
+	 * returned</li>
+	 * <li>if <code>failAlreadyDeep</code> is <code>true</code> and this ground is already {@link #isDeep() deep} an {@link IllegalStateException} is thrown</li>
+	 * <li>if <code>failNoDeep</code> is <code>false</code> and this ground does not support {@link #isDeep() deep} no action is taken and this ground is
+	 * returned</li>
+	 * <li>if <code>failNoDeep</code> is <code>true</code> and this ground does not support {@link #isDeep() deep} an {@link IllegalStateException} is thrown</li>
 	 * </ul>
 	 * 
-	 * @param fail if this operation should fail if the ground is already normalized
+	 * @param failAlreadyDeep if this operation should fail if the ground is already deep
+	 * @param failNoDeep      if this operation should fail if the ground has no deep version
+	 * 
 	 * @return the normalized type
 	 */
-	public GroundType addDeep(boolean fail) {
+	public GroundType addDeep(boolean failAlreadyDeep, boolean failNoDeep) {
 		return switch (this) {
 		case WATER_NORMAL -> WATER_DEEP;
-		case GRASS, FOREST, SWAMP, FOREST_HILL, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND_HILL, SWAMP_HILL, WATER_DEEP, SAND -> {
-			if (fail) throw new IllegalStateException(NOT_ADD_DEEP + name() + ")"); //$NON-NLS-1$
-			else yield this;
+		case WATER_DEEP -> {
+			if (failAlreadyDeep) throw new IllegalStateException(NOT_ADD_DEEP + toString() + ")"); //$NON-NLS-1$
+			yield this;
+		}
+		case GRASS, FOREST, SWAMP, FOREST_HILL, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND_HILL, SWAMP_HILL, SAND -> {
+			if (failNoDeep) throw new IllegalStateException(NOT_ADD_DEEP + toString() + ")"); //$NON-NLS-1$
+			yield this;
 		}
 		};
 	}
@@ -319,24 +335,32 @@ public enum GroundType implements ImageableObj {
 	/**
 	 * returns the {@link #isHill() hill} version of this ground
 	 * <ul>
-	 * <li>if <code>fail</code> is <code>false</code> and this ground does not support {@link #isHill() hill} or is already {@link #isHill() hill} no action is taken
-	 * and this ground is returned</li>
-	 * <li>if <code>fail</code> is <code>true</code> and this ground does not support {@link #isHill() hill} or is already {@link #isHill() hill} an
-	 * {@link IllegalStateException} is thrown</li>
+	 * <li>if <code>failAlreadyHill</code> is <code>false</code> and this ground is already {@link #isHill() hill} no action is taken and this ground is
+	 * returned</li>
+	 * <li>if <code>failAlreadyHill</code> is <code>true</code> and this ground is already {@link #isHill() hill} an {@link IllegalStateException} is thrown</li>
+	 * <li>if <code>failNoHill</code> is <code>false</code> and this ground does not support {@link #isHill() hill} no action is taken and this ground is
+	 * returned</li>
+	 * <li>if <code>failNoHill</code> is <code>true</code> and this ground does not support {@link #isHill() hill} an {@link IllegalStateException} is thrown</li>
 	 * </ul>
 	 * 
-	 * @param fail if this operation should fail if the ground is already normalized
+	 * @param failAlreadyHill if this operation should fail if the ground is already with {@link #isHill() hills}
+	 * @param failNoHill      if this operation should fail if the ground has no {@link #isHill() hill} version
+	 * 
 	 * @return the normalized type
 	 */
-	public GroundType addHill(boolean fail) {
+	public GroundType addHill(boolean failAlreadyHill, boolean failNoHill) {
 		return switch (this) {
 		case SAND -> SAND_HILL;
 		case GRASS -> GRASS_HILL;
 		case FOREST -> FOREST_HILL;
 		case SWAMP -> SWAMP_HILL;
-		case FOREST_HILL, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND_HILL, SWAMP_HILL, WATER_DEEP, WATER_NORMAL -> {
-			if (fail) throw new IllegalStateException(NOT_ADD_HILLS + name() + ")"); //$NON-NLS-1$
-			else yield this;
+		case FOREST_HILL, GRASS_HILL, SAND_HILL, SWAMP_HILL -> {
+			if (failAlreadyHill) throw new IllegalStateException(NOT_ADD_HILLS + toString() + ")"); //$NON-NLS-1$
+			yield this;
+		}
+		case MOUNTAIN, NOT_EXPLORED, WATER_DEEP, WATER_NORMAL -> {
+			if (failNoHill) throw new IllegalStateException(NOT_ADD_HILLS + toString() + ")"); //$NON-NLS-1$
+			yield this;
 		}
 		};
 	}
