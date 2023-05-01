@@ -1,21 +1,21 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
 
 /**
@@ -25,8 +25,9 @@ import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
  * 
  * @author Patrick Hechler
  *
- * @uses SquareConquererAddon the {@link SquareConquererAddon} class should be used to add stuff to the game
- * @provides SquareConquererAddon with the base game addon {@link TheGameAddon}
+ * @uses SCAddon the {@link SCAddon} class should be used to add stuff to the game
+ * 
+ * @provides SCAddon with the base game addon {@link TheGameAddon}
  */
 module de.hechler.patrick.games.squareconqerer {
 	
@@ -35,6 +36,7 @@ module de.hechler.patrick.games.squareconqerer {
 	
 	exports de.hechler.patrick.games.squareconqerer;
 	exports de.hechler.patrick.games.squareconqerer.addons;
+	exports de.hechler.patrick.games.squareconqerer.addons.defaults;
 	exports de.hechler.patrick.games.squareconqerer.addons.entities;
 	exports de.hechler.patrick.games.squareconqerer.addons.pages;
 	exports de.hechler.patrick.games.squareconqerer.connect;
@@ -52,8 +54,8 @@ module de.hechler.patrick.games.squareconqerer {
 	exports de.hechler.patrick.games.squareconqerer.world.tile;
 	exports de.hechler.patrick.games.squareconqerer.world.turn;
 	
-	uses SquareConquererAddon;
+	uses SCAddon;
 	
-	provides SquareConquererAddon with TheGameAddon;
+	provides SCAddon with TheGameAddon;
 	
 }

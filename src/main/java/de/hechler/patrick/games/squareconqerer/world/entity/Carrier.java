@@ -17,7 +17,7 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.User;
-import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
 public final class Carrier extends UnitImpl {
@@ -25,9 +25,9 @@ public final class Carrier extends UnitImpl {
 	public static final String NAME   = "Carrier";
 	public static final int    NUMBER = 0x925D9B86;
 	
-	private static final int MAX_LIVES  = 3;
-	private static final int VIEW_RANGE = 4;
-	private static final int MAX_CARRY  = 5;
+	public static final int MAX_LIVES  = 3;
+	public static final int VIEW_RANGE = 4;
+	public static final int MAX_CARRY  = 5;
 	
 	private static final int ORIDINAL_BASE_VALUE = 1;
 	private static int       oridinal;
@@ -53,7 +53,7 @@ public final class Carrier extends UnitImpl {
 	@Override
 	public int ordinal() {
 		if (oridinal == 0) {
-			oridinal = ORIDINAL_BASE_VALUE + SquareConquererAddon.theGame().oridinalOffsetUnit();
+			oridinal = ORIDINAL_BASE_VALUE + SCAddon.theGame().oridinalOffsetUnit();
 		}
 		return oridinal;
 	}

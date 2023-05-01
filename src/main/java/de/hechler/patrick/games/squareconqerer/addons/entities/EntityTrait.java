@@ -16,6 +16,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons.entities;
 
+import java.util.Map;
 
 /**
  * this interface is used to represent a single trait/ability of an entity
@@ -24,10 +25,27 @@ package de.hechler.patrick.games.squareconqerer.addons.entities;
  */
 public sealed interface EntityTrait {
 	
+	static final String TRAIT_LIVES      = "lives";
+	static final String TRAIT_MAX_LIVES  = "max lives";
+	static final String TRAIT_VIEW_RANGE = "view range";
+	
+	static int intValue(Map<String, EntityTraitWithVal> traits, String name) {
+		return ((EntityTraitWithVal.NumberTrait) traits.get(name)).value();
+	}
+	
+	@SuppressWarnings("unchecked")
+	static <T extends Enum<T>> T enumValue(Map<String, EntityTraitWithVal> traits, String name) {
+		return ((EntityTraitWithVal.EnumTrait<T>) traits.get(name)).value();
+	}
+	
+	static boolean booleanValue(Map<String, EntityTraitWithVal> traits, String name) {
+		return ((EntityTraitWithVal.BooleanTrait) traits.get(name)).value();
+	}
+	
 	/**
-	 * returns the name of the trait
+	 * returns the localized name of the trait
 	 * 
-	 * @return the name of the trait
+	 * @return the localized name of the trait
 	 */
 	String name();
 	
@@ -43,6 +61,10 @@ public sealed interface EntityTrait {
 	 * for example something like max lives for example
 	 */
 	public record NumberTrait(String name, int minValue, int maxValue, int defaultIntValue) implements EntityTrait {
+		
+		public NumberTrait(String name, int constValue) {
+			this(name, constValue, constValue, constValue);
+		}
 		
 		public NumberTrait {
 			if (name == null) throw new NullPointerException("name is null");

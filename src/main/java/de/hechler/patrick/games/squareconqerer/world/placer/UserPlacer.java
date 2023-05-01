@@ -14,7 +14,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.squareconqerer.world.stuff;
+package de.hechler.patrick.games.squareconqerer.world.placer;
 
 
 import java.io.IOException;
@@ -32,7 +32,9 @@ import de.hechler.patrick.games.squareconqerer.world.World;
 public interface UserPlacer {
 	
 	/**
-	 * Initialize the given world
+	 * Initialize the given world with the users and random
+	 * <p>
+	 * the users array is already in randomly reordered
 	 * 
 	 * @param world the world to initialize
 	 * @param usrs  all users to be placed placed in a random order
@@ -54,7 +56,6 @@ public interface UserPlacer {
 	/*
 	 * note that also the static readPlacer method needs to be implemented signature:
 	 * public static UserPlacer readPlacer(Connection) throws IOException
-	 * 
 	 * the readPlacer is the reverse method of the writePlacer method
 	 */
 	

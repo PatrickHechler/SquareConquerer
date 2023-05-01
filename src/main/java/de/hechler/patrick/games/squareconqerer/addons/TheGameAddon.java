@@ -1,35 +1,44 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons;
 
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import de.hechler.patrick.games.squareconqerer.addons.defaults.AddonDefaults;
 import de.hechler.patrick.games.squareconqerer.addons.entities.AddonEntities;
+import de.hechler.patrick.games.squareconqerer.addons.entities.EntityTrait;
+import de.hechler.patrick.games.squareconqerer.addons.entities.EntityTraitWithVal;
 import de.hechler.patrick.games.squareconqerer.addons.entities.TheGameEntities;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCLicense;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.world.PageWorld;
+import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
+import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
 
-public final class TheGameAddon extends SquareConquererAddon {
+public final class TheGameAddon extends SCAddon implements AddonDefaults {
 	
 	public static final int THE_GAME    = 0xE5664F22;
 	public static final int OTHER_ADDON = 0x2DC4071A;
@@ -37,7 +46,7 @@ public final class TheGameAddon extends SquareConquererAddon {
 	private final TheGameEntities entities = new TheGameEntities();
 	
 	public TheGameAddon() {
-		super(SquareConquererAddon.GAME_ADDON_NAME);
+		super(SCAddon.GAME_ADDON_NAME);
 	}
 	
 	private SCLicense myLicense;
@@ -88,8 +97,7 @@ public final class TheGameAddon extends SquareConquererAddon {
 				), //
 				new SCPageBlock.EntryBlock(//
 						new SCPageEntry.TextEntry("\tYou found a bug, please report it: "), //
-						new SCPageEntry.LinkEntry("bug Issues",
-								"https://github.com/PatrickHechler/SquareConquerer/issues?q=is%3Aissue+is%3Aopen+label%3Abug")//
+						new SCPageEntry.LinkEntry("bug Issues", "https://github.com/PatrickHechler/SquareConquerer/issues?q=is%3Aissue+is%3Aopen+label%3Abug")//
 				), //
 				new SCPageBlock.SeperatingBlock(true), //
 				new SCPageBlock.EntryBlock(//
@@ -145,6 +153,31 @@ public final class TheGameAddon extends SquareConquererAddon {
 	@Override
 	public AddonEntities entities() {
 		return this.entities;
+	}
+	
+	@Override
+	public AddonDefaults defaults() {
+		return this;
+	}
+	
+	@Override
+	public Map<String, Collection<Map<String, EntityTraitWithVal>>> startEntities() {
+		Map<String, Collection<Map<String, EntityTraitWithVal>>> result = new HashMap<>();
+		Map<String, EntityTrait>                                 orig   = this.entities.traits(StoreBuild.NAME);
+		Map<String, EntityTraitWithVal>                          wv     = useDefaults(orig);
+		result.put(StoreBuild.NAME, List.of(wv));
+		orig = this.entities.traits(Carrier.NAME);
+		wv   = useDefaults(orig);
+		result.put(Carrier.NAME, List.of(wv));
+		return result;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private static Map<String, EntityTraitWithVal> useDefaults(Map<String, EntityTrait> store) {
+		Map<String, EntityTraitWithVal> wv = new HashMap<>();
+		((Map<String, EntityTrait>) (Map<String, ?>) wv).putAll(store);
+		((Map<String, Object>) (Map<String, ?>) wv).replaceAll((n, et) -> ((EntityTrait) et).defaultValue());
+		return wv;
 	}
 	
 }

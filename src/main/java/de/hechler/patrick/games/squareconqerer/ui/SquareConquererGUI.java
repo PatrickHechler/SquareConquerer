@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.ui;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
@@ -104,7 +104,7 @@ import javax.swing.text.PlainDocument;
 import de.hechler.patrick.games.squareconqerer.Settings;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
-import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCLicense;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
@@ -166,7 +166,7 @@ public class SquareConquererGUI {
 			JOptionPane.showMessageDialog(this.frame, "finishd loading, the loaded world is in remote mode", "load", JOptionPane.INFORMATION_MESSAGE);
 		} else if (this.world != null) {
 			JOptionPane.showMessageDialog(this.frame, "finishd loading, the loaded world is of type: " + this.world.getClass().getSimpleName(), "load",
-				JOptionPane.INFORMATION_MESSAGE);
+					JOptionPane.INFORMATION_MESSAGE);
 		} else {
 			JOptionPane.showMessageDialog(this.frame, "could not load for some reason", "load failed", JOptionPane.ERROR_MESSAGE);
 		}
@@ -175,7 +175,7 @@ public class SquareConquererGUI {
 	private final Runnable buildFinishHook = () -> {
 		if (this.world instanceof RootWorld.Builder) {
 			JOptionPane.showMessageDialog(this.frame, "the converting to a build mode world is now completed", "converted to build",
-				JOptionPane.INFORMATION_MESSAGE);
+					JOptionPane.INFORMATION_MESSAGE);
 		} else {
 			JOptionPane.showMessageDialog(this.frame, "the world build operation is now completed", "finished build", JOptionPane.INFORMATION_MESSAGE);
 		}
@@ -217,7 +217,7 @@ public class SquareConquererGUI {
 			public void windowClosing(WindowEvent e) {
 				if (SquareConquererGUI.this.source != null) {
 					int chosen = JOptionPane.showConfirmDialog(SquareConquererGUI.this.frame, "Close Square Conquerer History?", "Close", JOptionPane.YES_NO_OPTION,
-						JOptionPane.QUESTION_MESSAGE);
+							JOptionPane.QUESTION_MESSAGE);
 					if (chosen == JOptionPane.YES_OPTION) {
 						if (SquareConquererGUI.this.logView == SquareConquererGUI.this) {
 							SquareConquererGUI.this.logView = null;
@@ -226,7 +226,7 @@ public class SquareConquererGUI {
 					}
 				} else {
 					int chosen = JOptionPane.showConfirmDialog(SquareConquererGUI.this.frame, "Exit Square Conquerer?", "Exit", JOptionPane.YES_NO_OPTION,
-						JOptionPane.QUESTION_MESSAGE);
+							JOptionPane.QUESTION_MESSAGE);
 					if (chosen == JOptionPane.YES_OPTION) {
 						System.exit(0);
 					}
@@ -256,8 +256,8 @@ public class SquareConquererGUI {
 	
 	private JMenu menuLicense() {
 		JMenu licenseMenu = new JMenu("License");
-		addLicense(licenseMenu, SquareConquererAddon.theGame().license(), SquareConquererAddon.GAME_ADDON_NAME);
-		for (SquareConquererAddon addon : SquareConquererAddon.onlyAddons()) {
+		addLicense(licenseMenu, SCAddon.theGame().license(), SCAddon.GAME_ADDON_NAME);
+		for (SCAddon addon : SCAddon.onlyAddons()) {
 			addLicense(licenseMenu, addon.license(), "Addon: " + addon.name);
 		}
 		return licenseMenu;
@@ -279,10 +279,10 @@ public class SquareConquererGUI {
 	
 	private JMenu menuCredits() {
 		JMenu creditsMenu = new JMenu("Credits");
-		if (!SquareConquererAddon.onlyAddons().isEmpty()) {
+		if (!SCAddon.onlyAddons().isEmpty()) {
 			List<SCPageBlock> blocks = new ArrayList<>();
-			blocks.addAll(SquareConquererAddon.theGame().credits().blocks());
-			for (SquareConquererAddon addon : SquareConquererAddon.onlyAddons()) {
+			blocks.addAll(SCAddon.theGame().credits().blocks());
+			for (SCAddon addon : SCAddon.onlyAddons()) {
 				blocks.add(new SCPageBlock.SeperatingBlock(true));
 				blocks.addAll(addon.credits().blocks());
 			}
@@ -290,10 +290,9 @@ public class SquareConquererGUI {
 			addWorldPage(creditsMenu, page, "All Credits (World)", "All Credits World");
 			addPage(creditsMenu, page, "All Credits (Boring)", "Credits: ");
 		}
-		addWorldPage(creditsMenu, SquareConquererAddon.theGame().credits(), SquareConquererAddon.GAME_ADDON_NAME + " (World)",
-			SquareConquererAddon.GAME_ADDON_NAME + " (Credits World)");
-		addPage(creditsMenu, SquareConquererAddon.theGame().credits(), SquareConquererAddon.GAME_ADDON_NAME + " (Boring)", "Credits: ");
-		for (SquareConquererAddon addon : SquareConquererAddon.onlyAddons()) {
+		addWorldPage(creditsMenu, SCAddon.theGame().credits(), SCAddon.GAME_ADDON_NAME + " (World)", SCAddon.GAME_ADDON_NAME + " (Credits World)");
+		addPage(creditsMenu, SCAddon.theGame().credits(), SCAddon.GAME_ADDON_NAME + " (Boring)", "Credits: ");
+		for (SCAddon addon : SCAddon.onlyAddons()) {
 			addWorldPage(creditsMenu, addon.credits(), "Addon: " + addon.name + " (World)", "Addon: " + addon.name + " (Credits World)");
 			addPage(creditsMenu, addon.credits(), "Addon: " + addon.name + " (Boring)", "Credits: ");
 		}
@@ -302,10 +301,10 @@ public class SquareConquererGUI {
 	
 	private JMenu menuHelp() {
 		JMenu helpMenu = new JMenu("Help");
-		if (!SquareConquererAddon.onlyAddons().isEmpty()) {
+		if (!SCAddon.onlyAddons().isEmpty()) {
 			List<SCPageBlock> blocks = new ArrayList<>();
-			blocks.addAll(SquareConquererAddon.theGame().help().blocks());
-			for (SquareConquererAddon addon : SquareConquererAddon.onlyAddons()) {
+			blocks.addAll(SCAddon.theGame().help().blocks());
+			for (SCAddon addon : SCAddon.onlyAddons()) {
 				blocks.add(new SCPageBlock.SeperatingBlock(true));
 				blocks.addAll(addon.help().blocks());
 			}
@@ -313,10 +312,9 @@ public class SquareConquererGUI {
 			addWorldPage(helpMenu, page, "All Helps (World)", "All Helps World");
 			addPage(helpMenu, page, "All Help Pages", "Help: ");
 		}
-		addWorldPage(helpMenu, SquareConquererAddon.theGame().help(), SquareConquererAddon.GAME_ADDON_NAME + " (World)",
-			SquareConquererAddon.GAME_ADDON_NAME + " (Help World)");
-		addPage(helpMenu, SquareConquererAddon.theGame().help(), SquareConquererAddon.GAME_ADDON_NAME, "Help: ");
-		for (SquareConquererAddon addon : SquareConquererAddon.onlyAddons()) {
+		addWorldPage(helpMenu, SCAddon.theGame().help(), SCAddon.GAME_ADDON_NAME + " (World)", SCAddon.GAME_ADDON_NAME + " (Help World)");
+		addPage(helpMenu, SCAddon.theGame().help(), SCAddon.GAME_ADDON_NAME, "Help: ");
+		for (SCAddon addon : SCAddon.onlyAddons()) {
 			addWorldPage(helpMenu, addon.help(), "Addon: " + addon.name + " (World)", "Addon: " + addon.name + " (Help World)");
 			addPage(helpMenu, addon.help(), "Addon: " + addon.name, "Help: ");
 		}
@@ -327,7 +325,7 @@ public class SquareConquererGUI {
 		JMenuItem item = new JMenuItem(addonName);
 		item.addActionListener(e -> {
 			int chosen = JOptionPane.showConfirmDialog(this.frame, "load " + title + "? (your current world will be discarded)", "load page world",
-				JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (chosen != JOptionPane.YES_OPTION) return;
 			PageWorld pw = new PageWorld(page);
 			if (this.world instanceof RemoteWorld rw) {
@@ -336,7 +334,7 @@ public class SquareConquererGUI {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 					JOptionPane.showMessageDialog(this.frame, "error wile closing remote world: " + e1.toString() + " (I will continue anyway)",
-						"error on close (ignored)", JOptionPane.ERROR_MESSAGE);
+							"error on close (ignored)", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			Thread st = this.serverThread;
@@ -448,8 +446,8 @@ public class SquareConquererGUI {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				int chosen = JOptionPane.showConfirmDialog(dialog,
-					"load world " + we.worldName() + '?' + (SquareConquererGUI.this.world == null ? "" : " current world will be discarded!"),
-					"load " + we.worldName() + '?', JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+						"load world " + we.worldName() + '?' + (SquareConquererGUI.this.world == null ? "" : " current world will be discarded!"),
+						"load " + we.worldName() + '?', JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 				if (chosen != JOptionPane.YES_OPTION) return;
 				World w = we.world().get();
 				if (w == null) {
@@ -462,7 +460,7 @@ public class SquareConquererGUI {
 					} catch (IOException e1) {
 						e1.printStackTrace();
 						JOptionPane.showMessageDialog(dialog, "error: while closing remote world: " + e1.toString() + " (I will continue anyway)",
-							e1.getClass().toString(), JOptionPane.ERROR_MESSAGE);
+								e1.getClass().toString(), JOptionPane.ERROR_MESSAGE);
 					}
 				}
 				Thread st = SquareConquererGUI.this.serverThread;
@@ -543,7 +541,7 @@ public class SquareConquererGUI {
 					Desktop.getDesktop().browse(uri);
 				} catch (IOException | RuntimeException e1) {
 					JOptionPane.showMessageDialog(dialog, "error while opening link '" + le.link() + "': " + e1.toString(), "could not open the link",
-						JOptionPane.ERROR_MESSAGE);
+							JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			
@@ -597,8 +595,8 @@ public class SquareConquererGUI {
 		toBuild.setToolTipText("convert this world to a build world");
 		toBuild.addActionListener(e -> {
 			int chosen = JOptionPane.showConfirmDialog(this.frame,
-				"convert to a build world?" + (this.world instanceof RemoteWorld || this.serverThread != null ? " (this will close the server connection)" : ""),
-				"to build world", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					"convert to a build world?" + (this.world instanceof RemoteWorld || this.serverThread != null ? " (this will close the server connection)" : ""),
+					"to build world", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (chosen != JOptionPane.YES_OPTION) { return; }
 			Thread st = this.serverThread;
 			if (st != null) {
@@ -617,7 +615,7 @@ public class SquareConquererGUI {
 					rw.close();
 				} catch (IOException e1) {
 					JOptionPane.showMessageDialog(this.frame, "error while closing remote world (do not retry, I will proceed anyway): " + e1.toString(),
-						"error: " + e.getClass(), JOptionPane.ERROR_MESSAGE);
+							"error: " + e.getClass(), JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			oldUsr.close();
@@ -631,11 +629,11 @@ public class SquareConquererGUI {
 	private void addFillRandomMenuItems(JMenu buildMenu) {
 		JMenuItem fillRandom = new JMenuItem("fill with random tiles");
 		fillRandom.setToolTipText("<html>replace all tiles with type not-explored with random tiles<br>"
-			+ "note that then also not-explored tiles with a resource set may get their resource replaced<br>"
-			+ "the world builder may use rules, which change the possibility for some tiles (such as ocean tiles can only be placed near other water tiles)</html>");
+				+ "note that then also not-explored tiles with a resource set may get their resource replaced<br>"
+				+ "the world builder may use rules, which change the possibility for some tiles (such as ocean tiles can only be placed near other water tiles)</html>");
 		fillRandom.addActionListener(e -> {
-			int chosen =
-				JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			int chosen = JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION,
+					JOptionPane.QUESTION_MESSAGE);
 			if (chosen != JOptionPane.YES_OPTION) { return; }
 			((RootWorld.Builder) this.world).fillRandom();
 			threadStart(() -> update(null));
@@ -644,10 +642,10 @@ public class SquareConquererGUI {
 		buildMenu.add(fillRandom);
 		JMenuItem fillTotallyRandom = new JMenuItem("fill with totally random tiles");
 		fillTotallyRandom.setToolTipText("<html>replace all tiles with type not-explored with random tiles<br>"
-			+ "note that then also not-explred tiles with a resource set may get their resource replaced</html>");
+				+ "note that then also not-explred tiles with a resource set may get their resource replaced</html>");
 		fillTotallyRandom.addActionListener(e -> {
-			int chosen =
-				JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			int chosen = JOptionPane.showConfirmDialog(this.frame, "fill all not-exlpored tiles", "fill random", JOptionPane.YES_NO_OPTION,
+					JOptionPane.QUESTION_MESSAGE);
 			if (chosen != JOptionPane.YES_OPTION) { return; }
 			((RootWorld.Builder) this.world).fillTotallyRandom();
 			JOptionPane.showMessageDialog(this.frame, "filled with random tiles world", "filled world", JOptionPane.INFORMATION_MESSAGE);
@@ -782,7 +780,7 @@ public class SquareConquererGUI {
 					return;
 				}
 				int c = JOptionPane.showConfirmDialog(combo, "send '" + conn.usr.name() + "' the game history?", "validate?", JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE);
+						JOptionPane.QUESTION_MESSAGE);
 				if (c != JOptionPane.YES_OPTION) return;
 				try {
 					conn.blocked(() -> ((RootWorld) this.world).validateGame(conn));
@@ -795,14 +793,14 @@ public class SquareConquererGUI {
 		
 		sendUsersItem.addActionListener(e -> {
 			int c = JOptionPane.showConfirmDialog(this.frame, "send all connected users the game history?", "validate?", JOptionPane.YES_NO_OPTION,
-				JOptionPane.QUESTION_MESSAGE);
+					JOptionPane.QUESTION_MESSAGE);
 			if (c != JOptionPane.YES_OPTION) return;
 			for (Connection conn : this.connects.values()) {
 				try {
 					conn.blocked(() -> ((RootWorld) this.world).validateGame(conn));
 				} catch (IOException e2) {
 					JOptionPane.showMessageDialog(this.frame, "the validation failed for the user (" + conn.usr.name() + "): " + e2.toString(),
-						"error: could not validate", JOptionPane.ERROR_MESSAGE);
+							"error: could not validate", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
@@ -842,7 +840,7 @@ public class SquareConquererGUI {
 			change.addActionListener(oe -> {
 				String name   = combo.getSelectedItem().toString();
 				int    chosen = JOptionPane.showConfirmDialog(dialog, "change the password of '" + name + "'?", "change password", JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE);
+						JOptionPane.QUESTION_MESSAGE);
 				if (chosen != JOptionPane.YES_OPTION) { return; }
 				root.changePW(root.get(name), pw.getPassword());
 				dialog.dispose();
@@ -928,14 +926,14 @@ public class SquareConquererGUI {
 			
 			delBtn.addActionListener(oe -> {
 				String name   = combo.getSelectedItem().toString();
-				int    chosen =
-					JOptionPane.showConfirmDialog(dialog, "DELETE '" + name + "'?", "DELETE USER", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+				int    chosen = JOptionPane.showConfirmDialog(dialog, "DELETE '" + name + "'?", "DELETE USER", JOptionPane.YES_NO_OPTION,
+						JOptionPane.QUESTION_MESSAGE);
 				if (chosen != JOptionPane.YES_OPTION) { return; }
 				
 				threadStart(() -> {
 					root.remove(root.get(name));
 					SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.frame, "the user '" + name + "' was successfully deleted", "user DELETED",
-						JOptionPane.INFORMATION_MESSAGE));
+							JOptionPane.INFORMATION_MESSAGE));
 				});
 			});
 			
@@ -1037,8 +1035,8 @@ public class SquareConquererGUI {
 			
 			JCheckBox serverPWCB = new JCheckBox("Server Password");
 			serverPWCB.setToolTipText(
-				"<html>a server password lets remote users create accounts themself<br>" + "It is then no longer needed to add all users manually,<br>"
-					+ "but everyone with the server password can create an infinit amount of users</html>");
+					"<html>a server password lets remote users create accounts themself<br>" + "It is then no longer needed to add all users manually,<br>"
+							+ "but everyone with the server password can create an infinit amount of users</html>");
 			dp.add(serverPWCB);
 			JPasswordField serverPWPF = new JPasswordField(16);
 			dp.add(serverPWPF);
@@ -1060,16 +1058,21 @@ public class SquareConquererGUI {
 												try {
 													RootWorld rw = (RootWorld) this.world;
 													Connection.ServerAccept.accept(ss, rw, (conn, sok) -> threadStart(() -> {
-																			InetAddress addr = sok.getInetAddress();
 																			String name = conn.usr.name();
-																			JOptionPane.showMessageDialog(this.frame, "'" + name + "' logged in from " + addr,
-																				"remote log in", JOptionPane.INFORMATION_MESSAGE);
+																			if (sok == null) {
+																				JOptionPane.showMessageDialog(this.frame, "'" + name + "' disconnected",
+																						"remote log in", JOptionPane.INFORMATION_MESSAGE);
+																			} else {
+																				InetAddress addr = sok.getInetAddress();
+																				JOptionPane.showMessageDialog(this.frame, "'" + name + "' logged in from " + addr,
+																						"remote log in", JOptionPane.INFORMATION_MESSAGE);
+																			}
 																		}),
-														hm, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
+															hm, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
 												} catch (IOException err) {
 													if (err instanceof ClosedByInterruptException || Thread.interrupted()) { return; }
 													JOptionPane.showMessageDialog(this.frame, "error: " + err.getMessage(), err.getClass().getSimpleName(),
-														JOptionPane.ERROR_MESSAGE);
+															JOptionPane.ERROR_MESSAGE);
 												} finally {
 													synchronized (SquareConquererGUI.this) {
 														if (this.connects == hm) {
@@ -1215,12 +1218,12 @@ public class SquareConquererGUI {
 		if (!(this.world instanceof RootWorld)) {
 			if (saveAll) {
 				JOptionPane.showMessageDialog(this.frame, "the save everything buton should not exist, only root worlds can save everything", "ERROR",
-					JOptionPane.ERROR_MESSAGE);
+						JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 			int choosen = JOptionPane.showConfirmDialog(this.frame,
-				"the world is no root world, it may not contain the full information and thus there may be unexplred tiles", "save non root world",
-				JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+					"the world is no root world, it may not contain the full information and thus there may be unexplred tiles", "save non root world",
+					JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (choosen != JOptionPane.YES_OPTION) { return; }
 		}
 		int result = fc.showSaveDialog(this.frame);
@@ -1228,7 +1231,7 @@ public class SquareConquererGUI {
 			File file = fc.getSelectedFile();
 			if (file.exists()) {
 				int chosen = JOptionPane.showConfirmDialog(this.frame, "overwrite '" + file + "'?", "overwrite file", JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE);
+						JOptionPane.QUESTION_MESSAGE);
 				if (chosen != JOptionPane.YES_OPTION) { return; }
 			}
 			try {
@@ -1315,7 +1318,7 @@ public class SquareConquererGUI {
 					@Override
 					public void mousePressed(MouseEvent e) {
 						if (SquareConquererGUI.this.world instanceof RootWorld.Builder && SquareConquererGUI.this.myBuildMode != null
-							&& SquareConquererGUI.this.myBuildMode.isActive()) {
+								&& SquareConquererGUI.this.myBuildMode.isActive()) {
 							int mod = e.getModifiersEx();
 							if ((mod & InputEvent.BUTTON1_DOWN_MASK) != 0) {
 								pressed(fx, fy);
@@ -1327,7 +1330,7 @@ public class SquareConquererGUI {
 					public void mouseEntered(MouseEvent e) {
 						btn.requestFocusInWindow(Cause.MOUSE_EVENT);
 						if (SquareConquererGUI.this.world instanceof RootWorld.Builder && SquareConquererGUI.this.myBuildMode != null
-							&& SquareConquererGUI.this.myBuildMode.isActive()) {
+								&& SquareConquererGUI.this.myBuildMode.isActive()) {
 							int mod = e.getModifiersEx();
 							if ((mod & InputEvent.BUTTON1_DOWN_MASK) != 0) {
 								pressed(fx, fy);
@@ -1518,7 +1521,7 @@ public class SquareConquererGUI {
 			@Override
 			public void componentResized(ComponentEvent e) {
 				p.setBounds(0, 0, SquareConquererGUI.this.scrollPane.getWidth(),
-					SquareConquererGUI.this.scrollPane.getHeight() + SquareConquererGUI.this.menu.getHeight());
+						SquareConquererGUI.this.scrollPane.getHeight() + SquareConquererGUI.this.menu.getHeight());
 				setHBLocation(SquareConquererGUI.this.hoveringRigthButton);
 				if (SquareConquererGUI.this.world instanceof RootWorld.Builder || SquareConquererGUI.this.source != null)
 					setHBLocation(SquareConquererGUI.this.hoveringLeftButton);
@@ -1550,8 +1553,8 @@ public class SquareConquererGUI {
 		hoveringButton.addMouseListener(val);
 		hoveringButton.addMouseWheelListener(e -> {
 			if (ignore(hoveringButton, e)) {
-				Component  comp =
-					this.panel.findComponentAt(hoveringButton.getX() + e.getX() - this.panel.getX(), hoveringButton.getY() + e.getY() - this.panel.getY());
+				Component  comp = this.panel.findComponentAt(hoveringButton.getX() + e.getX() - this.panel.getX(),
+						hoveringButton.getY() + e.getY() - this.panel.getY());
 				MouseEvent newE = SwingUtilities.convertMouseEvent(hoveringButton, e, comp);
 				comp.dispatchEvent(newE);
 			}
@@ -1569,7 +1572,8 @@ public class SquareConquererGUI {
 					Component comp = findComp(hoveringButton, e);
 					if (comp instanceof JButton btn) {
 						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(), hoveringButton.getX() + e.getX() - btn.getX(),
-							hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
+								hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(),
+								e.getButton());
 						btn.dispatchEvent(event);
 					}
 				}
@@ -1581,7 +1585,8 @@ public class SquareConquererGUI {
 					Component comp = findComp(hoveringButton, e);
 					if (comp instanceof JButton btn) {
 						MouseEvent event = new MouseEvent(btn, e.getID(), e.getWhen(), e.getModifiersEx(), hoveringButton.getX() + e.getX() - btn.getX(),
-							hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
+								hoveringButton.getY() + e.getY() - btn.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(),
+								e.getButton());
 						btn.dispatchEvent(event);
 					}
 				}
@@ -1596,8 +1601,8 @@ public class SquareConquererGUI {
 					} else if (comp == this.lastbtn) {
 						if (comp == null) return;
 						MouseEvent event = new MouseEvent(comp, e.getID(), e.getWhen(), e.getModifiersEx(), hoveringButton.getX() + e.getX() - comp.getX(),
-							hoveringButton.getY() + e.getY() - comp.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(),
-							e.getButton());
+								hoveringButton.getY() + e.getY() - comp.getY(), e.getXOnScreen(), e.getYOnScreen(), e.getClickCount(), e.isPopupTrigger(),
+								e.getButton());
 						comp.dispatchEvent(event);
 						return;
 					}
@@ -1607,8 +1612,8 @@ public class SquareConquererGUI {
 						this.lastbtn = btn;
 					}
 					MouseEvent event = new MouseEvent(comp, MouseEvent.MOUSE_ENTERED, e.getWhen(), e.getModifiersEx(),
-						hoveringButton.getX() + e.getX() - comp.getX(), hoveringButton.getY() + e.getY() - comp.getY(), e.getXOnScreen(), e.getYOnScreen(),
-						e.getClickCount(), e.isPopupTrigger(), e.getButton());
+							hoveringButton.getX() + e.getX() - comp.getX(), hoveringButton.getY() + e.getY() - comp.getY(), e.getXOnScreen(), e.getYOnScreen(),
+							e.getClickCount(), e.isPopupTrigger(), e.getButton());
 					comp.dispatchEvent(event); // send mouse enter event, so the button displays the correct border
 					// no need to send an mouse leave event (I only let the mouse hover border print
 					comp.requestFocusInWindow(Cause.MOUSE_EVENT);// or non border at all be displayed)
@@ -1824,7 +1829,7 @@ public class SquareConquererGUI {
 			}
 			if (this.connects == null) {
 				JOptionPane.showMessageDialog(this.frame, "you need to start a server and all players need to be connected at game start", "no server started",
-					JOptionPane.ERROR_MESSAGE);
+						JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 			int chosen = JOptionPane.showConfirmDialog(this.frame, "start the game", "START", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
@@ -1848,7 +1853,7 @@ public class SquareConquererGUI {
 					rw.startGame(seed);
 				} catch (IOException e1) {
 					JOptionPane.showMessageDialog(this.frame, "could not get the random value from a client: " + e1.toString(), "start failed",
-						JOptionPane.ERROR_MESSAGE);
+							JOptionPane.ERROR_MESSAGE);
 				} catch (@SuppressWarnings("unused") ConcurrentModificationException err) {
 					JOptionPane.showMessageDialog(this.frame, "accepted/lost a connection during the initilation", "start failed", JOptionPane.ERROR_MESSAGE);
 				}
@@ -1908,7 +1913,7 @@ public class SquareConquererGUI {
 	private volatile Runnable updateFinishHook;
 	
 	private void update(Runnable ufh) {
-		if (this.frame == null) { throw new IllegalStateException("not yet loaded!"); }
+		if (this.frame == null) throw new IllegalStateException("not yet loaded!");
 		Runnable updateFin = this.updateFinishHook;
 		if (ufh != updateFin) {
 			assert ufh == null || updateFin == null;
@@ -1918,9 +1923,9 @@ public class SquareConquererGUI {
 			assert ufh == null;
 			return;
 		}
-		if (ensureNotGUIThread(() -> update(ufh))) { return; }
+		if (ensureNotGUIThread(() -> update(ufh))) return;
 		synchronized (SquareConquererGUI.this) {
-			if (this.updateThread != null) { return; }
+			if (this.updateThread != null) return;
 			this.updateThread = Thread.currentThread();
 		}
 		try {
@@ -1958,7 +1963,7 @@ public class SquareConquererGUI {
 		for (int x = 0; x < xlen; x++) {
 			JButton[] bs = this.btns[x];
 			for (int y = 0; y < ylen; y++) {
-				if (Thread.interrupted()) { return; }
+				if (Thread.interrupted()) return;
 				Tile          t = this.world.tile(x, y);
 				final Icon    i = t.icon(size, size);
 				StringBuilder b = new StringBuilder().append("<html>");
@@ -2010,7 +2015,7 @@ public class SquareConquererGUI {
 			pbtn.addActionListener(e -> showPage(new JDialog(dialog), t.page(), t.pageTitle(), null));
 		}
 		if (this.world instanceof RootWorld.Builder rb) {
-			JComboBox<GroundType>        cbt = new JComboBox<>(GroundType.values());
+			JComboBox<GroundType>      cbt = new JComboBox<>(GroundType.values());
 			JComboBox<OreResourceType> cbr = new JComboBox<>(OreResourceType.values());
 			cbt.setEditable(false);
 			cbr.setEditable(false);
@@ -2029,7 +2034,8 @@ public class SquareConquererGUI {
 			dp.add(new JLabel(t.resource.toString()));
 		}
 		if (!t.visible()) {
-			dp.add(new JLabel("visibiel: currently not visible"));
+			dp.add(new JLabel("visible"));
+			dp.add(new JLabel("currently not visible"));
 		}
 		Building b = t.building();
 		dp.add(new JLabel("Building:"));

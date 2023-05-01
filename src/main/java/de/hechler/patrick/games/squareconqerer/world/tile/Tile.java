@@ -31,15 +31,17 @@ import javax.swing.ImageIcon;
 
 import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
+import de.hechler.patrick.games.squareconqerer.world.PageWorld;
+import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.RootWorld.Builder;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
+import de.hechler.patrick.games.squareconqerer.world.placer.UserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObjs;
-import de.hechler.patrick.games.squareconqerer.world.stuff.UserPlacer;
 import jdk.incubator.concurrent.ScopedValue;
 
 /**
@@ -257,7 +259,7 @@ public sealed class Tile permits RemoteTile {
 	 * 
 	 * @param r the runnable to be run without caller checks on {@link #unit(Unit)}/{@link #build(Building)}
 	 */
-	public void noCheck(Runnable r) {
+	public static void noCheck(Runnable r) {
 		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != RootWorld.class) {
 			throw new IllegalCallerException(ILLEGAL_CALLER + caller);
@@ -273,7 +275,7 @@ public sealed class Tile permits RemoteTile {
 	 * @param r the runnable to be executed with checks
 	 */
 	@SuppressWarnings("removal")
-	public void withCheck(Runnable r) {
+	public static void withCheck(Runnable r) {
 		Boolean f = Boolean.FALSE;
 		if (f.booleanValue()) f = new Boolean(false);
 		ScopedValue.where(NO_CHECK, f, r);
@@ -290,7 +292,7 @@ public sealed class Tile permits RemoteTile {
 	public void unit(Unit unit) {
 		if (!NO_CHECK.isBound() || !NO_CHECK.get().booleanValue()) {
 			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
-			if (caller != UserWorld.class && caller != RootWorld.class && caller != RootWorld.Builder.class) {
+			if (caller != UserWorld.class && caller != RootWorld.class && caller != RemoteWorld.class && caller != RootWorld.Builder.class) {
 				throw new IllegalCallerException(ILLEGAL_CALLER + caller);
 			}
 		}
@@ -306,20 +308,30 @@ public sealed class Tile permits RemoteTile {
 	 * @param build the new building of this tile
 	 */
 	public void build(Building build) {
-		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
-		if (caller != UserWorld.class && caller != RootWorld.class && caller != RootWorld.Builder.class) {
-			throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+		if (!NO_CHECK.isBound() || !NO_CHECK.get().booleanValue()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != UserWorld.class && caller != RootWorld.class && caller != RemoteWorld.class && caller != RootWorld.Builder.class) {
+				throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+			}
 		}
 		this.build = build;
 	}
 	
 	/**
 	 * sets the page of this tile
+	 * <p>
+	 * calling this method from any class other than {@link PageWorld} will result in an {@link IllegalCallerException}
 	 * 
 	 * @param page  the new page
 	 * @param title the pages title
+	 * 
+	 * @throws IllegalCallerException if called from a class other than {@link PageWorld}
 	 */
-	public void page(Supplier<SCPage> page, String title) {
+	public void page(Supplier<SCPage> page, String title) throws IllegalCallerException {
+		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != PageWorld.class) {
+			throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+		}
 		if (page != null && title == null) throw new NullPointerException(PAGE_BUT_NO_TILTLE);
 		if (page == null && title != null) throw new NullPointerException(TILTLE_BUT_NO_PAGE);
 		this.page  = page;
@@ -328,10 +340,20 @@ public sealed class Tile permits RemoteTile {
 	
 	/**
 	 * sets the visibility of this tile
+	 * <p>
+	 * calling this method from any class other than {@link PageWorld} will result in an {@link IllegalCallerException}
 	 * 
 	 * @param visible the new visibility of this tile
+	 * 
+	 * @throws IllegalCallerException if called from a class other than {@link PageWorld}
 	 */
-	public void visible(boolean visible) { this.visible = visible; }
+	public void visible(boolean visible) throws IllegalCallerException {
+		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != UserWorld.class) {
+			throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+		}
+		this.visible = visible;
+	}
 	
 	/** {@inheritDoc} */
 	@Override
@@ -341,7 +363,8 @@ public sealed class Tile permits RemoteTile {
 				.append(", resource=").append(this.resource) //$NON-NLS-1$
 				.append(", visible=").append(this.visible) //$NON-NLS-1$
 				.append(", build=").append(this.build) //$NON-NLS-1$
-				.append(", unit=").append(this.unit).append(']').toString(); //$NON-NLS-1$
+				.append(", unit=").append(this.unit) //$NON-NLS-1$
+				.append(']').toString();
 	}
 	
 }

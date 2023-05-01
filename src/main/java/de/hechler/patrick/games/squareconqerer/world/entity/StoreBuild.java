@@ -17,7 +17,7 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.User;
-import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
 import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
@@ -33,11 +33,14 @@ public final class StoreBuild extends BuildingImpl {
 	private static final int ORIDINAL_BASE_VALUE = 1;
 	private static int       oridinal;
 	
+	public static final int MAX_LIVES  = 5;
+	public static final int VIEW_RANGE = 0;
+
 	private final EnumIntMap<OreResourceType>        ores       = new EnumIntMap<>(OreResourceType.class);
 	private final EnumIntMap<ProducableResourceType> producable = new EnumIntMap<>(ProducableResourceType.class);
 	
 	public StoreBuild(int x, int y, User usr) {
-		super(x, y, usr, 5, neededRes());
+		super(x, y, usr, MAX_LIVES, neededRes());
 	}
 	
 	public StoreBuild(int x, int y, User usr, int lives, EnumIntMap<ProducableResourceType> neededBuildResources, int remainBuildTurns,
@@ -109,7 +112,7 @@ public final class StoreBuild extends BuildingImpl {
 	@Override
 	public int ordinal() {
 		if (oridinal == 0) {
-			oridinal = ORIDINAL_BASE_VALUE + SquareConquererAddon.theGame().oridinalOffsetBuilding();
+			oridinal = ORIDINAL_BASE_VALUE + SCAddon.theGame().oridinalOffsetBuilding();
 		}
 		return oridinal;
 	}

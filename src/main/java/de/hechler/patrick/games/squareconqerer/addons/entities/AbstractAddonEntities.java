@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons.entities;
 
 import java.io.IOException;
@@ -91,20 +91,21 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 				}
 			}
 		}
+		finishSendBuild(conn, b);
 	}
 	
 	protected abstract void finishSendBuild(Connection conn, Building b) throws IOException, StreamCorruptedException;
 	
 	@Override
 	public Building recieveBuild(Connection conn, User usr) throws IOException, StreamCorruptedException {
-		int                                x             = conn.readPos();
-		int                                y             = conn.readPos();
-		int                                lives         = conn.readStrictPos();
-		int                                remBuildTurns = 0;
-		EnumIntMap<ProducableResourceType> res           = null;
-		boolean                            fb            = conn.readByte(0, 1) != 0;
-		if (fb) {
-			remBuildTurns = conn.readPos();
+		int                                x          = conn.readPos();
+		int                                y          = conn.readPos();
+		int                                lives      = conn.readStrictPos();
+		boolean                            fb         = conn.readByte(0, 1) != 0;
+		int                                buildTurns = 0;
+		EnumIntMap<ProducableResourceType> res        = null;
+		if (!fb) {
+			buildTurns = conn.readPos();
 			if (conn.readInt(0, ProducableResourceType.count()) != 0) {
 				res = new EnumIntMap<>(ProducableResourceType.class);
 				int[] arr = res.array();
@@ -113,11 +114,11 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 				}
 			}
 		}
-		return finishRecieveBuild(conn, usr, x, y, lives, fb, remBuildTurns, res);
+		return finishRecieveBuild(conn, usr, x, y, lives, fb, buildTurns, res);
 	}
 	
 	protected abstract Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int remTurns,
-		EnumIntMap<ProducableResourceType> res) throws IOException, StreamCorruptedException;
+			EnumIntMap<ProducableResourceType> res) throws IOException, StreamCorruptedException;
 	
 	@Override
 	public Map<Class<? extends Entity>, String> entityClassses() { return this.entitiCls; }

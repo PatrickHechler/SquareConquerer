@@ -26,7 +26,7 @@ import java.util.function.BiConsumer;
 import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
-import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.connect.WrongInputHandler;
@@ -206,7 +206,7 @@ public final class OpenWorld implements Executable<IOException> {
 	
 	private void nextTurn(byte[] worldHash, byte[] turnHash) {
 		try {
-			this.conn.blocked(250, () -> {
+			this.conn.blocked(() -> {
 				if (worldHash == null) {
 					assert turnHash == null;
 					this.conn.writeReadInt(NOTIFY_WORLD_CHANGE, FIN_WORLD_CHANGE);
@@ -221,7 +221,7 @@ public final class OpenWorld implements Executable<IOException> {
 					this.conn.writeArr(worldHash);
 					this.conn.writeInt(FIN_GAME_START);
 				}
-			}, Connection.NOP);
+			});
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -404,8 +404,8 @@ public final class OpenWorld implements Executable<IOException> {
 	}
 	
 	private static void sendUnit(Unit u, Connection conn) throws IOException {
-		SquareConquererAddon addon = SquareConquererAddon.addon(u);
-		if (addon == SquareConquererAddon.theGame()) {
+		SCAddon addon = SCAddon.addon(u);
+		if (addon == SCAddon.theGame()) {
 			conn.writeInt(TheGameAddon.THE_GAME);
 		} else {
 			conn.writeInt(TheGameAddon.OTHER_ADDON);
@@ -416,8 +416,8 @@ public final class OpenWorld implements Executable<IOException> {
 	}
 	
 	private static void sendBuilding(Building b, Connection conn) throws IOException {
-		SquareConquererAddon addon = SquareConquererAddon.addon(b);
-		if (addon == SquareConquererAddon.theGame()) {
+		SCAddon addon = SCAddon.addon(b);
+		if (addon == SCAddon.theGame()) {
 			conn.writeInt(TheGameAddon.THE_GAME);
 		} else {
 			conn.writeInt(TheGameAddon.OTHER_ADDON);

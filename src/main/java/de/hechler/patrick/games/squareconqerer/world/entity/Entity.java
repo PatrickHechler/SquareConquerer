@@ -22,7 +22,7 @@ import java.util.List;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
-public sealed interface Entity extends ImageableObj permits Unit, Building, EntityImpl {
+public sealed interface Entity extends ImageableObj permits Unit, Building {
 	
 	int x();
 	

@@ -261,6 +261,7 @@ public class Connection implements Closeable, WrongInputHandler {
 									ow.execute();
 								} finally {
 									connects.remove(usr);
+									logConnect.accept(conn, null);
 								}
 							} catch (IOException e) {
 								try {

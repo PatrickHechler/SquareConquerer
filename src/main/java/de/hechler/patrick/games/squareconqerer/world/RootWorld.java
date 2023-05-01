@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
@@ -49,8 +49,8 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.enums.Direction;
 import de.hechler.patrick.games.squareconqerer.world.placer.DefaultUserPlacer;
+import de.hechler.patrick.games.squareconqerer.world.placer.UserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.stuff.UserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 import de.hechler.patrick.games.squareconqerer.world.turn.CarryTurn;
@@ -68,27 +68,27 @@ import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
  */
 public final class RootWorld implements World, Iterable<RootWorld> {
 	
-	private static final String BUILD_WORLD_NO_SUPPORT_TURNS = Messages.get("RootWorld.bw-no-turns"); //$NON-NLS-1$
-	private static final String NOT_EXPLORED_TILE            = Messages.get("RootWorld.not-explored-found"); //$NON-NLS-1$
-	private static final String NULL_TYPE_OR_RESOURCE        = Messages.get("RootWorld.tile-without-type/resource"); //$NON-NLS-1$
-	private static final String NULL_TILE                    = Messages.get("RootWorld.there-is-no-tile"); //$NON-NLS-1$
-	private static final String NON_RECTANGULAR_FORM         = Messages.get("RootWorld.non-rectangular-world"); //$NON-NLS-1$
-	private static final String RESOURCE_IS_NULL             = Messages.get("RootWorld.no-resource"); //$NON-NLS-1$
-	private static final String TYPE_IS_NULL                 = Messages.get("RootWorld.no-type"); //$NON-NLS-1$
-	private static final String UNKNOWN_TILE_TYPE            = Messages.get("RootWorld.unknown-type"); //$NON-NLS-1$
-	private static final String USR_IS_NULL                  = Messages.get("RootWorld.no-user"); //$NON-NLS-1$
-	private static final String RND_IS_NULL                  = Messages.get("RootWorld.no-random"); //$NON-NLS-1$
-	private static final String UNKNOWN_ENTITY_TURN_TYPE     = Messages.get("RootWorld.unknown-entyty-turn-type"); //$NON-NLS-1$
-	private static final String ERROR_EXEC_USER_TURN         = Messages.get("RootWorld.error-while-exex-usr-turn"); //$NON-NLS-1$
+	private static final String BUILD_WORLD_NO_SUPPORT_TURNS = Messages.get("RootWorld.bw-no-turns");                  //$NON-NLS-1$
+	private static final String NOT_EXPLORED_TILE            = Messages.get("RootWorld.not-explored-found");           //$NON-NLS-1$
+	private static final String NULL_TYPE_OR_RESOURCE        = Messages.get("RootWorld.tile-without-type/resource");   //$NON-NLS-1$
+	private static final String NULL_TILE                    = Messages.get("RootWorld.there-is-no-tile");             //$NON-NLS-1$
+	private static final String NON_RECTANGULAR_FORM         = Messages.get("RootWorld.non-rectangular-world");        //$NON-NLS-1$
+	private static final String RESOURCE_IS_NULL             = Messages.get("RootWorld.no-resource");                  //$NON-NLS-1$
+	private static final String TYPE_IS_NULL                 = Messages.get("RootWorld.no-type");                      //$NON-NLS-1$
+	private static final String UNKNOWN_TILE_TYPE            = Messages.get("RootWorld.unknown-type");                 //$NON-NLS-1$
+	private static final String USR_IS_NULL                  = Messages.get("RootWorld.no-user");                      //$NON-NLS-1$
+	private static final String RND_IS_NULL                  = Messages.get("RootWorld.no-random");                    //$NON-NLS-1$
+	private static final String UNKNOWN_ENTITY_TURN_TYPE     = Messages.get("RootWorld.unknown-entyty-turn-type");     //$NON-NLS-1$
+	private static final String ERROR_EXEC_USER_TURN         = Messages.get("RootWorld.error-while-exex-usr-turn");    //$NON-NLS-1$
 	private static final String TURN_USES_NOT_OWNED_ENTITIES = Messages.get("RootWorld.turn-uses-not-owned-entities"); //$NON-NLS-1$
-	private static final String UNKNOWN_USER                 = Messages.get("RootWorld.unknown-usr"); //$NON-NLS-1$
-	private static final String ROOT_NO_EXEC_TURN            = Messages.get("RootWorld.root-no-exec-perm"); //$NON-NLS-1$
-	private static final String GAME_ALREADY_STARTED         = Messages.get("RootWorld.game-started"); //$NON-NLS-1$
-	private static final String SEED_IS_NULL                 = Messages.get("RootWorld.no-seed"); //$NON-NLS-1$
-	private static final String NO_MORE_ELEMENTS             = Messages.get("RootWorld.no-more-elements"); //$NON-NLS-1$
-	private static final String GAME_NOT_STARTED             = Messages.get("RootWorld.game-not-started"); //$NON-NLS-1$
-	private static final String INAVLID_RND_ARR_SIZE         = Messages.get("RootWorld.invalid-array-length"); //$NON-NLS-1$
-	private static final String SHA256_NOT_FOUND             = Messages.get("RootWorld.sha256-not-found"); //$NON-NLS-1$
+	private static final String UNKNOWN_USER                 = Messages.get("RootWorld.unknown-usr");                  //$NON-NLS-1$
+	private static final String ROOT_NO_EXEC_TURN            = Messages.get("RootWorld.root-no-exec-perm");            //$NON-NLS-1$
+	private static final String GAME_ALREADY_STARTED         = Messages.get("RootWorld.game-started");                 //$NON-NLS-1$
+	private static final String SEED_IS_NULL                 = Messages.get("RootWorld.no-seed");                      //$NON-NLS-1$
+	private static final String NO_MORE_ELEMENTS             = Messages.get("RootWorld.no-more-elements");             //$NON-NLS-1$
+	private static final String GAME_NOT_STARTED             = Messages.get("RootWorld.game-not-started");             //$NON-NLS-1$
+	private static final String INAVLID_RND_ARR_SIZE         = Messages.get("RootWorld.invalid-array-length");         //$NON-NLS-1$
+	private static final String SHA256_NOT_FOUND             = Messages.get("RootWorld.sha256-not-found");             //$NON-NLS-1$
 	
 	private final RootUser                         root;
 	private final Tile[][]                         tiles;
@@ -105,7 +105,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
 		this.root               = root;
 		this.tiles              = tiles;
-		this.placer             = placer == null ? new DefaultUserPlacer() : placer;
+		this.placer             = placer == null ? DefaultUserPlacer.createWithDefaults() : placer;
 		this.subWorlds          = new HashMap<>();
 		this.nextTurnListeneres = new ArrayList<>();
 		this.userTurns          = new TreeMap<>();
@@ -141,6 +141,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * sets the {@link #allowRootTurns() allowRootTurns} value
 	 * 
 	 * @param allowRootTurns the new {@link #allowRootTurns() allowRootTurns} value
+	 * 
 	 * @throws IllegalStateException if the game already started
 	 */
 	public void allowRootTurns(boolean allowRootTurns) throws IllegalStateException {
@@ -194,6 +195,23 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		return digest.digest(baos.toByteArray());
 	}
 	
+	private byte[] calcHashOnlyWorld() {
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
+		} catch (NoSuchAlgorithmException e) {
+			throw new AssertionError(SHA256_NOT_FOUND + e.toString(), e);
+		}
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		Connection            conn = Connection.createUnsecure(this.root, baos);
+		try {
+			OpenWorld.saveWorld(this, conn);
+		} catch (IOException e) {
+			throw new IOError(e);
+		}
+		return digest.digest(baos.toByteArray());
+	}
+	
 	private static byte[] calcHash(byte[] data) {
 		MessageDigest digest;
 		try {
@@ -229,8 +247,10 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * 
 	 * @param conn the connection, which will be used to retrieve random values
 	 * @param arr  the array to be filled with random values
+	 * 
 	 * @throws IOException    if an IO error occurs
 	 * @throws AssertionError if the array has a size different than <code>16</code>
+	 * 
 	 * @see #REQ_RND
 	 */
 	public static void fillRnd(Connection conn, byte[] arr) throws IOException, AssertionError {
@@ -310,6 +330,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * saves the current world, the initial world, the random seed, all sub worlds and their users and the game history to the given connection
 	 * 
 	 * @param conn the connection which should be used to save everything
+	 * 
 	 * @throws IOException if an IO error occurs
 	 */
 	public synchronized void saveEverything(Connection conn) throws IOException {
@@ -367,7 +388,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * loads the current world, the initial world, the random seed, all sub worlds and their users and the game history from the given connection
 	 * 
 	 * @param conn the connection which stores everything
+	 * 
 	 * @return the loaded {@link RootWorld}
+	 * 
 	 * @throws IOException if an IO error occurs
 	 */
 	public static RootWorld loadEverything(Connection conn) throws IOException {
@@ -432,6 +455,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * 
 	 * @param user     the user
 	 * @param seedPart the seed which was send by the user
+	 * 
 	 * @return <code>true</code> if the seeds are equal
 	 */
 	public boolean isSeed(User user, byte[] seedPart) {
@@ -467,7 +491,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		if (this.rnd != null) throw new IllegalStateException(GAME_ALREADY_STARTED);
 		byte[] hash;
 		synchronized (this.root) {
-			hash            = calcHash();
+			hash            = calcHashOnlyWorld();
 			this.starttiles = new Tile[this.tiles.length][this.tiles[0].length];
 			for (int x = 0; x < this.starttiles.length; x++) {
 				for (int y = 0; y < this.starttiles[x].length; y++) {
@@ -485,7 +509,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			this.rnd  = new Random2(sval);
 			Arrays.sort(users, null);
 			shuffle(this.rnd, users);
-			this.placer.initilize(this, users, this.rnd);
+			Tile.noCheck(() -> this.placer.initilize(this, users, this.rnd));
 		}
 		threadStart(() -> executeNTL(hash, null));
 	}
@@ -502,7 +526,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	
 	private static long val(byte[] s, int i) {
 		return s[i] & 0xFF | ((s[i + 1] & 0xFFL) << 8) | ((s[i + 2] & 0xFFL) << 16) | ((s[i + 3] & 0xFFL) << 24) | ((s[i + 4] & 0xFFL) << 32)
-			| ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48) | ((s[i + 7] & 0xFFL) << 56);
+				| ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48) | ((s[i + 7] & 0xFFL) << 56);
 	}
 	
 	/**
@@ -535,7 +559,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * send all data needed to validate the game over the connection
 	 * 
 	 * @param conn the connection which should be used to validate the game
+	 * 
 	 * @throws IOException if an IO error occurs
+	 * 
 	 * @see #RW_VAL_GAME
 	 */
 	public synchronized void validateGame(Connection conn) throws IOException {
@@ -682,6 +708,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * 
 	 * @param usr       the user
 	 * @param usrModCnt the users modify count
+	 * 
 	 * @return the world of the user
 	 */
 	public synchronized World of(User usr, int usrModCnt) {
@@ -719,11 +746,11 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	public static final class Builder implements World {
 		
 		private static final OreResourceType[] RES = OreResourceType.values();
-		private static final GroundType[]        TYPES;
+		private static final GroundType[]      TYPES;
 		
 		static {
 			GroundType[] v   = GroundType.values();
-			int        len = v.length - 1;
+			int          len = v.length - 1;
 			TYPES = new GroundType[len];
 			System.arraycopy(v, 1, TYPES, 0, len);
 		}
@@ -811,7 +838,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		}
 		
 		private Tile tile(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
-			GroundType        type = type(xDown, xUp, yDown, yUp);
+			GroundType      type = type(xDown, xUp, yDown, yUp);
 			OreResourceType ore  = resource(xDown, xUp, yDown, yUp);
 			return new Tile(type, ore, true);
 		}
@@ -852,9 +879,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			int ocean = ocean(xDown) + ocean(xUp) + ocean(yDown) + ocean(yUp);
 			int land  = land(xDown) + land(xUp) + land(yDown) + land(yUp);
 			if (ocean != 0 && land != 0) { return GroundType.WATER_NORMAL; }
-			int      water    = water(xDown) + water(xUp) + water(yDown) + water(yUp);
-			int      flat     = flat(xDown) + flat(xUp) + flat(yDown) + flat(yUp);
-			int      mountain = mountain(xDown) + mountain(xUp) + mountain(yDown) + mountain(yUp);
+			int        water    = water(xDown) + water(xUp) + water(yDown) + water(yUp);
+			int        flat     = flat(xDown) + flat(xUp) + flat(yDown) + flat(yUp);
+			int        mountain = mountain(xDown) + mountain(xUp) + mountain(yDown) + mountain(yUp);
 			GroundType type     = rawType(xDown, xUp, yDown, yUp, ocean, water, flat, mountain);
 			if (type.isLand() && !type.isMountain()) {
 				int hill    = hill(xDown) + hill(xUp) + hill(yDown) + hill(yUp);
@@ -884,13 +911,13 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			int swamp  = swamp(xDown) + swamp(xUp) + swamp(yDown) + swamp(yUp);
 			// ocean disables everything except water
 			// flat disables mountain
-			int      posWater    = (water * 2) + 1;
-			int      posMountain = ocean == 0 ? Math.max(mountain - (flat * 2) + 1, 1) : 0;
-			int      posSand     = ocean == 0 ? (sand * 2) + 1 : 0;
-			int      posGrass    = ocean == 0 ? (grass * 2) + 1 : 0;
-			int      posForest   = ocean == 0 ? (forest * 2) + 1 : 0;
-			int      posSwamp    = ocean == 0 ? (swamp * 2) + 1 : 0;
-			int      rndVal0     = this.rnd.nextInt(posWater + posMountain + posSand + posGrass + posForest + posSwamp);
+			int        posWater    = (water * 2) + 1;
+			int        posMountain = ocean == 0 ? Math.max(mountain - (flat * 2) + 1, 1) : 0;
+			int        posSand     = ocean == 0 ? (sand * 2) + 1 : 0;
+			int        posGrass    = ocean == 0 ? (grass * 2) + 1 : 0;
+			int        posForest   = ocean == 0 ? (forest * 2) + 1 : 0;
+			int        posSwamp    = ocean == 0 ? (swamp * 2) + 1 : 0;
+			int        rndVal0     = this.rnd.nextInt(posWater + posMountain + posSand + posGrass + posForest + posSwamp);
 			GroundType type        = null;
 			if (rndVal0 >= posWater) rndVal0 -= posWater;
 			else type = GroundType.WATER_NORMAL;
@@ -924,15 +951,15 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			for (int x = 0; x < this.tiles.length; x += 8) {
 				for (int y = x % 16 == 0 ? 0 : 4; y < this.tiles[x].length; y += 8) {
 					if ((this.tiles[x][y] != null && this.tiles[x][y].ground != GroundType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
-						// tiles
-						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground != GroundType.NOT_EXPLORED))
-						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground != GroundType.NOT_EXPLORED))
-						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground != GroundType.NOT_EXPLORED))
-						|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground != GroundType.NOT_EXPLORED))) {
+							// tiles
+							|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground != GroundType.NOT_EXPLORED))
+							|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground != GroundType.NOT_EXPLORED))
+							|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground != GroundType.NOT_EXPLORED))
+							|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground != GroundType.NOT_EXPLORED))) {
 						continue;
 					}
 					int             rndVal = this.rnd.nextInt(TYPES.length << 1);
-					GroundType        t      = rndVal >= TYPES.length ? GroundType.WATER_DEEP : TYPES[rndVal];
+					GroundType      t      = rndVal >= TYPES.length ? GroundType.WATER_DEEP : TYPES[rndVal];
 					OreResourceType r      = OreResourceType.NONE;
 					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
 						r = RES[this.rnd.nextInt(RES.length)];
@@ -952,7 +979,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 					if (ts[i] != null && ts[i].ground != GroundType.NOT_EXPLORED) {
 						continue;
 					}
-					GroundType        t = TYPES[this.rnd.nextInt(TYPES.length)]; // skip not explored
+					GroundType      t = TYPES[this.rnd.nextInt(TYPES.length)]; // skip not explored
 					OreResourceType r = OreResourceType.NONE;
 					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
 						r = RES[this.rnd.nextInt(RES.length)];
@@ -976,6 +1003,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * returns the current resource mask
 		 * 
 		 * @return the current resource mask
+		 * 
 		 * @see #resourceMask(int)
 		 */
 		public int resourceMask() { return this.resourceMask; }
@@ -1090,6 +1118,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * create a {@link RootWorld} from the current builder
 		 * 
 		 * @return the newly created {@link RootWorld}
+		 * 
 		 * @throws IllegalStateException if the world contains not yet explored tiles
 		 */
 		public RootWorld create() throws IllegalStateException {
@@ -1101,7 +1130,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * 
 		 * @param root  the root user of the new world
 		 * @param tiles the tiles of the new world
+		 * 
 		 * @return the newly created root world
+		 * 
 		 * @throws IllegalStateException if the tiles are not valid for a root world
 		 */
 		public static RootWorld create(RootUser root, Tile[][] tiles) throws IllegalStateException {
@@ -1134,7 +1165,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @param root   the root user of the new world
 		 * @param tiles  the tiles of the new world
 		 * @param placer the placer of the world (or <code>null</code> if a {@link DefaultUserPlacer} should be used)
+		 * 
 		 * @return the newly created root world
+		 * 
 		 * @throws IllegalStateException if the tiles are not valid for a root world
 		 */
 		public static RootWorld create(RootUser root, Tile[][] tiles, UserPlacer placer) throws IllegalStateException {
@@ -1159,6 +1192,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * 
 		 * @param root  the root user of the builder
 		 * @param tiles the tiles of the builder
+		 * 
 		 * @return the newly created builder
 		 */
 		public static Builder createBuilder(RootUser root, Tile[][] tiles) {
@@ -1171,6 +1205,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @param root  the root user of the new builder
 		 * @param tiles the tiles of the new builder
 		 * @param rnd   the random of the new builder
+		 * 
 		 * @return the newly created builder
 		 */
 		public static Builder createBuilder(RootUser root, Tile[][] tiles, Random2 rnd) {

@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.ui;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.VERSION_STRING;
@@ -99,8 +99,13 @@ public class SquareConquererStart {
 				connects     = cs;
 				serverThread = threadStart(() -> {
 									try {
-										Connection.ServerAccept.accept(p, rw, (conn, sok) -> System.err.println("the user '" + conn.usr.name() + "' logged in from '" + sok.getInetAddress() + "'"), cs,
-											serverpw);
+										Connection.ServerAccept.accept(p, rw, (conn, sok) -> {
+															if (sok == null) {
+																System.err.println("the user '" + conn.usr.name() + "' disconnected");
+															} else {
+																System.err.println("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
+															}
+														}, cs, serverpw);
 									} catch (IOException e) {
 										e.printStackTrace();
 									}
@@ -699,7 +704,7 @@ public class SquareConquererStart {
 		fc.setMultiSelectionEnabled(false);
 		remote.setSelected(true);
 		createUser.setToolTipText("<html>connect to the server using the server password and then create an account on the server<br>"
-			+ "the server password will only be used once to encrypt your password and send it to the server.</html>");
+				+ "the server password will only be used once to encrypt your password and send it to the server.</html>");
 		
 		panel.add(remote, 0);
 		panel.add(createUser, 1);

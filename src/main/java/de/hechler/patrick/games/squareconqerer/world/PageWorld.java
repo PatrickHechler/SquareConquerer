@@ -294,8 +294,8 @@ public class PageWorld {
 	
 	private static void fillFromEntryBlock(FontRenderContext frc, Font f, int x, Tile t, int xPos, SCPageBlock.EntryBlock eb) {
 		Iterator<SCPageEntry> iter = eb.entries().iterator();
-		SCPageEntry           e    = iter.next();
-		while (switch (e) {
+		SCPageEntry           entry    = iter.next();
+		while (switch (entry) {
 		case SCPageEntry.LinkEntry le -> xPos += width(frc, f, le.text());
 		case SCPageEntry.PageEntry pe -> xPos += width(frc, f, pe.text());
 		case SCPageEntry.WorldEntry we -> xPos += width(frc, f, we.text());
@@ -305,9 +305,9 @@ public class PageWorld {
 				System.err.println(PIXEL_NOT_FOUND_IN_PAGE);
 				return;
 			}
-			e = iter.next();
+			entry = iter.next();
 		}
-		switch (e) {
+		switch (entry) {
 		case SCPageEntry.LinkEntry le -> t.page(() -> new SCPage(new SCPageBlock.EntryBlock(le)), le.text());
 		case SCPageEntry.PageEntry pe -> t.page(pe.page(), pe.title());
 		case SCPageEntry.WorldEntry we -> t.page(() -> new SCPage(new SCPageBlock.EntryBlock(we)), we.worldName());

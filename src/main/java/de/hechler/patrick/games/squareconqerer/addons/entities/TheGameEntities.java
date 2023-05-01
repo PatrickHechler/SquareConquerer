@@ -1,23 +1,22 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons.entities;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 
 import de.hechler.patrick.games.squareconqerer.User;
@@ -79,8 +78,8 @@ public class TheGameEntities extends AbstractAddonEntities {
 	}
 	
 	@Override
-	protected Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int remTurns,
-			EnumIntMap<ProducableResourceType> res) throws IOException {
+	protected Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int remTurns, EnumIntMap<ProducableResourceType> res)
+			throws IOException {
 		conn.readInt(StoreBuild.NUMBER);
 		EnumIntMap<OreResourceType>        os = new EnumIntMap<>(OreResourceType.class);
 		EnumIntMap<ProducableResourceType> ps = new EnumIntMap<>(ProducableResourceType.class);
@@ -102,8 +101,14 @@ public class TheGameEntities extends AbstractAddonEntities {
 	@Override
 	public Map<String, EntityTrait> traits(String clsName) {
 		return switch (clsName) {
-		case Carrier.NAME -> Collections.emptyMap();
-		case StoreBuild.NAME -> Collections.emptyMap();
+		case Carrier.NAME -> Map.of(//
+				EntityTrait.TRAIT_VIEW_RANGE, new EntityTrait.NumberTrait(EntityTrait.TRAIT_VIEW_RANGE, Carrier.VIEW_RANGE), //
+				EntityTrait.TRAIT_MAX_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_MAX_LIVES, Carrier.MAX_LIVES), //
+				EntityTrait.TRAIT_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_LIVES, 0, Carrier.MAX_LIVES, Carrier.MAX_LIVES));
+		case StoreBuild.NAME -> Map.of(//
+				EntityTrait.TRAIT_VIEW_RANGE, new EntityTrait.NumberTrait(EntityTrait.TRAIT_VIEW_RANGE, StoreBuild.VIEW_RANGE), //
+				EntityTrait.TRAIT_MAX_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_MAX_LIVES, StoreBuild.MAX_LIVES), //
+				EntityTrait.TRAIT_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_LIVES, 0, StoreBuild.MAX_LIVES, StoreBuild.MAX_LIVES));
 		default -> throw new AssertionError("unknown class name: " + clsName);
 		};
 	}
@@ -112,8 +117,9 @@ public class TheGameEntities extends AbstractAddonEntities {
 	@SuppressWarnings("unchecked")
 	public <E extends Entity> E createEntity(String clsName, User usr, Map<String, EntityTraitWithVal> traits, int x, int y) {
 		return (E) switch (clsName) {
-		case Carrier.NAME -> new Carrier(x, y, usr);
-		case StoreBuild.NAME -> new StoreBuild(x, y, usr);
+		case Carrier.NAME -> new Carrier(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0);
+		case StoreBuild.NAME -> new StoreBuild(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0, new EnumIntMap<>(OreResourceType.class),
+				new EnumIntMap<>(ProducableResourceType.class));
 		default -> throw new AssertionError("unknown class name: " + clsName);
 		};
 	}

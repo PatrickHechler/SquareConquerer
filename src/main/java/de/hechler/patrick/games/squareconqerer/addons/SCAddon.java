@@ -26,6 +26,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 
+import de.hechler.patrick.games.squareconqerer.addons.defaults.AddonDefaults;
 import de.hechler.patrick.games.squareconqerer.addons.entities.AddonEntities;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCLicense;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
@@ -42,7 +43,7 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
  * <p>
  * every addon has its own {@link #license() license} and {@link #help() help}/{@link #credits() credits} page and
  */
-public abstract class SquareConquererAddon {
+public abstract class SCAddon {
 	
 	/**
 	 * the {@link #name} of {@link TheGameAddon}
@@ -73,7 +74,7 @@ public abstract class SquareConquererAddon {
 	 */
 	public static final String RENAME_ADDON_PROPERTY_START = "squareconquerer.addons.rename.";
 	
-	public static String renameAddonPropertyKey(Class<? extends SquareConquererAddon> cls) {
+	public static String renameAddonPropertyKey(Class<? extends SCAddon> cls) {
 		String name = cls.getName();
 		Module mod  = cls.getModule();
 		if (mod.isNamed()) {
@@ -83,7 +84,7 @@ public abstract class SquareConquererAddon {
 		}
 	}
 	
-	public static String renameAddonProperty(Class<? extends SquareConquererAddon> cls, String newValue) {
+	public static String renameAddonProperty(Class<? extends SCAddon> cls, String newValue) {
 		return System.setProperty(renameAddonPropertyKey(cls), newValue);
 	}
 	
@@ -95,7 +96,7 @@ public abstract class SquareConquererAddon {
 	private int         oridinalBuildingOffset;
 	
 	/**
-	 * creates a new {@link SquareConquererAddon} instance with the given {@code name}.
+	 * creates a new {@link SCAddon} instance with the given {@code name}.
 	 * <p>
 	 * the name must be unique<br>
 	 * this means, that the name {@value #GAME_ADDON_NAME} is not allowed to be used by any other add-on than the {@link TheGameAddon}.
@@ -106,7 +107,7 @@ public abstract class SquareConquererAddon {
 	 * 
 	 * @param name the {@link #name} of the add-on
 	 */
-	public SquareConquererAddon(String name) {
+	public SCAddon(String name) {
 		String overwrittenName = System.getProperty(renameAddonPropertyKey(getClass()));
 		if (overwrittenName != null) this.name = overwrittenName;
 		else this.name = name;
@@ -127,9 +128,9 @@ public abstract class SquareConquererAddon {
 		return this.oridinalBuildingOffset;
 	}
 	
-	private static volatile Map<String, SquareConquererAddon>                  addons;
+	private static volatile Map<String, SCAddon>                  addons;
 	private static volatile TheGameAddon                                       theGame;
-	private static volatile Map<Class<? extends Entity>, SquareConquererAddon> entity;
+	private static volatile Map<Class<? extends Entity>, SCAddon> entity;
 	
 	/**
 	 * returns the game add-on
@@ -148,8 +149,8 @@ public abstract class SquareConquererAddon {
 	 * 
 	 * @return an unmodifiable collection containing almost all add-ons (excluding the game add-on)
 	 */
-	public static Collection<SquareConquererAddon> onlyAddons() {
-		Map<String, SquareConquererAddon> a = new HashMap<>(addonsMap());
+	public static Collection<SCAddon> onlyAddons() {
+		Map<String, SCAddon> a = new HashMap<>(addonsMap());
 		a.remove(GAME_ADDON_NAME);
 		return a.values();
 	}
@@ -161,8 +162,8 @@ public abstract class SquareConquererAddon {
 	 * 
 	 * @return a unmodifiable map containing almost all add-ons (excluding the game add-on)
 	 */
-	public static Map<String, SquareConquererAddon> onlyAddonsMap() {
-		Map<String, SquareConquererAddon> a = new HashMap<>(addonsMap());
+	public static Map<String, SCAddon> onlyAddonsMap() {
+		Map<String, SCAddon> a = new HashMap<>(addonsMap());
 		a.remove(GAME_ADDON_NAME);
 		return a;
 	}
@@ -172,8 +173,8 @@ public abstract class SquareConquererAddon {
 	 * 
 	 * @return an unmodifiable collection containing all add-ons (including the game add-on)
 	 */
-	public static Collection<SquareConquererAddon> addons() {
-		Map<String, SquareConquererAddon> a = addons;
+	public static Collection<SCAddon> addons() {
+		Map<String, SCAddon> a = addons;
 		if (a == null) return addonsMap().values();
 		return a.values();
 	}
@@ -185,10 +186,10 @@ public abstract class SquareConquererAddon {
 	 * 
 	 * @return a unmodifiable map containing all add-ons (including the game add-on)
 	 */
-	public static Map<String, SquareConquererAddon> addonsMap() {
-		Map<String, SquareConquererAddon> a = addons;
+	public static Map<String, SCAddon> addonsMap() {
+		Map<String, SCAddon> a = addons;
 		if (a != null) return a;
-		synchronized (SquareConquererAddon.class) {
+		synchronized (SCAddon.class) {
 			a = addons;
 			if (a != null) return a;
 			a = loadAddons();
@@ -196,10 +197,10 @@ public abstract class SquareConquererAddon {
 			if (g == null) {
 				throw new AssertionError("I am missing the game addon! addons: " + a);
 			}
-			Map<Class<? extends Entity>, SquareConquererAddon> m         = new HashMap<>();
+			Map<Class<? extends Entity>, SCAddon> m         = new HashMap<>();
 			int                                                ooffUnit  = 1;              // null
 			int                                                ooffBuild = 1;              // null
-			for (SquareConquererAddon addon : new TreeMap<>(a).values()) {
+			for (SCAddon addon : new TreeMap<>(a).values()) {
 				addon.initOridinalOffset(ooffUnit, ooffBuild);
 				Map<Class<? extends Entity>, String> map        = addon.entities().entityClassses();
 				Set<String>                          wasAlready = new HashSet<>();
@@ -226,58 +227,58 @@ public abstract class SquareConquererAddon {
 		}
 	}
 	
-	public static SquareConquererAddon addon(String name) {
-		Map<String, SquareConquererAddon> as = addons;
+	public static SCAddon addon(String name) {
+		Map<String, SCAddon> as = addons;
 		if (as == null) {
 			as = addonsMap();
 		}
-		SquareConquererAddon a = as.get(name);
+		SCAddon a = as.get(name);
 		if (a == null) {
 			throw new AssertionError("unknown addon name: '" + name + '\'');
 		}
 		return a;
 	}
 	
-	public static SquareConquererAddon addon(Entity e) {
-		Map<Class<? extends Entity>, SquareConquererAddon> es = entity;
+	public static SCAddon addon(Entity e) {
+		Map<Class<? extends Entity>, SCAddon> es = entity;
 		if (es == null) {
 			addonsMap();
 			es = entity;
 		} // potentially faster check for the game entities
 		if (e instanceof EntityImpl && !(e instanceof MyUnit || e instanceof MyBuild)) { return theGame; }
-		SquareConquererAddon res = es.get(e.getClass());
+		SCAddon res = es.get(e.getClass());
 		if (res == null) throw new AssertionError("unknown entity class: " + e.getClass());
 		return res;
 	}
 	
-	public static SquareConquererAddon addon(Unit u) {
-		Map<Class<? extends Entity>, SquareConquererAddon> es = entity;
+	public static SCAddon addon(Unit u) {
+		Map<Class<? extends Entity>, SCAddon> es = entity;
 		if (es == null) {
 			addonsMap();
 			es = entity;
 		} // potentially faster check for the game entities
 		if (u instanceof EntityImpl && !(u instanceof MyUnit)) { return theGame; }
-		SquareConquererAddon res = es.get(u.getClass());
+		SCAddon res = es.get(u.getClass());
 		if (res == null) throw new AssertionError("unknown entity class: " + u.getClass());
 		return res;
 	}
 	
-	public static SquareConquererAddon addon(Building b) {
-		Map<Class<? extends Entity>, SquareConquererAddon> es = entity;
+	public static SCAddon addon(Building b) {
+		Map<Class<? extends Entity>, SCAddon> es = entity;
 		if (es == null) {
 			addonsMap();
 			es = entity;
 		} // potentially faster check for the game entities
 		if (b instanceof EntityImpl && !(b instanceof MyUnit)) { return theGame; }
-		SquareConquererAddon res = es.get(b.getClass());
+		SCAddon res = es.get(b.getClass());
 		if (res == null) throw new AssertionError("unknown entity class: " + b.getClass());
 		return res;
 	}
 	
-	private static Map<String, SquareConquererAddon> loadAddons() {
-		Map<String, SquareConquererAddon>   addons = new HashMap<>();
-		ServiceLoader<SquareConquererAddon> loader = ServiceLoader.load(SquareConquererAddon.class);
-		for (SquareConquererAddon addon : loader) {
+	private static Map<String, SCAddon> loadAddons() {
+		Map<String, SCAddon>   addons = new HashMap<>();
+		ServiceLoader<SCAddon> loader = ServiceLoader.load(SCAddon.class);
+		for (SCAddon addon : loader) {
 			if (addons.put(addon.name, addon) != null) throw new AssertionError("multiple addons with the same name: '" + addon.name + "'");
 		}
 		String disabled = System.getProperty(DISABLED_ADDONS_PROPERTY);
@@ -340,5 +341,14 @@ public abstract class SquareConquererAddon {
 	 * @return the {@link AddonEntities} of this addon
 	 */
 	public abstract AddonEntities entities();
+	
+	/**
+	 * returns the {@link AddonDefaults} of this addon
+	 * <p>
+	 * every addon must have exactly one {@link AddonDefaults} instance, which does not belongs to any other addon
+	 * 
+	 * @return the {@link AddonDefaults} of this addon
+	 */
+	public abstract AddonDefaults defaults();
 	
 }

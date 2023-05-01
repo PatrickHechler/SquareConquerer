@@ -16,7 +16,7 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 /**
  * this package is used by the
- * {@link de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon
+ * {@link de.hechler.patrick.games.squareconqerer.addons.SCAddon
  * addons} to add
  * {@link de.hechler.patrick.games.squareconqerer.world.entity.Entity entities}
  * (see
@@ -24,7 +24,7 @@
  * AddonEntities})
  * <p>
  * this package is also used to create/save and load entities of the
- * {@link de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon
+ * {@link de.hechler.patrick.games.squareconqerer.addons.SCAddon
  * addons}
  */
 package de.hechler.patrick.games.squareconqerer.addons.entities;

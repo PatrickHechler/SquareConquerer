@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
@@ -36,20 +36,19 @@ import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
+import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.connect.WrongInputHandler;
-import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
-import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
-import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 import de.hechler.patrick.games.squareconqerer.world.tile.RemoteTile;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
-import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 /**
@@ -256,7 +255,7 @@ public final class RemoteWorld implements World, Closeable {
 				List<Entity> val = entry.getValue();
 				unmodCopy.put(key, Collections.unmodifiableList(val));
 			}
-			this.entities = Collections.unmodifiableMap(unmodCopy);
+			this.entities = unmodCopy;
 		});
 	}
 	
@@ -267,7 +266,9 @@ public final class RemoteWorld implements World, Closeable {
 	 * 
 	 * @param conn  the connection
 	 * @param users the users with their {@link User#name()} as key
+	 * 
 	 * @return the loaded world
+	 * 
 	 * @throws IOException if an IO error occurred
 	 */
 	public static Tile[][] loadWorld(Connection conn, Map<String, User> users) throws IOException {
@@ -284,6 +285,7 @@ public final class RemoteWorld implements World, Closeable {
 	 * @param conn  the connection
 	 * @param users the users with their {@link User#name()} as key
 	 * @param tiles the <code>Tile[][]</code> which will contain the loaded world after this method
+	 * 
 	 * @throws IOException if an IO error occurs
 	 */
 	public static void loadWorld(Connection conn, Map<String, User> users, Tile[][] tiles) throws IOException {
@@ -292,7 +294,7 @@ public final class RemoteWorld implements World, Closeable {
 	
 	@SuppressWarnings("unchecked")
 	private static <T extends Tile> T[][] readWorld(Connection conn, T[][] tiles, long timestamp, Map<User, List<Entity>> entities, Map<String, User> users)
-		throws IOException {
+			throws IOException {
 		if (entities != null) {
 			conn.writeReadInt(OpenWorld.CMD_GET_WORLD, OpenWorld.SUB0_GET_WORLD);
 		} else {
@@ -312,7 +314,7 @@ public final class RemoteWorld implements World, Closeable {
 			for (int y = 0; y < ylen; y++) {
 				int             tto = conn.readInt();
 				int             rto = conn.readInt();
-				GroundType        tt  = GroundType.of(tto);
+				GroundType      tt  = GroundType.of(tto);
 				OreResourceType rt  = OreResourceType.of(rto);
 				boolean         v   = conn.readByte(0, 1) != 0;
 				tiles[x][y] = (T) (entities != null ? new RemoteTile(timestamp, tt, rt, v) : new Tile(tt, rt, v));
@@ -347,25 +349,13 @@ public final class RemoteWorld implements World, Closeable {
 		return tiles;
 	}
 	
-	private static Unit readUnit(Connection conn, User usr) throws IOException {
-		int      x     = conn.readInt();
-		int      y     = conn.readInt();
-		int      lives = conn.readInt();
-		int      ca    = conn.readInt();
-		Resource res   = null;
-		if (ca != 0) {
-			res = readRes(conn);
-		}
-		conn.readInt(Carrier.NUMBER);
-		conn.readInt(OpenWorld.FIN_ENTITY);
-		return new Carrier(x, y, usr, lives, res, ca);
-	}
-	
 	/**
 	 * reads a resource from the connection
 	 * 
 	 * @param conn the connection
+	 * 
 	 * @return the resource, which was read from the connection
+	 * 
 	 * @throws IOException if an IO error occurs
 	 */
 	public static Resource readRes(Connection conn) throws IOException {
@@ -376,41 +366,28 @@ public final class RemoteWorld implements World, Closeable {
 		};
 	}
 	
-	private static Building readBuilding(Connection conn, User usr) throws IOException {
-		int                                x              = conn.readInt();
-		int                                y              = conn.readInt();
-		int                                lives          = conn.readInt();
-		int                                remainTurns    = 0;
-		EnumIntMap<ProducableResourceType> neededBuildRes = null;
-		boolean                            fb             = conn.readByte(0, 1) != 0;
-		if (fb) {
-			remainTurns = conn.readInt();
-			int len = conn.readInt(ProducableResourceType.count(), 0);
-			if (len != 0) {
-				neededBuildRes = new EnumIntMap<>(ProducableResourceType.class);
-				int[] arr = neededBuildRes.array();
-				for (int i = 0; i < arr.length; i++) {
-					arr[i] = conn.readPos();
-				}
-			}
+	private static Unit readUnit(Connection conn, User usr) throws IOException {
+		SCAddon addon;
+		if (conn.readInt(TheGameAddon.THE_GAME, TheGameAddon.OTHER_ADDON) == TheGameAddon.THE_GAME) {
+			addon = SCAddon.theGame();
+		} else {
+			addon = SCAddon.addon(conn.readString());
 		}
-		conn.readInt(StoreBuild.NUMBER);
-		EnumIntMap<OreResourceType>        ores       = new EnumIntMap<>(OreResourceType.class);
-		EnumIntMap<ProducableResourceType> producable = new EnumIntMap<>(ProducableResourceType.class);
-		if (fb) {
-			int[] oa = ores.array();
-			conn.readInt(oa.length);
-			for (int i = 0; i < oa.length; i++) {
-				oa[i] = conn.readInt();
-			}
-			int[] pa = producable.array();
-			conn.readInt(pa.length);
-			for (int i = 0; i < pa.length; i++) {
-				pa[i] = conn.readInt();
-			}
-		}
+		Unit u = addon.entities().recieveUnit(conn, usr);
 		conn.readInt(OpenWorld.FIN_ENTITY);
-		return new StoreBuild(x, y, usr, lives, neededBuildRes, remainTurns, ores, producable);
+		return u;
+	}
+	
+	private static Building readBuilding(Connection conn, User usr) throws IOException {
+		SCAddon addon;
+		if (conn.readInt(TheGameAddon.THE_GAME, TheGameAddon.OTHER_ADDON) == TheGameAddon.THE_GAME) {
+			addon = SCAddon.theGame();
+		} else {
+			addon = SCAddon.addon(conn.readString());
+		}
+		Building n = addon.entities().recieveBuild(conn, usr);
+		conn.readInt(OpenWorld.FIN_ENTITY);
+		return n;
 	}
 	
 	/**
@@ -419,6 +396,7 @@ public final class RemoteWorld implements World, Closeable {
 	 * 
 	 * @param x the x coordinate of the tile
 	 * @param y the y coordinate of the tile
+	 * 
 	 * @throws IOException if an IO error occurs
 	 */
 	public synchronized void updateSingleTile(int x, int y) throws IOException {
@@ -432,7 +410,7 @@ public final class RemoteWorld implements World, Closeable {
 			boolean unit;
 			boolean build;
 			switch (this.conn.readInt(OpenWorld.GET_TILE_NO_UNIT_NO_BUILD, OpenWorld.GET_TILE_NO_UNIT_YES_BUILD, OpenWorld.GET_TILE_YES_UNIT_NO_BUILD,
-				OpenWorld.GET_TILE_YES_UNIT_YES_BUILD)) {
+					OpenWorld.GET_TILE_YES_UNIT_YES_BUILD)) {
 			case OpenWorld.GET_TILE_NO_UNIT_NO_BUILD -> {
 				unit  = false;
 				build = false;
@@ -463,7 +441,7 @@ public final class RemoteWorld implements World, Closeable {
 			}
 			int             typeOrid = this.conn.readInt();
 			int             resOrid  = this.conn.readInt();
-			GroundType        tt       = GroundType.of(typeOrid);
+			GroundType      tt       = GroundType.of(typeOrid);
 			OreResourceType rt       = OreResourceType.of(resOrid);
 			boolean         v        = this.conn.readByte(0, 1) != 0;
 			RemoteTile      t        = new RemoteTile(tt, rt, v);
@@ -482,6 +460,7 @@ public final class RemoteWorld implements World, Closeable {
 					long val = this.conn.readInt0();
 					if (val == -1L) { return; }
 					int val0 = (int) val;
+					this.conn.setTimeout(0);
 					switch (val0) {
 					case RootWorld.REQ_RND -> deamonReqRnd();
 					case OpenWorld.NOTIFY_WORLD_CHANGE -> deamonNotifyWorldChange();
@@ -598,6 +577,7 @@ public final class RemoteWorld implements World, Closeable {
 		User.fillRandom(myrnd);
 		this.conn.writeArr(myrnd);
 		list.add(myrnd);
+		System.out.println("remote world: my random part is " + hex(myrnd));
 	}
 	
 	private static String hex(byte[] data) {
@@ -641,7 +621,7 @@ public final class RemoteWorld implements World, Closeable {
 				throw new IOError(e);
 			}
 		}
-		return this.entities;
+		return Collections.unmodifiableMap(this.entities);
 	}
 	
 	/**

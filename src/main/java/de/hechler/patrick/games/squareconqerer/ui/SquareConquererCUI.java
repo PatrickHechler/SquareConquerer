@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.ui;
 
 import static de.hechler.patrick.games.squareconqerer.Settings.threadStart;
@@ -49,22 +49,22 @@ import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 
 public class SquareConquererCUI implements Runnable {
 	
-	private static final String HELP = "help";
+	private static final String HELP = "help"; //$NON-NLS-1$
 	
 	private static final String CMD_HELP     = HELP;
-	private static final String CMD_VERSION  = "version";
-	private static final String CMD_STATUS   = "status";
-	private static final String CMD_USERNAME = "username";
-	private static final String CMD_WORLD    = "world";
-	private static final String CMD_SERVER   = "server";
-	private static final String CMD_SETPW    = "setpw";
-	private static final String CMD_SERVERPW = "serverpw";
-	private static final String CMD_QUIT     = "quit";
-	private static final String CMD_EXIT     = "exit";
+	private static final String CMD_VERSION  = "version"; //$NON-NLS-1$
+	private static final String CMD_STATUS   = "status"; //$NON-NLS-1$
+	private static final String CMD_USERNAME = "username"; //$NON-NLS-1$
+	private static final String CMD_WORLD    = "world"; //$NON-NLS-1$
+	private static final String CMD_SERVER   = "server"; //$NON-NLS-1$
+	private static final String CMD_SETPW    = "setpw"; //$NON-NLS-1$
+	private static final String CMD_SERVERPW = "serverpw"; //$NON-NLS-1$
+	private static final String CMD_QUIT     = "quit"; //$NON-NLS-1$
+	private static final String CMD_EXIT     = "exit"; //$NON-NLS-1$
 	
-	private static final Pattern PTRN_ARG       = Pattern.compile("([^\\s\\\\'\"]+|'[^']*'|\"[^\"]*\")+");
-	private static final Pattern PTRN_STR       = Pattern.compile("[^\\\\]('([^'\\\\]*|\\\\.)*'|\"([^\"\\\\]*|\\\\.)*\")");
-	private static final Pattern PTRN_BACKSLASH = Pattern.compile("\\\\(.)");
+	private static final Pattern PTRN_ARG       = Pattern.compile("([^\\s\\\\'\"]+|'[^']*'|\"[^\"]*\")+"); //$NON-NLS-1$
+	private static final Pattern PTRN_STR       = Pattern.compile("[^\\\\]('([^'\\\\]*|\\\\.)*'|\"([^\"\\\\]*|\\\\.)*\")"); //$NON-NLS-1$
+	private static final Pattern PTRN_BACKSLASH = Pattern.compile("\\\\(.)"); //$NON-NLS-1$
 	
 	private static List<String> arguments(String line) {
 		List<String> args       = new ArrayList<>();
@@ -88,7 +88,7 @@ public class SquareConquererCUI implements Runnable {
 				arg = b.toString();
 			}
 			Matcher bsMatcher = PTRN_BACKSLASH.matcher(arg);
-			arg = bsMatcher.replaceAll("$1");
+			arg = bsMatcher.replaceAll("$1"); //$NON-NLS-1$
 			args.add(arg);
 		}
 		return args;
@@ -486,10 +486,13 @@ public class SquareConquererCUI implements Runnable {
 						this.connects = cs;
 						serverThread  = threadStart(() -> {
 											try {
-												Connection.ServerAccept.accept(port, rw,
-														(conn, sok) -> c
-																.writeLine("the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress()),
-														cs, spw);
+												Connection.ServerAccept.accept(port, rw, (conn, sok) -> {
+																	if (sok == null) {
+																		c.writeLine("the user '" + conn.modCnt() + "' disconnected");
+																	} else {
+																		c.writeLine("the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress());
+																	}
+																}, cs, spw);
 											} catch (IOException e) {
 												c.writeLine("error at the server thread: " + e.toString());
 											} finally {
@@ -620,8 +623,7 @@ public class SquareConquererCUI implements Runnable {
 			}
 			case 's' -> {
 				RootWorld rw      = (RootWorld) world;
-				String    portStr = c.readLine("enter now the port on which the server should listen (default is " + Connection.DEFAULT_PORT + "): ")
-						.trim();
+				String    portStr = c.readLine("enter now the port on which the server should listen (default is " + Connection.DEFAULT_PORT + "): ").trim();
 				int       port    = portStr.isEmpty() ? Connection.DEFAULT_PORT : Integer.parseInt(portStr);
 				char[]    sp      = serverPW;
 				serverPW = null;
@@ -632,7 +634,11 @@ public class SquareConquererCUI implements Runnable {
 						Map<User, Connection> cs0 = new HashMap<>();
 						connects = cs0;
 						Connection.ServerAccept.accept(port, rw, (conn, sok) -> {
-							c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
+							if (sok == null) {
+								c.writeLine("the user '" + conn.usr.name() + "' disconnected");
+							} else {
+								c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
+							}
 						}, cs0, sp);
 					} catch (IOException e) {
 						c.writeLine("error on server thread: " + e.toString());
@@ -808,7 +814,7 @@ public class SquareConquererCUI implements Runnable {
 					}
 				}
 				world = new RootWorld.Builder(usr.makeRoot(), xlen, ylen);
-				usr = world.user();
+				usr   = world.user();
 			}
 			case "print", "print.types" -> cmdWorldAllTilesType();
 			case "print.resources" -> cmdWorldAllTilesResources();
@@ -869,8 +875,7 @@ public class SquareConquererCUI implements Runnable {
 					return;
 				}
 				Path p = Path.of(args.get(i));
-				if (!"save-all-force".equals(args.get(i)) && Files.exists(p)
-						&& ask("the save file already exists, proceed? ([p]roceed|[c]ancel)", "pc") == 'c') {
+				if (!"save-all-force".equals(args.get(i)) && Files.exists(p) && ask("the save file already exists, proceed? ([p]roceed|[c]ancel)", "pc") == 'c') {
 					break;
 				}
 				try (OutputStream out = Files.newOutputStream(p); Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, usr)) {
@@ -890,8 +895,7 @@ public class SquareConquererCUI implements Runnable {
 					return;
 				}
 				Path p = Path.of(args.get(i));
-				if (!"save-force".equals(args.get(i)) && Files.exists(p)
-						&& ask("the save file already exists, proceed? ([p]roceed|[c]ancel)", "pc") == 'c') {
+				if (!"save-force".equals(args.get(i)) && Files.exists(p) && ask("the save file already exists, proceed? ([p]roceed|[c]ancel)", "pc") == 'c') {
 					break;
 				}
 				try (OutputStream out = Files.newOutputStream(p); Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, usr)) {
@@ -1530,10 +1534,13 @@ public class SquareConquererCUI implements Runnable {
 				connects     = cs;
 				serverThread = threadStart(() -> {
 									try {
-										Connection.ServerAccept.accept(sst.port, rw,
-												(conn, sok) -> c.writeLine(
-														"accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")"),
-												cs, serverPW);
+										Connection.ServerAccept.accept(sst.port, rw, (conn, sok) -> {
+															if (sok == null) {
+																c.writeLine("the user '" + conn.usr.name() + "' disskonnected");
+															} else {
+																c.writeLine("accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")");
+															}
+														}, cs, serverPW);
 									} catch (IOException e) {
 										c.writeLine("error on server thread: " + e.toString());
 									} finally {
@@ -1617,8 +1624,7 @@ public class SquareConquererCUI implements Runnable {
 			} catch (NumberFormatException e) {
 				c.writeLine("error: " + e.toString());
 			}
-		} while (retry(val < min || val > max,
-				"the minimum number is " + min + (max != Integer.MAX_VALUE ? " and the maximum number is " + max : "")));
+		} while (retry(val < min || val > max, "the minimum number is " + min + (max != Integer.MAX_VALUE ? " and the maximum number is " + max : "")));
 		return val;
 	}
 	

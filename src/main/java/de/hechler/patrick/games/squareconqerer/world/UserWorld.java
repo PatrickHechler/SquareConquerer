@@ -1,19 +1,19 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world;
 
 import java.lang.StackWalker.Option;
@@ -44,7 +44,8 @@ public final class UserWorld implements World {
 	
 	private static final String USR_OF_ONLY_WHEN_USER_CHANGE = "user of is only possible, when the user changes!";
 	private static final String THIS_METHOD_IS_INTERN        = "this method is intern";
-	private static final String UNKNOWN_ENTITY_TYPE          = "unknown entity type: ";
+	
+	private static final Tile NOT_EXPLORED = new Tile(GroundType.NOT_EXPLORED, OreResourceType.NONE, false);
 	
 	private final World             world;
 	private final User              usr;
@@ -74,6 +75,7 @@ public final class UserWorld implements World {
 	 * @param w      the original {@link World}
 	 * @param usr    the user
 	 * @param modCnt the modify count of the user
+	 * 
 	 * @return a world with the given user, which is base on the given world
 	 */
 	public static World of(World w, User usr, int modCnt) {
@@ -92,7 +94,9 @@ public final class UserWorld implements World {
 	 * @param w      the original {@link World}
 	 * @param usr    the user
 	 * @param modCnt the modify count of the user
+	 * 
 	 * @return a world with the given user, which is base on the given world
+	 * 
 	 * @throws IllegalStateException if the worlds user is the given user
 	 */
 	public static UserWorld usrOf(World w, User usr, int modCnt) throws IllegalStateException {
@@ -173,32 +177,14 @@ public final class UserWorld implements World {
 			update();
 		}
 		if (this.visible != null && this.visible[x][y]) {
-			return this.cach[x][y];
-		} else {
-			Tile t = this.cach != null && this.cach[x][y] != null ? this.cach[x][y] : new Tile(GroundType.NOT_EXPLORED, OreResourceType.NONE, false);
-			addMyEntities(x, y, t);
-			return t;
-		}
-	}
-	
-	private void addMyEntities(int x, int y, Tile t) throws AssertionError {
-		List<Entity> list = this.entities.get(this.usr);
-		if (list != null) {
-			Unit     u = null;
-			Building b = null;
-			for (Entity e : list) {
-				if (e.x() == x && e.y() == y) {
-					if (e instanceof Unit u0) {
-						u = u0;
-					} else if (e instanceof Building b0) {
-						b = b0;
-					} else {
-						throw new AssertionError(UNKNOWN_ENTITY_TYPE + e.getClass());
-					}
-				}
+			if (this.cach[x][y] == null) {
+				this.cach[x][y] = this.world.tile(x, y).copy();
 			}
-			t.unit(u);
-			t.build(b);
+			return this.cach[x][y];
+		} else if (this.cach == null || this.cach[x][y] == null) {
+			return NOT_EXPLORED;
+		} else {
+			return this.cach[x][y];
 		}
 	}
 	
@@ -238,74 +224,68 @@ public final class UserWorld implements World {
 		List<Entity>            list = all.get(this.usr);
 		if (list == null) {
 			this.entities = Collections.emptyMap();
-			this.visible  = null;
+			if (this.visible != null) {
+				for (boolean[] v : this.visible) {
+					Arrays.fill(v, false);
+				}
+			}
+			this.visible = null;
 			return;
 		}
-		es.put(this.usr, list);
 		if (this.cach == null) {
 			this.cach = new Tile[this.world.xlen()][this.world.ylen()];
 		}
 		if (this.visible == null) {
 			this.visible = new boolean[this.world.xlen()][this.world.ylen()];
 		} else {
-			for (boolean[] v : this.visible) { Arrays.fill(v, false); }
+			for (boolean[] v : this.visible) {
+				Arrays.fill(v, false);
+			}
 		}
 		for (Entity e : list) {
 			int v = e.viewRange();
 			int x = e.x();
 			int y = e.y();
-			switch (e) {
-			case Unit u -> this.cach[x][y].unit(u);
-			case Building b -> this.cach[y][y].build(b);
-			default -> throw new AssertionError(UNKNOWN_ENTITY_TYPE + e);
+			if (v == 0) {
+				if (this.cach[x][y] == null) {
+					this.cach[x][y] = NOT_EXPLORED.copy();
+				}
+				switch (e) {
+				case Unit u -> this.cach[x][y].unit(u);
+				case Building b -> this.cach[x][y].build(b);
+				}
 			}
 			while (--v >= 0) {
-				int x0 = x - v;
-				int y0 = y;
-				for (; x0 <= x; x0++, y0++) {
-					cach(es, x, y, x0, y0);
-				}
-				x0 = x;
-				y0 = y - v;
-				for (; y0 <= y; x0++, y0++) {
-					cach(es, x, y, x0, y0);
-				}
-				x0 = x + v - 1;
-				y0 = y;
-				for (; x0 >= x; x0--, y0++) {
-					cach(es, x, y, x0, y0);
-				}
-				x0 = x;
-				y0 = y + v - 1;
-				for (; x0 >= x; x0--, y0--) {
-					cach(es, x, y, x0, y0);
+				for (int v0 = 0; v0 <= v; v0++) {
+					cach(es, x + v - v0, y + v0);
+					cach(es, x + v - v0, y - v0);
+					cach(es, x - v + v0, y + v0);
+					cach(es, x - v + v0, y - v0);
 				}
 			}
 		}
+		for (int x = 0; x < this.cach.length; x++) {
+			for (int y = 0; y < this.cach[x].length; y++) {
+				if (this.cach[x][y] == null) continue;
+				for (Entity e : this.cach[x][y].entities()) {
+					es.computeIfAbsent(e.owner(), u -> new ArrayList<>()).add(e);
+				}
+			}
+		}
+		es.replaceAll((u, l) -> Collections.unmodifiableList(l));
 		this.entities = Collections.unmodifiableMap(es);
 	}
 	
-	private void cach(Map<User, List<Entity>> es, int x, int y, int x0, int y0) {
+	private void cach(Map<User, List<Entity>> es, int x0, int y0) {
 		if (x0 < 0 || y0 < 0 || x0 >= this.visible.length || y0 >= this.visible[x0].length || this.visible[x0][y0]) {
 			return;
 		}
 		this.visible[x0][y0] = true;
-		Tile t = this.world.tile(x0, y0);
-		add(es, t.unit());
-		add(es, t.building());
-		this.cach[x][y] = t.copy();
+		Tile t = this.world.tile(x0, y0).copy();
+		this.cach[x0][y0] = t;
 	}
 	
-	private static void add(Map<User, List<Entity>> result, Entity e) {
-		if (e != null) {
-			List<Entity> list = result.computeIfAbsent(e.owner(), usr -> new ArrayList<>());
-			if (!list.contains(e)) {
-				list.add(e);
-			}
-		}
-	}
-	
-	private void nextTurn(byte[] wh, byte[] th) { this.entities = null; }
+	private void nextTurn(@SuppressWarnings("unused") byte[] wh, @SuppressWarnings("unused") byte[] th) { this.entities = null; }
 	
 	/**
 	 * this methods just delegates to its backing world<br>

@@ -21,12 +21,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import de.hechler.patrick.games.squareconqerer.addons.SquareConquererAddon;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
-import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
 public non-sealed interface Building extends Entity {
 	
@@ -45,7 +44,7 @@ public non-sealed interface Building extends Entity {
 		private static int calcCount() {
 			int         cnt   = 1;
 			Set<String> names = new HashSet<>();
-			for (SquareConquererAddon addon : SquareConquererAddon.addons()) {
+			for (SCAddon addon : SCAddon.addons()) {
 				Map<Class<? extends Entity>, String> cls = addon.entities().entityClassses();
 				for (Entry<Class<? extends Entity>, String> entry : cls.entrySet()) {
 					if (Building.class.isAssignableFrom(entry.getClass())) continue;
