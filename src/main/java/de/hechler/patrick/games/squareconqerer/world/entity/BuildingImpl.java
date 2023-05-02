@@ -48,7 +48,7 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	 * @param maxlives        the {@link Entity#maxLives()} and the {@link Entity#lives()}
 	 * @param neededResources the {@link Building#neededResources()}
 	 */
-	protected BuildingImpl(int x, int y, User usr, int maxlives, IntMap<ProducableResourceType> neededResources) {
+	public BuildingImpl(int x, int y, User usr, int maxlives, IntMap<ProducableResourceType> neededResources) {
 		super(x, y, usr, maxlives, maxlives, 0);
 		this.neededResources = neededResources;
 		for (int val : neededResources.array()) {
@@ -68,7 +68,7 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	 * @param neededResources     the {@link Building#neededResources()}
 	 * @param remainingBuildTurns the {@link Building#remainingBuildTurns()}
 	 */
-	protected BuildingImpl(int x, int y, User usr, int maxlives, int lives, IntMap<ProducableResourceType> neededResources, int remainingBuildTurns) {
+	public BuildingImpl(int x, int y, User usr, int maxlives, int lives, IntMap<ProducableResourceType> neededResources, int remainingBuildTurns) {
 		super(x, y, usr, maxlives, lives, 0);
 		this.neededResources  = neededResources;
 		this.neededBuildTurns = remainingBuildTurns;
@@ -171,6 +171,18 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 			this.neededResources = null;
 		}
 		return this.neededBuildTurns > 0;
+	}
+	
+	/** {@inheritDoc} */
+	@Override
+	public String type() {
+		return "Building"; //$NON-NLS-1$
+	}
+	
+	/** {@inheritDoc} */
+	@Override
+	public String name() {
+		return super.type();
 	}
 	
 }

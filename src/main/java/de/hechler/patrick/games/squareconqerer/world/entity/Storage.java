@@ -33,14 +33,15 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
  */
 public final class Storage extends BuildingImpl {
 	
+	private static final String UNKNOWN_RESOURCE_TYPE = "unknown resource type: ";
 	/**
 	 * the number used when {@link TheGameAddon} sends instances of this class
 	 */
-	public static final int    NUMBER = 0x5A1C58D0;
+	public static final int     NUMBER                = 0x5A1C58D0;
 	/**
 	 * the name of this building type
 	 */
-	public static final String NAME   = "Storage";
+	public static final String  NAME                  = "Storage";
 	
 	private static final int ORIDINAL_BASE_VALUE = 1;
 	private static int       oridinal;
@@ -60,8 +61,8 @@ public final class Storage extends BuildingImpl {
 	/**
 	 * creates a new storage with the given values
 	 * 
-	 * @param x the x coordinate of the storage
-	 * @param y the y coordinate of the storage
+	 * @param x   the x coordinate of the storage
+	 * @param y   the y coordinate of the storage
 	 * @param usr the owner of the storage
 	 */
 	public Storage(int x, int y, User usr) {
@@ -71,14 +72,14 @@ public final class Storage extends BuildingImpl {
 	/**
 	 * creates a new storage with the given values
 	 * 
-	 * @param x the x coordinate of the storage
-	 * @param y the y coordinate of the storage
-	 * @param usr the owner of the storage
-	 * @param lives the current lives of the storage
+	 * @param x                    the x coordinate of the storage
+	 * @param y                    the y coordinate of the storage
+	 * @param usr                  the owner of the storage
+	 * @param lives                the current lives of the storage
 	 * @param neededBuildResources the remaining needed resources to build this storage
-	 * @param remainBuildTurns the remaining build turns needed to build this storage
-	 * @param ores the stored ore resources
-	 * @param producable the stored producable resources
+	 * @param remainBuildTurns     the remaining build turns needed to build this storage
+	 * @param ores                 the stored ore resources
+	 * @param producable           the stored producable resources
 	 */
 	public Storage(int x, int y, User usr, int lives, IntMap<ProducableResourceType> neededBuildResources, int remainBuildTurns, IntMap<OreResourceType> ores,
 		IntMap<ProducableResourceType> producable) {
@@ -94,16 +95,18 @@ public final class Storage extends BuildingImpl {
 		return res;
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	protected void finishedBuildStore(Unit u, Resource res, int amount) throws TurnExecutionException {
 		switch (res) {
 		case @SuppressWarnings("preview") ProducableResourceType prt -> this.producable.addBy(prt, amount);
 		case @SuppressWarnings("preview") OreResourceType prt -> this.ores.addBy(prt, amount);
-		default -> throw new AssertionError("unknown resource type: " + res.getClass());
+		default -> throw new AssertionError(UNKNOWN_RESOURCE_TYPE + res.getClass());
 		}
 		u.uncarry(res, amount);
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public void giveRes(Unit u, Resource res, int amount) throws TurnExecutionException {
 		if (amount <= 0) {
@@ -123,28 +126,36 @@ public final class Storage extends BuildingImpl {
 				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 		} else {
-			throw new AssertionError("unknown resource type: " + res.getClass());
+			throw new AssertionError(UNKNOWN_RESOURCE_TYPE + res.getClass());
 		}
 		u.carry(res, amount);
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public Storage copy() {
 		return new Storage(super.x, super.y, owner(), lives(), neededResources(), remainingBuildTurns(), this.ores, this.producable);
 	}
 	
+	/**
+	 * returns the current amount of stored producable resources
+	 * 
+	 * @return the current amount of stored producable resources
+	 */
 	public IntMap<ProducableResourceType> producable() {
-		IntMap<ProducableResourceType> res = IntMap.create(ProducableResourceType.class);
-		res.setAll(this.producable);
-		return res;
+		return this.producable.copy();
 	}
 	
+	/**
+	 * returns the current amount of stored ore resources
+	 * 
+	 * @return the current amount of stored ore resources
+	 */
 	public IntMap<OreResourceType> ores() {
-		IntMap<OreResourceType> res = IntMap.create(OreResourceType.class);
-		res.setAll(this.ores);
-		return res;
+		return this.ores.copy();
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public int ordinal() {
 		if (oridinal == 0) {

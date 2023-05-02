@@ -26,6 +26,11 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 
+/**
+ * this interface lets addons add entities and create/send them
+ * 
+ * @author Patrick Hechler
+ */
 public interface AddonEntities {
 	
 	/**
@@ -45,11 +50,11 @@ public interface AddonEntities {
 	 * receives a unit over the given {@link Connection}
 	 * 
 	 * @param conn the connection on which the unit should be read
+	 * @param usr  the owner of the unit
 	 * 
 	 * @return the unit which was send over the connection
 	 * 
-	 * @throws IOException              if the connection throws an
-	 *                                  {@link IOException}
+	 * @throws IOException              if the connection throws an {@link IOException}
 	 * @throws StreamCorruptedException if the connection retrieved invalid data
 	 */
 	Unit recieveUnit(Connection conn, User usr) throws IOException, StreamCorruptedException;
@@ -71,11 +76,11 @@ public interface AddonEntities {
 	 * receives a building over the given {@link Connection}
 	 * 
 	 * @param conn the connection on which the building should be read
+	 * @param usr  the owner of the building
 	 * 
 	 * @return the building which was send over the connection
 	 * 
-	 * @throws IOException              if the connection throws an
-	 *                                  {@link IOException}
+	 * @throws IOException              if the connection throws an {@link IOException}
 	 * @throws StreamCorruptedException if the connection retrieved invalid data
 	 */
 	Building recieveBuild(Connection conn, User usr) throws IOException, StreamCorruptedException;
@@ -83,22 +88,17 @@ public interface AddonEntities {
 	/**
 	 * returns a map containing <b>all</b> entity classes added by this addon.
 	 * <p>
-	 * note that all classes means all classes, subclasses are also needed to be in
-	 * this map, even if their superclass is already in the map.
+	 * note that all classes means all classes, subclasses are also needed to be in this map, even if their superclass is already in the map.
 	 * <p>
 	 * the mapping keys are the classes and the values are the names<br>
-	 * the name can be chosen freely, it does not needs to be the
-	 * {@link Class#getName()} or something else
+	 * the name can be chosen freely, it does not needs to be the {@link Class#getName()} or something else
 	 * <p>
 	 * the map is allowed to have multiple classes with the same name<br>
-	 * if there are multiple maps to the same key, they are considered to be the
-	 * same type.<br>
-	 * the map is not allowed to have unit classes with the same name as a building
-	 * class (classes are only allowed to have the same name, if they are both unit
-	 * or both building)
+	 * if there are multiple maps to the same key, they are considered to be the same type.<br>
+	 * the map is not allowed to have unit classes with the same name as a building class (classes are only allowed to have the same name, if they are both unit or
+	 * both building)
 	 * 
-	 * @return a map containing all entity classes created by this addon as keys and
-	 *         their names as values
+	 * @return a map containing all entity classes created by this addon as keys and their names as values
 	 */
 	Map<Class<? extends Entity>, String> entityClassses();
 	
@@ -128,11 +128,12 @@ public interface AddonEntities {
 	 * has to result in <code>true</code> (and unused object allocation)
 	 * 
 	 * @param <E>     the entity type
-	 * @param clsName the class name of the entity to create (see
-	 *                {@link #entityClassses()})
+	 * @param clsName the class name of the entity to create (see {@link #entityClassses()})
 	 * @param usr     the {@link Entity#owner() owner}
 	 * @param traits  the traits of the entity (see {@link #traits(String)})
-	 * 				
+	 * @param x       the x coordinate of the entity
+	 * @param y       the x coordinate of the entity
+	 * 
 	 * @return the newly created entity with the given traits
 	 */
 	<E extends Entity> E createEntity(String clsName, User usr, Map<String, EntityTraitWithVal> traits, int x, int y);

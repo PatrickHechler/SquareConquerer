@@ -149,7 +149,7 @@ public class SquareConquererGUI {
 	private JScrollPane    scrollPane;
 	private JButton        hoveringRigthButton;
 	private JButton        hoveringLeftButton;
-	private BuildMode      myBuildMode;
+	private TileChanger      myBuildMode;
 	private JButton[][]    btns;
 	private EntityTurn[][] turns;
 	
@@ -1752,7 +1752,7 @@ public class SquareConquererGUI {
 		}
 		
 		if (this.myBuildMode == null) {
-			this.myBuildMode = new BuildMode();
+			this.myBuildMode = new TileChanger();
 		}
 		JDialog dialog = createDialog();
 		dialog.setTitle("change the build mode");
