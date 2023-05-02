@@ -18,32 +18,62 @@ package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import java.awt.image.BufferedImage;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
+import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
+/**
+ * this class is used to help implementing the {@link Entity} interface.<br>
+ * if you want to use this class for your own {@link EntityImpl}, see {@link MyUnit} and {@link MyBuild}
+ * 
+ * @author Patrick Hechler
+ */
 public abstract sealed class EntityImpl implements ImageableObj permits BuildingImpl, UnitImpl {
 	// do not implement Entity, so that a enhanced switch does not need a default case
 	
-	private final User usr;
-	private int        maxlives;
-	private int        lives;
-	private int        viewRange;
+	private static final String EVERY_ENTITY_HAS_AN_OWNER = Messages.get("EntityImpl.no-owner");                        //$NON-NLS-1$
+	private static final String NEGATIVE_VIEW_RANGE       = Messages.get("EntityImpl.negative-view-range");             //$NON-NLS-1$
+	private static final String LIVES_IS                  = Messages.get("EntityImpl.lives-is");                        //$NON-NLS-1$
+	private static final String MAXLIVES_LESS_LIVES       = Messages.get("EntityImpl.maxlives-less-lives-maxlives-is"); //$NON-NLS-1$
+	private static final String LIVES_NOT_STRICT_POSITIVE = Messages.get("EntityImpl.lives-not-strict-posibive");       //$NON-NLS-1$
 	
-	protected int x;
-	protected int y;
+	/** the {@link #owner()} of this entity */
+	protected final User usr;
+	/** the {@link #maxLives() maximum lives} amount of this entity */
+	protected final int  maxlives;
+	/** the current {@link #lives()} of this entity */
+	protected int        lives;
+	/** the current {@link #viewRange()} of this entity */
+	protected int        viewRange;
+	/** the {@link Entity#x()} coordinate of the entity */
+	protected int        x;
+	/** the {@link Entity#y()} coordinate of the entity */
+	protected int        y;
 	
+	/**
+	 * creates a new {@link EntityImpl} with the given values
+	 * 
+	 * @param x         the {@link #x} coordinate
+	 * @param y         the {@link #y} coordinate
+	 * @param usr       the {@link #owner()}
+	 * @param maxlives  the {@link #maxLives()}
+	 * @param lives     the {@link #lives}
+	 * @param viewRange the {@link #viewRange}
+	 */
 	public EntityImpl(int x, int y, User usr, int maxlives, int lives, int viewRange) {
-		if (maxlives <= 0) {
-			throw new IllegalArgumentException("maxlives is not strict positive: " + maxlives);
+		if (lives <= 0) {
+			throw new IllegalArgumentException(LIVES_NOT_STRICT_POSITIVE + maxlives);
 		}
 		if (maxlives < lives) {
-			throw new IllegalArgumentException("maxlives is less than lives: maxlives=" + maxlives + " lives=" + lives);
+			throw new IllegalArgumentException(MAXLIVES_LESS_LIVES + maxlives + LIVES_IS + lives);
 		}
 		if (viewRange < 0) {
-			throw new IllegalArgumentException("the view range is negative");
+			throw new IllegalArgumentException(NEGATIVE_VIEW_RANGE);
 		}
 		if (usr == null) {
-			throw new NullPointerException("every entity has an owner (even if it's the root)");
+			throw new NullPointerException(EVERY_ENTITY_HAS_AN_OWNER);
 		}
 		this.usr       = usr;
 		this.maxlives  = maxlives;
@@ -54,34 +84,61 @@ public abstract sealed class EntityImpl implements ImageableObj permits Building
 	}
 	
 	/**
-	 * returns the x value
+	 * returns the {@link #x} value
 	 * 
-	 * @return the x value
+	 * @return the {@link #x} value
 	 * 
 	 * @see Entity#x()
 	 */
 	public int x() { return this.x; }
 	
 	/**
-	 * returns the y value
+	 * returns the {@link #y} value
 	 * 
-	 * @return the y value
+	 * @return the {@link #y} value
 	 * 
 	 * @see Entity#y()
 	 */
 	public int y() { return this.y; }
 	
+	/**
+	 * returns the {@link #usr}
+	 * 
+	 * @return the {@link #usr}
+	 */
 	public User owner() { return this.usr; }
 	
+	/**
+	 * returns the {@link #lives}
+	 * 
+	 * @return the {@link #lives}
+	 */
 	public int lives() { return this.lives; }
 	
+	/**
+	 * returns the {@link #maxlives}
+	 * 
+	 * @return the {@link #maxlives}
+	 */
 	public int maxLives() { return this.maxlives; }
 	
+	/**
+	 * returns the {@link #viewRange}
+	 * 
+	 * @return the {@link #viewRange}
+	 */
 	public int viewRange() { return this.viewRange; }
 	
-	protected void checkOwner(Entity e) {
+	/**
+	 * checks that the given entity has the same {@link Entity#owner()} as this entity
+	 * 
+	 * @param e the other entity
+	 * 
+	 * @throws TurnExecutionException if the given entity has a different owner
+	 */
+	protected void checkOwner(Entity e) throws TurnExecutionException {
 		if (e.owner() != this.usr) {
-			throw new IllegalStateException("the entity does not belong to my owner");
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
 	}
 	

@@ -17,14 +17,13 @@
 package de.hechler.patrick.games.squareconqerer.addons.entities;
 
 import java.io.IOException;
-import java.io.StreamCorruptedException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.stuff.IntMap;
 import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
@@ -33,14 +32,30 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
+/**
+ * this class can be used to help implementing the {@link AddonEntities} interface
+ * 
+ * @author Patrick Hechler
+ */
 public abstract class AbstractAddonEntities implements AddonEntities {
 	
 	private final Map<Class<? extends Entity>, String> entitiCls;
 	
+	/**
+	 * creates a new {@link AbstractAddonEntities} instance
+	 * 
+	 * @param entitiCls the entity classes with their names (see {@link #entityClassses()})
+	 */
 	public AbstractAddonEntities(Map<Class<? extends Entity>, String> entitiCls) {
 		this.entitiCls = Collections.unmodifiableMap(new HashMap<>(entitiCls));
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this method sends the units coordinates, lives, carry amount and resource<br>
+	 * the rest has to be send by the {@link #finishSendUnit(Connection, Unit)} method
+	 */
 	@Override
 	public void sendUnit(Connection conn, Unit u) throws IOException {
 		conn.writeInt(u.x());
@@ -54,10 +69,26 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 		finishSendUnit(conn, u);
 	}
 	
+	/**
+	 * sends the given units special data<br>
+	 * the ({@link Entity#x() x}|{@link Entity#y() y}) coordinates, {@link Entity#lives() lives}, {@link Unit#carryAmount() carryAmount} and {@link Unit#carryRes()
+	 * carryRes} are already send when this method is invoked by {@link #sendUnit(Connection, Unit)}
+	 * 
+	 * @param conn the connection
+	 * @param u    the unit to be send
+	 * 
+	 * @throws IOException if an IO error occurs
+	 */
 	protected abstract void finishSendUnit(Connection conn, Unit u) throws IOException;
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this method receives the units coordinates, lives, carry amount and resource<br>
+	 * the rest has to be received by the {@link #finishRecieveUnit(Connection, User, int, int, int, int, Resource)} method
+	 */
 	@Override
-	public Unit recieveUnit(Connection conn, User usr) throws IOException, StreamCorruptedException {
+	public Unit recieveUnit(Connection conn, User usr) throws IOException {
 		int      x     = conn.readPos();
 		int      y     = conn.readPos();
 		int      lives = conn.readStrictPos();
@@ -69,8 +100,33 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 		return finishRecieveUnit(conn, usr, x, y, lives, ca, res);
 	}
 	
+	/**
+	 * receives the given units special data<br>
+	 * the ({@link Entity#x() x}|{@link Entity#y() y}) coordinates, {@link Entity#lives() lives}, {@link Unit#carryAmount() carryAmount} and {@link Unit#carryRes()
+	 * carryRes} are already send when this method is invoked by {@link #sendUnit(Connection, Unit)}
+	 * 
+	 * @param conn  the connection
+	 * @param usr   the {@link Entity#owner() owner} of the unit
+	 * @param x     the {@link Entity#x() x} coordinate of the unit
+	 * @param y     the {@link Entity#y() y} coordinate of the unit
+	 * @param lives the {@link Entity#lives() lives} of the unit
+	 * @param ca    the {@link Unit#carryAmount() carry Amount} of the unit
+	 * @param res   the {@link Unit#carryRes() carry Resource} of the unit
+	 * 
+	 * @return the received unit
+	 * 
+	 * @throws IOException if an IO error occurs
+	 */
 	protected abstract Unit finishRecieveUnit(Connection conn, User usr, int x, int y, int lives, int ca, Resource res) throws IOException;
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this method sends the ({@link Entity#x() x}|{@link Entity#y() y}) coordinates, {@link Entity#lives() lives}, {@link Building#isFinishedBuild() build finished}
+	 * status and if {@link Building#isFinishedBuild()} is <code>false</code> this method also sends the {@link Building#remainingBuildTurns() remaining Build-Turns}
+	 * and {@link Building#neededResources() needed Resources}<br>
+	 * everything else has to be send by the {@link #finishSendBuild(Connection, Building)} method
+	 */
 	@Override
 	public void sendBuild(Connection conn, Building b) throws IOException {
 		conn.writeInt(b.x());
@@ -80,7 +136,7 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 		conn.writeByte(fb ? 1 : 0);
 		if (!fb) {
 			conn.writeInt(b.remainingBuildTurns());
-			EnumIntMap<ProducableResourceType> res = b.neededResources();
+			IntMap<ProducableResourceType> res = b.neededResources();
 			if (res == null) {
 				conn.writeInt(0);
 			} else {
@@ -94,20 +150,39 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 		finishSendBuild(conn, b);
 	}
 	
-	protected abstract void finishSendBuild(Connection conn, Building b) throws IOException, StreamCorruptedException;
+	/**
+	 * sends the buildings special data<br>
+	 * when this method is invoked, the ({@link Entity#x() x}|{@link Entity#y() y}) coordinates, {@link Entity#lives() lives}, {@link Building#isFinishedBuild()
+	 * build finished} status and if <code>{@link Building#isFinishedBuild() b.isFinishedBuild()} == false</code> also the {@link Building#remainingBuildTurns()
+	 * remaining Build-Turns} and {@link Building#neededResources() needed Resources} are already send
+	 * 
+	 * @param conn the connection
+	 * @param b    the building to be send
+	 * 
+	 * @throws IOException if an IO error occurs
+	 */
+	protected abstract void finishSendBuild(Connection conn, Building b) throws IOException;
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this method only receives the ({@link Entity#x() x}|{@link Entity#y() y}) coordinates, {@link Entity#lives() lives}, {@link Building#isFinishedBuild() build
+	 * finished} status and if {@link Building#isFinishedBuild()} is <code>false</code> this method also the {@link Building#remainingBuildTurns() remaining
+	 * Build-Turns} and {@link Building#neededResources() needed Resources}<br>
+	 * everything else has to be received by the {@link #finishSendBuild(Connection, Building)} method
+	 */
 	@Override
-	public Building recieveBuild(Connection conn, User usr) throws IOException, StreamCorruptedException {
-		int                                x          = conn.readPos();
-		int                                y          = conn.readPos();
-		int                                lives      = conn.readStrictPos();
-		boolean                            fb         = conn.readByte(0, 1) != 0;
-		int                                buildTurns = 0;
-		EnumIntMap<ProducableResourceType> res        = null;
+	public Building recieveBuild(Connection conn, User usr) throws IOException {
+		int                            x          = conn.readPos();
+		int                            y          = conn.readPos();
+		int                            lives      = conn.readStrictPos();
+		boolean                        fb         = conn.readByte(0, 1) != 0;
+		int                            buildTurns = 0;
+		IntMap<ProducableResourceType> res        = null;
 		if (!fb) {
 			buildTurns = conn.readPos();
 			if (conn.readInt(0, ProducableResourceType.count()) != 0) {
-				res = new EnumIntMap<>(ProducableResourceType.class);
+				res = IntMap.createEnumIntMap(ProducableResourceType.class);
 				int[] arr = res.array();
 				for (int i = 0; i < arr.length; i++) {
 					arr[i] = conn.readPos();
@@ -117,9 +192,30 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 		return finishRecieveBuild(conn, usr, x, y, lives, fb, buildTurns, res);
 	}
 	
-	protected abstract Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int remTurns,
-			EnumIntMap<ProducableResourceType> res) throws IOException, StreamCorruptedException;
+	/**
+	 * receives the buildings special data
+	 * <p>
+	 * this method does not need to receive the ({@link Entity#x() x}|{@link Entity#y() y}) coordinates, {@link Entity#lives() lives},
+	 * {@link Building#isFinishedBuild() build finished} status and if {@link Building#isFinishedBuild()} is <code>false</code> this method also the
+	 * {@link Building#remainingBuildTurns() remaining Build-Turns} and {@link Building#neededResources() needed Resources}
+	 * 
+	 * @param conn       the connection
+	 * @param usr        the {@link Entity#owner() owner} of the building
+	 * @param x          the {@link Entity#x() x} coordinate of the building
+	 * @param y          the {@link Entity#y() y} coordinate of the building
+	 * @param lives      the {@link Entity#lives() lives} of the building
+	 * @param fb         the {@link Building#isFinishedBuild() finished build} status of the building
+	 * @param buildTurns the remaining {@link Building#remainingBuildTurns() build turns} of the building
+	 * @param buildRes   the needed {@link Building#neededResources() build resources} of the building
+	 * 
+	 * @return the received building
+	 * 
+	 * @throws IOException if an IO error occurs
+	 */
+	protected abstract Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int buildTurns,
+			IntMap<ProducableResourceType> buildRes) throws IOException;
 	
+	/** {@inheritDoc} */
 	@Override
 	public Map<Class<? extends Entity>, String> entityClassses() { return this.entitiCls; }
 	

@@ -36,7 +36,7 @@ import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.world.PageWorld;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
-import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
+import de.hechler.patrick.games.squareconqerer.world.entity.Storage;
 
 public final class TheGameAddon extends SCAddon implements AddonDefaults {
 	
@@ -163,9 +163,9 @@ public final class TheGameAddon extends SCAddon implements AddonDefaults {
 	@Override
 	public Map<String, Collection<Map<String, EntityTraitWithVal>>> startEntities() {
 		Map<String, Collection<Map<String, EntityTraitWithVal>>> result = new HashMap<>();
-		Map<String, EntityTrait>                                 orig   = this.entities.traits(StoreBuild.NAME);
+		Map<String, EntityTrait>                                 orig   = this.entities.traits(Storage.NAME);
 		Map<String, EntityTraitWithVal>                          wv     = useDefaults(orig);
-		result.put(StoreBuild.NAME, List.of(wv));
+		result.put(Storage.NAME, List.of(wv));
 		orig = this.entities.traits(Carrier.NAME);
 		wv   = useDefaults(orig);
 		result.put(Carrier.NAME, List.of(wv));

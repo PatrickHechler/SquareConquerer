@@ -783,12 +783,13 @@ public class Connection implements Closeable, WrongInputHandler {
 	 * <p>
 	 * if no timeout was reached the timeoutHandler is ignored (for example if timeout is {@code 0}, <code>null</code> can safely be passed)
 	 * 
+	 * @param <T> the throwable which can be thrown by the executable
+	 * 
 	 * @param timeout        the timeout for this connection during (and after) the execution
 	 * @param exec           the code to be executed while this connection is blocked
 	 * @param timeoutHandler the executable to be executed after the timeout was reached if no timeout was reached the timeoutHandler is ignored (for example if
 	 *                       timeout is {@code 0}, <code>null</code> can safely be passed)
-	 * @param exec           the executable to execute
-	 * 						
+	 * 
 	 * @throws T if the executable throws it
 	 */
 	public <T extends Throwable> void blocked(int timeout, Executable<T> exec, Executable<T> timeoutHandler) throws T {
@@ -801,10 +802,6 @@ public class Connection implements Closeable, WrongInputHandler {
 				timeoutHandler.execute();
 			}
 		}
-	}
-	
-	public boolean isBlocking() {
-		return Thread.holdsLock(this);
 	}
 	
 	public int modCnt() {

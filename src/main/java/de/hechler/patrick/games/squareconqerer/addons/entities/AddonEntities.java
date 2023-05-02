@@ -32,7 +32,7 @@ public interface AddonEntities {
 	 * sends the given unit
 	 * <p>
 	 * this method must send all needed data over the connection<br>
-	 * this method must be compatible with the {@code recieveUnit(...)} method
+	 * this method must be compatible with the {@link #recieveUnit(Connection, User)} method
 	 * 
 	 * @param conn the connection on which the unit should be send
 	 * @param u    the unit to be send
@@ -58,7 +58,7 @@ public interface AddonEntities {
 	 * sends the given building
 	 * <p>
 	 * this method must send all needed data over the connection<br>
-	 * this method must be compatible with the {@code recieveBuild(...)} method
+	 * this method must be compatible with the {@link #recieveBuild(Connection, User)} method
 	 * 
 	 * @param conn the connection on which the unit should be send
 	 * @param b    the building to be send

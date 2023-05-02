@@ -21,11 +21,11 @@ import java.util.Map;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.stuff.IntMap;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
-import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
+import de.hechler.patrick.games.squareconqerer.world.entity.Storage;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
@@ -34,7 +34,7 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 public class TheGameEntities extends AbstractAddonEntities {
 	
 	public TheGameEntities() {
-		super(Map.of(Carrier.class, Carrier.NAME, StoreBuild.class, StoreBuild.NAME));
+		super(Map.of(Carrier.class, Carrier.NAME, Storage.class, Storage.NAME));
 	}
 	
 	@Override
@@ -56,16 +56,16 @@ public class TheGameEntities extends AbstractAddonEntities {
 	@SuppressWarnings("preview")
 	protected void finishSendBuild(Connection conn, Building b) throws IOException {
 		switch (b) {
-		case StoreBuild sb -> {
-			conn.writeInt(StoreBuild.NUMBER);
+		case Storage sb -> {
+			conn.writeInt(Storage.NUMBER);
 			if (sb.isFinishedBuild()) {
-				EnumIntMap<OreResourceType> ores = sb.ores();
+				IntMap<OreResourceType> ores = sb.ores();
 				int[]                       oa   = ores.array();
 				conn.writeInt(oa.length);
 				for (int i = 0; i < oa.length; i++) {
 					conn.writeInt(oa[i]);
 				}
-				EnumIntMap<ProducableResourceType> producable = sb.producable();
+				IntMap<ProducableResourceType> producable = sb.producable();
 				int[]                              pa         = producable.array();
 				conn.writeInt(pa.length);
 				for (int i = 0; i < pa.length; i++) {
@@ -78,11 +78,11 @@ public class TheGameEntities extends AbstractAddonEntities {
 	}
 	
 	@Override
-	protected Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int remTurns, EnumIntMap<ProducableResourceType> res)
+	protected Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int remTurns, IntMap<ProducableResourceType> res)
 			throws IOException {
-		conn.readInt(StoreBuild.NUMBER);
-		EnumIntMap<OreResourceType>        os = new EnumIntMap<>(OreResourceType.class);
-		EnumIntMap<ProducableResourceType> ps = new EnumIntMap<>(ProducableResourceType.class);
+		conn.readInt(Storage.NUMBER);
+		IntMap<OreResourceType>        os = IntMap.createIntIntMap(OreResourceType.class);
+		IntMap<ProducableResourceType> ps = IntMap.createEnumIntMap(ProducableResourceType.class);
 		if (fb) {
 			int[] arr = os.array();
 			conn.readInt(arr.length);
@@ -95,7 +95,7 @@ public class TheGameEntities extends AbstractAddonEntities {
 				arr[i] = conn.readInt();
 			}
 		}
-		return new StoreBuild(x, y, usr, lives, res, remTurns, os, ps);
+		return new Storage(x, y, usr, lives, res, remTurns, os, ps);
 	}
 	
 	@Override
@@ -105,10 +105,10 @@ public class TheGameEntities extends AbstractAddonEntities {
 				EntityTrait.TRAIT_VIEW_RANGE, new EntityTrait.NumberTrait(EntityTrait.TRAIT_VIEW_RANGE, Carrier.VIEW_RANGE), //
 				EntityTrait.TRAIT_MAX_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_MAX_LIVES, Carrier.MAX_LIVES), //
 				EntityTrait.TRAIT_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_LIVES, 0, Carrier.MAX_LIVES, Carrier.MAX_LIVES));
-		case StoreBuild.NAME -> Map.of(//
-				EntityTrait.TRAIT_VIEW_RANGE, new EntityTrait.NumberTrait(EntityTrait.TRAIT_VIEW_RANGE, StoreBuild.VIEW_RANGE), //
-				EntityTrait.TRAIT_MAX_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_MAX_LIVES, StoreBuild.MAX_LIVES), //
-				EntityTrait.TRAIT_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_LIVES, 0, StoreBuild.MAX_LIVES, StoreBuild.MAX_LIVES));
+		case Storage.NAME -> Map.of(//
+				EntityTrait.TRAIT_VIEW_RANGE, new EntityTrait.NumberTrait(EntityTrait.TRAIT_VIEW_RANGE, Storage.VIEW_RANGE), //
+				EntityTrait.TRAIT_MAX_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_MAX_LIVES, Storage.MAX_LIVES), //
+				EntityTrait.TRAIT_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_LIVES, 0, Storage.MAX_LIVES, Storage.MAX_LIVES));
 		default -> throw new AssertionError("unknown class name: " + clsName);
 		};
 	}
@@ -118,8 +118,8 @@ public class TheGameEntities extends AbstractAddonEntities {
 	public <E extends Entity> E createEntity(String clsName, User usr, Map<String, EntityTraitWithVal> traits, int x, int y) {
 		return (E) switch (clsName) {
 		case Carrier.NAME -> new Carrier(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0);
-		case StoreBuild.NAME -> new StoreBuild(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0, new EnumIntMap<>(OreResourceType.class),
-				new EnumIntMap<>(ProducableResourceType.class));
+		case Storage.NAME -> new Storage(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0, IntMap.createIntIntMap(OreResourceType.class),
+				IntMap.createEnumIntMap(ProducableResourceType.class));
 		default -> throw new AssertionError("unknown class name: " + clsName);
 		};
 	}

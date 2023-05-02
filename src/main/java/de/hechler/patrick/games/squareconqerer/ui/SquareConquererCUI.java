@@ -1147,10 +1147,10 @@ public class SquareConquererCUI implements Runnable {
 			for (int x = 0; x < xlen; x++) {
 				Tile t = world.tile(x, y);
 				b.append(switch (t.resource) {
-				case NONE -> ' ';
-				case GOLD_ORE -> 'G';
-				case IRON_ORE -> 'I';
-				case COAL_ORE -> 'C';
+				case Object o when o == OreResourceType.NONE -> ' ';
+				case Object o when o == OreResourceType.GOLD_ORE -> 'G';
+				case Object o when o == OreResourceType.IRON_ORE -> 'I';
+				case Object o when o == OreResourceType.COAL_ORE -> 'C';
 				default -> throw new AssertionError("unknown tile resource: " + t.resource.name());
 				});
 			}

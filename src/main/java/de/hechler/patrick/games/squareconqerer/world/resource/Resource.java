@@ -22,6 +22,6 @@ package de.hechler.patrick.games.squareconqerer.world.resource;
  * 
  * @author Patrick Hechler
  */
-public sealed interface Resource permits OreResourceType, ProducableResourceType {
+public interface Resource {
 	
 }

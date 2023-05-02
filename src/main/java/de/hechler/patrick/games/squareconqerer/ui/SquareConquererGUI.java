@@ -111,7 +111,7 @@ import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock.SeperatingBlock;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.stuff.EnumIntMap;
+import de.hechler.patrick.games.squareconqerer.stuff.IntMap;
 import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
 import de.hechler.patrick.games.squareconqerer.world.PageWorld;
 import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
@@ -121,7 +121,7 @@ import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Carrier;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
-import de.hechler.patrick.games.squareconqerer.world.entity.StoreBuild;
+import de.hechler.patrick.games.squareconqerer.world.entity.Storage;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
@@ -1972,10 +1972,10 @@ public class SquareConquererGUI {
 				}
 				b.append("ground: ").append(t.ground);
 				switch (t.resource) {
-				case GOLD_ORE -> b.append("<br>resource: Gold Ore");
-				case IRON_ORE -> b.append("<br>resource: Iron Ore");
-				case COAL_ORE -> b.append("<br>resource: Coal Ore");
-				case NONE -> {/**/}
+				case Object o when o == OreResourceType.GOLD_ORE -> b.append("<br>resource: Gold Ore");
+				case Object o when o == OreResourceType.IRON_ORE -> b.append("<br>resource: Iron Ore");
+				case Object o when o == OreResourceType.COAL_ORE -> b.append("<br>resource: Coal Ore");
+				case Object o when o == OreResourceType.NONE -> {/**/}
 				default -> throw new AssertionError(t.resource.name());
 				}
 				final String  tt  = b.append("</html>").toString();
@@ -2041,10 +2041,10 @@ public class SquareConquererGUI {
 		dp.add(new JLabel("Building:"));
 		if (b != null) {
 			switch (b) {
-			case StoreBuild sb -> {
+			case Storage sb -> {
 				dp.add(new JLabel("Storage"));
 				generalBuildingInfo(dp, sb, "    ");
-				EnumIntMap<OreResourceType> ores = sb.ores();
+				IntMap<OreResourceType> ores = sb.ores();
 				int[]                       arr  = ores.array();
 				for (int i = 0; i < arr.length; i++) {
 					if (arr[i] > 0) {
@@ -2052,7 +2052,7 @@ public class SquareConquererGUI {
 						dp.add(new JLabel(Integer.toString(arr[i])));
 					}
 				}
-				EnumIntMap<ProducableResourceType> producable = sb.producable();
+				IntMap<ProducableResourceType> producable = sb.producable();
 				arr = producable.array();
 				for (int i = 0; i < arr.length; i++) {
 					if (arr[i] > 0) {
@@ -2100,7 +2100,7 @@ public class SquareConquererGUI {
 			p.add(new JLabel("finished"));
 		} else {
 			p.add(new JLabel("not yet finished"));
-			EnumIntMap<ProducableResourceType> res = b.neededResources();
+			IntMap<ProducableResourceType> res = b.neededResources();
 			if (res != null) {
 				int[] arr = res.array();
 				for (int i = 0; i < ProducableResourceType.count(); i++) {
