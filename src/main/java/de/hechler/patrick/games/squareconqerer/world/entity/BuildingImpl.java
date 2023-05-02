@@ -131,13 +131,13 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	 * 
 	 * @throws TurnExecutionException if this building can not store the given additional resources with the given amount
 	 */
-	@SuppressWarnings("unused")
 	protected void finishedBuildStore(Unit u, Resource r, int amount) throws TurnExecutionException {
 		throw new TurnExecutionException(ErrorType.INVALID_TURN);
 	}
 	
 	/** {@inheritDoc} */
 	@Override
+	@SuppressWarnings("unused")
 	public void giveRes(Unit u, Resource res, int amount) throws TurnExecutionException {
 		throw new TurnExecutionException(ErrorType.INVALID_TURN);
 	}

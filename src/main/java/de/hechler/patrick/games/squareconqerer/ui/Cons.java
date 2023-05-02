@@ -22,11 +22,25 @@ public interface Cons {
 	char[] readPassword();
 	
 	char[] readPassword(String prompt);
-
+	
 	String readLine();
 	
 	String readLine(String prompt);
 	
 	void writeLine(String line);
 	
+}
+
+class Test {
+	private int name;
+	
+	int getName() {
+		System.out.println("getName");
+		return name;
+	}
+	
+	int name() {
+		System.out.println("name");
+		return name;
+	}
 }

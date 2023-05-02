@@ -18,6 +18,7 @@ package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
+import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
 import de.hechler.patrick.games.squareconqerer.stuff.IntMap;
@@ -25,33 +26,69 @@ import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
+/**
+ * this building type can be used to store resources
+ * 
+ * @author Patrick Hechler
+ */
 public final class Storage extends BuildingImpl {
 	
-	public static final String NAME   = "Storage";
+	/**
+	 * the number used when {@link TheGameAddon} sends instances of this class
+	 */
 	public static final int    NUMBER = 0x5A1C58D0;
+	/**
+	 * the name of this building type
+	 */
+	public static final String NAME   = "Storage";
 	
 	private static final int ORIDINAL_BASE_VALUE = 1;
 	private static int       oridinal;
 	
+	/**
+	 * the maximum amount of lives for {@link Storage} instances
+	 */
 	public static final int MAX_LIVES  = 5;
+	/**
+	 * a storage can not see anything itself
+	 */
 	public static final int VIEW_RANGE = 0;
 	
-	private final IntMap<OreResourceType>        ores       = IntMap.createIntIntMap(OreResourceType.class);
-	private final IntMap<ProducableResourceType> producable = IntMap.createEnumIntMap(ProducableResourceType.class);
+	private final IntMap<OreResourceType>        ores       = IntMap.create(OreResourceType.class);
+	private final IntMap<ProducableResourceType> producable = IntMap.create(ProducableResourceType.class);
 	
+	/**
+	 * creates a new storage with the given values
+	 * 
+	 * @param x the x coordinate of the storage
+	 * @param y the y coordinate of the storage
+	 * @param usr the owner of the storage
+	 */
 	public Storage(int x, int y, User usr) {
 		super(x, y, usr, MAX_LIVES, neededRes());
 	}
 	
+	/**
+	 * creates a new storage with the given values
+	 * 
+	 * @param x the x coordinate of the storage
+	 * @param y the y coordinate of the storage
+	 * @param usr the owner of the storage
+	 * @param lives the current lives of the storage
+	 * @param neededBuildResources the remaining needed resources to build this storage
+	 * @param remainBuildTurns the remaining build turns needed to build this storage
+	 * @param ores the stored ore resources
+	 * @param producable the stored producable resources
+	 */
 	public Storage(int x, int y, User usr, int lives, IntMap<ProducableResourceType> neededBuildResources, int remainBuildTurns, IntMap<OreResourceType> ores,
-			IntMap<ProducableResourceType> producable) {
+		IntMap<ProducableResourceType> producable) {
 		super(x, y, usr, 5, lives, neededBuildResources, remainBuildTurns);
 		this.ores.setAll(ores);
 		this.producable.setAll(producable);
 	}
 	
 	private static IntMap<ProducableResourceType> neededRes() {
-		IntMap<ProducableResourceType> res = IntMap.createIntIntMap(ProducableResourceType.class);
+		IntMap<ProducableResourceType> res = IntMap.create(ProducableResourceType.class);
 		res.set(ProducableResourceType.WOOD, 6);
 		res.set(ProducableResourceType.STONE, 3);
 		return res;
@@ -59,12 +96,10 @@ public final class Storage extends BuildingImpl {
 	
 	@Override
 	protected void finishedBuildStore(Unit u, Resource res, int amount) throws TurnExecutionException {
-		if (res instanceof ProducableResourceType prt) {
-			this.producable.addBy(prt, amount);
-		} else if (res instanceof OreResourceType ort) {
-			this.ores.addBy(ort.ordinal(), amount);
-		} else {
-			throw new AssertionError("unknown resource type: " + res.getClass());
+		switch (res) {
+		case @SuppressWarnings("preview") ProducableResourceType prt -> this.producable.addBy(prt, amount);
+		case @SuppressWarnings("preview") OreResourceType prt -> this.ores.addBy(prt, amount);
+		default -> throw new AssertionError("unknown resource type: " + res.getClass());
 		}
 		u.uncarry(res, amount);
 	}
@@ -83,8 +118,8 @@ public final class Storage extends BuildingImpl {
 				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 		} else if (res instanceof OreResourceType ort) {
-			if (this.ores.subBy(ort.ordinal(), amount) < 0) {
-				this.ores.addBy(ort.ordinal(), amount);
+			if (this.ores.subBy(ort, amount) < 0) {
+				this.ores.addBy(ort, amount);
 				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 		} else {
@@ -99,13 +134,13 @@ public final class Storage extends BuildingImpl {
 	}
 	
 	public IntMap<ProducableResourceType> producable() {
-		IntMap<ProducableResourceType> res = IntMap.createEnumIntMap(ProducableResourceType.class);
+		IntMap<ProducableResourceType> res = IntMap.create(ProducableResourceType.class);
 		res.setAll(this.producable);
 		return res;
 	}
 	
 	public IntMap<OreResourceType> ores() {
-		IntMap<OreResourceType> res = IntMap.createIntIntMap(OreResourceType.class);
+		IntMap<OreResourceType> res = IntMap.create(OreResourceType.class);
 		res.setAll(this.ores);
 		return res;
 	}

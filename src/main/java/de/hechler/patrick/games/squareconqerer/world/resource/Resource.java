@@ -22,6 +22,4 @@ package de.hechler.patrick.games.squareconqerer.world.resource;
  * 
  * @author Patrick Hechler
  */
-public interface Resource {
-	
-}
+public interface Resource {/**/}

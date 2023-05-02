@@ -97,8 +97,8 @@ public sealed interface World permits RootWorld, RootWorld.Builder, RemoteWorld,
 	/**
 	 * finish the given turn
 	 * <p>
-	 * if the turns {@link Turn#usr user} is not the {@link #user() user} of this world, the world is allowed to throw an {@link IllegalStateException}<br>
-	 * if the turns {@link Turn#usr user} is a {@link RootUser root user}, the world is allowed to throw an {@link IllegalStateException}
+	 * if the turns {@link Turn#world world} is not this world, the world is allowed to throw an {@link IllegalStateException}<br>
+	 * if the turns {@link Turn#world world} is a {@link RootUser root user}, the world is allowed to throw an {@link IllegalStateException}
 	 * 
 	 * @param t the turn to finish
 	 * @throws IllegalStateException if the turn has a different user than this world and the world does not support finishing the turn of other users

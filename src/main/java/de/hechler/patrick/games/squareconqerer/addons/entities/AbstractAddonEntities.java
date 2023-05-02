@@ -182,7 +182,7 @@ public abstract class AbstractAddonEntities implements AddonEntities {
 		if (!fb) {
 			buildTurns = conn.readPos();
 			if (conn.readInt(0, ProducableResourceType.count()) != 0) {
-				res = IntMap.createEnumIntMap(ProducableResourceType.class);
+				res = IntMap.create(ProducableResourceType.class);
 				int[] arr = res.array();
 				for (int i = 0; i < arr.length; i++) {
 					arr[i] = conn.readPos();

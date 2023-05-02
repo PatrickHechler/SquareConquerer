@@ -27,8 +27,7 @@ import java.net.URL;
 public interface ImageableObj {
 	
 	/**
-	 * returns the ordinal of this instance
-	 * <br>
+	 * returns the ordinal of this instance <br>
 	 * all {@link ImageableObj} instances with the same {@link Object#getClass() class} and {@link #ordinal()} should be represented with the same {@link #url()} if
 	 * they also have the same {@link ClassLoader}/{@link Module}
 	 * 
@@ -37,8 +36,7 @@ public interface ImageableObj {
 	int ordinal();
 	
 	/**
-	 * returns the image of this object
-	 * <br>
+	 * returns the image of this object <br>
 	 * if no image has yet been {@link #image(BufferedImage) set}, <code>null</code> is returned
 	 * 
 	 * @return the image of this object (or <code>null</code> if none was {@link #image(BufferedImage) set} yet)
@@ -68,7 +66,13 @@ public interface ImageableObj {
 	 * 
 	 * @return the type of this instance
 	 */
-	default String type() { return this.getClass().getSimpleName(); }
+	default String type() {
+		Class<?> cls = this.getClass();
+		while (cls.isAnonymousClass()) {
+			cls = cls.getEnclosingClass();
+		}
+		return cls.getSimpleName();
+	}
 	
 	/**
 	 * returns the {@link URL} of this instance
@@ -78,6 +82,6 @@ public interface ImageableObj {
 	 * 
 	 * @return the {@link URL} of this instance
 	 */
-	default URL url() { return this.getClass().getResource("/img/" + this.type() + '/' + this.name() + ".png"); } //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	default URL url() { return this.getClass().getResource("/img/" + this.type() + '/' + this.name() + ".png"); } //$NON-NLS-1$ //$NON-NLS-2$
 	
 }

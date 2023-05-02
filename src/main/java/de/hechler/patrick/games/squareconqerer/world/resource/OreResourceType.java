@@ -83,7 +83,13 @@ public abstract class OreResourceType implements ImageableObj, Resource {
 		this.ordinal = ordinalCnt++;
 	}
 	
-	private static final OreResourceType[] VALS = { NONE, GOLD_ORE, IRON_ORE, COAL_ORE };
+	private static final OreResourceType[] VALS  = { NONE, GOLD_ORE, IRON_ORE, COAL_ORE };
+	
+	static {
+		if (ordinalCnt != VALS.length) {
+			throw new AssertionError("the ordinal counter has not the expected value: counter=" + ordinalCnt + " number of values=" + VALS.length);
+		}
+	}
 	
 	public static OreResourceType[] values() {
 		return VALS.clone();

@@ -16,45 +16,89 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.stuff;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.MethodType;
 import java.util.Arrays;
 
 public class IntMap<T> {
 	
-	private final Class<T> cls;
-	private final int[]    arr;
+	private static final String       COUNT_FIELD  = "COUNT";                         //$NON-NLS-1$
+	private static final String       COUNT_METHOD = "count";                         //$NON-NLS-1$
+	private static final String       ORDINAL_NAME = "ordinal";                       //$NON-NLS-1$
+	private static final Lookup       LOOKUP       = MethodHandles.lookup();
+	private static final MethodType   METHOD_TYPE  = MethodType.methodType(int.class);
+	private static final MethodHandle ENUM_HANDLE;
 	
-	private IntMap(Class<T> cls) {
-		if (!cls.isEnum()) {
-			throw new IllegalArgumentException("the class is no enum class");
-		}
-		this.cls = cls;
-		this.arr = new int[cls.getEnumConstants().length];
-	}
-	
-	private IntMap(Class<T> cls, int[] arr) {
-		this.cls = cls;
-		this.arr = arr;
-	}
-	
-	public static <T extends Enum<T>> IntMap<T> createEnumIntMap(Class<T> cls) {
-		return new IntMap<>(cls);
-	}
-	
-	public static <T> IntMap<T> createIntIntMap(Class<T> cls) {
+	static {
 		try {
-			return new IntMap<>(cls, new int[((Integer)cls.getDeclaredMethod("count").invoke(null)).intValue()]);//$NON-NLS-1$
-		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-			throw new AssertionError(e);
-		} 
+			ENUM_HANDLE = LOOKUP.findVirtual(Enum.class, ORDINAL_NAME, METHOD_TYPE);
+		} catch (NoSuchMethodException | IllegalAccessException e) {
+			throw new AssertionError("could not get ordinal handle: " + e.toString(), e);
+		}
 	}
 	
-	public static IntMap<Integer> createIntIntMap(int length) {
-		return new IntMap<>(int.class, new int[length]);
+	private final MethodHandle ordinal;
+	private final Class<T>     cls;
+	private final int[]        arr;
+	
+	private IntMap(Class<T> cls, int[] arr, MethodHandle ordinal) {
+		this.cls     = cls;
+		this.arr     = arr;
+		this.ordinal = ordinal;
 	}
 	
-	public static IntMap<Integer> createIntIntMap(int[] arr) {
-		return new IntMap<>(int.class, arr);
+	/**
+	 * creates a new {@link IntMap} for the given class.
+	 * <p>
+	 * if <code>cls</code> is no <code>enum</code> class:<br>
+	 * <ol>
+	 * <li>if there is a <code>public static int COUNT</code> field, it is assumed that this is the number of different instances this class has.</li>
+	 * <li>if there is a <code>public static int count()</code> method, it is assumed that the return value is the number of different instances this class has.</li>
+	 * </ol>
+	 * the <code>ordinal</code> value of each instance:
+	 * <ol>
+	 * <li>if there is a <code>public int ordinal</code> field , its value will be used as the ordinal</li>
+	 * <li>if there is a <code>public int ordinal()</code> method, its return value will be used as the ordinal</li>
+	 * </ol>
+	 * 
+	 * @param <T> the type of the map
+	 * @param cls the type of the map
+	 * @return the map
+	 */
+	public static <T> IntMap<T> create(Class<T> cls) {
+		if (cls.isEnum()) {
+			return new IntMap<>(cls, new int[cls.getEnumConstants().length], ENUM_HANDLE);
+		}
+		try {
+			return new IntMap<>(cls, new int[(int) findHandleStatic(cls, COUNT_FIELD, COUNT_METHOD).invoke(null)], findHandleVirtual(cls, ORDINAL_NAME));
+		} catch (Throwable e) {
+			throw rethrow(e);
+		}
+	}
+	
+	private static MethodHandle findHandleVirtual(Class<?> cls, String name) throws AssertionError {
+		return findHandle(cls, name, name, true);
+	}
+	
+	private static MethodHandle findHandleStatic(Class<?> cls, String fieldName, String methodName) throws AssertionError {
+		return findHandle(cls, fieldName, methodName, false);
+	}
+	
+	private static MethodHandle findHandle(Class<?> cls, String fieldName, String methodName, boolean virtual) throws AssertionError {
+		try {
+			if (virtual) return LOOKUP.findGetter(cls, methodName, int.class);
+			return LOOKUP.findStaticGetter(cls, methodName, int.class);
+		} catch (NoSuchFieldException | IllegalAccessException e) {
+			try {
+				if (virtual) return LOOKUP.findVirtual(cls, fieldName, METHOD_TYPE);
+				return LOOKUP.findStatic(cls, fieldName, METHOD_TYPE);
+			} catch (NoSuchMethodException | IllegalAccessException e1) {
+				e.addSuppressed(e1);
+				throw new AssertionError("could not get ordinal handle: " + e.toString(), e);
+			}
+		}
 	}
 	
 	/**
@@ -68,7 +112,11 @@ public class IntMap<T> {
 		if (!this.cls.isInstance(e)) {
 			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls); //$NON-NLS-1$
 		}
-		return this.arr[((Enum<?>) e).ordinal()];
+		try {
+			return this.arr[(int) this.ordinal.invoke(e)];
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
 	}
 	
 	public int get(int ordinal) {
@@ -85,7 +133,11 @@ public class IntMap<T> {
 		if (!this.cls.isInstance(e)) {
 			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
 		}
-		this.arr[((Enum<?>) e).ordinal()] = val;
+		try {
+			this.arr[(int) this.ordinal.invoke(e)] = val;
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
 	}
 	
 	public void set(int ordinal, int val) {
@@ -103,7 +155,11 @@ public class IntMap<T> {
 		if (!this.cls.isInstance(e)) {
 			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
 		}
-		return ++this.arr[((Enum<?>) e).ordinal()];
+		try {
+			return ++this.arr[(int) this.ordinal.invoke(e)];
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
 	}
 	
 	public int inc(int ordinal) {
@@ -115,11 +171,15 @@ public class IntMap<T> {
 			throw new IllegalArgumentException("add is not greather than zero: add=" + val);
 		}
 		if (!this.cls.isInstance(e)) {
-			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls);
+			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls); //$NON-NLS-1$
 		}
-		int o = ((Enum<?>) e).ordinal();
-		this.arr[o] += val;
-		return this.arr[o];
+		try {
+			int o = (int) this.ordinal.invoke(e);
+			this.arr[o] += val;
+			return this.arr[o];
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
 	}
 	
 	public int addBy(int ordinal, int val) {
@@ -141,7 +201,11 @@ public class IntMap<T> {
 		if (!this.cls.isInstance(e)) {
 			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls); //$NON-NLS-1$
 		}
-		return --this.arr[((Enum<?>) e).ordinal()];
+		try {
+			return --this.arr[(int) this.ordinal.invoke(e)];
+		} catch (Throwable e1) {
+			throw rethrow(e1);
+		}
 	}
 	
 	public int dec(int ordinal) {
@@ -155,9 +219,13 @@ public class IntMap<T> {
 		if (!this.cls.isInstance(e)) {
 			throw new ClassCastException(e.toString() + " (" + e.getClass() + ") is no instance of " + this.cls); //$NON-NLS-1$
 		}
-		int o = ((Enum<?>) e).ordinal();
-		this.arr[o] -= val;
-		return this.arr[o];
+		try {
+			int o = (int) this.ordinal.invoke(e);
+			this.arr[o] -= val;
+			return this.arr[o];
+		} catch (Throwable t) {
+			throw rethrow(t);
+		}
 	}
 	
 	public int subBy(int ordinal, int val) {
@@ -174,8 +242,7 @@ public class IntMap<T> {
 	}
 	
 	/**
-	 * return the backing array of this map, changes to the array will be visible to
-	 * this map and changes to the map will be visible to the array
+	 * return the backing array of this map, changes to the array will be visible to this map and changes to the map will be visible to the array
 	 * 
 	 * @return the backing array
 	 */
@@ -188,7 +255,7 @@ public class IntMap<T> {
 	}
 	
 	public IntMap<T> copy() {
-		return new IntMap<>(this.cls, this.arr.clone());
+		return new IntMap<>(this.cls, this.arr.clone(), this.ordinal);
 	}
 	
 	private int hash;
@@ -197,7 +264,7 @@ public class IntMap<T> {
 	@Override
 	public int hashCode() {
 		if (this.hash != 0) return this.hash;
-		int sum  = 0;
+		int sum = 0;
 		for (int i = 0; i < this.arr.length; i++) {
 			sum += Integer.hashCode(this.arr[i]);
 		}
@@ -215,6 +282,12 @@ public class IntMap<T> {
 		if (!(obj instanceof IntMap<?> m)) return false;
 		if (m.cls != this.cls) return false;
 		return Arrays.equals(m.arr, this.arr);
+	}
+	
+	private static RuntimeException rethrow(Throwable t) {
+		if (t instanceof RuntimeException re) throw re;
+		if (t instanceof Error err) throw err;
+		throw new AssertionError(t);
 	}
 	
 }

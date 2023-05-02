@@ -81,8 +81,8 @@ public class TheGameEntities extends AbstractAddonEntities {
 	protected Building finishRecieveBuild(Connection conn, User usr, int x, int y, int lives, boolean fb, int remTurns, IntMap<ProducableResourceType> res)
 			throws IOException {
 		conn.readInt(Storage.NUMBER);
-		IntMap<OreResourceType>        os = IntMap.createIntIntMap(OreResourceType.class);
-		IntMap<ProducableResourceType> ps = IntMap.createEnumIntMap(ProducableResourceType.class);
+		IntMap<OreResourceType>        os = IntMap.create(OreResourceType.class);
+		IntMap<ProducableResourceType> ps = IntMap.create(ProducableResourceType.class);
 		if (fb) {
 			int[] arr = os.array();
 			conn.readInt(arr.length);
@@ -118,8 +118,8 @@ public class TheGameEntities extends AbstractAddonEntities {
 	public <E extends Entity> E createEntity(String clsName, User usr, Map<String, EntityTraitWithVal> traits, int x, int y) {
 		return (E) switch (clsName) {
 		case Carrier.NAME -> new Carrier(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0);
-		case Storage.NAME -> new Storage(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0, IntMap.createIntIntMap(OreResourceType.class),
-				IntMap.createEnumIntMap(ProducableResourceType.class));
+		case Storage.NAME -> new Storage(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0, IntMap.create(OreResourceType.class),
+				IntMap.create(ProducableResourceType.class));
 		default -> throw new AssertionError("unknown class name: " + clsName);
 		};
 	}
