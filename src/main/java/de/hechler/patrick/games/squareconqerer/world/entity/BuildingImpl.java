@@ -97,7 +97,14 @@ public abstract sealed class BuildingImpl extends EntityImpl implements Building
 	
 	/** {@inheritDoc} */
 	@Override
-	public IntMap<ProducableResourceType> neededResources() { return this.neededResources == null ? null : this.neededResources.copy(); }
+	public IntMap<ProducableResourceType> neededResources() {
+		if (this.neededResources == null) return null;
+		for (int val : this.neededResources.array()) {
+			if (val > 0) return this.neededResources.copy();
+		}
+		this.neededResources = null;
+		return null;
+	}
 	
 	/** {@inheritDoc} */
 	@Override

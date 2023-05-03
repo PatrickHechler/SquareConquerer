@@ -17,6 +17,7 @@
 package de.hechler.patrick.games.squareconqerer.world.tile;
 
 import java.awt.image.BufferedImage;
+import java.text.Format;
 
 import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
@@ -61,21 +62,21 @@ public enum GroundType implements ImageableObj {
 	
 	;
 	
-	private static final String STR_MOUNTAIN     = Messages.get("GroundType.str-mountain");    //$NON-NLS-1$
-	private static final String STR_SWAMP_HILL   = Messages.get("GroundType.str-swamp-hill");  //$NON-NLS-1$
-	private static final String STR_SWAMP        = Messages.get("GroundType.str-swamp");       //$NON-NLS-1$
-	private static final String STR_FOREST_HILL  = Messages.get("GroundType.str-forest-hill"); //$NON-NLS-1$
-	private static final String STR_FOREST       = Messages.get("GroundType.str-forest");      //$NON-NLS-1$
-	private static final String STR_GRASS_HILL   = Messages.get("GroundType.str-grass-hill");  //$NON-NLS-1$
-	private static final String STR_GRASS        = Messages.get("GroundType.str-grass");       //$NON-NLS-1$
-	private static final String STR_SAND_HILL    = Messages.get("GroundType.str-sand-hill");   //$NON-NLS-1$
-	private static final String STR_SAND         = Messages.get("GroundType.str-sand");        //$NON-NLS-1$
-	private static final String STR_WATER        = Messages.get("GroundType.str-water");       //$NON-NLS-1$
-	private static final String STR_WATER_DEEP   = Messages.get("GroundType.str-water-deep");  //$NON-NLS-1$
-	private static final String STR_NOT_EXPLORED = Messages.get("GroundType.str-not-explred"); //$NON-NLS-1$
-	private static final String NOT_ADD_HILLS    = Messages.get("GroundType.not-add-hill");    //$NON-NLS-1$
-	private static final String NOT_ADD_DEEP     = Messages.get("GroundType.not-add-deep");    //$NON-NLS-1$
-	private static final String NOT_ADD_NORMAL   = Messages.get("GroundType.not-add-normal");  //$NON-NLS-1$
+	private static final String STR_MOUNTAIN     = Messages.getString("GroundType.str-mountain");    //$NON-NLS-1$
+	private static final String STR_SWAMP_HILL   = Messages.getString("GroundType.str-swamp-hill");  //$NON-NLS-1$
+	private static final String STR_SWAMP        = Messages.getString("GroundType.str-swamp");       //$NON-NLS-1$
+	private static final String STR_FOREST_HILL  = Messages.getString("GroundType.str-forest-hill"); //$NON-NLS-1$
+	private static final String STR_FOREST       = Messages.getString("GroundType.str-forest");      //$NON-NLS-1$
+	private static final String STR_GRASS_HILL   = Messages.getString("GroundType.str-grass-hill");  //$NON-NLS-1$
+	private static final String STR_GRASS        = Messages.getString("GroundType.str-grass");       //$NON-NLS-1$
+	private static final String STR_SAND_HILL    = Messages.getString("GroundType.str-sand-hill");   //$NON-NLS-1$
+	private static final String STR_SAND         = Messages.getString("GroundType.str-sand");        //$NON-NLS-1$
+	private static final String STR_WATER        = Messages.getString("GroundType.str-water");       //$NON-NLS-1$
+	private static final String STR_WATER_DEEP   = Messages.getString("GroundType.str-water-deep");  //$NON-NLS-1$
+	private static final String STR_NOT_EXPLORED = Messages.getString("GroundType.str-not-explred"); //$NON-NLS-1$
+	private static final Format NOT_ADD_HILLS    = Messages.getFormat("GroundType.not-add-hill");    //$NON-NLS-1$
+	private static final Format NOT_ADD_DEEP     = Messages.getFormat("GroundType.not-add-deep");    //$NON-NLS-1$
+	private static final Format NOT_ADD_NORMAL   = Messages.getFormat("GroundType.not-add-normal");  //$NON-NLS-1$
 	
 	private static final GroundType[] VALS = values();
 	
@@ -292,11 +293,11 @@ public enum GroundType implements ImageableObj {
 		case SAND_HILL -> SAND;
 		case SWAMP_HILL -> SWAMP;
 		case FOREST, MOUNTAIN, SAND, SWAMP, WATER_NORMAL, GRASS -> {
-			if (failIfAlreadyNormal) throw new IllegalStateException(NOT_ADD_NORMAL + toString() + ")"); //$NON-NLS-1$
+			if (failIfAlreadyNormal) throw new IllegalStateException(Messages.format(NOT_ADD_NORMAL, toString()));
 			yield this;
 		}
 		case NOT_EXPLORED -> {
-			if (failIfNoNormal) throw new IllegalStateException(NOT_ADD_NORMAL + toString() + ")"); //$NON-NLS-1$
+			if (failIfNoNormal) throw new IllegalStateException(Messages.format(NOT_ADD_NORMAL, toString()));
 			yield this;
 		}
 		};
@@ -322,11 +323,11 @@ public enum GroundType implements ImageableObj {
 		return switch (this) {
 		case WATER_NORMAL -> WATER_DEEP;
 		case WATER_DEEP -> {
-			if (failAlreadyDeep) throw new IllegalStateException(NOT_ADD_DEEP + toString() + ")"); //$NON-NLS-1$
+			if (failAlreadyDeep) throw new IllegalStateException(Messages.format(NOT_ADD_DEEP, toString()));
 			yield this;
 		}
 		case GRASS, FOREST, SWAMP, FOREST_HILL, GRASS_HILL, MOUNTAIN, NOT_EXPLORED, SAND_HILL, SWAMP_HILL, SAND -> {
-			if (failNoDeep) throw new IllegalStateException(NOT_ADD_DEEP + toString() + ")"); //$NON-NLS-1$
+			if (failNoDeep) throw new IllegalStateException(Messages.format(NOT_ADD_DEEP, toString()));
 			yield this;
 		}
 		};
@@ -355,11 +356,11 @@ public enum GroundType implements ImageableObj {
 		case FOREST -> FOREST_HILL;
 		case SWAMP -> SWAMP_HILL;
 		case FOREST_HILL, GRASS_HILL, SAND_HILL, SWAMP_HILL -> {
-			if (failAlreadyHill) throw new IllegalStateException(NOT_ADD_HILLS + toString() + ")"); //$NON-NLS-1$
+			if (failAlreadyHill) throw new IllegalStateException(Messages.format(NOT_ADD_HILLS, toString()));
 			yield this;
 		}
 		case MOUNTAIN, NOT_EXPLORED, WATER_DEEP, WATER_NORMAL -> {
-			if (failNoHill) throw new IllegalStateException(NOT_ADD_HILLS + toString() + ")"); //$NON-NLS-1$
+			if (failNoHill) throw new IllegalStateException(Messages.format(NOT_ADD_HILLS, toString()));
 			yield this;
 		}
 		};

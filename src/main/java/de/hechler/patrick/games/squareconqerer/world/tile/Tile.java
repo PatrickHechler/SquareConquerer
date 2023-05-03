@@ -56,13 +56,13 @@ import jdk.incubator.concurrent.ScopedValue;
  */
 public sealed class Tile permits RemoteTile {
 	
-	private static final String TILTLE_BUT_NO_PAGE       = Messages.get("Tile.title-no-page");               //$NON-NLS-1$
-	private static final String PAGE_BUT_NO_TILTLE       = Messages.get("Tile.page-no-title");               //$NON-NLS-1$
-	private static final String ILLEGAL_CALLER           = Messages.get("Tile.illegal-caller");              //$NON-NLS-1$
-	private static final String I_HAVE_NO_PAGE           = Messages.get("Tile.have-no-page");                //$NON-NLS-1$
-	private static final String COULD_NOT_LOAD_UNVISIBLE = Messages.get("Tile.warn-loading-visible-failed"); //$NON-NLS-1$
-	private static final String LOG_CREATE_ICON          = Messages.get("Tile.log-create-icon");             //$NON-NLS-1$
-	private static final String NO_GROUND_OR_NO_RESOURCE = Messages.get("Tile.null-ground-or-resource");     //$NON-NLS-1$
+	private static final String TILTLE_BUT_NO_PAGE       = Messages.getString("Tile.title-no-page");               //$NON-NLS-1$
+	private static final String PAGE_BUT_NO_TILTLE       = Messages.getString("Tile.page-no-title");               //$NON-NLS-1$
+	private static final String ILLEGAL_CALLER           = Messages.getString("Tile.illegal-caller");              //$NON-NLS-1$
+	private static final String I_HAVE_NO_PAGE           = Messages.getString("Tile.have-no-page");                //$NON-NLS-1$
+	private static final String COULD_NOT_LOAD_UNVISIBLE = Messages.getString("Tile.warn-loading-visible-failed"); //$NON-NLS-1$
+	private static final String LOG_CREATE_ICON          = Messages.getString("Tile.log-create-icon");             //$NON-NLS-1$
+	private static final String NO_GROUND_OR_NO_RESOURCE = Messages.getString("Tile.null-ground-or-resource");     //$NON-NLS-1$
 	
 	private static Icon[] icons;
 	

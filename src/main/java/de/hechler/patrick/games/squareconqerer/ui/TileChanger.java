@@ -30,15 +30,15 @@ import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
  */
 public class TileChanger {
 	
-	private static final String STR_SET_BUILDING    = Messages.get("TileChanger.set-building");  //$NON-NLS-1$
-	private static final String STR_SET_UNIT        = Messages.get("TileChanger.set-unit");      //$NON-NLS-1$
-	private static final String STR_SET_GROUND_TYPE = Messages.get("TileChanger.set-ground");    //$NON-NLS-1$
-	private static final String STR_SET_ORE_TYPE    = Messages.get("TileChanger.set-ore");       //$NON-NLS-1$
-	private static final String STR_ADD_NORMAL      = Messages.get("TileChanger.add-normal");    //$NON-NLS-1$
-	private static final String STR_ADD_HILL        = Messages.get("TileChanger.add-hill");      //$NON-NLS-1$
-	private static final String STR_ADD_DEEP        = Messages.get("TileChanger.add-deep");      //$NON-NLS-1$
-	private static final String STR_NONE            = Messages.get("TileChanger.inactive");      //$NON-NLS-1$
-	private static final String I_AM_INACTIVE       = Messages.get("TileChanger.i-am-inactive"); //$NON-NLS-1$
+	private static final String STR_SET_BUILDING    = Messages.getString("TileChanger.set-building");  //$NON-NLS-1$
+	private static final String STR_SET_UNIT        = Messages.getString("TileChanger.set-unit");      //$NON-NLS-1$
+	private static final String STR_SET_GROUND_TYPE = Messages.getString("TileChanger.set-ground");    //$NON-NLS-1$
+	private static final String STR_SET_ORE_TYPE    = Messages.getString("TileChanger.set-ore");       //$NON-NLS-1$
+	private static final String STR_ADD_NORMAL      = Messages.getString("TileChanger.add-normal");    //$NON-NLS-1$
+	private static final String STR_ADD_HILL        = Messages.getString("TileChanger.add-hill");      //$NON-NLS-1$
+	private static final String STR_ADD_DEEP        = Messages.getString("TileChanger.add-deep");      //$NON-NLS-1$
+	private static final String STR_NONE            = Messages.getString("TileChanger.inactive");      //$NON-NLS-1$
+	private static final String I_AM_INACTIVE       = Messages.getString("TileChanger.i-am-inactive"); //$NON-NLS-1$
 	
 	private static final int STATE_INACTIVE   = 0;
 	private static final int STATE_DEEP       = 1;
@@ -120,7 +120,7 @@ public class TileChanger {
 	 * @param res the resource to be used
 	 */
 	public void makeSetResource(OreResourceType res) {
-		if (res == null) throw new NullPointerException(Messages.get("TileChanger.no-resource")); //$NON-NLS-1$
+		if (res == null) throw new NullPointerException(Messages.getString("TileChanger.no-resource")); //$NON-NLS-1$
 		this.state = STATE_SET_ORE;
 		this.obj   = res;
 	}
@@ -131,7 +131,7 @@ public class TileChanger {
 	 * @param grd the ground to be used
 	 */
 	public void makeSetGround(GroundType grd) {
-		if (grd == null) throw new NullPointerException(Messages.get("TileChanger.no-ground")); //$NON-NLS-1$
+		if (grd == null) throw new NullPointerException(Messages.getString("TileChanger.no-ground")); //$NON-NLS-1$
 		this.state = STATE_SET_GROUND;
 		this.obj   = grd;
 	}
@@ -142,7 +142,7 @@ public class TileChanger {
 	 * @param u the unit to be set
 	 */
 	public void makeSetUnit(Unit u) {
-		if (u == null) throw new NullPointerException(Messages.get("TileChanger.no-unit")); //$NON-NLS-1$
+		if (u == null) throw new NullPointerException(Messages.getString("TileChanger.no-unit")); //$NON-NLS-1$
 		this.state = STATE_SET_UNIT;
 		this.obj   = u;
 	}
@@ -153,7 +153,7 @@ public class TileChanger {
 	 * @param b the building to be set
 	 */
 	public void makeSetBuilding(Building b) {
-		if (b == null) throw new NullPointerException(Messages.get("TileChanger.no-building")); //$NON-NLS-1$
+		if (b == null) throw new NullPointerException(Messages.getString("TileChanger.no-building")); //$NON-NLS-1$
 		this.state = STATE_SET_UNIT;
 		this.obj   = b;
 	}

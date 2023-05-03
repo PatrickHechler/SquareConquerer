@@ -20,6 +20,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOError;
 import java.io.IOException;
+import java.text.Format;
 
 import javax.imageio.ImageIO;
 
@@ -38,7 +39,7 @@ import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
  */
 public class ImageableObjs {
 	
-	private static final String LOADING_IMG_ERROR = Messages.get("ImageableObjs.load-img-error"); //$NON-NLS-1$
+	private static final Format LOADING_IMG_ERROR = Messages.getFormat("ImageableObjs.load-img-error"); //$NON-NLS-1$
 	
 	private ImageableObjs() {}
 	
@@ -115,10 +116,10 @@ public class ImageableObjs {
 		try {
 			return ImageIO.read(e.url());
 		} catch (IllegalArgumentException err) {
-			System.err.println(LOADING_IMG_ERROR + e + ": " + err); //$NON-NLS-1$
+			System.err.println(Messages.format(LOADING_IMG_ERROR, e, e.url(), err));
 			throw err;
 		} catch (IOException err) {
-			System.err.println(LOADING_IMG_ERROR + e + ": " + err); //$NON-NLS-1$
+			System.err.println(Messages.format(LOADING_IMG_ERROR, e, e.url(), err));
 			throw new IOError(err);
 		}
 	}

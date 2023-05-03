@@ -59,17 +59,17 @@ import de.hechler.patrick.games.squareconqerer.world.RootWorld;
  */
 public sealed class User implements Closeable, Comparable<User> {
 	
-	private static final String CMP_DIFF_USERS_WITH_SAME_NAME = Messages.get("User.diff-same");           //$NON-NLS-1$
-	private static final String NO_STRONG_SECURE_RANDOM_FOUND = Messages.get("User.no-strong-rnd");       //$NON-NLS-1$
-	private static final String THIS_USER_HAS_BEEN_MODIFIED   = Messages.get("User.modified");            //$NON-NLS-1$
-	private static final String THIS_METHOD_IS_INTERN         = Messages.get("User.intern");              //$NON-NLS-1$
-	private static final String THERE_ARE_ALREADY_OTHER_USERS = Messages.get("User.already-loaded");      //$NON-NLS-1$
-	private static final String CHANGE_PW_NOT_MY_USR          = Messages.get("User.chang-pw-not-my-usr"); //$NON-NLS-1$
-	private static final String USER_NOT_FOUND                = Messages.get("User.unknown-usr");         //$NON-NLS-1$
-	private static final String DUPLICATE_NAME                = Messages.get("User.dup-name");            //$NON-NLS-1$
-	private static final String MAX_USER_AMOUNT_REACHED       = Messages.get("User.max-usr-cnt");         //$NON-NLS-1$
-	private static final String NO_NEW_USERS_ALLOWED          = Messages.get("User.no-new-usr");          //$NON-NLS-1$
-	private static final String NEGATIVE_MAX_USERS            = Messages.get("User.negative-max-cnt");    //$NON-NLS-1$
+	private static final String CMP_DIFF_USERS_WITH_SAME_NAME = Messages.getString("User.diff-same");           //$NON-NLS-1$
+	private static final String NO_STRONG_SECURE_RANDOM_FOUND = Messages.getString("User.no-strong-rnd");       //$NON-NLS-1$
+	private static final String THIS_USER_HAS_BEEN_MODIFIED   = Messages.getString("User.modified");            //$NON-NLS-1$
+	private static final String THIS_METHOD_IS_INTERN         = Messages.getString("User.intern");              //$NON-NLS-1$
+	private static final String THERE_ARE_ALREADY_OTHER_USERS = Messages.getString("User.already-loaded");      //$NON-NLS-1$
+	private static final String CHANGE_PW_NOT_MY_USR          = Messages.getString("User.chang-pw-not-my-usr"); //$NON-NLS-1$
+	private static final String USER_NOT_FOUND                = Messages.getString("User.unknown-usr");         //$NON-NLS-1$
+	private static final String DUPLICATE_NAME                = Messages.getString("User.dup-name");            //$NON-NLS-1$
+	private static final String MAX_USER_AMOUNT_REACHED       = Messages.getString("User.max-usr-cnt");         //$NON-NLS-1$
+	private static final String NO_NEW_USERS_ALLOWED          = Messages.getString("User.no-new-usr");          //$NON-NLS-1$
+	private static final String NEGATIVE_MAX_USERS            = Messages.getString("User.negative-max-cnt");    //$NON-NLS-1$
 	
 	private volatile int     modCnt;
 	private volatile Secret0 s;

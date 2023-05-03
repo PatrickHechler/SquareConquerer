@@ -69,13 +69,25 @@ public class IntMap<T> {
 	 */
 	public static <T> IntMap<T> create(Class<T> cls) {
 		if (cls.isEnum()) {
-			return new IntMap<>(cls, new int[cls.getEnumConstants().length], ENUM_HANDLE);
+			return create(cls, new int[cls.getEnumConstants().length], ENUM_HANDLE);
 		}
 		try {
-			return new IntMap<>(cls, new int[(int) findHandleStatic(cls, COUNT_FIELD, COUNT_METHOD).invoke(null)], findHandleVirtual(cls, ORDINAL_NAME));
+			return create(cls, new int[(int) findHandleStatic(cls, COUNT_FIELD, COUNT_METHOD).invoke(null)], findHandleVirtual(cls, ORDINAL_NAME));
 		} catch (Throwable e) {
 			throw rethrow(e);
 		}
+	}
+	
+	public static <T> IntMap<T> create(Class<T> cls, int count, String ordinalName) {
+		return create(cls, new int[count], findHandleVirtual(cls, ordinalName));
+	}
+	
+	public static <T> IntMap<T> create(Class<T> cls, int count, MethodHandle ordinal) {
+		return create(cls, new int[count], ordinal);
+	}
+	
+	public static <T> IntMap<T> create(Class<T> cls, int[] arr, MethodHandle ordinal) {
+		return new IntMap<>(cls, arr, ordinal);
 	}
 	
 	private static MethodHandle findHandleVirtual(Class<?> cls, String name) throws AssertionError {

@@ -18,44 +18,101 @@ package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
+import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
+import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
+/**
+ * this unit can carry resources
+ * 
+ * @author Patrick Hechler
+ */
 public final class Carrier extends UnitImpl {
 	
-	public static final String NAME   = "Carrier";
+	private static final String LOCAL_NAME = "Carrier";
+	
+	/**
+	 * the {@link #name() name} of {@link ImageableObj} instances from this class
+	 */
+	public static final String NAME   = "Carrier"; //$NON-NLS-1$
+	/**
+	 * this number is used when {@link TheGameAddon} sends units from this class
+	 */
 	public static final int    NUMBER = 0x925D9B86;
 	
+	/**
+	 * the maximum lives a carrier can have
+	 */
 	public static final int MAX_LIVES  = 3;
+	/**
+	 * the view range a carrier has
+	 */
 	public static final int VIEW_RANGE = 4;
+	/**
+	 * the maximum amount a carrier can carry
+	 */
 	public static final int MAX_CARRY  = 5;
 	
-	private static final int ORIDINAL_BASE_VALUE = 1;
-	private static int       oridinal;
+	private static final int LOCAL_ORIDINAL = 0;
+	private static final int ORIDINAL       = SCAddon.addon(Carrier.class).oridinalOffsetUnit() + LOCAL_ORIDINAL;
 	
+	/**
+	 * creates a new carrier with the given values
+	 * 
+	 * @param x the {@link #x()} coordinate
+	 * @param y the {@link #y()} coordinate
+	 * @param usr the {@link #owner()} of this unit
+	 */
 	public Carrier(int x, int y, User usr) {
 		super(x, y, usr, MAX_LIVES, VIEW_RANGE, MAX_CARRY);
 	}
 	
+	/**
+	 * creates a new carrier with the given values
+	 * 
+	 * @param x the {@link #x()} coordinate
+	 * @param y the {@link #y()} coordinate
+	 * @param usr the {@link #owner()} of this unit
+	 * @param lives the {@link #lives()}
+	 * @param res the {@link #carryRes()}
+	 * @param carryAmount the {@link #carryAmount()}
+	 */
 	public Carrier(int x, int y, User usr, int lives, Resource res, int carryAmount) {
 		super(x, y, usr, MAX_LIVES, lives, VIEW_RANGE, MAX_CARRY, carryAmount, res);
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * when the unit carries more, it is slower
+	 */
 	@Override
 	public int moveRange() {
-		return 3 - (super.carryAmount >>> 1);
+		return 3 - (super.carryAmount >>> 2);
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public Carrier copy() {
 		return new Carrier(super.x, super.y, owner(), lives(), super.carryResource, super.carryAmount);
 	}
 	
+	/** {@inheritDoc} */
+	@Override
+	public String localName() {
+		return LOCAL_NAME;
+	}
+	
+	/** {@inheritDoc} */
 	@Override
 	public int ordinal() {
-		if (oridinal == 0) {
-			oridinal = ORIDINAL_BASE_VALUE + SCAddon.theGame().oridinalOffsetUnit();
-		}
-		return oridinal;
+		return ORIDINAL;
+	}
+	
+	/** {@inheritDoc} */
+	@Override
+	public int addonLocalOrdinal() {
+		return LOCAL_ORIDINAL;
 	}
 	
 }

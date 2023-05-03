@@ -43,13 +43,13 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
  */
 public final class Turn {
 	
-	private static final String UNKNOWN_ENTITY_TURN_TYPE         = Messages.get("Turn.unknown-entity-turn");         //$NON-NLS-1$
-	private static final String TURNS_IS_NOT_EMPTY               = Messages.get("Turn.turn-not-empty");              //$NON-NLS-1$
-	private static final String ENTITY_TURN_NOT_BELONG_TO_ENTITY = Messages.get("Turn.entity-turn-not-from-entity"); //$NON-NLS-1$
-	private static final String I_DO_NOT_OWN_THIS_ENTITY         = Messages.get("Turn.not-my-entity");               //$NON-NLS-1$
-	private static final String ENTITY_TURN_IS_NULL              = Messages.get("Turn.no-entity-turn");              //$NON-NLS-1$
-	private static final String ENTITY_IS_NULL                   = Messages.get("Turn.no-entity");                   //$NON-NLS-1$
-	private static final String ENTITIES_NOT_IN_WORLD            = Messages.get("Turn.entity-not-found");            //$NON-NLS-1$
+	private static final String UNKNOWN_ENTITY_TURN_TYPE         = Messages.getString("Turn.unknown-entity-turn");         //$NON-NLS-1$
+	private static final String TURNS_IS_NOT_EMPTY               = Messages.getString("Turn.turn-not-empty");              //$NON-NLS-1$
+	private static final String ENTITY_TURN_NOT_BELONG_TO_ENTITY = Messages.getString("Turn.entity-turn-not-from-entity"); //$NON-NLS-1$
+	private static final String I_DO_NOT_OWN_THIS_ENTITY         = Messages.getString("Turn.not-my-entity");               //$NON-NLS-1$
+	private static final String ENTITY_TURN_IS_NULL              = Messages.getString("Turn.no-entity-turn");              //$NON-NLS-1$
+	private static final String ENTITY_IS_NULL                   = Messages.getString("Turn.no-entity");                   //$NON-NLS-1$
+	private static final String ENTITIES_NOT_IN_WORLD            = Messages.getString("Turn.entity-not-found");            //$NON-NLS-1$
 	
 	/**
 	 * the world to which this turn belongs to

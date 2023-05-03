@@ -17,6 +17,8 @@
 package de.hechler.patrick.games.squareconqerer.world.resource;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 
 import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
@@ -27,44 +29,24 @@ import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
  * 
  * @author Patrick Hechler
  */
-public abstract class OreResourceType implements ImageableObj, Resource {
+public class OreResourceType implements ImageableObj, Resource {
 	
-	private static final String STR_COAL_ORE = Messages.get("OreResourceType.coal"); //$NON-NLS-1$
-	private static final String STR_IRON_ORE = Messages.get("OreResourceType.iron"); //$NON-NLS-1$
-	private static final String STR_GOLD_ORE = Messages.get("OreResourceType.gold"); //$NON-NLS-1$
-	private static final String STR_NONE     = Messages.get("OreResourceType.none"); //$NON-NLS-1$
+	private static final String CLASS_ALREADY_INITILIZED_NO_NEW_SUPPORTED             = Messages.getString("OreResourceType.constants-already-initilized"); //$NON-NLS-1$
+	private static final String STR_COAL_ORE                                          = Messages.getString("OreResourceType.coal");                         //$NON-NLS-1$
+	private static final String STR_IRON_ORE                                          = Messages.getString("OreResourceType.iron");                         //$NON-NLS-1$
+	private static final String STR_GOLD_ORE                                          = Messages.getString("OreResourceType.gold");                         //$NON-NLS-1$
+	private static final String STR_NONE                                              = Messages.getString("OreResourceType.none");                         //$NON-NLS-1$
+	
+	private static List<OreResourceType> values = new ArrayList<>();
 	
 	/** no ore resource */
-	public static final OreResourceType NONE = new OreResourceType("NONE") { //$NON-NLS-1$
-		
-		@Override
-		public String toString() { return STR_NONE; }
-		
-	};
-	
+	public static final OreResourceType NONE     = new OreResourceType("NONE", STR_NONE);         //$NON-NLS-1$
 	/** gold ore */
-	public static final OreResourceType GOLD_ORE = new OreResourceType("GOLD_ORE") { //$NON-NLS-1$
-		
-		@Override
-		public String toString() { return STR_GOLD_ORE; }
-		
-	};
-	
+	public static final OreResourceType GOLD_ORE = new OreResourceType("GOLD_ORE", STR_GOLD_ORE); //$NON-NLS-1$
 	/** iron ore */
-	public static final OreResourceType IRON_ORE = new OreResourceType("IRON_ORE") { //$NON-NLS-1$
-		
-		@Override
-		public String toString() { return STR_IRON_ORE; }
-		
-	};
-	
+	public static final OreResourceType IRON_ORE = new OreResourceType("IRON_ORE", STR_IRON_ORE); //$NON-NLS-1$
 	/** coal ore */
-	public static final OreResourceType COAL_ORE = new OreResourceType("COAL_ORE") { //$NON-NLS-1$
-		
-		@Override
-		public String toString() { return STR_COAL_ORE; }
-		
-	};
+	public static final OreResourceType COAL_ORE = new OreResourceType("COAL_ORE", STR_COAL_ORE); //$NON-NLS-1$
 	
 	
 	/**
@@ -72,25 +54,36 @@ public abstract class OreResourceType implements ImageableObj, Resource {
 	 */
 	public static final int NUMBER = 0x6A58EEA4;
 	
-	private static int ordinalCnt;
-	
 	private final String name;
+	private final String localName;
 	private final int    ordinal;
 	
-	public OreResourceType(String name) {
-		if (VALS != null) throw new AssertionError("the class is already initilized! no new instances are supported");
-		this.name    = name;
-		this.ordinal = ordinalCnt++;
+	/**
+	 * creates a new ore resource with the given name and localized name
+	 * 
+	 * @param name      the name
+	 * @param localName the localized name
+	 */
+	public OreResourceType(String name, String localName) {
+		if (VALS != null) throw new AssertionError(CLASS_ALREADY_INITILIZED_NO_NEW_SUPPORTED);
+		this.name      = name;
+		this.localName = localName;
+		this.ordinal   = values.size();
+		values.add(this);
 	}
 	
-	private static final OreResourceType[] VALS  = { NONE, GOLD_ORE, IRON_ORE, COAL_ORE };
+	private static final OreResourceType[] VALS;
 	
 	static {
-		if (ordinalCnt != VALS.length) {
-			throw new AssertionError("the ordinal counter has not the expected value: counter=" + ordinalCnt + " number of values=" + VALS.length);
-		}
+		VALS   = values.toArray(new OreResourceType[values.size()]);
+		values = null;
 	}
 	
+	/**
+	 * Returns the elements of this class
+	 * 
+	 * @return an array containing the values comprising this class represented in the order they're created (the {@link #ordinal()} values)
+	 */
 	public static OreResourceType[] values() {
 		return VALS.clone();
 	}
@@ -115,11 +108,13 @@ public abstract class OreResourceType implements ImageableObj, Resource {
 		return VALS.length;
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public String name() {
 		return this.name;
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public int ordinal() {
 		return this.ordinal;
@@ -135,7 +130,10 @@ public abstract class OreResourceType implements ImageableObj, Resource {
 	@Override
 	public void image(BufferedImage nval) { this.resource = nval; }
 	
+	/** {@inheritDoc} */
 	@Override
-	public abstract String toString();
+	public String toString() {
+		return this.localName;
+	}
 	
 }

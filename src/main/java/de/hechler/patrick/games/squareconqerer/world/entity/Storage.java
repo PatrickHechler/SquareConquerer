@@ -16,6 +16,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
@@ -33,18 +34,20 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
  */
 public final class Storage extends BuildingImpl {
 	
-	private static final String UNKNOWN_RESOURCE_TYPE = "unknown resource type: ";
+	private static final String UNKNOWN_RESOURCE_TYPE = Messages.getString("Storage.unknown-resource"); //$NON-NLS-1$
+	private static final String LOCAL_NAME            = Messages.getString("Storage.local-name");       //$NON-NLS-1$
+	
 	/**
 	 * the number used when {@link TheGameAddon} sends instances of this class
 	 */
-	public static final int     NUMBER                = 0x5A1C58D0;
+	public static final int    NUMBER = 0x5A1C58D0;
 	/**
 	 * the name of this building type
 	 */
-	public static final String  NAME                  = "Storage";
+	public static final String NAME   = "Storage"; //$NON-NLS-1$
 	
-	private static final int ORIDINAL_BASE_VALUE = 1;
-	private static int       oridinal;
+	private static final int LOCAL_ORIDINAL = 0;
+	private static final int ORIDINAL       = SCAddon.addon(Storage.class).oridinalOffsetBuilding() + LOCAL_ORIDINAL;
 	
 	/**
 	 * the maximum amount of lives for {@link Storage} instances
@@ -157,11 +160,20 @@ public final class Storage extends BuildingImpl {
 	
 	/** {@inheritDoc} */
 	@Override
+	public String localName() {
+		return LOCAL_NAME;
+	}
+	
+	/** {@inheritDoc} */
+	@Override
 	public int ordinal() {
-		if (oridinal == 0) {
-			oridinal = ORIDINAL_BASE_VALUE + SCAddon.theGame().oridinalOffsetBuilding();
-		}
-		return oridinal;
+		return ORIDINAL;
+	}
+	
+	/** {@inheritDoc} */
+	@Override
+	public int addonLocalOrdinal() {
+		return LOCAL_ORIDINAL;
 	}
 	
 }

@@ -23,6 +23,7 @@ import java.io.EOFException;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,26 +59,27 @@ import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
  */
 public final class RemoteWorld implements World, Closeable {
 	
-	private static final String ONLY_MY_TURNS                    = Messages.get("RemoteWorld.only-my-turns");                    //$NON-NLS-1$
-	private static final String HAVE_ALREADY_VALIDATE_DATA       = Messages.get("RemoteWorld.already-have-val-data");            //$NON-NLS-1$
-	private static final String GAME_STARTED                     = Messages.get("RemoteWorld.log-game-started");                 //$NON-NLS-1$
-	private static final String TAB_TURNS                        = Messages.get("RemoteWorld.log--turns");                       //$NON-NLS-1$
-	private static final String TAB_WORLD                        = Messages.get("RemoteWorld.log--world");                       //$NON-NLS-1$
-	private static final String NEXT_TURN                        = Messages.get("RemoteWorld.log-next-turn");                    //$NON-NLS-1$
-	private static final String TURN_DIFFERENT_HASH              = Messages.get("RemoteWorld.error-different-turn-hash");        //$NON-NLS-1$
-	private static final String WORLD_DIFFERENT_HASH             = Messages.get("RemoteWorld.error-different-world-hash");       //$NON-NLS-1$
-	private static final String NOT_EXPECTED_START_HASH          = Messages.get("RemoteWorld.error-different-start-world-hash"); //$NON-NLS-1$
-	private static final String DIFFERENT_SEED_FOR_ME            = Messages.get("RemoteWorld.error-not-my-seed");                //$NON-NLS-1$
-	private static final String ITER_COUNT_OF_WORLD_NOT_EXPECTED = Messages.get("RemoteWorld.error-different-turn-count");       //$NON-NLS-1$
-	private static final String SKIP_VALIDATION_NO_DATA_TO_CHECK = Messages.get("RemoteWorld.log-skip-check-no-val");            //$NON-NLS-1$
-	private static final String INVALID_NOTIFICATION             = Messages.get("RemoteWorld.invalid-notify");                   //$NON-NLS-1$
-	private static final String KNOWN_USERS                      = Messages.get("RemoteWorld.known-users");                      //$NON-NLS-1$
-	private static final String UNKNOWN_USERNAME                 = Messages.get("RemoteWorld.unknown-username");                 //$NON-NLS-1$
-	private static final String NO_RECTANGULAR_FORM              = Messages.get("RemoteWorld.no-rect-form");                     //$NON-NLS-1$
-	private static final String NEW                              = Messages.get("RemoteWorld.new");                              //$NON-NLS-1$
-	private static final String WARN_WORLD_SIZE_CHANGED          = Messages.get("RemoteWorld.warn-size-change");                 //$NON-NLS-1$
-	private static final String DIFFERENT_WORLD_SIZES            = Messages.get("RemoteWorld.diff-world-size");                  //$NON-NLS-1$
-	private static final String NEGATIVE_COORDINATE              = Messages.get("RemoteWorld.negative-coordinate");              //$NON-NLS-1$
+	private static final String I_WAS_LOGGED_OUT                               = Messages.getString("RemoteWorld.logged-out");                       //$NON-NLS-1$
+	private static final String COORDINATES_OUT_OF_WORLD_X_0_Y_1_XLEN_2_YLEN_3 = Messages.getString("RemoteWorld.coordinates-out-of-world");         //$NON-NLS-1$
+	private static final String REMOTE_WORLD_MY_RANDOM_PART_IS_0               = Messages.getString("RemoteWorld.my-rnd");                           //$NON-NLS-1$
+	private static final String ONLY_MY_TURNS                                  = Messages.getString("RemoteWorld.only-my-turns");                    //$NON-NLS-1$
+	private static final String HAVE_ALREADY_VALIDATE_DATA                     = Messages.getString("RemoteWorld.already-have-val-data");            //$NON-NLS-1$
+	private static final String GAME_STARTED                                   = Messages.getString("RemoteWorld.log-game-started");                 //$NON-NLS-1$
+	private static final String TAB_TURNS                                      = Messages.getString("RemoteWorld.log--turns");                       //$NON-NLS-1$
+	private static final String TAB_WORLD                                      = Messages.getString("RemoteWorld.log--world");                       //$NON-NLS-1$
+	private static final String NEXT_TURN                                      = Messages.getString("RemoteWorld.log-next-turn");                    //$NON-NLS-1$
+	private static final String TURN_DIFFERENT_HASH                            = Messages.getString("RemoteWorld.error-different-turn-hash");        //$NON-NLS-1$
+	private static final String WORLD_DIFFERENT_HASH                           = Messages.getString("RemoteWorld.error-different-world-hash");       //$NON-NLS-1$
+	private static final String NOT_EXPECTED_START_HASH                        = Messages.getString("RemoteWorld.error-different-start-world-hash"); //$NON-NLS-1$
+	private static final String DIFFERENT_SEED_FOR_ME                          = Messages.getString("RemoteWorld.error-not-my-seed");                //$NON-NLS-1$
+	private static final String ITER_COUNT_OF_WORLD_NOT_EXPECTED               = Messages.getString("RemoteWorld.error-different-turn-count");       //$NON-NLS-1$
+	private static final String SKIP_VALIDATION_NO_DATA_TO_CHECK               = Messages.getString("RemoteWorld.log-skip-check-no-val");            //$NON-NLS-1$
+	private static final String INVALID_NOTIFICATION                           = Messages.getString("RemoteWorld.invalid-notify");                   //$NON-NLS-1$
+	private static final String UNKNOWN_USERNAME                               = Messages.getString("RemoteWorld.unknown-username");                 //$NON-NLS-1$
+	private static final String NO_RECTANGULAR_FORM                            = Messages.getString("RemoteWorld.no-rect-form");                     //$NON-NLS-1$
+	private static final String WARN_WORLD_SIZE_CHANGED                        = Messages.getString("RemoteWorld.warn-size-change");                 //$NON-NLS-1$
+	private static final String DIFFERENT_WORLD_SIZES                          = Messages.getString("RemoteWorld.diff-world-size");                  //$NON-NLS-1$
+	private static final String NEGATIVE_COORDINATE_X_0_Y_1                    = Messages.getString("RemoteWorld.negative-coordinate");              //$NON-NLS-1$
 	
 	private final Connection        conn;
 	private int                     xlen;
@@ -103,6 +105,7 @@ public final class RemoteWorld implements World, Closeable {
 			 */
 			
 			@Override
+			@SuppressWarnings("unused")
 			public void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
 				RemoteWorld.this.conn.readInt(expectedRead);
 			}
@@ -202,7 +205,7 @@ public final class RemoteWorld implements World, Closeable {
 	 */
 	@Override
 	public Tile tile(int x, int y) {
-		if (x < 0 || y < 0) throw new IndexOutOfBoundsException(NEGATIVE_COORDINATE + " x=" + x + " y=" + y); //$NON-NLS-1$ //$NON-NLS-2$
+		if (x < 0 || y < 0) throw new IndexOutOfBoundsException(MessageFormat.format(NEGATIVE_COORDINATE_X_0_Y_1, Integer.toString(x), Integer.toString(y)));
 		try {
 			boolean updated = false;
 			if (this.xlen == 0) {
@@ -213,7 +216,8 @@ public final class RemoteWorld implements World, Closeable {
 					updateWorldSize();
 				}
 			}
-			if (x >= this.xlen || y >= this.ylen) throw new IndexOutOfBoundsException("x=" + x + " y=" + y + " xlen=" + this.xlen + " ylen=" + this.ylen); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			if (x >= this.xlen || y >= this.ylen) throw new IndexOutOfBoundsException(MessageFormat.format(COORDINATES_OUT_OF_WORLD_X_0_Y_1_XLEN_2_YLEN_3,
+				Integer.toString(x), Integer.toString(y), Integer.toString(this.xlen), Integer.toString(this.ylen)));
 			if (this.tiles[x][y] == null || (this.tiles[x][y].created <= this.needUpdate && !updated)) {
 				if (this.getWorld) {
 					updateWorld();
@@ -294,7 +298,7 @@ public final class RemoteWorld implements World, Closeable {
 	
 	@SuppressWarnings("unchecked")
 	private static <T extends Tile> T[][] readWorld(Connection conn, T[][] tiles, long timestamp, Map<User, List<Entity>> entities, Map<String, User> users)
-			throws IOException {
+		throws IOException {
 		if (entities != null) {
 			conn.writeReadInt(OpenWorld.CMD_GET_WORLD, OpenWorld.SUB0_GET_WORLD);
 		} else {
@@ -306,7 +310,8 @@ public final class RemoteWorld implements World, Closeable {
 			tiles = (T[][]) (entities != null ? new RemoteTile[xlen][ylen] : new Tile[xlen][ylen]);
 		} else if (xlen != tiles.length || ylen != tiles[0].length) {
 			if (entities == null) throw new IllegalArgumentException(DIFFERENT_WORLD_SIZES);
-			System.err.println(WARN_WORLD_SIZE_CHANGED + tiles.length + " ylen=" + tiles[0].length + NEW + " xlen=" + xlen + " ylen=" + ylen + ')'); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			System.err.println(MessageFormat.format(WARN_WORLD_SIZE_CHANGED, Integer.toString(tiles.length), Integer.toString(tiles[0].length),
+				Integer.toString(xlen), Integer.toString(ylen)));
 			tiles = (T[][]) (new RemoteTile[xlen][ylen]);
 		}
 		for (int x = 0; x < xlen; x++) {
@@ -326,7 +331,7 @@ public final class RemoteWorld implements World, Closeable {
 		while (players-- > 0) {
 			String username = conn.readString();
 			User   usr      = entities == null ? users.get(username) : users.computeIfAbsent(username, User::nopw);
-			if (usr == null) { throw new IllegalStateException(UNKNOWN_USERNAME + username + KNOWN_USERS + users + "')"); } //$NON-NLS-1$
+			if (usr == null) throw new IllegalStateException(MessageFormat.format(UNKNOWN_USERNAME, username, users));
 			List<Entity> list = entities == null ? null : entities.computeIfAbsent(usr, u -> new ArrayList<>());
 			for (int i = conn.readInt(); i > 0; i--) {
 				List<Entity> l = list;
@@ -362,7 +367,7 @@ public final class RemoteWorld implements World, Closeable {
 		return switch (conn.readInt(ProducableResourceType.NUMBER, OreResourceType.NUMBER)) {
 		case ProducableResourceType.NUMBER -> ProducableResourceType.of(conn.readInt());
 		case OreResourceType.NUMBER -> OreResourceType.of(conn.readInt());
-		default -> throw new AssertionError("invalid return type of conn.readInt(int,int) (this should never happen)"); //$NON-NLS-1$
+		default -> throw new AssertionError("invalid return type of conn.readInt(int,int)"); //$NON-NLS-1$ (this should never happen)
 		};
 	}
 	
@@ -402,7 +407,11 @@ public final class RemoteWorld implements World, Closeable {
 	public synchronized void updateSingleTile(int x, int y) throws IOException {
 		this.conn.blocked(() -> {
 			if (x < 0 || y < 0 || x >= xlen() || y >= this.ylen) {
-				throw new IllegalArgumentException("x=" + x + " y=" + y + " xlen=" + this.xlen + " ylen=" + this.ylen); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				throw new IllegalArgumentException(MessageFormat.format(NEGATIVE_COORDINATE_X_0_Y_1, Integer.toString(x), Integer.toString(y)));
+			}
+			if (x >= xlen() || y >= this.ylen) {
+				throw new IllegalArgumentException(MessageFormat.format(COORDINATES_OUT_OF_WORLD_X_0_Y_1_XLEN_2_YLEN_3, Integer.toString(x), Integer.toString(y),
+					Integer.toString(this.xlen), Integer.toString(this.ylen)));
 			}
 			this.conn.writeReadInt(OpenWorld.CMD_GET_TILE, OpenWorld.SUB0_GET_TILE);
 			this.conn.writeInt(x);
@@ -410,7 +419,7 @@ public final class RemoteWorld implements World, Closeable {
 			boolean unit;
 			boolean build;
 			switch (this.conn.readInt(OpenWorld.GET_TILE_NO_UNIT_NO_BUILD, OpenWorld.GET_TILE_NO_UNIT_YES_BUILD, OpenWorld.GET_TILE_YES_UNIT_NO_BUILD,
-					OpenWorld.GET_TILE_YES_UNIT_YES_BUILD)) {
+				OpenWorld.GET_TILE_YES_UNIT_YES_BUILD)) {
 			case OpenWorld.GET_TILE_NO_UNIT_NO_BUILD -> {
 				unit  = false;
 				build = false;
@@ -427,7 +436,7 @@ public final class RemoteWorld implements World, Closeable {
 				unit  = true;
 				build = true;
 			}
-			default -> throw new AssertionError("illegal return value from readInt(int...) (this should never happen)"); //$NON-NLS-1$
+			default -> throw new AssertionError("illegal return value from readInt(int...)"); //$NON-NLS-1$ (this should never happen)
 			}
 			Unit     u = null;
 			Building b = null;
@@ -467,15 +476,20 @@ public final class RemoteWorld implements World, Closeable {
 					case OpenWorld.NOTIFY_GAME_START -> deamonNotifyGameStart();
 					case OpenWorld.NOTIFY_NEXT_TURN -> deamonNotifyNextTurn();
 					case RootWorld.RW_VAL_GAME -> deamonValidateGame();
-					default -> {
-						System.err.println(INVALID_NOTIFICATION + Integer.toHexString(val0));
+					case Connection.CON_LOG_OUT -> {
+						System.err.println(I_WAS_LOGGED_OUT);
 						this.conn.close();
+					}
+					default -> {
+						System.err.println(MessageFormat.format(INVALID_NOTIFICATION, Integer.toHexString(val0)));
+						this.conn.logOut();
 					}
 					}
 				}, Connection.NOP);
+				if (this.conn.closed()) return;
 				Thread.sleep(10L);
 			} catch (IOException | InterruptedException e) {
-				if (this.conn.closed()) { return; }
+				if (this.conn.closed()) return;
 				e.printStackTrace();
 			}
 		}
@@ -500,7 +514,7 @@ public final class RemoteWorld implements World, Closeable {
 				@Override
 				public void accept(byte[] wh, byte[] th) {
 					if (this.index == 0) {
-						if (th == null) throw new AssertionError("there is a turn hash (this should never happen)"); //$NON-NLS-1$
+						if (th == null) throw new AssertionError("there is a turn hash"); //$NON-NLS-1$ (this should never happen)
 						if (!irw.isSeed(RemoteWorld.this.conn.usr, RemoteWorld.this.validateData.get(0))) {
 							throw new AssertionError(DIFFERENT_SEED_FOR_ME);
 						}
@@ -509,10 +523,10 @@ public final class RemoteWorld implements World, Closeable {
 						}
 					} else {
 						if (!Arrays.equals(wh, RemoteWorld.this.validateData.get(this.index))) {
-							throw new AssertionError(WORLD_DIFFERENT_HASH + (this.index >> 1) + '!');
+							throw new AssertionError(MessageFormat.format(WORLD_DIFFERENT_HASH, Integer.toString(this.index >> 1)));
 						}
 						if (!Arrays.equals(th, RemoteWorld.this.validateData.get(this.index + 1))) {
-							throw new AssertionError(TURN_DIFFERENT_HASH + (this.index >> 1) + '!');
+							throw new AssertionError(MessageFormat.format(TURN_DIFFERENT_HASH, Integer.toString(this.index >> 1)));
 						}
 					}
 					this.index += 2;
@@ -577,7 +591,7 @@ public final class RemoteWorld implements World, Closeable {
 		User.fillRandom(myrnd);
 		this.conn.writeArr(myrnd);
 		list.add(myrnd);
-		System.out.println("remote world: my random part is " + hex(myrnd));
+		System.out.println(MessageFormat.format(REMOTE_WORLD_MY_RANDOM_PART_IS_0, hex(myrnd)));
 	}
 	
 	private static String hex(byte[] data) {
@@ -592,7 +606,7 @@ public final class RemoteWorld implements World, Closeable {
 	
 	private static char hex(int n) {
 		if (n >= 0xA) return (char) ('A' + n);
-		else return (char) ('0' + n);
+		return (char) ('0' + n);
 	}
 	
 	/** {@inheritDoc} */
@@ -625,13 +639,13 @@ public final class RemoteWorld implements World, Closeable {
 	}
 	
 	/**
-	 * this method just calls {@link Connection#close()}
+	 * this method just calls {@link Connection#logOut()}
 	 * <p>
 	 * {@inheritDoc}
 	 */
 	@Override
 	public void close() throws IOException {
-		this.conn.close();
+		this.conn.logOut();
 	}
 	
 	/**

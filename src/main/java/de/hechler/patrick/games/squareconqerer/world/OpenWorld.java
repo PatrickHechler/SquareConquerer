@@ -19,6 +19,7 @@ package de.hechler.patrick.games.squareconqerer.world;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.text.Format;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -45,9 +46,9 @@ import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
  */
 public final class OpenWorld implements Executable<IOException> {
 	
-	private static final String ENTITY_IS_NULL            = Messages.get("OpenWorld.no-entity"); //$NON-NLS-1$
-	private static final String NEITHER_UNIT_NOR_BUILDING = Messages.get("OpenWorld.unknown-entity-type"); //$NON-NLS-1$
-	private static final String GOT_INVALID_DATA          = Messages.get("OpenWorld.invalid-data"); //$NON-NLS-1$
+	private static final String ENTITY_IS_NULL            = Messages.getString("OpenWorld.no-entity"); //$NON-NLS-1$
+	private static final Format NEITHER_UNIT_NOR_BUILDING = Messages.getFormat("OpenWorld.unknown-entity-type"); //$NON-NLS-1$
+	private static final Format GOT_INVALID_DATA          = Messages.getFormat("OpenWorld.invalid-data"); //$NON-NLS-1$
 	
 	/**
 	 * <ol>
@@ -255,7 +256,7 @@ public final class OpenWorld implements Executable<IOException> {
 			while (this.executing) singleExecute();
 		} finally {
 			this.world.removeNextTurnListener(ntl);
-			this.conn.close();
+			this.conn.logOut();
 		}
 	}
 	
@@ -285,7 +286,7 @@ public final class OpenWorld implements Executable<IOException> {
 			t.retrieveTurn(this.conn, true);
 			this.world.finish(t);
 		}
-		default -> throw new StreamCorruptedException(GOT_INVALID_DATA + this.world.user().name() + "')"); //$NON-NLS-1$
+		default -> throw new StreamCorruptedException(GOT_INVALID_DATA.format(this.world.user().name()));
 		}
 	}
 	
@@ -374,7 +375,7 @@ public final class OpenWorld implements Executable<IOException> {
 					conn.writeInt(CMD_BUILD);
 					sendBuilding(b, conn);
 				} else {
-					throw new AssertionError(NEITHER_UNIT_NOR_BUILDING + (e == null ? ENTITY_IS_NULL : e.getClass()));
+					throw new AssertionError(NEITHER_UNIT_NOR_BUILDING.format(e == null ? ENTITY_IS_NULL : e.getClass()));
 				}
 			}
 			conn.writeInt(SUB3_GET_WORLD);

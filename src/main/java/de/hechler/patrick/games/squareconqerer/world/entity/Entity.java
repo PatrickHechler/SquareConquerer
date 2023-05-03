@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import de.hechler.patrick.games.squareconqerer.User;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
 public sealed interface Entity extends ImageableObj permits Unit, Building {
@@ -48,5 +49,17 @@ public sealed interface Entity extends ImageableObj permits Unit, Building {
 	default List<Unit> units() {
 		return Collections.emptyList();
 	}
+	
+	String localName();
+	
+	@Override
+	default int ordinal() {
+		return switch (this) {
+		case @SuppressWarnings("preview") Unit u -> SCAddon.addon(u).oridinalOffsetUnit() + addonLocalOrdinal();
+		case @SuppressWarnings("preview") Building b -> SCAddon.addon(b).oridinalOffsetBuilding() + addonLocalOrdinal();
+		};
+	}
+	
+	int addonLocalOrdinal();
 	
 }

@@ -68,27 +68,27 @@ import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
  */
 public final class RootWorld implements World, Iterable<RootWorld> {
 	
-	private static final String BUILD_WORLD_NO_SUPPORT_TURNS = Messages.get("RootWorld.bw-no-turns");                  //$NON-NLS-1$
-	private static final String NOT_EXPLORED_TILE            = Messages.get("RootWorld.not-explored-found");           //$NON-NLS-1$
-	private static final String NULL_TYPE_OR_RESOURCE        = Messages.get("RootWorld.tile-without-type/resource");   //$NON-NLS-1$
-	private static final String NULL_TILE                    = Messages.get("RootWorld.there-is-no-tile");             //$NON-NLS-1$
-	private static final String NON_RECTANGULAR_FORM         = Messages.get("RootWorld.non-rectangular-world");        //$NON-NLS-1$
-	private static final String RESOURCE_IS_NULL             = Messages.get("RootWorld.no-resource");                  //$NON-NLS-1$
-	private static final String TYPE_IS_NULL                 = Messages.get("RootWorld.no-type");                      //$NON-NLS-1$
-	private static final String UNKNOWN_TILE_TYPE            = Messages.get("RootWorld.unknown-type");                 //$NON-NLS-1$
-	private static final String USR_IS_NULL                  = Messages.get("RootWorld.no-user");                      //$NON-NLS-1$
-	private static final String RND_IS_NULL                  = Messages.get("RootWorld.no-random");                    //$NON-NLS-1$
-	private static final String UNKNOWN_ENTITY_TURN_TYPE     = Messages.get("RootWorld.unknown-entyty-turn-type");     //$NON-NLS-1$
-	private static final String ERROR_EXEC_USER_TURN         = Messages.get("RootWorld.error-while-exex-usr-turn");    //$NON-NLS-1$
-	private static final String TURN_USES_NOT_OWNED_ENTITIES = Messages.get("RootWorld.turn-uses-not-owned-entities"); //$NON-NLS-1$
-	private static final String UNKNOWN_USER                 = Messages.get("RootWorld.unknown-usr");                  //$NON-NLS-1$
-	private static final String ROOT_NO_EXEC_TURN            = Messages.get("RootWorld.root-no-exec-perm");            //$NON-NLS-1$
-	private static final String GAME_ALREADY_STARTED         = Messages.get("RootWorld.game-started");                 //$NON-NLS-1$
-	private static final String SEED_IS_NULL                 = Messages.get("RootWorld.no-seed");                      //$NON-NLS-1$
-	private static final String NO_MORE_ELEMENTS             = Messages.get("RootWorld.no-more-elements");             //$NON-NLS-1$
-	private static final String GAME_NOT_STARTED             = Messages.get("RootWorld.game-not-started");             //$NON-NLS-1$
-	private static final String INAVLID_RND_ARR_SIZE         = Messages.get("RootWorld.invalid-array-length");         //$NON-NLS-1$
-	private static final String SHA256_NOT_FOUND             = Messages.get("RootWorld.sha256-not-found");             //$NON-NLS-1$
+	private static final String BUILD_WORLD_NO_SUPPORT_TURNS = Messages.getString("RootWorld.bw-no-turns");                  //$NON-NLS-1$
+	private static final String NOT_EXPLORED_TILE            = Messages.getString("RootWorld.not-explored-found");           //$NON-NLS-1$
+	private static final String NULL_TYPE_OR_RESOURCE        = Messages.getString("RootWorld.tile-without-type/resource");   //$NON-NLS-1$
+	private static final String NULL_TILE                    = Messages.getString("RootWorld.there-is-no-tile");             //$NON-NLS-1$
+	private static final String NON_RECTANGULAR_FORM         = Messages.getString("RootWorld.non-rectangular-world");        //$NON-NLS-1$
+	private static final String RESOURCE_IS_NULL             = Messages.getString("RootWorld.no-resource");                  //$NON-NLS-1$
+	private static final String TYPE_IS_NULL                 = Messages.getString("RootWorld.no-type");                      //$NON-NLS-1$
+	private static final String UNKNOWN_TILE_TYPE            = Messages.getString("RootWorld.unknown-type");                 //$NON-NLS-1$
+	private static final String USR_IS_NULL                  = Messages.getString("RootWorld.no-user");                      //$NON-NLS-1$
+	private static final String RND_IS_NULL                  = Messages.getString("RootWorld.no-random");                    //$NON-NLS-1$
+	private static final String UNKNOWN_ENTITY_TURN_TYPE     = Messages.getString("RootWorld.unknown-entyty-turn-type");     //$NON-NLS-1$
+	private static final String ERROR_EXEC_USER_TURN         = Messages.getString("RootWorld.error-while-exex-usr-turn");    //$NON-NLS-1$
+	private static final String TURN_USES_NOT_OWNED_ENTITIES = Messages.getString("RootWorld.turn-uses-not-owned-entities"); //$NON-NLS-1$
+	private static final String UNKNOWN_USER                 = Messages.getString("RootWorld.unknown-usr");                  //$NON-NLS-1$
+	private static final String ROOT_NO_EXEC_TURN            = Messages.getString("RootWorld.root-no-exec-perm");            //$NON-NLS-1$
+	private static final String GAME_ALREADY_STARTED         = Messages.getString("RootWorld.game-started");                 //$NON-NLS-1$
+	private static final String SEED_IS_NULL                 = Messages.getString("RootWorld.no-seed");                      //$NON-NLS-1$
+	private static final String NO_MORE_ELEMENTS             = Messages.getString("RootWorld.no-more-elements");             //$NON-NLS-1$
+	private static final String GAME_NOT_STARTED             = Messages.getString("RootWorld.game-not-started");             //$NON-NLS-1$
+	private static final String INAVLID_RND_ARR_SIZE         = Messages.getString("RootWorld.invalid-array-length");         //$NON-NLS-1$
+	private static final String SHA256_NOT_FOUND             = Messages.getString("RootWorld.sha256-not-found");             //$NON-NLS-1$
 	
 	private final RootUser                         root;
 	private final Tile[][]                         tiles;

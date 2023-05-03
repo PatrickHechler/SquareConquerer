@@ -39,9 +39,9 @@ public class Settings {
 	
 	private static final OfVirtual OF_VIRTUAL = Thread.ofVirtual();
 	
-	private static final String ILLEGAL_VALUE  = Messages.get("Settings.illegal-prop"); //$NON-NLS-1$
-	private static final String FAILED_TO_SAVE = Messages.get("Settings.save-failed");  //$NON-NLS-1$
-	private static final String FAILED_TO_LOAD = Messages.get("Settings.load-failed");  //$NON-NLS-1$
+	private static final String ILLEGAL_VALUE  = Messages.getString("Settings.illegal-prop"); //$NON-NLS-1$
+	private static final String FAILED_TO_SAVE = Messages.getString("Settings.save-failed");  //$NON-NLS-1$
+	private static final String FAILED_TO_LOAD = Messages.getString("Settings.load-failed");  //$NON-NLS-1$
 	
 	/**
 	 * the major version of the Square Conquerer Project

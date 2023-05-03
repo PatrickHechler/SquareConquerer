@@ -16,6 +16,8 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer;
 
+import java.text.Format;
+import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -26,9 +28,9 @@ import java.util.Locale.Category;
  */
 public class Messages {
 	
-	private static final String BUNDLE_NAME = Messages.class.getPackageName() + ".messages"; //$NON-NLS-1$
-	
-	private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME, Locale.getDefault(Category.DISPLAY), Messages.class.getModule());
+	private static final Locale         LOCALE          = Locale.getDefault(Category.DISPLAY);
+	private static final String         BUNDLE_NAME     = Messages.class.getPackageName() + ".messages";                            //$NON-NLS-1$
+	private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME, LOCALE, Messages.class.getModule());
 	
 	private Messages() {}
 	
@@ -38,12 +40,39 @@ public class Messages {
 	 * @param key the key of the value
 	 * @return the value with the given key
 	 */
-	public static String get(String key) {
+	public static String getString(String key) {
 		try {
 			return RESOURCE_BUNDLE.getString(key);
 		} catch (MissingResourceException e) {
-			throw new AssertionError("missing key: '" + key + "': " + e.toString(), e); //$NON-NLS-1$ //$NON-NLS-2$
+			throw new AssertionError("missing key: '" + key + "': " + e, e); //$NON-NLS-1$ //$NON-NLS-2$
 		}
+	}
+	
+	/**
+	 * returns the format value of the given key
+	 * 
+	 * @param key the key of the value
+	 * @return the value with the given key
+	 */
+	public static MessageFormat getFormat(String key) {
+		try {
+			return new MessageFormat(RESOURCE_BUNDLE.getString(key), LOCALE);
+		} catch (MissingResourceException e) {
+			throw new AssertionError("missing key: '" + key + "': " + e, e); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+	
+	/**
+	 * lets the formatter format the given arguments
+	 * <p>
+	 * this method hides the array creation in with the var-args
+	 * 
+	 * @param format the format
+	 * @param args   the arguments array
+	 * @return the formatted string
+	 */
+	public static String format(Format format, Object... args) {
+		return format.format(args);
 	}
 	
 }

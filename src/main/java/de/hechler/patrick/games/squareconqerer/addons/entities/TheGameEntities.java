@@ -40,10 +40,10 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
  */
 public class TheGameEntities extends AbstractAddonEntities {
 	
-	private static final String UNKNOWN_CLASS_NAME                    = Messages.get("TheGameEntities.unknown-type");     //$NON-NLS-1$
-	private static final String INVALID_MAX_LIVES_OR_VIEW_RANGE_TRAIT = Messages.get("TheGameEntities.invlaid-trait");    //$NON-NLS-1$
-	private static final String UNKNOWN_BUILDING_TYPE                 = Messages.get("TheGameEntities.unknown-building"); //$NON-NLS-1$
-	private static final String UNKNOWN_UNIT_TYPE                     = Messages.get("TheGameEntities.unknown-unit");     //$NON-NLS-1$
+	private static final String UNKNOWN_CLASS_NAME                    = Messages.getString("TheGameEntities.unknown-type");     //$NON-NLS-1$
+	private static final String INVALID_MAX_LIVES_OR_VIEW_RANGE_TRAIT = Messages.getString("TheGameEntities.invlaid-trait");    //$NON-NLS-1$
+	private static final String UNKNOWN_BUILDING_TYPE                 = Messages.getString("TheGameEntities.unknown-building"); //$NON-NLS-1$
+	private static final String UNKNOWN_UNIT_TYPE                     = Messages.getString("TheGameEntities.unknown-unit");     //$NON-NLS-1$
 	
 	/**
 	 * creates a new instance

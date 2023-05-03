@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -57,7 +58,22 @@ import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 import de.hechler.patrick.games.squareconqerer.world.UserWorld;
 import de.hechler.patrick.games.squareconqerer.world.World;
 
+/**
+ * this class is used to communicate with a remote connection or write to or read from a file
+ * 
+ * @author Patrick Hechler
+ */
 public class Connection implements Closeable, WrongInputHandler {
+	
+	private static final String INVALID_INPUT_GOT_0_BUT_EXPECTED_A_1_VALUE_2        = "invalid input! got: {0} but expected a {1} value{2}";
+	private static final String OR_ZERO                                             = " (or zero)!";
+	private static final String POSITIVE                                            = "positive";
+	private static final String STRICT_POSITIVE                                     = "strict positive";
+	private static final String INVALID_INPUT_GOT_0_BUT_EXPECTED_1                  = "invalid input! got: {0} but expected: {1}";
+	private static final String INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1                = "invalid input! got: {0} but expected on of: {1}";
+	private static final String GOT_0_AFTER_I_WROTE_1_EXPECTED_2                    = "got: {0} after I wrote {1} but expected {2}";
+	private static final String INVALID_EOF_EXPECTED_0_BYTES_FOR_1_BYTES_BIG_STRUCT =
+		"invalid input! got: EOF but expected {0} more bytes for something {1} bytes big";
 	
 	/**
 	 * this {@link WrongInputHandler} just always throws an {@link StreamCorruptedException} (or {@link EOFException} in
@@ -67,62 +83,69 @@ public class Connection implements Closeable, WrongInputHandler {
 		
 		@Override
 		public void wrongInputEOF(int expectedTotalLen, int missingLen) throws EOFException {
-			throw new EOFException("invalid input! got: EOF but expected " + missingLen + " more bytes for something " + expectedTotalLen + " bytes big");
+			throw new EOFException(
+				MessageFormat.format(INVALID_EOF_EXPECTED_0_BYTES_FOR_1_BYTES_BIG_STRUCT, Integer.toString(missingLen), Integer.toString(expectedTotalLen)));
 		}
 		
 		@Override
 		public void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
-			throw new EOFException("got: " + read + " after I wrote " + wrote + " but expected " + expectedRead);
+			throw new EOFException(
+				MessageFormat.format(GOT_0_AFTER_I_WROTE_1_EXPECTED_2, Integer.toString(read), Integer.toString(wrote), Integer.toString(expectedRead)));
 		}
 		
 		@Override
-		public int wrongInputInt(int read, int[] expected, IntFunction<String> msgGen) throws StreamCorruptedException {
+		public int wrongInputInt(int read, @SuppressWarnings("unused") int[] expected, IntFunction<String> msgGen) throws StreamCorruptedException {
 			throw new StreamCorruptedException(msgGen.apply(read));
 		}
 		
 		@Override
 		public int wrongInputInt(int read, int[] expected) throws StreamCorruptedException {
-			throw new StreamCorruptedException("invalid input! got: " + read + " but expected on of: " + Arrays.toString(expected));
+			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), Arrays.toString(expected)));
 		}
 		
 		@Override
 		public int wrongInputInt(int read, int expected, int expected2) throws StreamCorruptedException {
-			throw new StreamCorruptedException("invalid input! got: " + read + " but expected: " + expected + " or " + expected2);
+			throw new StreamCorruptedException(
+				MessageFormat.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), "[" + expected + ", " + expected2 + ']')); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		
 		@Override
 		public void wrongInputInt(int read, int expected) throws StreamCorruptedException {
-			throw new StreamCorruptedException("invalid input! got: " + read + " but expected: " + expected);
+			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_1, Integer.toString(read), Integer.toString(expected)));
 		}
 		
 		@Override
-		public int wrongInputByte(int read, int[] expected, IntFunction<String> msgGen) throws IOException {
+		public int wrongInputByte(int read, @SuppressWarnings("unused") int[] expected, IntFunction<String> msgGen) throws IOException {
 			throw new StreamCorruptedException(msgGen.apply(read));
 		}
 		
 		@Override
 		public int wrongInputByte(int read, int[] expected) throws IOException {
-			throw new StreamCorruptedException("invalid input! got: " + read + " but expected on of: " + Arrays.toString(expected));
+			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), Arrays.toString(expected)));
 		}
 		
 		@Override
 		public int wrongInputByte(int read, int expected, int expected2) throws IOException {
-			throw new StreamCorruptedException("invalid input! got: " + read + " but expected: " + expected + " or " + expected2);
+			throw new StreamCorruptedException(
+				MessageFormat.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), "[" + expected + ", " + expected2 + ']')); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		
 		@Override
 		public void wrongInputByte(int read, int expected) throws IOException {
-			throw new StreamCorruptedException("invalid input! got: " + read + " but expected: " + expected);
+			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_1, Integer.toString(read), Integer.toString(expected)));
 		}
 		
 		@Override
 		public int wrongInputPositive(int read, boolean strictlyPositive) throws IOException {
-			throw new StreamCorruptedException("invalid input! got: " + read + " but expected a " + (strictlyPositive ? "strict " : "") + "positive value"
-					+ (strictlyPositive ? "!" : " (or zero)!"));
+			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_A_1_VALUE_2, Integer.toString(read),
+				(strictlyPositive ? STRICT_POSITIVE : POSITIVE), (strictlyPositive ? "!" : OR_ZERO))); //$NON-NLS-1$
 		}
 		
 	};
 	
+	/**
+	 * the default port which is used to open a server
+	 */
 	public static final int DEFAULT_PORT = 21226;
 	
 	public static final int CON_LOG_OUT = 0x50DDC7F1;
@@ -226,7 +249,7 @@ public class Connection implements Closeable, WrongInputHandler {
 		private ServerAccept() {}
 		
 		public static void accept(int port, RootWorld rw, ThrowBiConsumer<Connection, Socket, IOException> logConnect, Map<User, Connection> connects,
-				char[] serverPW) throws IOException {
+			char[] serverPW) throws IOException {
 			try (ServerSocket ss = new ServerSocket(port)) {
 				System.err.println("[Connect.ServerAccept]: accept connections at " + ss.getInetAddress() + " : " + ss.getLocalPort());
 				accept(ss, rw, logConnect, connects, serverPW);
@@ -234,7 +257,7 @@ public class Connection implements Closeable, WrongInputHandler {
 		}
 		
 		public static void accept(ServerSocket ss, RootWorld rw, ThrowBiConsumer<Connection, Socket, IOException> logConnect, Map<User, Connection> connects,
-				char[] serverPW) throws IOException {
+			char[] serverPW) throws IOException {
 			List<Socket> soks = new ArrayList<>();
 			IOException  err;
 			try {
@@ -251,10 +274,7 @@ public class Connection implements Closeable, WrongInputHandler {
 								OpenWorld  ow   = OpenWorld.of(conn, uw);
 								Connection old  = connects.put(usr, conn);
 								if (old != null) {
-									old.blocked(() -> {
-										old.writeInt(CON_LOG_OUT);
-										old.close();
-									});
+									old.logOut();
 								}
 								try {
 									logConnect.accept(conn, sok);
@@ -783,13 +803,13 @@ public class Connection implements Closeable, WrongInputHandler {
 	 * <p>
 	 * if no timeout was reached the timeoutHandler is ignored (for example if timeout is {@code 0}, <code>null</code> can safely be passed)
 	 * 
-	 * @param <T> the throwable which can be thrown by the executable
+	 * @param <T>            the throwable which can be thrown by the executable
 	 * 
 	 * @param timeout        the timeout for this connection during (and after) the execution
 	 * @param exec           the code to be executed while this connection is blocked
 	 * @param timeoutHandler the executable to be executed after the timeout was reached if no timeout was reached the timeoutHandler is ignored (for example if
 	 *                       timeout is {@code 0}, <code>null</code> can safely be passed)
-	 * 
+	 * 						
 	 * @throws T if the executable throws it
 	 */
 	public <T extends Throwable> void blocked(int timeout, Executable<T> exec, Executable<T> timeoutHandler) throws T {
@@ -948,10 +968,22 @@ public class Connection implements Closeable, WrongInputHandler {
 		this.out.write(arr, off, len);
 	}
 	
+	public void logOut() throws IOException {
+		blocked(() -> {
+			if (this.closed) return;
+			try {
+				writeInt(CON_LOG_OUT);
+			} finally {
+				close();
+			}
+		});
+	}
+	
 	@Override
 	public void close() throws IOException {
+		if (this.closed) return;
 		this.closed = true;
-		try { // invoke both methods even if in.close fails
+		try {
 			this.in.close();
 		} finally {
 			this.out.close();
@@ -974,7 +1006,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	
 	private static void writeLong(OutputStream out, long value) throws IOException {
 		out.write(new byte[] { (byte) value, (byte) (value >>> 8), (byte) (value >>> 16), (byte) (value >>> 24), (byte) (value >>> 32), (byte) (value >>> 40),
-				(byte) (value >>> 48), (byte) (value >>> 56) });
+			(byte) (value >>> 48), (byte) (value >>> 56) });
 	}
 	
 	private static int readByte(WrongInputHandler wih, InputStream in) throws IOException {

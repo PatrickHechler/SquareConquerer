@@ -533,7 +533,7 @@ public class SquareConquererCUI implements Runnable {
 					connects = null;
 					for (Connection conn : cs.values()) {
 						try {
-							conn.close();
+							conn.logOut();
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
@@ -805,12 +805,12 @@ public class SquareConquererCUI implements Runnable {
 				Map<User, Connection> cs = connects;
 				if (cs != null) {
 					for (Entry<User, Connection> e : cs.entrySet()) {
-						e.getKey().close();
 						try {
-							e.getValue().close();
+							e.getValue().logOut();
 						} catch (IOException e1) {
 							e1.printStackTrace();
 						}
+						e.getKey().close();
 					}
 				}
 				world = new RootWorld.Builder(usr.makeRoot(), xlen, ylen);

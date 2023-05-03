@@ -46,20 +46,20 @@ import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 @SuppressWarnings("preview")
 public class PageWorld {
 	
-	private static final String ERROR_ILLEGAL_LINE2        = Messages.get("PageWorld.illegal-line2");      //$NON-NLS-1$
-	private static final String PIXEL_NOT_FOUND_IN_PAGE    = Messages.get("PageWorld.pixel-behind-page");  //$NON-NLS-1$
-	private static final String ERROR_INVALID_LINE         = Messages.get("PageWorld.illegal-line1");      //$NON-NLS-1$
-	private static final String POSITION_NOT_FOUND         = Messages.get("PageWorld.pos-not-found");      //$NON-NLS-1$
-	private static final String UNKNOWN_COLOR              = Messages.get("PageWorld.unknown-color");      //$NON-NLS-1$
-	private static final String PAGE_WORLD_FINISH          = Messages.get("PageWorld.log-finish");         //$NON-NLS-1$
-	private static final String PAGE_WORLD_FINISH_DRAWING  = Messages.get("PageWorld.log-finish-draw");    //$NON-NLS-1$
-	private static final String PAGE_WORLD_FINISH_COUNTING = Messages.get("PageWorld.log-finish-cnt");     //$NON-NLS-1$
-	private static final String MAX_BOUNDS                 = Messages.get("PageWorld.log-max-char-bound"); //$NON-NLS-1$
-	private static final String OTHER_TILE_IS_NULL         = Messages.get("PageWorld.other-is-null");      //$NON-NLS-1$
-	private static final String TEXT_TILE_IS_NULL          = Messages.get("PageWorld.text-is-null");       //$NON-NLS-1$
-	private static final String WORLD_TILE_IS_NULL         = Messages.get("PageWorld.world-is-null");      //$NON-NLS-1$
-	private static final String LINK_TILE_IS_NULL          = Messages.get("PageWorld.link-is-null");       //$NON-NLS-1$
-	private static final String PAGE_TILE_IS_NULL          = Messages.get("PageWorld.page-is-null");       //$NON-NLS-1$
+	private static final String ERROR_ILLEGAL_LINE2        = Messages.getString("PageWorld.illegal-line2");      //$NON-NLS-1$
+	private static final String PIXEL_NOT_FOUND_IN_PAGE    = Messages.getString("PageWorld.pixel-behind-page");  //$NON-NLS-1$
+	private static final String ERROR_INVALID_LINE         = Messages.getString("PageWorld.illegal-line1");      //$NON-NLS-1$
+	private static final String POSITION_NOT_FOUND         = Messages.getString("PageWorld.pos-not-found");      //$NON-NLS-1$
+	private static final String UNKNOWN_COLOR              = Messages.getString("PageWorld.unknown-color");      //$NON-NLS-1$
+	private static final String PAGE_WORLD_FINISH          = Messages.getString("PageWorld.log-finish");         //$NON-NLS-1$
+	private static final String PAGE_WORLD_FINISH_DRAWING  = Messages.getString("PageWorld.log-finish-draw");    //$NON-NLS-1$
+	private static final String PAGE_WORLD_FINISH_COUNTING = Messages.getString("PageWorld.log-finish-cnt");     //$NON-NLS-1$
+	private static final String MAX_BOUNDS                 = Messages.getString("PageWorld.log-max-char-bound"); //$NON-NLS-1$
+	private static final String OTHER_TILE_IS_NULL         = Messages.getString("PageWorld.other-is-null");      //$NON-NLS-1$
+	private static final String TEXT_TILE_IS_NULL          = Messages.getString("PageWorld.text-is-null");       //$NON-NLS-1$
+	private static final String WORLD_TILE_IS_NULL         = Messages.getString("PageWorld.world-is-null");      //$NON-NLS-1$
+	private static final String LINK_TILE_IS_NULL          = Messages.getString("PageWorld.link-is-null");       //$NON-NLS-1$
+	private static final String PAGE_TILE_IS_NULL          = Messages.getString("PageWorld.page-is-null");       //$NON-NLS-1$
 	
 	private static final int   VAL_PAGE   = 255;
 	private static final int   VAL_LINK   = 190;

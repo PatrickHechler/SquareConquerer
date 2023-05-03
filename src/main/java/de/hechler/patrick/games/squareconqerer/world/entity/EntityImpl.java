@@ -17,6 +17,7 @@
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
 import java.awt.image.BufferedImage;
+import java.text.Format;
 
 import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
@@ -33,11 +34,10 @@ import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 public abstract sealed class EntityImpl implements ImageableObj permits BuildingImpl, UnitImpl {
 	// do not implement Entity, so that a enhanced switch does not need a default case
 	
-	private static final String EVERY_ENTITY_HAS_AN_OWNER = Messages.get("EntityImpl.no-owner");                        //$NON-NLS-1$
-	private static final String NEGATIVE_VIEW_RANGE       = Messages.get("EntityImpl.negative-view-range");             //$NON-NLS-1$
-	private static final String LIVES_IS                  = Messages.get("EntityImpl.lives-is");                        //$NON-NLS-1$
-	private static final String MAXLIVES_LESS_LIVES       = Messages.get("EntityImpl.maxlives-less-lives-maxlives-is"); //$NON-NLS-1$
-	private static final String LIVES_NOT_STRICT_POSITIVE = Messages.get("EntityImpl.lives-not-strict-posibive");       //$NON-NLS-1$
+	private static final String EVERY_ENTITY_NEEDS_AN_OWNER = Messages.getString("EntityImpl.no-owner");                  //$NON-NLS-1$
+	private static final Format NEGATIVE_VIEW_RANGE         = Messages.getFormat("EntityImpl.negative-view-range");       //$NON-NLS-1$
+	private static final Format MAXLIVES_LESS_LIVES         = Messages.getFormat("EntityImpl.maxlives-less-lives");       //$NON-NLS-1$
+	private static final Format LIVES_NOT_STRICT_POSITIVE   = Messages.getFormat("EntityImpl.lives-not-strict-posibive"); //$NON-NLS-1$
 	
 	/** the {@link #owner()} of this entity */
 	protected final User usr;
@@ -64,16 +64,16 @@ public abstract sealed class EntityImpl implements ImageableObj permits Building
 	 */
 	public EntityImpl(int x, int y, User usr, int maxlives, int lives, int viewRange) {
 		if (lives <= 0) {
-			throw new IllegalArgumentException(LIVES_NOT_STRICT_POSITIVE + maxlives);
+			throw new IllegalArgumentException(Messages.format(LIVES_NOT_STRICT_POSITIVE, Integer.toString(lives)));
 		}
 		if (maxlives < lives) {
-			throw new IllegalArgumentException(MAXLIVES_LESS_LIVES + maxlives + LIVES_IS + lives);
+			throw new IllegalArgumentException(Messages.format(MAXLIVES_LESS_LIVES, Integer.toString(maxlives), Integer.toString(lives)));
 		}
 		if (viewRange < 0) {
-			throw new IllegalArgumentException(NEGATIVE_VIEW_RANGE);
+			throw new IllegalArgumentException(Messages.format(NEGATIVE_VIEW_RANGE, Integer.toString(viewRange)));
 		}
 		if (usr == null) {
-			throw new NullPointerException(EVERY_ENTITY_HAS_AN_OWNER);
+			throw new NullPointerException(EVERY_ENTITY_NEEDS_AN_OWNER);
 		}
 		this.usr       = usr;
 		this.maxlives  = maxlives;
