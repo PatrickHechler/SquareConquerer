@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.text.Format;
 import java.util.Properties;
 
 /**
@@ -39,9 +40,9 @@ public class Settings {
 	
 	private static final OfVirtual OF_VIRTUAL = Thread.ofVirtual();
 	
-	private static final String ILLEGAL_VALUE  = Messages.getString("Settings.illegal-prop"); //$NON-NLS-1$
-	private static final String FAILED_TO_SAVE = Messages.getString("Settings.save-failed");  //$NON-NLS-1$
-	private static final String FAILED_TO_LOAD = Messages.getString("Settings.load-failed");  //$NON-NLS-1$
+	private static final Format ILLEGAL_VALUE  = Messages.getFormat("Settings.illegal-prop"); //$NON-NLS-1$
+	private static final Format FAILED_TO_SAVE = Messages.getFormat("Settings.save-failed");  //$NON-NLS-1$
+	private static final Format FAILED_TO_LOAD = Messages.getFormat("Settings.load-failed");  //$NON-NLS-1$
 	
 	/**
 	 * the major version of the Square Conquerer Project
@@ -75,7 +76,7 @@ public class Settings {
 			try (BufferedReader r = Files.newBufferedReader(PATH, StandardCharsets.UTF_8)) {
 				PROPS.load(r);
 			} catch (IOException e) {
-				System.err.println(FAILED_TO_LOAD);
+				System.err.println(Messages.format(FAILED_TO_LOAD, e));
 				e.printStackTrace();
 			}
 		}
@@ -84,7 +85,7 @@ public class Settings {
 				Files.newBufferedWriter(PATH, StandardCharsets.UTF_8, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
 				PROPS.store(w, null);
 			} catch (IOException e) {
-				System.err.println(FAILED_TO_SAVE);
+				System.err.println(Messages.format(FAILED_TO_SAVE, e));
 				e.printStackTrace();
 			}
 		}));
@@ -101,7 +102,7 @@ public class Settings {
 		case TRUE -> true;
 		case FALSE -> false;
 		default -> {
-			System.err.println(ILLEGAL_VALUE + name + ": " + PROPS.getProperty(name)); //$NON-NLS-1$
+			System.err.println(Messages.format(ILLEGAL_VALUE, name, PROPS.getProperty(name)));
 			yield def;
 		}
 		};
@@ -115,7 +116,7 @@ public class Settings {
 		try {
 			return Integer.parseInt(val);
 		} catch (@SuppressWarnings("unused") NumberFormatException e) {
-			System.err.println(ILLEGAL_VALUE + name + ": " + PROPS.getProperty(name)); //$NON-NLS-1$
+			System.err.println(Messages.format(ILLEGAL_VALUE, name, PROPS.getProperty(name)));
 			return def;
 		}
 	}

@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,8 +52,8 @@ import de.hechler.patrick.games.squareconqerer.world.enums.Direction;
 import de.hechler.patrick.games.squareconqerer.world.placer.DefaultUserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.placer.UserPlacer;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.turn.CarryTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.EntityTurn;
 import de.hechler.patrick.games.squareconqerer.world.turn.MoveTurn;
@@ -75,11 +76,11 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private static final String NON_RECTANGULAR_FORM         = Messages.getString("RootWorld.non-rectangular-world");        //$NON-NLS-1$
 	private static final String RESOURCE_IS_NULL             = Messages.getString("RootWorld.no-resource");                  //$NON-NLS-1$
 	private static final String TYPE_IS_NULL                 = Messages.getString("RootWorld.no-type");                      //$NON-NLS-1$
-	private static final String UNKNOWN_TILE_TYPE            = Messages.getString("RootWorld.unknown-type");                 //$NON-NLS-1$
+	private static final Format UNKNOWN_TILE_TYPE            = Messages.getFormat("RootWorld.unknown-ground");               //$NON-NLS-1$
 	private static final String USR_IS_NULL                  = Messages.getString("RootWorld.no-user");                      //$NON-NLS-1$
 	private static final String RND_IS_NULL                  = Messages.getString("RootWorld.no-random");                    //$NON-NLS-1$
-	private static final String UNKNOWN_ENTITY_TURN_TYPE     = Messages.getString("RootWorld.unknown-entyty-turn-type");     //$NON-NLS-1$
-	private static final String ERROR_EXEC_USER_TURN         = Messages.getString("RootWorld.error-while-exex-usr-turn");    //$NON-NLS-1$
+	private static final Format UNKNOWN_ENTITY_TURN_TYPE     = Messages.getFormat("RootWorld.unknown-entyty-turn-type");     //$NON-NLS-1$
+	private static final Format ERROR_EXEC_USER_TURN         = Messages.getFormat("RootWorld.error-while-exex-usr-turn");    //$NON-NLS-1$
 	private static final String TURN_USES_NOT_OWNED_ENTITIES = Messages.getString("RootWorld.turn-uses-not-owned-entities"); //$NON-NLS-1$
 	private static final String UNKNOWN_USER                 = Messages.getString("RootWorld.unknown-usr");                  //$NON-NLS-1$
 	private static final String ROOT_NO_EXEC_TURN            = Messages.getString("RootWorld.root-no-exec-perm");            //$NON-NLS-1$
@@ -88,7 +89,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private static final String NO_MORE_ELEMENTS             = Messages.getString("RootWorld.no-more-elements");             //$NON-NLS-1$
 	private static final String GAME_NOT_STARTED             = Messages.getString("RootWorld.game-not-started");             //$NON-NLS-1$
 	private static final String INAVLID_RND_ARR_SIZE         = Messages.getString("RootWorld.invalid-array-length");         //$NON-NLS-1$
-	private static final String SHA256_NOT_FOUND             = Messages.getString("RootWorld.sha256-not-found");             //$NON-NLS-1$
+	private static final Format SHA256_NOT_FOUND             = Messages.getFormat("RootWorld.sha256-not-found");             //$NON-NLS-1$
 	
 	private final RootUser                         root;
 	private final Tile[][]                         tiles;
@@ -183,7 +184,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		try {
 			digest = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
 		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError(SHA256_NOT_FOUND + e.toString(), e);
+			throw new AssertionError(Messages.format(SHA256_NOT_FOUND, e), e);
 		}
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		Connection            conn = Connection.createUnsecure(this.root, baos);
@@ -200,7 +201,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		try {
 			digest = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
 		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError(SHA256_NOT_FOUND + e.toString(), e);
+			throw new AssertionError(Messages.format(SHA256_NOT_FOUND, e), e);
 		}
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		Connection            conn = Connection.createUnsecure(this.root, baos);
@@ -217,7 +218,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		try {
 			digest = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
 		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError(SHA256_NOT_FOUND + e.toString(), e);
+			throw new AssertionError(Messages.format(SHA256_NOT_FOUND, e), e);
 		}
 		return digest.digest(data);
 	}
@@ -347,8 +348,8 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		if (savePWs) {
 			this.root.save(conn);
 		} else {
-			RootUser r = RootUser.create(new char[0]);
-			this.root.users().keySet().forEach(name -> r.add(name, new char[0]));
+			RootUser r = RootUser.nopw();
+			this.root.users().keySet().forEach(r::addNopw);
 			r.save(conn);
 		}
 		conn.writeInt(RWS_SUB1);
@@ -526,7 +527,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	
 	private static long val(byte[] s, int i) {
 		return s[i] & 0xFF | ((s[i + 1] & 0xFFL) << 8) | ((s[i + 2] & 0xFFL) << 16) | ((s[i + 3] & 0xFFL) << 24) | ((s[i + 4] & 0xFFL) << 32)
-				| ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48) | ((s[i + 7] & 0xFFL) << 56);
+			| ((s[i + 5] & 0xFFL) << 40) | ((s[i + 6] & 0xFFL) << 48) | ((s[i + 7] & 0xFFL) << 56);
 	}
 	
 	/**
@@ -626,10 +627,10 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				Tile   t = this.tiles[e.x()][e.y()];
 				executeEntityTurn(et, e, t);
 			} catch (TurnExecutionException e) {
-				System.err.println(ERROR_EXEC_USER_TURN + et.entity().owner() + "': " + e.type); //$NON-NLS-1$
+				System.err.println(Messages.format(ERROR_EXEC_USER_TURN, et.entity().owner(), e.type));
 				e.printStackTrace();
 			} catch (Exception e) {
-				System.err.println(ERROR_EXEC_USER_TURN + et.entity().owner() + '\'');
+				System.err.println(Messages.format(ERROR_EXEC_USER_TURN, et.entity().owner(), ErrorType.UNKNOWN));
 				e.printStackTrace();
 			}
 		}
@@ -643,12 +644,12 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			checkHasUnit(e, t);
 			Unit            u    = (Unit) e;
 			List<Direction> dirs = mt.dirs();
-			if (u.moveRange() < dirs.size()) { throw new TurnExecutionException(ErrorType.INVALID_TURN); }
+			if (u.moveRange() < dirs.size()) throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			for (Direction dir : dirs) {
 				int  x       = e.x();
 				int  y       = e.y();
 				Tile newTile = this.tiles[x + dir.xadd][y + dir.yadd];
-				if (newTile.unit() != null) { throw new TurnExecutionException(ErrorType.BLOCKED_WAY); }
+				if (newTile.unit() != null) throw new TurnExecutionException(ErrorType.BLOCKED_WAY);
 				u.changePos(x + dir.xadd, y + dir.yadd, newTile);
 				this.tiles[x][y].unit(null);
 				newTile.unit(u);
@@ -657,18 +658,18 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		case CarryTurn ct -> {
 			checkHasUnit(e, t);
 			Building b = t.building();
-			if (b == null) { throw new TurnExecutionException(ErrorType.INVALID_TURN); }
-			if (!(e instanceof Unit u)) { throw new TurnExecutionException(ErrorType.INVALID_TURN); }
+			if (b == null) throw new TurnExecutionException(ErrorType.INVALID_TURN);
+			if (!(e instanceof Unit u)) throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			b.giveRes(u, ct.res(), ct.amount());
 		}
 		case StoreTurn st -> {
 			checkHasUnit(e, t);
 			Building b = t.building();
-			if (b == null) { throw new TurnExecutionException(ErrorType.INVALID_TURN); }
-			if (!(e instanceof Unit u)) { throw new TurnExecutionException(ErrorType.INVALID_TURN); }
+			if (b == null) throw new TurnExecutionException(ErrorType.INVALID_TURN);
+			if (!(e instanceof Unit u)) throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			b.store(u, st.resource(), st.amount());
 		}
-		default -> throw new AssertionError(UNKNOWN_ENTITY_TURN_TYPE + turn.getClass());
+		default -> throw new AssertionError(Messages.format(UNKNOWN_ENTITY_TURN_TYPE, turn.getClass()));
 		}
 	}
 	
@@ -951,11 +952,11 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			for (int x = 0; x < this.tiles.length; x += 8) {
 				for (int y = x % 16 == 0 ? 0 : 4; y < this.tiles[x].length; y += 8) {
 					if ((this.tiles[x][y] != null && this.tiles[x][y].ground != GroundType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
-							// tiles
-							|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground != GroundType.NOT_EXPLORED))
-							|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground != GroundType.NOT_EXPLORED))
-							|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground != GroundType.NOT_EXPLORED))
-							|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground != GroundType.NOT_EXPLORED))) {
+						// tiles
+						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground != GroundType.NOT_EXPLORED))
+						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground != GroundType.NOT_EXPLORED))
+						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground != GroundType.NOT_EXPLORED))
+						|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground != GroundType.NOT_EXPLORED))) {
 						continue;
 					}
 					int             rndVal = this.rnd.nextInt(TYPES.length << 1);
@@ -1096,8 +1097,8 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @param r the new resource of the tile
 		 */
 		public void set(int x, int y, GroundType t, OreResourceType r) {
-			if (t == null) { throw new NullPointerException(TYPE_IS_NULL); }
-			if (r == null) { throw new NullPointerException(RESOURCE_IS_NULL); }
+			if (t == null)  throw new NullPointerException(TYPE_IS_NULL); 
+			if (r == null)  throw new NullPointerException(RESOURCE_IS_NULL); 
 			this.tiles[x][y] = new Tile(t, r, true);
 			executeNTL();
 		}
@@ -1177,8 +1178,9 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 				Tile[] ots = tiles[x];
 				if (ts.length != ots.length) throw new IllegalStateException(NON_RECTANGULAR_FORM);
 				for (int y = 0; y < ts.length; y++) {
-					Tile t = ots[y].copy();
+					Tile t = ots[y];
 					if (t == null) throw new IllegalStateException(NULL_TILE);
+					t = t.copy();
 					if (t.ground == null || t.resource == null) throw new NullPointerException(NULL_TYPE_OR_RESOURCE);
 					if (t.ground == GroundType.NOT_EXPLORED) throw new IllegalStateException(NOT_EXPLORED_TILE);
 					ts[y] = t;

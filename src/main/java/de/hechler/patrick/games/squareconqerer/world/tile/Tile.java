@@ -21,7 +21,7 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.StackWalker.Option;
-import java.util.Collections;
+import java.text.Format;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -58,10 +58,10 @@ public sealed class Tile permits RemoteTile {
 	
 	private static final String TILTLE_BUT_NO_PAGE       = Messages.getString("Tile.title-no-page");               //$NON-NLS-1$
 	private static final String PAGE_BUT_NO_TILTLE       = Messages.getString("Tile.page-no-title");               //$NON-NLS-1$
-	private static final String ILLEGAL_CALLER           = Messages.getString("Tile.illegal-caller");              //$NON-NLS-1$
+	private static final Format ILLEGAL_CALLER           = Messages.getFormat("Tile.illegal-caller");              //$NON-NLS-1$
 	private static final String I_HAVE_NO_PAGE           = Messages.getString("Tile.have-no-page");                //$NON-NLS-1$
 	private static final String COULD_NOT_LOAD_UNVISIBLE = Messages.getString("Tile.warn-loading-visible-failed"); //$NON-NLS-1$
-	private static final String LOG_CREATE_ICON          = Messages.getString("Tile.log-create-icon");             //$NON-NLS-1$
+	private static final Format LOG_CREATE_ICON          = Messages.getFormat("Tile.log-create-icon");             //$NON-NLS-1$
 	private static final String NO_GROUND_OR_NO_RESOURCE = Messages.getString("Tile.null-ground-or-resource");     //$NON-NLS-1$
 	
 	private static Icon[] icons;
@@ -130,7 +130,7 @@ public sealed class Tile permits RemoteTile {
 		index = (index + Unit.ordinal(t.unit)) << 1;
 		if (t.visible) index++;
 		if (icons[index] == null || icons[index].getIconWidth() != width || icons[index].getIconHeight() != height) {
-			System.out.println(LOG_CREATE_ICON + t);
+			System.out.println(Messages.format(LOG_CREATE_ICON, t));
 			BufferedImage img = ImageableObjs.immage(t.ground, t.resource, t.build, t.unit);
 			if (!t.visible) {
 				if (notVisible == null && !triedLoading) {
@@ -237,8 +237,8 @@ public sealed class Tile permits RemoteTile {
 		Unit     u = this.unit;
 		Building b = this.build;
 		if (u == null) {
-			if (b == null) return Collections.emptyList();
-			else return List.of(b);
+			if (b == null) return List.of();
+			return List.of(b);
 		} else if (b == null) return List.of(u);
 		else return List.of(b, u);
 	}
@@ -262,7 +262,7 @@ public sealed class Tile permits RemoteTile {
 	public static void noCheck(Runnable r) {
 		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != RootWorld.class) {
-			throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+			throw new IllegalCallerException(Messages.format(ILLEGAL_CALLER, caller));
 		}
 		ScopedValue.where(NO_CHECK, Boolean.TRUE, r);
 	}
@@ -293,7 +293,7 @@ public sealed class Tile permits RemoteTile {
 		if (!NO_CHECK.isBound() || !NO_CHECK.get().booleanValue()) {
 			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			if (caller != UserWorld.class && caller != RootWorld.class && caller != RemoteWorld.class && caller != RootWorld.Builder.class) {
-				throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+				throw new IllegalCallerException(Messages.format(ILLEGAL_CALLER, caller));
 			}
 		}
 		this.unit = unit;
@@ -311,7 +311,7 @@ public sealed class Tile permits RemoteTile {
 		if (!NO_CHECK.isBound() || !NO_CHECK.get().booleanValue()) {
 			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			if (caller != UserWorld.class && caller != RootWorld.class && caller != RemoteWorld.class && caller != RootWorld.Builder.class) {
-				throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+				throw new IllegalCallerException(Messages.format(ILLEGAL_CALLER, caller));
 			}
 		}
 		this.build = build;
@@ -330,7 +330,7 @@ public sealed class Tile permits RemoteTile {
 	public void page(Supplier<SCPage> page, String title) throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != PageWorld.class) {
-			throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+			throw new IllegalCallerException(Messages.format(ILLEGAL_CALLER, caller));
 		}
 		if (page != null && title == null) throw new NullPointerException(PAGE_BUT_NO_TILTLE);
 		if (page == null && title != null) throw new NullPointerException(TILTLE_BUT_NO_PAGE);
@@ -350,7 +350,7 @@ public sealed class Tile permits RemoteTile {
 	public void visible(boolean visible) throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != UserWorld.class) {
-			throw new IllegalCallerException(ILLEGAL_CALLER + caller);
+			throw new IllegalCallerException(Messages.format(ILLEGAL_CALLER, caller));
 		}
 		this.visible = visible;
 	}

@@ -32,6 +32,7 @@ import de.hechler.patrick.games.squareconqerer.addons.TheGameAddon;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.connect.WrongInputHandler;
 import de.hechler.patrick.games.squareconqerer.interfaces.Executable;
+import de.hechler.patrick.games.squareconqerer.stuff.IntMap;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
@@ -395,13 +396,8 @@ public final class OpenWorld implements Executable<IOException> {
 	 */
 	public static void writeRes(Connection conn, Resource r) throws IOException {
 		Class<? extends Resource> cls = r.getClass();
-		if (!cls.isEnum()) { throw new AssertionError("resource class is no enum (this should never happen)"); } //$NON-NLS-1$
-		try {
-			conn.writeInt(cls.getDeclaredField("NUMBER").getInt(null)); //$NON-NLS-1$
-			conn.writeInt(((Enum<?>) r).ordinal());
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-			throw new AssertionError(e.toString(), e);
-		}
+		conn.writeInt(IntMap.staticIntField(cls, "NUMBER")); //$NON-NLS-1$
+		conn.writeInt(IntMap.ordinal(r));
 	}
 	
 	private static void sendUnit(Unit u, Connection conn) throws IOException {

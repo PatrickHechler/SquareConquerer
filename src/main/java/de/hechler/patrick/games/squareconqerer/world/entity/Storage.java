@@ -16,6 +16,8 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world.entity;
 
+import java.text.Format;
+
 import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
@@ -34,7 +36,7 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
  */
 public final class Storage extends BuildingImpl {
 	
-	private static final String UNKNOWN_RESOURCE_TYPE = Messages.getString("Storage.unknown-resource"); //$NON-NLS-1$
+	private static final Format UNKNOWN_RESOURCE_TYPE = Messages.getFormat("Storage.unknown-resource"); //$NON-NLS-1$
 	private static final String LOCAL_NAME            = Messages.getString("Storage.local-name");       //$NON-NLS-1$
 	
 	/**
@@ -104,7 +106,7 @@ public final class Storage extends BuildingImpl {
 		switch (res) {
 		case @SuppressWarnings("preview") ProducableResourceType prt -> this.producable.addBy(prt, amount);
 		case @SuppressWarnings("preview") OreResourceType prt -> this.ores.addBy(prt, amount);
-		default -> throw new AssertionError(UNKNOWN_RESOURCE_TYPE + res.getClass());
+		default -> throw new AssertionError(Messages.format(UNKNOWN_RESOURCE_TYPE, res.getClass()));
 		}
 		u.uncarry(res, amount);
 	}
@@ -129,7 +131,7 @@ public final class Storage extends BuildingImpl {
 				throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			}
 		} else {
-			throw new AssertionError(UNKNOWN_RESOURCE_TYPE + res.getClass());
+			throw new AssertionError(Messages.format(UNKNOWN_RESOURCE_TYPE, res.getClass()));
 		}
 		u.carry(res, amount);
 	}

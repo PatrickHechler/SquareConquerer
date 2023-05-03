@@ -43,7 +43,6 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
  */
 public final class Turn {
 	
-	private static final String UNKNOWN_ENTITY_TURN_TYPE         = Messages.getString("Turn.unknown-entity-turn");         //$NON-NLS-1$
 	private static final String TURNS_IS_NOT_EMPTY               = Messages.getString("Turn.turn-not-empty");              //$NON-NLS-1$
 	private static final String ENTITY_TURN_NOT_BELONG_TO_ENTITY = Messages.getString("Turn.entity-turn-not-from-entity"); //$NON-NLS-1$
 	private static final String I_DO_NOT_OWN_THIS_ENTITY         = Messages.getString("Turn.not-my-entity");               //$NON-NLS-1$
@@ -162,7 +161,7 @@ public final class Turn {
 				Resource res = RemoteWorld.readRes(conn);
 				et = new StoreTurn((Unit) e, res, amount);
 			}
-			default -> throw new AssertionError("illegal return value from conn.readInt(int...) (this should not be possible)"); //$NON-NLS-1$
+			default -> throw new AssertionError("illegal return value from conn.readInt(int...)"); //$NON-NLS-1$ this should not be possible
 			}
 			this.turns.put(e, et);
 		}
@@ -207,7 +206,6 @@ public final class Turn {
 				conn.writeInt(st.amount());
 				OpenWorld.writeRes(conn, st.resource());
 			}
-			default -> throw new AssertionError(UNKNOWN_ENTITY_TURN_TYPE + et.getClass());
 			}
 		}
 		conn.writeInt(FIN_TURN);

@@ -16,12 +16,30 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.text.Format;
 import java.text.MessageFormat;
 import java.util.Locale;
+import java.util.Locale.Category;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import java.util.Locale.Category;
+
+import de.hechler.patrick.games.squareconqerer.User.RootUser;
+import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
+import de.hechler.patrick.games.squareconqerer.connect.Connection;
+import de.hechler.patrick.games.squareconqerer.ui.TileChanger;
+import de.hechler.patrick.games.squareconqerer.world.OpenWorld;
+import de.hechler.patrick.games.squareconqerer.world.PageWorld;
+import de.hechler.patrick.games.squareconqerer.world.RemoteWorld;
+import de.hechler.patrick.games.squareconqerer.world.RootWorld;
+import de.hechler.patrick.games.squareconqerer.world.entity.Storage;
+import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
+import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObjs;
+import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
+import de.hechler.patrick.games.squareconqerer.world.turn.Turn;
 
 /**
  * this class manages the externalized strings

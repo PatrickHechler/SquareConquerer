@@ -16,12 +16,14 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.ui;
 
+import java.text.Format;
+
 import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
 /**
  * this class is used to modify tiles
@@ -30,10 +32,14 @@ import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
  */
 public class TileChanger {
 	
-	private static final String STR_SET_BUILDING    = Messages.getString("TileChanger.set-building");  //$NON-NLS-1$
-	private static final String STR_SET_UNIT        = Messages.getString("TileChanger.set-unit");      //$NON-NLS-1$
-	private static final String STR_SET_GROUND_TYPE = Messages.getString("TileChanger.set-ground");    //$NON-NLS-1$
-	private static final String STR_SET_ORE_TYPE    = Messages.getString("TileChanger.set-ore");       //$NON-NLS-1$
+	private static final String NULL_BUILDING       = Messages.getString("TileChanger.no-building");   //$NON-NLS-1$
+	private static final String NULL_UNIT           = Messages.getString("TileChanger.no-unit");       //$NON-NLS-1$
+	private static final String NULL_GROUND         = Messages.getString("TileChanger.no-ground");     //$NON-NLS-1$
+	private static final String NULL_RESOURCE       = Messages.getString("TileChanger.no-resource");   //$NON-NLS-1$
+	private static final Format STR_SET_BUILDING    = Messages.getFormat("TileChanger.set-building");  //$NON-NLS-1$
+	private static final Format STR_SET_UNIT        = Messages.getFormat("TileChanger.set-unit");      //$NON-NLS-1$
+	private static final Format STR_SET_GROUND_TYPE = Messages.getFormat("TileChanger.set-ground");    //$NON-NLS-1$
+	private static final Format STR_SET_ORE_TYPE    = Messages.getFormat("TileChanger.set-ore");       //$NON-NLS-1$
 	private static final String STR_ADD_NORMAL      = Messages.getString("TileChanger.add-normal");    //$NON-NLS-1$
 	private static final String STR_ADD_HILL        = Messages.getString("TileChanger.add-hill");      //$NON-NLS-1$
 	private static final String STR_ADD_DEEP        = Messages.getString("TileChanger.add-deep");      //$NON-NLS-1$
@@ -120,7 +126,7 @@ public class TileChanger {
 	 * @param res the resource to be used
 	 */
 	public void makeSetResource(OreResourceType res) {
-		if (res == null) throw new NullPointerException(Messages.getString("TileChanger.no-resource")); //$NON-NLS-1$
+		if (res == null) throw new NullPointerException(NULL_RESOURCE);
 		this.state = STATE_SET_ORE;
 		this.obj   = res;
 	}
@@ -131,7 +137,7 @@ public class TileChanger {
 	 * @param grd the ground to be used
 	 */
 	public void makeSetGround(GroundType grd) {
-		if (grd == null) throw new NullPointerException(Messages.getString("TileChanger.no-ground")); //$NON-NLS-1$
+		if (grd == null) throw new NullPointerException(NULL_GROUND);
 		this.state = STATE_SET_GROUND;
 		this.obj   = grd;
 	}
@@ -142,7 +148,7 @@ public class TileChanger {
 	 * @param u the unit to be set
 	 */
 	public void makeSetUnit(Unit u) {
-		if (u == null) throw new NullPointerException(Messages.getString("TileChanger.no-unit")); //$NON-NLS-1$
+		if (u == null) throw new NullPointerException(NULL_UNIT);
 		this.state = STATE_SET_UNIT;
 		this.obj   = u;
 	}
@@ -153,7 +159,7 @@ public class TileChanger {
 	 * @param b the building to be set
 	 */
 	public void makeSetBuilding(Building b) {
-		if (b == null) throw new NullPointerException(Messages.getString("TileChanger.no-building")); //$NON-NLS-1$
+		if (b == null) throw new NullPointerException(NULL_BUILDING);
 		this.state = STATE_SET_UNIT;
 		this.obj   = b;
 	}
@@ -166,10 +172,10 @@ public class TileChanger {
 		case STATE_DEEP -> STR_ADD_DEEP;
 		case STATE_HILL -> STR_ADD_HILL;
 		case STATE_NORMAL -> STR_ADD_NORMAL;
-		case STATE_SET_ORE -> STR_SET_ORE_TYPE + /* ((OreResourceType) */this.obj/* ) */.toString();
-		case STATE_SET_GROUND -> STR_SET_GROUND_TYPE + /* ((TileType) */this.obj/* ) */.toString();
-		case STATE_SET_UNIT -> STR_SET_UNIT + /* ((Unit) */this.obj/* ) */.toString();
-		case STATE_SET_BUILD -> STR_SET_BUILDING + /* ((Build) */this.obj/* ) */.toString();
+		case STATE_SET_ORE -> Messages.format(STR_SET_ORE_TYPE, this.obj);
+		case STATE_SET_GROUND -> Messages.format(STR_SET_GROUND_TYPE, this.obj);
+		case STATE_SET_UNIT -> Messages.format(STR_SET_UNIT, this.obj);
+		case STATE_SET_BUILD -> Messages.format(STR_SET_BUILDING, this.obj);
 		default -> throw new AssertionError("illegal state: " + this.state); //$NON-NLS-1$ this should never happen
 		};
 	}

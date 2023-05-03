@@ -17,6 +17,7 @@
 package de.hechler.patrick.games.squareconqerer.addons.entities;
 
 import java.io.IOException;
+import java.text.Format;
 import java.util.Map;
 
 import de.hechler.patrick.games.squareconqerer.Messages;
@@ -40,10 +41,10 @@ import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
  */
 public class TheGameEntities extends AbstractAddonEntities {
 	
-	private static final String UNKNOWN_CLASS_NAME                    = Messages.getString("TheGameEntities.unknown-type");     //$NON-NLS-1$
-	private static final String INVALID_MAX_LIVES_OR_VIEW_RANGE_TRAIT = Messages.getString("TheGameEntities.invlaid-trait");    //$NON-NLS-1$
-	private static final String UNKNOWN_BUILDING_TYPE                 = Messages.getString("TheGameEntities.unknown-building"); //$NON-NLS-1$
-	private static final String UNKNOWN_UNIT_TYPE                     = Messages.getString("TheGameEntities.unknown-unit");     //$NON-NLS-1$
+	private static final Format UNKNOWN_CLASS_NAME                    = Messages.getFormat("TheGameEntities.unknown-type");     //$NON-NLS-1$
+	private static final Format INVALID_MAX_LIVES_OR_VIEW_RANGE_TRAIT = Messages.getFormat("TheGameEntities.invlaid-trait");    //$NON-NLS-1$
+	private static final Format UNKNOWN_BUILDING_TYPE                 = Messages.getFormat("TheGameEntities.unknown-building"); //$NON-NLS-1$
+	private static final Format UNKNOWN_UNIT_TYPE                     = Messages.getFormat("TheGameEntities.unknown-unit");     //$NON-NLS-1$
 	
 	/**
 	 * creates a new instance
@@ -57,7 +58,7 @@ public class TheGameEntities extends AbstractAddonEntities {
 	protected void finishSendUnit(Connection conn, Unit u) throws IOException {
 		switch (u) {
 		case @SuppressWarnings("preview") Carrier c -> conn.writeInt(Carrier.NUMBER);
-		default -> throw new AssertionError(UNKNOWN_UNIT_TYPE + u.getClass());
+		default -> throw new AssertionError(Messages.format(UNKNOWN_UNIT_TYPE, u.getClass()));
 		}
 	}
 	
@@ -89,7 +90,7 @@ public class TheGameEntities extends AbstractAddonEntities {
 				}
 			}
 		}
-		default -> throw new AssertionError(UNKNOWN_BUILDING_TYPE + b.getClass());
+		default -> throw new AssertionError(Messages.format(UNKNOWN_BUILDING_TYPE, b.getClass()));
 		}
 	}
 	
@@ -127,7 +128,7 @@ public class TheGameEntities extends AbstractAddonEntities {
 			EntityTrait.TRAIT_VIEW_RANGE, new EntityTrait.NumberTrait(EntityTrait.TRAIT_VIEW_RANGE, Storage.VIEW_RANGE), //
 			EntityTrait.TRAIT_MAX_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_MAX_LIVES, Storage.MAX_LIVES), //
 			EntityTrait.TRAIT_LIVES, new EntityTrait.NumberTrait(EntityTrait.TRAIT_LIVES, 0, Storage.MAX_LIVES, Storage.MAX_LIVES));
-		default -> throw new AssertionError(UNKNOWN_CLASS_NAME + clsName);
+		default -> throw new AssertionError(Messages.format(UNKNOWN_CLASS_NAME, clsName));
 		};
 	}
 	
@@ -139,19 +140,19 @@ public class TheGameEntities extends AbstractAddonEntities {
 		case Carrier.NAME -> {
 			if (EntityTrait.intValue(traits, EntityTrait.TRAIT_MAX_LIVES) != Carrier.MAX_LIVES
 				|| EntityTrait.intValue(traits, EntityTrait.TRAIT_VIEW_RANGE) != Carrier.VIEW_RANGE) {
-				throw new IllegalArgumentException(INVALID_MAX_LIVES_OR_VIEW_RANGE_TRAIT + traits);
+				throw new IllegalArgumentException(Messages.format(INVALID_MAX_LIVES_OR_VIEW_RANGE_TRAIT, traits));
 			}
 			yield new Carrier(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0);
 		}
 		case Storage.NAME -> {
 			if (EntityTrait.intValue(traits, EntityTrait.TRAIT_MAX_LIVES) != Storage.MAX_LIVES
 				|| EntityTrait.intValue(traits, EntityTrait.TRAIT_VIEW_RANGE) != Storage.VIEW_RANGE) {
-				throw new IllegalArgumentException(INVALID_MAX_LIVES_OR_VIEW_RANGE_TRAIT + traits);
+				throw new IllegalArgumentException(Messages.format(INVALID_MAX_LIVES_OR_VIEW_RANGE_TRAIT, traits));
 			}
 			yield new Storage(x, y, usr, EntityTrait.intValue(traits, EntityTrait.TRAIT_LIVES), null, 0, IntMap.create(OreResourceType.class),
 				IntMap.create(ProducableResourceType.class));
 		}
-		default -> throw new AssertionError(UNKNOWN_CLASS_NAME + clsName);
+		default -> throw new AssertionError(Messages.format(UNKNOWN_CLASS_NAME, clsName));
 		};
 	}
 	

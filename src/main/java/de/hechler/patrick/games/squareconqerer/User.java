@@ -28,6 +28,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.text.Format;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,9 +61,9 @@ import de.hechler.patrick.games.squareconqerer.world.RootWorld;
 public sealed class User implements Closeable, Comparable<User> {
 	
 	private static final String CMP_DIFF_USERS_WITH_SAME_NAME = Messages.getString("User.diff-same");           //$NON-NLS-1$
-	private static final String NO_STRONG_SECURE_RANDOM_FOUND = Messages.getString("User.no-strong-rnd");       //$NON-NLS-1$
+	private static final Format NO_STRONG_SECURE_RANDOM_FOUND = Messages.getFormat("User.no-strong-rnd");       //$NON-NLS-1$
 	private static final String THIS_USER_HAS_BEEN_MODIFIED   = Messages.getString("User.modified");            //$NON-NLS-1$
-	private static final String THIS_METHOD_IS_INTERN         = Messages.getString("User.intern");              //$NON-NLS-1$
+	private static final Format ILLEGAL_CALLER                = Messages.getFormat("User.illegal-caller");      //$NON-NLS-1$
 	private static final String THERE_ARE_ALREADY_OTHER_USERS = Messages.getString("User.already-loaded");      //$NON-NLS-1$
 	private static final String CHANGE_PW_NOT_MY_USR          = Messages.getString("User.chang-pw-not-my-usr"); //$NON-NLS-1$
 	private static final String USER_NOT_FOUND                = Messages.getString("User.unknown-usr");         //$NON-NLS-1$
@@ -87,7 +88,7 @@ public sealed class User implements Closeable, Comparable<User> {
 	public static int startModCnt() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ServerAccept.class) {
-			throw new IllegalCallerException(THIS_METHOD_IS_INTERN);
+			throw new IllegalCallerException(Messages.format(ILLEGAL_CALLER, caller));
 		}
 		return 0;
 	}
@@ -102,7 +103,7 @@ public sealed class User implements Closeable, Comparable<User> {
 	public synchronized char[] pw() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ClientConnect.class) {
-			throw new IllegalCallerException(THIS_METHOD_IS_INTERN);
+			throw new IllegalCallerException(Messages.format(ILLEGAL_CALLER, caller));
 		}
 		return this.s._pw;
 	}
@@ -117,7 +118,7 @@ public sealed class User implements Closeable, Comparable<User> {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ServerAccept.class && caller != Connection.OneWayAccept.class && caller != RootWorld.class
 			&& caller != Connection.ClientConnect.class && caller != Connection.class) {
-			throw new IllegalCallerException(THIS_METHOD_IS_INTERN);
+			throw new IllegalCallerException(Messages.format(ILLEGAL_CALLER, caller));
 		}
 		return this.modCnt;
 	}
@@ -148,7 +149,9 @@ public sealed class User implements Closeable, Comparable<User> {
 		Secret0 os   = this.s;
 		String  name = os.name;
 		char[]  opw  = os._pw;
-		for (int i = 0; i < opw.length; i++) { opw[i] = '\0'; }
+		for (int i = 0; i < opw.length; i++) {
+			opw[i] = '\0';
+		}
 		this.modCnt++;
 		this.s = new Secret0(name, pw);
 	}
@@ -177,6 +180,7 @@ public sealed class User implements Closeable, Comparable<User> {
 			return new User(s0);
 		} else {
 			this.s = s0;
+			this.modCnt++;
 			return this;
 		}
 	}
@@ -227,7 +231,7 @@ public sealed class User implements Closeable, Comparable<User> {
 			c0.init(Cipher.DECRYPT_MODE, keySpec, param);
 			return new CipherInputStream(in, c0);
 		} catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeySpecException e) {
-			throw new AssertionError(e.toString(), e);
+			throw new AssertionError(e);
 		}
 	}
 	
@@ -250,7 +254,7 @@ public sealed class User implements Closeable, Comparable<User> {
 			c1.init(Cipher.ENCRYPT_MODE, keySpec, param);
 			return new CipherOutputStream(out, c1);
 		} catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeySpecException e) {
-			throw new AssertionError(e.toString(), e);
+			throw new AssertionError(e);
 		}
 	}
 	
@@ -284,8 +288,8 @@ public sealed class User implements Closeable, Comparable<User> {
 		SecureRandom r;
 		try {
 			r = SecureRandom.getInstanceStrong();
-		} catch (@SuppressWarnings("unused") NoSuchAlgorithmException e) {
-			System.err.println(NO_STRONG_SECURE_RANDOM_FOUND);
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println(Messages.format(NO_STRONG_SECURE_RANDOM_FOUND, e));
 			r = new SecureRandom();
 		}
 		RND = r;
@@ -395,9 +399,8 @@ public sealed class User implements Closeable, Comparable<User> {
 		Secret0 s = new Secret0(name, empty);
 		if (RootUser.ROOT_NAME.equals(name)) {
 			return new RootUser(s);
-		} else {
-			return new User(s);
 		}
+		return new User(s);
 	}
 	
 	/**

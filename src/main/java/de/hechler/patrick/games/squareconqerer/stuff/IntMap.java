@@ -72,7 +72,7 @@ public class IntMap<T> {
 			return create(cls, new int[cls.getEnumConstants().length], ENUM_HANDLE);
 		}
 		try {
-			return create(cls, new int[(int) findHandleStatic(cls, COUNT_FIELD, COUNT_METHOD).invoke(null)], findHandleVirtual(cls, ORDINAL_NAME));
+			return create(cls, new int[(int) findHandleStatic(cls, COUNT_FIELD, COUNT_METHOD).invoke()], findHandleVirtual(cls, ORDINAL_NAME));
 		} catch (Throwable e) {
 			throw rethrow(e);
 		}
@@ -90,6 +90,34 @@ public class IntMap<T> {
 		return new IntMap<>(cls, arr, ordinal);
 	}
 	
+	public static int staticIntField(Class<?> cls, String fieldName) {
+		try {
+			return (int) findHandleStatic(cls, fieldName, null).invoke();
+		} catch (Throwable e) {
+			throw rethrow(e);
+		}
+	}
+	
+	public static int count(Class<?> cls) {
+		if (cls.isEnum()) {
+			return cls.getEnumConstants().length;
+		}
+		try {
+			return (int) findHandleStatic(cls, COUNT_FIELD, COUNT_METHOD).invoke();
+		} catch (Throwable e) {
+			throw rethrow(e);
+		}
+	}
+	
+	public static int ordinal(Object obj) {
+		if (obj instanceof Enum<?> e) return e.ordinal();
+		try {
+			return (int) findHandleVirtual(obj.getClass(), ORDINAL_NAME).invoke(obj);
+		} catch (Throwable e) {
+			throw rethrow(e);
+		}
+	}
+	
 	private static MethodHandle findHandleVirtual(Class<?> cls, String name) throws AssertionError {
 		return findHandle(cls, name, name, true);
 	}
@@ -100,12 +128,13 @@ public class IntMap<T> {
 	
 	private static MethodHandle findHandle(Class<?> cls, String fieldName, String methodName, boolean virtual) throws AssertionError {
 		try {
-			if (virtual) return LOOKUP.findGetter(cls, methodName, int.class);
-			return LOOKUP.findStaticGetter(cls, methodName, int.class);
+			if (virtual) return LOOKUP.findGetter(cls, fieldName, int.class);
+			return LOOKUP.findStaticGetter(cls, fieldName, int.class);
 		} catch (NoSuchFieldException | IllegalAccessException e) {
 			try {
-				if (virtual) return LOOKUP.findVirtual(cls, fieldName, METHOD_TYPE);
-				return LOOKUP.findStatic(cls, fieldName, METHOD_TYPE);
+				if (virtual) return LOOKUP.findVirtual(cls, methodName, METHOD_TYPE);
+				if (methodName == null) throw new AssertionError("could not get ordinal handle: " + e.toString(), e);
+				return LOOKUP.findStatic(cls, methodName, METHOD_TYPE);
 			} catch (NoSuchMethodException | IllegalAccessException e1) {
 				e.addSuppressed(e1);
 				throw new AssertionError("could not get ordinal handle: " + e.toString(), e);

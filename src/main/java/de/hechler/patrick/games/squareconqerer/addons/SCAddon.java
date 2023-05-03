@@ -16,11 +16,13 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons;
 
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,16 +51,14 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 public abstract class SCAddon {
 	
 	private static final String ADDONS_ARE_ALREADY_LOADED             = Messages.getString("SCAddon.addons-already-loaded");           //$NON-NLS-1$
-	private static final String AT_CHAR                               = Messages.getString("SCAddon.at-char");                         //$NON-NLS-1$
-	private static final String HAS_INVALID_ESCAPE                    = Messages.getString("SCAddon.has-invalid-escape");              //$NON-NLS-1$
-	private static final String THE_PROPERTY                          = Messages.getString("SCAddon.the-prop");                        //$NON-NLS-1$
-	private static final String MULTIPLE_ADDONS_WITH_THE_SAME_NAME    = Messages.getString("SCAddon.multiple-addons-with-name");       //$NON-NLS-1$
-	private static final String UNKNOWN_ENTITY_CLASS                  = Messages.getString("SCAddon.unknown-entity");                  //$NON-NLS-1$
-	private static final String UNKNOWN_ADDON_NAME                    = Messages.getString("SCAddon.unknown-addon-name");              //$NON-NLS-1$
-	private static final String MULTIPLE_ADDONS_ADD_SAME_ENTITY_CLASS = Messages.getString("SCAddon.multiple-addons-add-same-entity"); //$NON-NLS-1$
-	private static final String MISSING_THE_GAME_ADDON_ADDONS         = Messages.getString("SCAddon.missing-the-game-addon");          //$NON-NLS-1$
+	private static final Format DISABPLED_PROP_HAS_INVALID_ESCAPE     = Messages.getFormat("SCAddon.disabled-prop-invalid-escape");                  //$NON-NLS-1$
+	private static final Format MULTIPLE_ADDONS_WITH_THE_SAME_NAME    = Messages.getFormat("SCAddon.multiple-addons-with-name");       //$NON-NLS-1$
+	private static final Format UNKNOWN_ENTITY_CLASS                  = Messages.getFormat("SCAddon.unknown-entity");                  //$NON-NLS-1$
+	private static final Format UNKNOWN_ADDON_NAME                    = Messages.getFormat("SCAddon.unknown-addon-name");              //$NON-NLS-1$
+	private static final Format MULTIPLE_ADDONS_ADD_SAME_ENTITY_CLASS = Messages.getFormat("SCAddon.multiple-addons-add-same-entity"); //$NON-NLS-1$
+	private static final Format MISSING_THE_GAME_ADDON_ADDONS         = Messages.getFormat("SCAddon.missing-the-game-addon");          //$NON-NLS-1$
 	private static final String OFFSET_ALREADY_INITILIZED             = Messages.getString("SCAddon.offset-already-initilized");       //$NON-NLS-1$
-	private static final String BS_0_IN_NAME                          = Messages.getString("SCAddon.bs0-in-addon-name");               //$NON-NLS-1$
+	private static final Format BS_0_IN_NAME                          = Messages.getFormat("SCAddon.bs0-in-addon-name");               //$NON-NLS-1$
 	
 	/**
 	 * the {@link #name} of {@link TheGameAddon}
@@ -71,7 +71,7 @@ public abstract class SCAddon {
 	 * on any other position a backslash is invalid and will let the load of the addons fail<br>
 	 * if a non existing addon is disabled, it will be ignored
 	 */
-	public static final String DISABLED_ADDONS_PROPERTY    = "squareconquerer.addons.disabled";           //$NON-NLS-1$
+	public static final String DISABLED_ADDONS_PROPERTY    = "squareconquerer.addons.disabled";                 //$NON-NLS-1$
 	/**
 	 * the key start of the rename property.<br>
 	 * If you have multiple addons with the same name, you can use this property to rename one:<br>
@@ -87,7 +87,7 @@ public abstract class SCAddon {
 	 * <p>
 	 * note that you have to use the exact class name (the name of a super class will only work for exact instances of the superclass)
 	 */
-	public static final String RENAME_ADDON_PROPERTY_START = "squareconquerer.addons.rename.";            //$NON-NLS-1$
+	public static final String RENAME_ADDON_PROPERTY_START = "squareconquerer.addons.rename.";                  //$NON-NLS-1$
 	
 	/**
 	 * the name of the property which can be used to rename the {@link SCAddon} with the given name
@@ -134,7 +134,10 @@ public abstract class SCAddon {
 		if (addons != null) throw new IllegalStateException(ADDONS_ARE_ALREADY_LOADED);
 		StringBuilder sb       = new StringBuilder();
 		String        disabled = System.getProperty(DISABLED_ADDONS_PROPERTY);
-		if (disabled != null) sb.append(disabled);
+		if (disabled != null) {
+			sb.append(disabled);
+			sb.append(':');
+		}
 		appendDisableName(name, sb);
 		System.setProperty(DISABLED_ADDONS_PROPERTY, sb.toString());
 	}
@@ -151,14 +154,13 @@ public abstract class SCAddon {
 		StringBuilder sb       = new StringBuilder();
 		String        disabled = System.getProperty(DISABLED_ADDONS_PROPERTY);
 		if (disabled != null) sb.append(disabled);
-		for (String name : names) {
-			appendDisableName(name, sb);
-		}
+		Iterator<String> iter = names.iterator();
+		if (!iter.hasNext()) return;
+		
 		System.setProperty(DISABLED_ADDONS_PROPERTY, sb.toString());
 	}
 	
 	private static void appendDisableName(String name, StringBuilder sb) throws AssertionError {
-		sb.append(':');
 		for (int i = 0;;) {
 			int nb = name.indexOf('\\', i);
 			int nc = name.indexOf(':', i);
@@ -175,7 +177,7 @@ public abstract class SCAddon {
 			switch (name.charAt(ni)) {
 			case ':' -> sb.append("\\:"); //$NON-NLS-1$
 			case '\\' -> sb.append("\\\\"); //$NON-NLS-1$
-			default -> throw new AssertionError("invalid char: '" + name.charAt(ni) + '\''); //$NON-NLS-1$
+			default -> throw new AssertionError("invalid char: '" + name.charAt(ni) + '\''); //$NON-NLS-1$ this should never happen
 			}
 			i = ni + 1;
 		}
@@ -206,10 +208,21 @@ public abstract class SCAddon {
 					char c = disabled.charAt(i++);
 					switch (c) {
 					case '\\' -> {
-						c = disabled.charAt(++i);
+						if (disabled.length() == i) {
+							String cStr  = Character.toString(c);
+							String index = Integer.toString(i - 1);
+							String msg   = Messages.format(DISABPLED_PROP_HAS_INVALID_ESCAPE, DISABLED_ADDONS_PROPERTY, cStr, index);
+							throw new AssertionError(msg);
+						}
+						c = disabled.charAt(i++);
 						switch (c) {
 						case '\\', ':' -> b.append(c);
-						default -> throw new AssertionError(THE_PROPERTY + DISABLED_ADDONS_PROPERTY + HAS_INVALID_ESCAPE + c + AT_CHAR + (i - 1));
+						default -> {
+							String cStr  = Character.toString(c);
+							String index = Integer.toString(i - 1);
+							String msg   = Messages.format(DISABPLED_PROP_HAS_INVALID_ESCAPE, DISABLED_ADDONS_PROPERTY, cStr, index);
+							throw new AssertionError(msg);
+						}
 						}
 					}
 					case ':' -> {
@@ -254,7 +267,7 @@ public abstract class SCAddon {
 		String overwrittenName = System.getProperty(renameAddonPropertyKey(getClass()));
 		if (overwrittenName != null) this.name = overwrittenName;
 		else this.name = name;
-		if (this.name.lastIndexOf('\0') != -1) throw new IllegalStateException(BS_0_IN_NAME);
+		if (this.name.lastIndexOf('\0') != -1) throw new IllegalStateException(Messages.format(BS_0_IN_NAME, this.name));
 		this.localName = this.name;
 	}
 	
@@ -280,7 +293,7 @@ public abstract class SCAddon {
 			this.name      = name;
 			this.localName = localName;
 		}
-		if (this.name.lastIndexOf('\0') != -1) throw new IllegalStateException(BS_0_IN_NAME);
+		if (this.name.lastIndexOf('\0') != -1) throw new IllegalStateException(Messages.format(BS_0_IN_NAME, this.name));
 	}
 	
 	private void initOridinalOffset(int unitOff, int buildOff) {
@@ -374,9 +387,9 @@ public abstract class SCAddon {
 			a = loadAddons();
 			TheGameAddon g = (TheGameAddon) a.get(GAME_ADDON_NAME);
 			if (g == null) {
-				throw new AssertionError(MISSING_THE_GAME_ADDON_ADDONS + a);
+				throw new AssertionError(Messages.format(MISSING_THE_GAME_ADDON_ADDONS, a));
 			}
-			Map<Class<? extends Entity>, SCAddon> m         = new HashMap<>();
+			Map<Class<? extends Entity>, SCAddon> es         = new HashMap<>();
 			int                                   ooffUnit  = 1;              // null
 			int                                   ooffBuild = 1;              // null
 			for (SCAddon addon : new TreeMap<>(a).values()) {
@@ -385,7 +398,7 @@ public abstract class SCAddon {
 				Set<String>                          wasAlready = new HashSet<>();
 				for (Entry<Class<? extends Entity>, String> e : map.entrySet()) {
 					Class<? extends Entity> cls = e.getKey();
-					if (m.put(cls, addon) != null) {
+					if (es.put(cls, addon) != null) {
 						throw new AssertionError(MULTIPLE_ADDONS_ADD_SAME_ENTITY_CLASS);
 					}
 					String clsName = e.getValue();
@@ -400,6 +413,7 @@ public abstract class SCAddon {
 					}
 				}
 			}
+			entity = Collections.unmodifiableMap(es);
 			addons  = Collections.unmodifiableMap(a);
 			theGame = g;
 			return a;
@@ -420,7 +434,7 @@ public abstract class SCAddon {
 		}
 		SCAddon a = as.get(name);
 		if (a == null) {
-			throw new AssertionError(UNKNOWN_ADDON_NAME + name + '\'');
+			throw new AssertionError(Messages.format(UNKNOWN_ADDON_NAME, name));
 		}
 		return a;
 	}
@@ -440,7 +454,7 @@ public abstract class SCAddon {
 		} // potentially faster check for the game entities
 		if (e instanceof EntityImpl && !(e instanceof MyUnit || e instanceof MyBuild)) return theGame;
 		SCAddon res = es.get(e.getClass());
-		if (res == null) throw new AssertionError(UNKNOWN_ENTITY_CLASS + e.getClass());
+		if (res == null) throw new AssertionError(Messages.format(UNKNOWN_ENTITY_CLASS, e.getClass()));
 		return res;
 	}
 	
@@ -458,7 +472,7 @@ public abstract class SCAddon {
 			es = entity;
 		}
 		SCAddon res = es.get(e);
-		if (res == null) throw new AssertionError(UNKNOWN_ENTITY_CLASS + e.getClass());
+		if (res == null) throw new AssertionError(Messages.format(UNKNOWN_ENTITY_CLASS, e.getClass()));
 		return res;
 	}
 	
@@ -477,7 +491,7 @@ public abstract class SCAddon {
 		} // potentially faster check for the game entities
 		if (u instanceof EntityImpl && !(u instanceof MyUnit)) { return theGame; }
 		SCAddon res = es.get(u.getClass());
-		if (res == null) throw new AssertionError(UNKNOWN_ENTITY_CLASS + u.getClass());
+		if (res == null) throw new AssertionError(Messages.format(UNKNOWN_ENTITY_CLASS, u.getClass()));
 		return res;
 	}
 	
@@ -496,7 +510,7 @@ public abstract class SCAddon {
 		} // potentially faster check for the game entities
 		if (b instanceof EntityImpl && !(b instanceof MyUnit)) { return theGame; }
 		SCAddon res = es.get(b.getClass());
-		if (res == null) throw new AssertionError(UNKNOWN_ENTITY_CLASS + b.getClass());
+		if (res == null) throw new AssertionError(Messages.format(UNKNOWN_ENTITY_CLASS, b.getClass()));
 		return res;
 	}
 	
@@ -504,7 +518,7 @@ public abstract class SCAddon {
 		Map<String, SCAddon>   addons = new HashMap<>();
 		ServiceLoader<SCAddon> loader = ServiceLoader.load(SCAddon.class);
 		for (SCAddon addon : loader) {
-			if (addons.put(addon.name, addon) != null) throw new AssertionError(MULTIPLE_ADDONS_WITH_THE_SAME_NAME + addon.name + '\'');
+			if (addons.put(addon.name, addon) != null) throw new AssertionError(Messages.format(MULTIPLE_ADDONS_WITH_THE_SAME_NAME, addon.name));
 		}
 		removeOrGetDisabledAddons(addons);
 		return addons;

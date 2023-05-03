@@ -25,6 +25,7 @@ import java.awt.font.TextLayout;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
+import java.text.Format;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
@@ -35,8 +36,8 @@ import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.stuff.Random2;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
-import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
+import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
 /**
  * this class can be used to generate a {@link World} from a {@link SCPage}
@@ -50,7 +51,7 @@ public class PageWorld {
 	private static final String PIXEL_NOT_FOUND_IN_PAGE    = Messages.getString("PageWorld.pixel-behind-page");  //$NON-NLS-1$
 	private static final String ERROR_INVALID_LINE         = Messages.getString("PageWorld.illegal-line1");      //$NON-NLS-1$
 	private static final String POSITION_NOT_FOUND         = Messages.getString("PageWorld.pos-not-found");      //$NON-NLS-1$
-	private static final String UNKNOWN_COLOR              = Messages.getString("PageWorld.unknown-color");      //$NON-NLS-1$
+	private static final Format UNKNOWN_COLOR              = Messages.getFormat("PageWorld.unknown-color");      //$NON-NLS-1$
 	private static final String PAGE_WORLD_FINISH          = Messages.getString("PageWorld.log-finish");         //$NON-NLS-1$
 	private static final String PAGE_WORLD_FINISH_DRAWING  = Messages.getString("PageWorld.log-finish-draw");    //$NON-NLS-1$
 	private static final String PAGE_WORLD_FINISH_COUNTING = Messages.getString("PageWorld.log-finish-cnt");     //$NON-NLS-1$
@@ -91,7 +92,7 @@ public class PageWorld {
 	
 	private static Tile randomTile(Random2 rnd, boolean allowNotExplored) {
 		OreResourceType ort = OreResourceType.of(rnd.nextInt(OreResourceType.count()));
-		GroundType        tt;
+		GroundType      tt;
 		do {
 			tt = GroundType.of(rnd.nextInt(GroundType.count()));
 		} while (!allowNotExplored && tt == GroundType.NOT_EXPLORED);
@@ -183,8 +184,8 @@ public class PageWorld {
 	}
 	
 	private boolean sameTiles() {
-		return !maxOne(GroundType::isForest) || !maxOne(GroundType::isGrass) || !maxOne(GroundType::isMountain) || !maxOne(GroundType::isSand) || !maxOne(GroundType::isSwamp)
-			|| !maxOne(GroundType::isWater);
+		return !maxOne(GroundType::isForest) || !maxOne(GroundType::isGrass) || !maxOne(GroundType::isMountain) || !maxOne(GroundType::isSand)
+			|| !maxOne(GroundType::isSwamp) || !maxOne(GroundType::isWater);
 	}
 	
 	private boolean maxOne(Predicate<GroundType> t) {
@@ -227,7 +228,7 @@ public class PageWorld {
 		}
 		System.out.println(PAGE_WORLD_FINISH_DRAWING);
 		WritableRaster    raster = img.getRaster();
-		RootWorld.Builder b      = new RootWorld.Builder(RootUser.create(new char[0]), dim.width, dim.height);
+		RootWorld.Builder b      = new RootWorld.Builder(RootUser.nopw(), dim.width, dim.height);
 		fill(raster, b, ch, f, frc, xStartOff, yStartOff);
 		System.out.println(PAGE_WORLD_FINISH);
 		return b;
@@ -256,7 +257,7 @@ public class PageWorld {
 				case VAL_TEXT -> t = this.textTile;
 				case VAL_NONE -> t = this.othrTile;
 				default -> {
-					System.err.println(UNKNOWN_COLOR + a);
+					System.err.println(Messages.format(UNKNOWN_COLOR, Integer.toString(a)));
 					t = this.othrTile;
 				}
 				}
@@ -293,8 +294,8 @@ public class PageWorld {
 	}
 	
 	private static void fillFromEntryBlock(FontRenderContext frc, Font f, int x, Tile t, int xPos, SCPageBlock.EntryBlock eb) {
-		Iterator<SCPageEntry> iter = eb.entries().iterator();
-		SCPageEntry           entry    = iter.next();
+		Iterator<SCPageEntry> iter  = eb.entries().iterator();
+		SCPageEntry           entry = iter.next();
 		while (switch (entry) {
 		case SCPageEntry.LinkEntry le -> xPos += width(frc, f, le.text());
 		case SCPageEntry.PageEntry pe -> xPos += width(frc, f, pe.text());
