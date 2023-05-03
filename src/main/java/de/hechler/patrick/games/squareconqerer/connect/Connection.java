@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -45,6 +45,7 @@ import java.util.function.IntFunction;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.interfaces.Executable;
@@ -65,15 +66,24 @@ import de.hechler.patrick.games.squareconqerer.world.World;
  */
 public class Connection implements Closeable, WrongInputHandler {
 	
-	private static final String INVALID_INPUT_GOT_0_BUT_EXPECTED_A_1_VALUE_2        = "invalid input! got: {0} but expected a {1} value{2}";
-	private static final String OR_ZERO                                             = " (or zero)!";
-	private static final String POSITIVE                                            = "positive";
-	private static final String STRICT_POSITIVE                                     = "strict positive";
-	private static final String INVALID_INPUT_GOT_0_BUT_EXPECTED_1                  = "invalid input! got: {0} but expected: {1}";
-	private static final String INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1                = "invalid input! got: {0} but expected on of: {1}";
-	private static final String GOT_0_AFTER_I_WROTE_1_EXPECTED_2                    = "got: {0} after I wrote {1} but expected {2}";
-	private static final String INVALID_EOF_EXPECTED_0_BYTES_FOR_1_BYTES_BIG_STRUCT =
-		"invalid input! got: EOF but expected {0} more bytes for something {1} bytes big";
+	private static final String EOF_HANDLER_RETURNED_NORMALLY                   = Messages.getString("Connection.eof-returned");                       //$NON-NLS-1$
+	private static final Format VALUE_OUT_OF_THE_BYTE_BOUNDS_0X_0               = Messages.getFormat("Connection.out--of-byte-bounds");                //$NON-NLS-1$
+	private static final Format COULD_NOT_FIND_MODULE_0                         = Messages.getFormat("Connection.module-not-found");                   //$NON-NLS-1$
+	private static final String NO_TIMEOUT_SUPPORTED                            = Messages.getString("Connection.no-timeout");                         //$NON-NLS-1$
+	private static final String DIFFERENT_WRONG_INPUT_HANDLER                   = Messages.getString("Connection.differet-wih");                       //$NON-NLS-1$
+	private static final String THERE_IS_NO_SERVER_PASSWORD                     = Messages.getString("Connection.no-serverpw");                        //$NON-NLS-1$
+	private static final Format LOG_ACCEPT_CONNECTIONS_AT_0_1                   = Messages.getFormat("Connection.log-accepted-connection");            //$NON-NLS-1$
+	private static final String THERE_IS_NO_OUTPUT_STREAM                       = Messages.getString("Connection.no-output");                          //$NON-NLS-1$
+	private static final String THERE_IS_NO_INPUT_STREAM                        = Messages.getString("Connection.no-input");                           //$NON-NLS-1$
+	private static final String THERE_IS_NO_USER                                = Messages.getString("Connection.no-user");                            //$NON-NLS-1$
+	private static final Format INVALID_INPUT_GOT_0_BUT_EXPECTED_A_1_VALUE_2    = Messages.getFormat("Connection.got-0-but-expected-1-2");             //$NON-NLS-1$
+	private static final String OR_ZERO                                         = Messages.getString("Connection.or-zero");                            //$NON-NLS-1$
+	private static final String POSITIVE                                        = Messages.getString("Connection.positive");                           //$NON-NLS-1$
+	private static final String STRICT_POSITIVE                                 = Messages.getString("Connection.strict-positive");                    //$NON-NLS-1$
+	private static final Format INVALID_INPUT_GOT_0_BUT_EXPECTED_1              = Messages.getFormat("Connection.got-0-expected-1");                   //$NON-NLS-1$
+	private static final Format INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1            = Messages.getFormat("Connection.got-0-expected-on-of-1");             //$NON-NLS-1$
+	private static final Format GOT_0_AFTER_I_WROTE_1_EXPECTED_2                = Messages.getFormat("Connection.got-0-after-1-expected-2");           //$NON-NLS-1$
+	private static final Format GOT_EOF_EXPECTED_0_BYTES_FOR_1_BYTES_BIG_STRUCT = Messages.getFormat("Connection.got-EOF-expected-1-more-of-2-total"); //$NON-NLS-1$
 	
 	/**
 	 * this {@link WrongInputHandler} just always throws an {@link StreamCorruptedException} (or {@link EOFException} in
@@ -84,13 +94,13 @@ public class Connection implements Closeable, WrongInputHandler {
 		@Override
 		public void wrongInputEOF(int expectedTotalLen, int missingLen) throws EOFException {
 			throw new EOFException(
-				MessageFormat.format(INVALID_EOF_EXPECTED_0_BYTES_FOR_1_BYTES_BIG_STRUCT, Integer.toString(missingLen), Integer.toString(expectedTotalLen)));
+				Messages.format(GOT_EOF_EXPECTED_0_BYTES_FOR_1_BYTES_BIG_STRUCT, Integer.toString(missingLen), Integer.toString(expectedTotalLen)));
 		}
 		
 		@Override
 		public void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
 			throw new EOFException(
-				MessageFormat.format(GOT_0_AFTER_I_WROTE_1_EXPECTED_2, Integer.toString(read), Integer.toString(wrote), Integer.toString(expectedRead)));
+				Messages.format(GOT_0_AFTER_I_WROTE_1_EXPECTED_2, Integer.toString(read), Integer.toString(wrote), Integer.toString(expectedRead)));
 		}
 		
 		@Override
@@ -100,18 +110,18 @@ public class Connection implements Closeable, WrongInputHandler {
 		
 		@Override
 		public int wrongInputInt(int read, int[] expected) throws StreamCorruptedException {
-			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), Arrays.toString(expected)));
+			throw new StreamCorruptedException(Messages.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), Arrays.toString(expected)));
 		}
 		
 		@Override
 		public int wrongInputInt(int read, int expected, int expected2) throws StreamCorruptedException {
 			throw new StreamCorruptedException(
-				MessageFormat.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), "[" + expected + ", " + expected2 + ']')); //$NON-NLS-1$ //$NON-NLS-2$
+				Messages.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), "[" + expected + ", " + expected2 + ']')); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		
 		@Override
 		public void wrongInputInt(int read, int expected) throws StreamCorruptedException {
-			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_1, Integer.toString(read), Integer.toString(expected)));
+			throw new StreamCorruptedException(Messages.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_1, Integer.toString(read), Integer.toString(expected)));
 		}
 		
 		@Override
@@ -121,23 +131,23 @@ public class Connection implements Closeable, WrongInputHandler {
 		
 		@Override
 		public int wrongInputByte(int read, int[] expected) throws IOException {
-			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), Arrays.toString(expected)));
+			throw new StreamCorruptedException(Messages.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), Arrays.toString(expected)));
 		}
 		
 		@Override
 		public int wrongInputByte(int read, int expected, int expected2) throws IOException {
 			throw new StreamCorruptedException(
-				MessageFormat.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), "[" + expected + ", " + expected2 + ']')); //$NON-NLS-1$ //$NON-NLS-2$
+				Messages.format(INVALID_INPUT_GOT_0_EXPECTED_ON_OF_1, Integer.toString(read), "[" + expected + ", " + expected2 + ']')); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		
 		@Override
 		public void wrongInputByte(int read, int expected) throws IOException {
-			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_1, Integer.toString(read), Integer.toString(expected)));
+			throw new StreamCorruptedException(Messages.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_1, Integer.toString(read), Integer.toString(expected)));
 		}
 		
 		@Override
 		public int wrongInputPositive(int read, boolean strictlyPositive) throws IOException {
-			throw new StreamCorruptedException(MessageFormat.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_A_1_VALUE_2, Integer.toString(read),
+			throw new StreamCorruptedException(Messages.format(INVALID_INPUT_GOT_0_BUT_EXPECTED_A_1_VALUE_2, Integer.toString(read),
 				(strictlyPositive ? STRICT_POSITIVE : POSITIVE), (strictlyPositive ? "!" : OR_ZERO))); //$NON-NLS-1$
 		}
 		
@@ -148,8 +158,14 @@ public class Connection implements Closeable, WrongInputHandler {
 	 */
 	public static final int DEFAULT_PORT = 21226;
 	
+	/**
+	 * this value is send by the client or server before disconnection
+	 */
 	public static final int CON_LOG_OUT = 0x50DDC7F1;
 	
+	/**
+	 * the user which belongs to this connection
+	 */
 	public final User                  usr;
 	private final InputStream          in;
 	private final OutputStream         out;
@@ -173,27 +189,91 @@ public class Connection implements Closeable, WrongInputHandler {
 		}));
 	}
 	
+	/**
+	 * creates a new connection which uses the given stream directly without encrypting anything
+	 * <p>
+	 * the returned connection will only support read operation, no timeout and write
+	 * <p>
+	 * this method is like
+	 * <code>{@link #createUnsecure(User, InputStream, OutputStream, IntConsumer) createUnsecure}(usr, in, {@link InvalidInputStream#INSTANCE}, null)</code>
+	 * 
+	 * @param usr the user
+	 * @param in  the input stream
+	 * @return the read only connection
+	 */
 	public static Connection createUnsecure(User usr, InputStream in) {
 		return createUnsecure(usr, in, InvalidOutputStream.INSTANCE, null);
 	}
 	
+	/**
+	 * creates a new connection which uses the given stream directly without encrypting anything
+	 * <p>
+	 * the returned connection will only support write operation, no timeout and read
+	 * <p>
+	 * this method is like
+	 * <code>{@link #createUnsecure(User, InputStream, OutputStream, IntConsumer) createUnsecure}(usr, {@link InvalidOutputStream#INSTANCE}, out, null)</code>
+	 * 
+	 * @param usr the user
+	 * @param out the output stream
+	 * @return the write only connection
+	 */
 	public static Connection createUnsecure(User usr, OutputStream out) {
 		return createUnsecure(usr, InvalidInputStream.INSTANCE, out, null);
 	}
 	
+	/**
+	 * creates a new connection which uses the given streams directly without encrypting anything
+	 * <p>
+	 * the returned connection will support read and write operation, but not timeout
+	 * <p>
+	 * this method is like <code>{@link #createUnsecure(User, InputStream, OutputStream, IntConsumer) createUnsecure}(usr, in, out, null)</code>
+	 * 
+	 * @param usr the user
+	 * @param in  the input stream
+	 * @param out the output stream
+	 * @return the read/write connection
+	 */
 	public static Connection createUnsecure(User usr, InputStream in, OutputStream out) {
 		return createUnsecure(usr, in, out, null);
 	}
 	
+	/**
+	 * creates a new connection which uses the given streams directly without encrypting anything
+	 * <p>
+	 * if <code>setTimeout</code> has a <code>non-null</code> value, {@link #setTimeout(int) timeout} is supported
+	 * <p>
+	 * all other methods (except for the other <code>createUnsecure(...)</code> methods which redirect here) create connection wich use encrypt all send data streams
+	 * 
+	 * @param usr        the user
+	 * @param in         the input stream
+	 * @param out        the output stream
+	 * @param setTimeout the {@link #setTimeout(int)} method or <code>null</code> if timeout is not supported
+	 * @return the connection
+	 */
 	public static Connection createUnsecure(User usr, InputStream in, OutputStream out, IntConsumer setTimeout) {
-		if (usr == null || in == null || out == null) { throw new NullPointerException("usr=" + usr + " in=" + in + " out=" + out); }
+		if (usr == null) throw new NullPointerException(THERE_IS_NO_USER);
+		if (in == null) throw new NullPointerException(THERE_IS_NO_INPUT_STREAM);
+		if (out == null) throw new NullPointerException(THERE_IS_NO_OUTPUT_STREAM);
 		return new Connection(usr, in, out, setTimeout, usr.modifyCount());
 	}
 	
+	/**
+	 * this class can be used to create a read only/write only connection from a stream
+	 * 
+	 * @author Patrick Hechler
+	 */
 	public static class OneWayAccept {
 		
 		private OneWayAccept() {}
 		
+		/**
+		 * creates a read only connection from the given stream
+		 * 
+		 * @param in  the input stream
+		 * @param usr the user
+		 * @return the read only connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection acceptReadOnly(InputStream in, User usr) throws IOException {
 			readInt(DEFAULT_WRONG_INPUT, in, ClientConnect.S_CONECT);
 			byte[] salt = new byte[64];
@@ -217,6 +297,14 @@ public class Connection implements Closeable, WrongInputHandler {
 			}
 		}
 		
+		/**
+		 * creates a write only connection from the given stream
+		 * 
+		 * @param out the output stream
+		 * @param usr the user
+		 * @return the write only connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection acceptWriteOnly(OutputStream out, User usr) throws IOException {
 			writeInt(out, ClientConnect.S_CONECT);
 			byte[] salt = new byte[64];
@@ -244,18 +332,43 @@ public class Connection implements Closeable, WrongInputHandler {
 		
 	}
 	
+	/**
+	 * this class is used to allows remote connections to join a world
+	 * 
+	 * @author Patrick Hechler
+	 */
 	public static class ServerAccept {
 		
 		private ServerAccept() {}
 		
+		/**
+		 * opens a server socket which listens on the given port and accepts remote connections to view their (user/root) world
+		 * 
+		 * @param port       to port on which the world should be opened
+		 * @param rw         the root world which should be made accessible
+		 * @param logConnect used to log (dis-)connections
+		 * @param connects   the map which stores the all connected users with their connection
+		 * @param serverPW   the server password or <code>null</code> if user creation is not allowed
+		 * @throws IOException if an IO error occurs
+		 */
 		public static void accept(int port, RootWorld rw, ThrowBiConsumer<Connection, Socket, IOException> logConnect, Map<User, Connection> connects,
 			char[] serverPW) throws IOException {
 			try (ServerSocket ss = new ServerSocket(port)) {
-				System.err.println("[Connect.ServerAccept]: accept connections at " + ss.getInetAddress() + " : " + ss.getLocalPort());
+				System.err.println(Messages.format(LOG_ACCEPT_CONNECTIONS_AT_0_1, ss.getInetAddress(), Integer.toString(ss.getLocalPort())));
 				accept(ss, rw, logConnect, connects, serverPW);
 			}
 		}
 		
+		/**
+		 * opens a server which accepts on the given socket remote connections to view their (user/root) world
+		 * 
+		 * @param ss         the server socket which is used to accept new connections
+		 * @param rw         the root world which should be made accessible
+		 * @param logConnect used to log (dis-)connections
+		 * @param connects   the map which stores the all connected users with their connection
+		 * @param serverPW   the server password or <code>null</code> if user creation is not allowed
+		 * @throws IOException if an IO error occurs
+		 */
 		public static void accept(ServerSocket ss, RootWorld rw, ThrowBiConsumer<Connection, Socket, IOException> logConnect, Map<User, Connection> connects,
 			char[] serverPW) throws IOException {
 			List<Socket> soks = new ArrayList<>();
@@ -293,13 +406,13 @@ public class Connection implements Closeable, WrongInputHandler {
 							}
 						});
 					} catch (@SuppressWarnings("unused") SocketTimeoutException timeout) {
-						if (Thread.interrupted()) { throw new ClosedByInterruptException(); }
+						if (Thread.interrupted()) throw new ClosedByInterruptException();
 					}
 				}
 			} catch (ClosedByInterruptException | EOFException e) {
 				err = e;
 			} catch (IOException e) {
-				if (!Thread.currentThread().isInterrupted()) { throw e; }
+				if (!Thread.currentThread().isInterrupted()) throw e;
 				err = e;
 			}
 			for (Socket sok : soks) {
@@ -414,10 +527,14 @@ public class Connection implements Closeable, WrongInputHandler {
 				byte[] pwUTF8 = new byte[readInt(DEFAULT_WRONG_INPUT, tcin)];
 				readArr(DEFAULT_WRONG_INPUT, tcin, pwUTF8);
 				CharBuffer buf = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(pwUTF8));
-				for (int i = 0; i < pwUTF8.length; i++) { pwUTF8[i] = 0; }
+				for (int i = 0; i < pwUTF8.length; i++) {
+					pwUTF8[i] = 0;
+				}
 				pw = new char[buf.limit()];
 				buf.get(pw);
-				for (int i = 0; i < pw.length; i++) { buf.put(i, '\0'); }
+				for (int i = 0; i < pw.length; i++) {
+					buf.put(i, '\0');
+				}
 				User.fillRandom(initVecHalf);
 				tcout.write(initVecHalf);
 				System.arraycopy(initVecHalf, 0, initVec, 0, 8);
@@ -446,6 +563,11 @@ public class Connection implements Closeable, WrongInputHandler {
 		
 	}
 	
+	/**
+	 * this class is used to connect to a remote connection
+	 * 
+	 * @author Patrick Hechler
+	 */
 	public static class ClientConnect {
 		
 		private ClientConnect() {}
@@ -503,22 +625,43 @@ public class Connection implements Closeable, WrongInputHandler {
 		private static final int SUB_NEW = 0x68213004;
 		
 		
-		public static Connection connectNew(InetAddress addr, User usr, char[] serverPW) throws IOException {
-			return connectNew(new Socket(addr, DEFAULT_PORT), usr, serverPW);
-		}
-		
+		/**
+		 * connects to a remote connection with the given address on the given port and creates a new remote user
+		 * 
+		 * @param addr     the server address
+		 * @param port     the remote port to connect to
+		 * @param usr      the user to create
+		 * @param serverPW the server password
+		 * @return the opened connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection connectNew(InetAddress addr, int port, User usr, char[] serverPW) throws IOException {
 			return connectNew(new Socket(addr, port), usr, serverPW);
 		}
 		
-		public static Connection connectNew(String host, User usr, char[] serverPW) throws IOException {
-			return connectNew(new Socket(host, DEFAULT_PORT), usr, serverPW);
-		}
-		
+		/**
+		 * connects to a remote connection with the given host on the given port and creates a new remote user
+		 * 
+		 * @param host     the remote host
+		 * @param port     the remote port to connect to
+		 * @param usr      the user to create
+		 * @param serverPW the server password
+		 * @return the opened connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection connectNew(String host, int port, User usr, char[] serverPW) throws IOException {
 			return connectNew(new Socket(host, port), usr, serverPW);
 		}
 		
+		/**
+		 * connects to a remote connection with the given socket and creates a new remote user
+		 * 
+		 * @param sok      the remote socket
+		 * @param usr      the user to create
+		 * @param serverPW the server password
+		 * @return the opened connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection connectNew(Socket sok, User usr, char[] serverPW) throws IOException {
 			return connectNew(sok.getInputStream(), sok.getOutputStream(), to -> {
 				try {
@@ -529,8 +672,19 @@ public class Connection implements Closeable, WrongInputHandler {
 			}, usr, serverPW);
 		}
 		
+		/**
+		 * connects to a remote connection with the given streams and creates a new remote user
+		 * 
+		 * @param in         the input stream
+		 * @param out        the output stream
+		 * @param setTimeout the {@link Connection#setTimeout(int) setTimeout} method
+		 * @param usr        the user to create
+		 * @param serverPW   the server password
+		 * @return the opened connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection connectNew(InputStream in, OutputStream out, IntConsumer setTimeout, User usr, char[] serverPW) throws IOException {
-			if (serverPW == null) { throw new NullPointerException("serverPW is null"); }
+			if (serverPW == null) throw new NullPointerException(THERE_IS_NO_SERVER_PASSWORD);
 			writeInt(out, C_NEW);
 			readInt(DEFAULT_WRONG_INPUT, in, S_NEW);
 			byte[] salt     = new byte[64];
@@ -550,7 +704,9 @@ public class Connection implements Closeable, WrongInputHandler {
 			CipherInputStream  tcin  = User.decrypt(serverPW, new IgnoreCloseInputStream(in), salt, initVec);
 			CipherOutputStream tcout = User.encrypt(serverPW, new IgnoreCloseOutputStream(out), salt, initVec);
 			try {
-				for (int i = 0; i < serverPW.length; i++) { serverPW[i] = '\0'; }
+				for (int i = 0; i < serverPW.length; i++) {
+					serverPW[i] = '\0';
+				}
 				writeInt(tcout, C_CONECT);
 				readInt(DEFAULT_WRONG_INPUT, tcin, S_CONECT);
 				readArr(DEFAULT_WRONG_INPUT, tcin, saltHalf);
@@ -564,12 +720,17 @@ public class Connection implements Closeable, WrongInputHandler {
 				if (buf.hasArray()) {
 					byte[] arr = buf.array();
 					tcout.write(arr, buf.arrayOffset(), buf.limit());
-					for (int i = 0; i < buf.limit(); i++) { buf.put(i, (byte) 0); }
+					for (int i = 0; i < buf.limit(); i++) {
+						buf.put(i, (byte) 0);
+					}
 				} else {
 					byte[] tmp = new byte[buf.limit()];
 					buf.get(tmp);
 					tcout.write(tmp, 0, buf.limit());
-					for (int i = 0; i < tmp.length; i++) { tmp[i] = 0; buf.put(i, (byte) 0); }
+					for (int i = 0; i < tmp.length; i++) {
+						tmp[i] = 0;
+						buf.put(i, (byte) 0);
+					}
 				}
 				readArr(DEFAULT_WRONG_INPUT, tcin, initVecHalf);
 				System.arraycopy(initVecHalf, 0, initVec, 0, 8);
@@ -606,22 +767,40 @@ public class Connection implements Closeable, WrongInputHandler {
 			}
 		}
 		
-		public static Connection connect(InetAddress addr, User usr) throws IOException {
-			return connect(new Socket(addr, DEFAULT_PORT), usr);
-		}
-		
+		/**
+		 * connects to a remote connection with the given address on the given port and remote user
+		 * 
+		 * @param addr the server address
+		 * @param port the remote port to connect to
+		 * @param usr  the user
+		 * @return the opened connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection connect(InetAddress addr, int port, User usr) throws IOException {
 			return connect(new Socket(addr, port), usr);
 		}
 		
-		public static Connection connect(String host, User usr) throws IOException {
-			return connect(new Socket(host, DEFAULT_PORT), usr);
-		}
-		
+		/**
+		 * connects to a remote connection with the given host on the given port and remote user
+		 * 
+		 * @param host the server host
+		 * @param port the remote port to connect to
+		 * @param usr  the user
+		 * @return the opened connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection connect(String host, int port, User usr) throws IOException {
 			return connect(new Socket(host, port), usr);
 		}
 		
+		/**
+		 * connects to a remote connection with the given socket and remote user
+		 * 
+		 * @param sok the remote socket
+		 * @param usr the user
+		 * @return the opened connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection connect(Socket sok, User usr) throws IOException {
 			return connect(sok.getInputStream(), sok.getOutputStream(), to -> {
 				try {
@@ -632,6 +811,16 @@ public class Connection implements Closeable, WrongInputHandler {
 			}, usr);
 		}
 		
+		/**
+		 * connects to a remote connection with the streams and remote user
+		 * 
+		 * @param in         the input stream
+		 * @param out        the output stream
+		 * @param setTimeout the {@link Connection#setTimeout(int) setTimeout} method
+		 * @param usr        the user
+		 * @return the opened connection
+		 * @throws IOException if an IO error occurs
+		 */
 		public static Connection connect(InputStream in, OutputStream out, IntConsumer setTimeout, User usr) throws IOException {
 			writeInt(out, C_CONECT);
 			readInt(DEFAULT_WRONG_INPUT, in, S_CONECT);
@@ -677,101 +866,148 @@ public class Connection implements Closeable, WrongInputHandler {
 		
 	}
 	
-	public synchronized void replaceWongInput(WrongInputHandler oldWIH, WrongInputHandler newWIH) {
-		if (this.wih != oldWIH) throw new AssertionError("I have a different WrongInputHandler!");
+	/**
+	 * replaces the {@link WrongInputHandler} of this connection
+	 * <p>
+	 * all connections starts with a <code>null</code> {@link WrongInputHandler}<br>
+	 * so to initialize the {@link WrongInputHandler}, pass <code>null</code> as <code>oldWIH</code><br>
+	 * otherwise pass the {@link WrongInputHandler}, which was passed as <code>newWIH</code> of the last successful call to this method
+	 * 
+	 * @param oldWIH the expected old {@link WrongInputHandler}
+	 * @param newWIH the new {@link WrongInputHandler}
+	 * @throws IllegalStateException if the current {@link WrongInputHandler} is not the same as the <code>oldWIH</code>
+	 */
+	public synchronized void replaceWongInput(WrongInputHandler oldWIH, WrongInputHandler newWIH) throws IllegalStateException {
+		if (this.wih != oldWIH) throw new IllegalStateException(DIFFERENT_WRONG_INPUT_HANDLER);
 		this.wih = newWIH;
 	}
 	
 	/**
-	 * returns the current effective {@link WrongInputHandler}, to which this connection delegates to
-	 * 
-	 * @return the current effective {@link WrongInputHandler}, to which this connection delegates to
+	 * act like a wrong EOF was read
+	 * <p>
+	 * {@inheritDoc}
 	 */
-	public WrongInputHandler wrongInputHandler() {
-		WrongInputHandler cwih = this.wih;
-		if (cwih == null) return DEFAULT_WRONG_INPUT;
-		else return cwih;
-	}
-	
 	@Override
+	@SuppressWarnings("null")
 	public void wrongInputEOF(int expectedTotalLen, int missingLen) throws StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputEOF(expectedTotalLen, missingLen);
-		else cwih.wrongInputEOF(expectedTotalLen, missingLen);
+		cwih.wrongInputEOF(expectedTotalLen, missingLen);
 	}
 	
+	/**
+	 * act like an invalid <code>byte</code> was read {@inheritDoc}
+	 */
 	@Override
+	@SuppressWarnings("null")
 	public void wrongInputByte(int read, int expected) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputByte(read, expected);
-		else cwih.wrongInputByte(read, expected);
+		cwih.wrongInputByte(read, expected);
 	}
 	
+	/**
+	 * act like an invalid <code>byte</code> was read {@inheritDoc}
+	 */
 	@Override
 	public int wrongInputByte(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputByte(read, expected, expected2);
-		else return cwih.wrongInputByte(read, expected, expected2);
+		return cwih.wrongInputByte(read, expected, expected2);
 	}
 	
+	/**
+	 * act like an invalid <code>byte</code> was read {@inheritDoc}
+	 */
 	@Override
 	public int wrongInputByte(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputByte(read, expected);
-		else return cwih.wrongInputByte(read, expected);
+		return cwih.wrongInputByte(read, expected);
 	}
 	
+	/**
+	 * act like an invalid <code>byte</code> was read {@inheritDoc}
+	 */
 	@Override
 	public int wrongInputByte(int read, int[] expected, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputByte(read, expected, msgGen);
-		else return cwih.wrongInputByte(read, expected, msgGen);
+		return cwih.wrongInputByte(read, expected, msgGen);
 	}
 	
+	/**
+	 * act like an invalid <code>int</code> was read after <code>wrote</code> was sent {@inheritDoc}
+	 */
 	@Override
+	@SuppressWarnings("null")
 	public void wrongInputWRInt(int read, int wrote, int expectedRead) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputWRInt(read, wrote, expectedRead);
-		else cwih.wrongInputWRInt(read, wrote, expectedRead);
+		cwih.wrongInputWRInt(read, wrote, expectedRead);
 	}
 	
+	/**
+	 * act like an invalid <code>int</code> was read {@inheritDoc}
+	 */
 	@Override
+	@SuppressWarnings("null")
 	public void wrongInputInt(int read, int expected) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) DEFAULT_WRONG_INPUT.wrongInputInt(read, expected);
-		else cwih.wrongInputInt(read, expected);
+		cwih.wrongInputInt(read, expected);
 	}
 	
+	/**
+	 * act like an invalid <code>int</code> was read {@inheritDoc}
+	 */
 	@Override
 	public int wrongInputInt(int read, int expected, int expected2) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputInt(read, expected, expected2);
-		else return cwih.wrongInputInt(read, expected, expected2);
+		return cwih.wrongInputInt(read, expected, expected2);
 	}
 	
+	/**
+	 * act like an invalid <code>int</code> was read {@inheritDoc}
+	 */
 	@Override
 	public int wrongInputInt(int read, int[] expected) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputInt(read, expected);
-		else return cwih.wrongInputInt(read, expected);
+		return cwih.wrongInputInt(read, expected);
 	}
 	
+	/**
+	 * act like an invalid <code>int</code> was read {@inheritDoc}
+	 */
 	@Override
 	public int wrongInputInt(int read, int[] expected, IntFunction<String> msgGen) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputInt(read, expected, msgGen);
-		else return cwih.wrongInputInt(read, expected, msgGen);
+		return cwih.wrongInputInt(read, expected, msgGen);
 	}
 	
+	/**
+	 * act like an invalid <code>int</code> was read {@inheritDoc}
+	 */
 	@Override
 	public int wrongInputPositive(int read, boolean strictlyPositive) throws IOException, StreamCorruptedException, EOFException {
 		WrongInputHandler cwih = this.wih;
 		if (cwih == null) return DEFAULT_WRONG_INPUT.wrongInputPositive(read, strictlyPositive);
-		else return cwih.wrongInputPositive(read, strictlyPositive);
+		return cwih.wrongInputPositive(read, strictlyPositive);
 	}
 	
-	public void setTimeout(int timeout) {
-		if (this.setTimeout == null) { throw new UnsupportedOperationException("no timeout supported"); }
+	/**
+	 * set the timeout of this connection.
+	 * <p>
+	 * if the timeout was created using streams and no timeout method was passed to the creator, an {@link UnsupportedOperationException} will be thrown
+	 * 
+	 * @param timeout the new timeout
+	 * @throws UnsupportedOperationException if this connection does not support timeout
+	 */
+	public void setTimeout(int timeout) throws UnsupportedOperationException {
+		if (this.setTimeout == null) throw new UnsupportedOperationException(NO_TIMEOUT_SUPPORTED);
 		this.setTimeout.accept(timeout);
 	}
 	
@@ -786,12 +1022,23 @@ public class Connection implements Closeable, WrongInputHandler {
 		blocked(0, exec, null);
 	}
 	
-	public static final Executable<IOException> NOP = new Executable<>() {
-		
-		@Override
-		public void execute() throws IOException {/**/}
-		
+	/**
+	 * this executable just returns directly
+	 */
+	public static final Executable<IOException> NOP = () -> {
+		//
 	};
+	
+	/**
+	 * returns an executable wich directly returns without doing anything
+	 * 
+	 * @param <T> the type of the executable, the returned exec will never throw an exception itself
+	 * @return an executable wich directly returns without doing anything
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T extends Throwable> Executable<T> nop() {
+		return (Executable<T>) NOP;
+	}
 	
 	/**
 	 * blocks this connection to execute the given {@link Executable}
@@ -824,10 +1071,22 @@ public class Connection implements Closeable, WrongInputHandler {
 		}
 	}
 	
+	/**
+	 * returns the modify count of the user when this connection was created
+	 * 
+	 * @return the modify count of the user when this connection was created
+	 */
 	public int modCnt() {
 		return this.modCnt;
 	}
 	
+	/**
+	 * writes the <code>write</code> value and then expects <code>read</code>
+	 * 
+	 * @param write the value to write
+	 * @param read  the expected response
+	 * @throws IOException if an IO error occurs
+	 */
 	public void writeReadInt(int write, int read) throws IOException {
 		writeInt(write);
 		int val = readInt();
@@ -835,12 +1094,18 @@ public class Connection implements Closeable, WrongInputHandler {
 		wrongInputWRInt(val, write, read);
 	}
 	
+	/**
+	 * reads an <code>int</code> value
+	 * 
+	 * @return the value which was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public int readInt() throws IOException {
 		return readInt(this, this.in);
 	}
 	
 	/**
-	 * reads a non-strict positive number (zero is allowed)
+	 * reads a non-strict positive <code>int</code> (zero is allowed)
 	 * 
 	 * @return the positive number which was read
 	 * 
@@ -851,7 +1116,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	}
 	
 	/**
-	 * reads a strictly positive number (zero is not allowed)
+	 * reads a strictly positive <code>int</code> (zero is not allowed)
 	 * 
 	 * @return the strict positive number which was read
 	 * 
@@ -861,34 +1126,97 @@ public class Connection implements Closeable, WrongInputHandler {
 		return readStrictPos(this, this.in);
 	}
 	
+	/**
+	 * reads a <code>byte</code> value
+	 * 
+	 * @return the value which was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public int readByte() throws IOException {
 		return readByte(this, this.in);
 	}
 	
+	/**
+	 * reads one of the expected <code>byte</code> values
+	 * <p>
+	 * if one of the two values is <code>-1</code>, EOF is valid and will result in the return value <code>-1</code>
+	 * 
+	 * @param a an expected value
+	 * @param b an expected value
+	 * @return the value which was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public int readByte(int a, int b) throws IOException {
 		return readByte(this, this.in, a, b);
 	}
 	
+	/**
+	 * reads an <code>int</code> value or EOF
+	 * <p>
+	 * on EOF <code>-1L</code> is returned<br>
+	 * otherwise the unsigned int value is returned (see {@link Integer#toUnsignedLong(int)})
+	 * 
+	 * @return the value wich was read or <code>-1L</code> on EOF
+	 * @throws IOException if an IO error occurs
+	 */
 	public long readInt0() throws IOException {
 		return readInt0(this, this.in);
 	}
 	
+	/**
+	 * reads an {@link String}
+	 * <ol>
+	 * <li>first {@link #readPos()} is used to get the {@link StandardCharsets#UTF_8 UTF-8} length of the {@link String}</li>
+	 * <li>the {@link #readArr(byte[])} is used to read length bytes</li>
+	 * <li>the byte array is converted to a {@link String} (using the {@link StandardCharsets#UTF_8 UTF-8} charset)</li>
+	 * </ol>
+	 * 
+	 * @return the string wich was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public String readString() throws IOException {
 		return readString(this, this.in);
 	}
 	
+	/**
+	 * reads a <code>long</code> value
+	 * 
+	 * @return the value which was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public long readLong() throws IOException {
 		return readLong(this, this.in);
 	}
 	
+	/**
+	 * reads the expected <code>int</code> value
+	 * 
+	 * @param val the expected value
+	 * @throws IOException if an IO error occurs
+	 */
 	public void readInt(int val) throws IOException {
 		readInt(this, this.in, val);
 	}
 	
+	/**
+	 * reads on of the expected <code>int</code> values
+	 * 
+	 * @param a an expected value
+	 * @param b an expected value
+	 * @return the value which was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public int readInt(int a, int b) throws IOException {
 		return readInt(this, this.in, a, b);
 	}
 	
+	/**
+	 * reads on of the expected <code>int</code> values
+	 * 
+	 * @param vals the expected values
+	 * @return the value which was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public int readInt(int... vals) throws IOException {
 		int reat = readInt(this, this.in);
 		for (int val : vals) {
@@ -897,12 +1225,29 @@ public class Connection implements Closeable, WrongInputHandler {
 		return wrongInputInt(reat, vals);
 	}
 	
+	/**
+	 * reads on of the expected <code>int</code> values
+	 * 
+	 * @param msg the error message generator
+	 * @param a   an expected value
+	 * @param b   an expected value
+	 * @return the value which was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public int readInt(IntFunction<String> msg, int a, int b) throws IOException {
 		int reat = readInt(this, this.in);
 		if (a == reat || b == reat) return reat;
 		return wrongInputInt(reat, new int[] { a, b }, msg);
 	}
 	
+	/**
+	 * reads on of the expected <code>int</code> values
+	 * 
+	 * @param msg  the error message generator
+	 * @param vals the expected values
+	 * @return the value which was read
+	 * @throws IOException if an IO error occurs
+	 */
 	public int readInt(IntFunction<String> msg, int... vals) throws IOException {
 		int reat = readInt(this, this.in);
 		for (int val : vals) {
@@ -911,23 +1256,50 @@ public class Connection implements Closeable, WrongInputHandler {
 		return wrongInputInt(reat, vals, msg);
 	}
 	
-	private static final int CLS_NAMED   = 0x0621BAC4;
-	private static final int CLS_UNNAMED = 0xA216458E;
+	/** @see #writeClass(Class) */
+	public static final int CLS_NAMED   = 0x0621BAC4;
+	/** @see #writeClass(Class) */
+	public static final int CLS_UNNAMED = 0xA216458E;
 	
-	public Class<?> readClass() throws IOException {
+	/**
+	 * reads an class
+	 * <ol>
+	 * <li>first a <code>{@link #readInt(int, int) readInt}({@value #CLS_NAMED}, {@value #CLS_UNNAMED})</code> is done</li>
+	 * <li>if the class was in a {@link Module#isNamed() named} {@link Class#getModule() module} was send the its {@link Module#getName() name} is
+	 * {@link #readString() read}</li>
+	 * <li>at last the {@link Class#getName() name} of the class is read</li>
+	 * </ol>
+	 * 
+	 * @return the class which was read
+	 * @throws IOException          if an IO error occurs
+	 * @throws NoClassDefFoundError if the class (or module) could not be found
+	 */
+	public Class<?> readClass() throws IOException, NoClassDefFoundError {
 		try {
 			if (readInt(CLS_NAMED, CLS_UNNAMED) == CLS_NAMED) {
 				String modName = readString();
-				Module mod     = ModuleLayer.boot().findModule(modName).orElseThrow(() -> new StreamCorruptedException("could not find module: " + modName));
+				Module mod     =
+					ModuleLayer.boot().findModule(modName).orElseThrow(() -> new NoClassDefFoundError(Messages.format(COULD_NOT_FIND_MODULE_0, modName)));
 				return Class.forName(mod, readString());
-			} else {
-				return Class.forName(readString());
 			}
+			return Class.forName(readString());
 		} catch (ClassNotFoundException cnfe) {
 			throw new NoClassDefFoundError(cnfe.toString());
 		}
 	}
 	
+	/**
+	 * writes an class
+	 * <ol>
+	 * <li>if the class {@link Class#getModule() module} is {@link Module#isNamed() named}, {@value #CLS_NAMED} is send, otherwise {@value #CLS_UNNAMED} is send</li>
+	 * <li>if the class {@link Class#getModule() module} is {@link Module#isNamed() named}, the {@link Module#getName()} is send (see
+	 * {@link #writeString(String)})</li>
+	 * <li>the {@link Class#getName()} is send</li>
+	 * </ol>
+	 * 
+	 * @param cls the class to write
+	 * @throws IOException if an IO error occurs
+	 */
 	public void writeClass(Class<?> cls) throws IOException {
 		Module mod = cls.getModule();
 		if (mod.isNamed()) {
@@ -939,35 +1311,89 @@ public class Connection implements Closeable, WrongInputHandler {
 		writeString(this.out, cls.getName());
 	}
 	
+	/**
+	 * reads the given array
+	 * 
+	 * @param arr the array to read
+	 * @throws IOException if an IO error occurs
+	 */
 	public void readArr(byte[] arr) throws IOException {
 		readArr(this, this.in, arr);
 	}
 	
+	/**
+	 * writes the given <code>int</code> value
+	 * 
+	 * @param val the value to write
+	 * @throws IOException if an IO error occurs
+	 */
 	public void writeInt(int val) throws IOException {
 		writeInt(this.out, val);
 	}
 	
+	/**
+	 * writes the given <code>long</code> value
+	 * 
+	 * @param val the value to write
+	 * @throws IOException if an IO error occurs
+	 */
 	public void writeLong(long val) throws IOException {
 		writeLong(this.out, val);
 	}
 	
+	/**
+	 * writes the given <code>byte</code> value
+	 * 
+	 * @param val the value to write
+	 * @throws IOException if an IO error occurs
+	 */
 	public void writeByte(int val) throws IOException {
-		if ((val & 0xFF) != val) { throw new IllegalArgumentException("the given value is outside of the byte bounds: 0x" + Integer.toHexString(val)); }
+		if ((val & 0xFF) != val) throw new IllegalArgumentException(Messages.format(VALUE_OUT_OF_THE_BYTE_BOUNDS_0X_0, Integer.toHexString(val)));
 		this.out.write(val);
 	}
 	
+	/**
+	 * writes the given {@link String} value
+	 * <ol>
+	 * <li>first the {@link String#length()} is written (see {@link #writeInt(int)})</li>
+	 * <li>the its content array <code>{@link String#getBytes() String.getBytes}({@link StandardCharsets#UTF_8})</code> (see {@link #writeArr(byte[])})
+	 * </ol>
+	 * 
+	 * @param str the value to write
+	 * @throws IOException if an IO error occurs
+	 * @see #readString()
+	 */
 	public void writeString(String str) throws IOException {
 		writeString(this.out, str);
 	}
 	
+	/**
+	 * writes the given data
+	 * 
+	 * @param arr the array to write
+	 * @throws IOException if an IO error occurs
+	 */
 	public void writeArr(byte[] arr) throws IOException {
 		this.out.write(arr);
 	}
 	
+	/**
+	 * writes the given data
+	 * 
+	 * @param arr the array containing the data to write
+	 * @param off the offset from the array
+	 * @param len the number of bytes to write
+	 * @throws IOException if an IO error occurs
+	 */
 	public void writeArr(byte[] arr, int off, int len) throws IOException {
 		this.out.write(arr, off, len);
 	}
 	
+	/**
+	 * {@link #writeInt(int) writes} {@value #CON_LOG_OUT} and then {@link #close() closes} this connection
+	 * 
+	 * @throws IOException if an IO error occurs (the connection will be {@link #close() closed} anyway)
+	 */
 	public void logOut() throws IOException {
 		blocked(() -> {
 			if (this.closed) return;
@@ -979,6 +1405,11 @@ public class Connection implements Closeable, WrongInputHandler {
 		});
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * all calls after the first call will be ignored
+	 */
 	@Override
 	public void close() throws IOException {
 		if (this.closed) return;
@@ -990,6 +1421,11 @@ public class Connection implements Closeable, WrongInputHandler {
 		}
 	}
 	
+	/**
+	 * returns <code>true</code> if the connection was already {@link #close() closed} and <code>false</code> if it is still open
+	 * 
+	 * @return <code>true</code> if the connection was already {@link #close() closed}
+	 */
 	public boolean closed() {
 		return this.closed;
 	}
@@ -1013,7 +1449,7 @@ public class Connection implements Closeable, WrongInputHandler {
 		int val = in.read();
 		if (val != -1) return val;
 		wih.wrongInputEOF(1, 1);
-		throw new AssertionError("EOF handler returned normally");
+		throw new AssertionError(EOF_HANDLER_RETURNED_NORMALLY);
 	}
 	
 	private static int readByte(WrongInputHandler wih, InputStream in, int a, int b) throws IOException {

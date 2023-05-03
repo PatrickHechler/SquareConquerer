@@ -18,40 +18,57 @@ package de.hechler.patrick.games.squareconqerer.ui;
 
 import java.io.Console;
 
+/**
+ * this implementation of the {@link Cons} interface delegates to the {@link Console}
+ * <p>
+ * this class does not support Multithreading
+ * 
+ * @author Patrick Hechler
+ */
 public class ConsoleCons implements Cons {
 	
 	private final Console c;
 	
 	private final Object[] singleVarArg = new Object[1];
 	
+	/**
+	 * create a new {@link ConsoleCons} instance
+	 * 
+	 * @param c the console of the instance
+	 */
 	public ConsoleCons(Console c) { this.c = c; }
 	
+	/** {@inheritDoc} */
 	@Override
 	public char[] readPassword(String prompt) {
-		singleVarArg[0] = prompt;
-		return c.readPassword("%s", singleVarArg);
+		this.singleVarArg[0] = prompt;
+		return this.c.readPassword("%s", this.singleVarArg); //$NON-NLS-1$
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public char[] readPassword() {
-		return c.readPassword();
+		return this.c.readPassword();
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public String readLine(String prompt) {
-		singleVarArg[0] = prompt;
-		return c.readLine("%s", singleVarArg);
+		this.singleVarArg[0] = prompt;
+		return this.c.readLine("%s", this.singleVarArg); //$NON-NLS-1$
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public String readLine() {
-		return c.readLine();
+		return this.c.readLine();
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public void writeLine(String line) {
-		singleVarArg[0] = line;
-		c.format("%s%n", singleVarArg);
+		this.singleVarArg[0] = line;
+		this.c.format("%s%n", this.singleVarArg); //$NON-NLS-1$
 	}
 	
 }

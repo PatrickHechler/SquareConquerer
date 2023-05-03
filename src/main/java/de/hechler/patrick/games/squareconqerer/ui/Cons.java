@@ -16,31 +16,48 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.ui;
 
-
+/**
+ * this interface is used by the {@link SquareConquererCUI} to communicate with the user
+ * 
+ * @author Patrick Hechler
+ */
 public interface Cons {
 	
+	/**
+	 * reads a password (if possible without echo)
+	 * 
+	 * @return the password wich was read
+	 */
 	char[] readPassword();
 	
+	/**
+	 * reads a password (if possible without echo) after prompting
+	 * 
+	 * @param prompt the prompt to print before reading the password
+	 * @return the password wich was read
+	 */
 	char[] readPassword(String prompt);
 	
+	/**
+	 * reads a line
+	 * 
+	 * @return the line wich was read
+	 */
 	String readLine();
 	
+	/**
+	 * reads a line after prompting
+	 * 
+	 * @param prompt the prompt to print before reading the line
+	 * @return the line wich was read
+	 */
 	String readLine(String prompt);
 	
+	/**
+	 * writes the given line
+	 * 
+	 * @param line the line to print
+	 */
 	void writeLine(String line);
 	
-}
-
-class Test {
-	private int name;
-	
-	int getName() {
-		System.out.println("getName");
-		return name;
-	}
-	
-	int name() {
-		System.out.println("name");
-		return name;
-	}
 }

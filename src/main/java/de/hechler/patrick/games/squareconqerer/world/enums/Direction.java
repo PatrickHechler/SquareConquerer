@@ -16,22 +16,68 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.world.enums;
 
-
+/**
+ * this class is used to define the four directions (x+-, y+- (or left/right, up/down))
+ * 
+ * @author Patrick Hechler
+ */
 public enum Direction {
 	
-	X_ADD(1, 0), X_DEC(-1, 0), Y_ADD(0, 1), Y_DEC(0, -1);
+	/**
+	 * the <code>x</code> increasing direction<br>
+	 * also known as right
+	 */
+	X_INC(1, 0),
+	/**
+	 * the <code>x</code> decreasing direction<br>
+	 * also known as left
+	 */
+	X_DEC(-1, 0),
+	/**
+	 * the <code>y</code> increasing direction<br>
+	 * also known as down
+	 */
+	Y_INC(0, 1),
+	/**
+	 * the <code>y</code> decreasing direction<br>
+	 * also known as up
+	 */
+	Y_DEC(0, -1);
 	
 	private static final Direction[] VALS = values();
 	
+	/**
+	 * returns the direction from its {@link Enum#ordinal() ordinal}
+	 * 
+	 * @param ordinal the {@link Enum#ordinal() ordinal}
+	 * @return the {@link Direction} with the given {@link Enum#ordinal() ordinal}
+	 */
 	public static Direction of(int ordinal) {
 		return VALS[ordinal];
 	}
 	
+	/**
+	 * returns the amount of directions (<code>4</code>)
+	 * 
+	 * @return the amount of directions (<code>4</code>)
+	 */
 	public static int count() {
 		return VALS.length;
 	}
 	
+	/**
+	 * the x increasing/decreasing value of this direction<br>
+	 * the value is either <code>1</code>, <code>0</code> or <code>-1</code><br>
+	 * if <code>{@link #yadd} == 0</code>, this value is not <code>0</code><br>
+	 * if <code>{@link #yadd} != 0</code>, this value is <code>0</code><br>
+	 */
 	public final int xadd;
+	/**
+	 * the y increasing/decreasing value of this direction<br>
+	 * the value is either <code>1</code>, <code>0</code> or <code>-1</code><br>
+	 * if <code>{@link #xadd} == 0</code>, this value is not <code>0</code><br>
+	 * if <code>{@link #xadd} != 0</code>, this value is <code>0</code><br>
+	 */
 	public final int yadd;
 	
 	private Direction(int xadd, int yadd) { this.xadd = xadd; this.yadd = yadd; }

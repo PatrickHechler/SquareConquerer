@@ -26,8 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
+import de.hechler.patrick.games.squareconqerer.addons.defaults.AddonDefaults;
 import de.hechler.patrick.games.squareconqerer.addons.entities.AddonEntities;
 import de.hechler.patrick.games.squareconqerer.addons.entities.EntityTrait;
 import de.hechler.patrick.games.squareconqerer.addons.entities.EntityTraitWithVal;
@@ -40,35 +42,56 @@ import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 
 
+/**
+ * this is the default implementation of the {@link UserPlacer} interface
+ * 
+ * @author Patrick Hechler
+ */
 public class DefaultUserPlacer implements UserPlacer {
+	
+	private static final String THERE_IS_NO_CLASS_NAME                                      = Messages.getString("DefaultUserPlacer.no-class-name");         //$NON-NLS-1$
+	private static final String NO_ADDON                                                    = Messages.getString("DefaultUserPlacer.no-addon");              //$NON-NLS-1$
+	private static final String WORLD_IS_FULL_NOT_ENUGH_PLACE_FOR_ALL_PLAYERS               = Messages.getString("DefaultUserPlacer.world-is-full");         //$NON-NLS-1$
+	private static final String GIVEN_TRAITS_DO_NOT_MATCH_THE_NEEDED_TRAITS                 = Messages.getString("DefaultUserPlacer.different-traits");      //$NON-NLS-1$
+	private static final String TRIED_8_INVALID_POSITIONS_THERE_IS_A_FREE_POSITION_CONTINUE = Messages.getString("DefaultUserPlacer.bad-random");            //$NON-NLS-1$
+	private static final String ENTITY_TRAITS_HAS_DIFFERENT_SIZE_THAN_ADDON_SAYS            = Messages.getString("DefaultUserPlacer.different-trait-sizes"); //$NON-NLS-1$
 	
 	private final Map<String, List<Map<String, EntityTraitWithVal>>> entityAmounts;
 	
-	private DefaultUserPlacer(@SuppressWarnings("unused") int ignore) {
-		this.entityAmounts = new HashMap<>();
+	private DefaultUserPlacer(Map<String, List<Map<String, EntityTraitWithVal>>> entityAmounts) {
+		this.entityAmounts = entityAmounts;
 	}
 	
-	private DefaultUserPlacer() {
-		this.entityAmounts = new HashMap<>();
+	/**
+	 * create a new user placer with the {@link AddonDefaults#startEntities() default start entities} of all {@link SCAddon#addons() addons}
+	 * 
+	 * @return the user placer with default values
+	 */
+	public static DefaultUserPlacer createWithDefaults() {
+		Map<String, List<Map<String, EntityTraitWithVal>>> entityAmounts = new HashMap<>();
 		for (SCAddon addon : SCAddon.addons()) {
 			Map<String, Collection<Map<String, EntityTraitWithVal>>> se = addon.defaults().startEntities();
 			for (Entry<String, Collection<Map<String, EntityTraitWithVal>>> entry : se.entrySet()) {
 				String                                      clsName = entry.getKey();
 				Collection<Map<String, EntityTraitWithVal>> es      = entry.getValue();
-				List<Map<String, EntityTraitWithVal>>       list    = get0(addon, clsName);
+				List<Map<String, EntityTraitWithVal>>       list    = get0(entityAmounts, addon, clsName);
 				for (Map<String, EntityTraitWithVal> map : es) {
 					list.add(new HashMap<>(map));
 				}
 			}
 		}
+		return new DefaultUserPlacer(entityAmounts);
 	}
 	
-	public static DefaultUserPlacer createWithDefaults() {
-		return new DefaultUserPlacer();
-	}
-	
+	/**
+	 * create a new user placer with initially no start entities<br>
+	 * to add entities use {@link #addEntity(SCAddon, String, Map)}
+	 * 
+	 * @return the new user placer
+	 * @see #addEntity(SCAddon, String, Map)
+	 */
 	public static DefaultUserPlacer createWithNone() {
-		return new DefaultUserPlacer(0);
+		return new DefaultUserPlacer(new HashMap<>());
 	}
 	
 	private static final int SUB0_USR_PLCR = 0x2EDA1FC3;
@@ -111,7 +134,7 @@ public class DefaultUserPlacer implements UserPlacer {
 			for (Map<String, EntityTraitWithVal> vals : entities) {
 				if (--elen < 0) throw new ConcurrentModificationException();
 				conn.writeInt(SUB3_USR_PLCR);
-				if (vals.size() != traits.size()) throw new IllegalStateException("the entity traits have a different size than the addon says");
+				if (vals.size() != traits.size()) throw new IllegalStateException(ENTITY_TRAITS_HAS_DIFFERENT_SIZE_THAN_ADDON_SAYS);
 				for (String traitName : traits) {
 					EntityTraitWithVal tn = vals.get(traitName);
 					EntityTraitWithVal.writeTrait(tn, conn);
@@ -136,7 +159,7 @@ public class DefaultUserPlacer implements UserPlacer {
 	 * @see #writePlacer(Connection)
 	 */
 	public static UserPlacer readPlacer(Connection conn) throws IOException {
-		DefaultUserPlacer dup = new DefaultUserPlacer(0);
+		DefaultUserPlacer dup = new DefaultUserPlacer(new HashMap<>());
 		int               len = conn.readPos();
 		while (len-- > 0) {
 			conn.readInt(SUB0_USR_PLCR);
@@ -169,6 +192,7 @@ public class DefaultUserPlacer implements UserPlacer {
 		return dup;
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public void initilize(World world, User[] usrs, Random2 rnd) {
 		int sum = 0;
@@ -182,11 +206,11 @@ public class DefaultUserPlacer implements UserPlacer {
 		for (int i = 0; i < p.length; i++) {
 			int x;
 			int y;
-			int cnt = 0;
+			int cnt = -1;
 			do {
-				if (cnt++ == 8) {
+				if (++cnt == 8) {
 					checkPossible(p, i, size, xlen, ylen);
-					System.err.println("tried 8 random invalid positions, there is at least one possible free position, I will continue");
+					System.err.println(TRIED_8_INVALID_POSITIONS_THERE_IS_A_FREE_POSITION_CONTINUE);
 				}
 				x = rnd.nextInt(xlen - size);
 				y = rnd.nextInt(ylen - size);
@@ -207,11 +231,11 @@ public class DefaultUserPlacer implements UserPlacer {
 			for (Map<String, EntityTraitWithVal> es : list) {
 				int x0;
 				int y0;
-				int cnt = 0;
+				int cnt = -1;
 				do {
 					if (++cnt == 8) {
 						checkPossible(p, remainUnitCount, 1, size, size);
-						System.err.println("tried 7 random invalid positions, there is at least one possible free position, I will continue");
+						System.err.println(TRIED_8_INVALID_POSITIONS_THERE_IS_A_FREE_POSITION_CONTINUE);
 					}
 					x0 = rnd.nextInt(size);
 					y0 = rnd.nextInt(size);
@@ -238,7 +262,7 @@ public class DefaultUserPlacer implements UserPlacer {
 				if (!isUsed(p, i, size, x, y) && --need <= 0) return;
 			}
 		}
-		throw new IllegalStateException("world is full, there is not enugh place for all players");
+		throw new IllegalStateException(WORLD_IS_FULL_NOT_ENUGH_PLACE_FOR_ALL_PLAYERS);
 	}
 	
 	private static boolean isUsed(Point[] p, int i, int size, int x, int y) {
@@ -250,43 +274,85 @@ public class DefaultUserPlacer implements UserPlacer {
 		return false;
 	}
 	
+	/**
+	 * adds the given start entity to this user placer
+	 * 
+	 * @param addon   the {@link SCAddon#name}
+	 * @param clsName the class name (see {@link AddonEntities#entityClassses()})
+	 * @param traits  the entity traits (see {@link AddonEntities#traits(String)})
+	 */
 	public void addEntity(SCAddon addon, String clsName, Map<String, EntityTraitWithVal> traits) {
 		Map<String, EntityTraitWithVal> tcpy  = new HashMap<>(traits);
 		Map<String, EntityTrait>        needs = addon.entities().traits(clsName);
-		if (needs.size() != tcpy.size()) throw new IllegalArgumentException("the given traits do not match the needed traits");
+		if (needs.size() != tcpy.size()) throw new IllegalArgumentException(GIVEN_TRAITS_DO_NOT_MATCH_THE_NEEDED_TRAITS);
 		for (EntityTrait t : needs.values()) {
 			EntityTraitWithVal twv = tcpy.get(t.name());
-			if (twv == null || !t.equals(twv.trait())) throw new IllegalArgumentException("the given traits do not match the needed traits");
+			if (twv == null || !t.equals(twv.trait())) throw new IllegalArgumentException(GIVEN_TRAITS_DO_NOT_MATCH_THE_NEEDED_TRAITS);
 		}
-		get0(addon, clsName).add(tcpy);
+		get0(this.entityAmounts, addon, clsName).add(tcpy);
 	}
 	
+	/**
+	 * removes all start entities of this user placer
+	 */
 	public void removeAll() {
 		this.entityAmounts.clear();
 	}
 	
+	/**
+	 * removes all start entities of this user placer which belong to the given {@link SCAddon}
+	 * 
+	 * @param addon the addon which should have no start entities
+	 */
 	public void removeAll(SCAddon addon) {
-		if (addon == null) throw new NullPointerException("the given addon is missing");
+		if (addon == null) throw new NullPointerException(NO_ADDON);
 		for (String clsName : addon.entities().entityClassses().values()) {
 			this.entityAmounts.remove(key(addon, clsName));
 		}
 	}
 	
+	/**
+	 * removes all start entities of this user placer which belong to the given {@link SCAddon} and have the given class name (see
+	 * {@link AddonEntities#entityClassses()})
+	 * 
+	 * @param addon   the addon which should have no start entities
+	 * @param clsName the class name (see {@link AddonEntities#entityClassses()})
+	 * @return the previous entities from the given addon with the given class name
+	 */
 	public List<Map<String, EntityTraitWithVal>> removeAll(SCAddon addon, String clsName) {
-		if (addon == null) throw new NullPointerException("the given addon is missing");
-		if (clsName == null) throw new NullPointerException("the given class name is missing");
+		if (addon == null) throw new NullPointerException(NO_ADDON);
+		if (clsName == null) throw new NullPointerException(THERE_IS_NO_CLASS_NAME);
 		return this.entityAmounts.remove(key(addon, clsName));
 	}
 	
+	/**
+	 * removes the start entity with the given {@link SCAddon#addon(Entity) addon}, {@link AddonEntities#entityClassses() class name} and {@link List#remove(int)
+	 * index}
+	 * 
+	 * @param addon   the addon
+	 * @param clsName the class name
+	 * @param index   the index
+	 * @return the removed start entity
+	 */
 	public Map<String, EntityTraitWithVal> remove(SCAddon addon, String clsName, int index) {
-		if (addon == null) throw new NullPointerException("the given addon is missing");
-		if (clsName == null) throw new NullPointerException("the given class name is missing");
+		if (addon == null) throw new NullPointerException(NO_ADDON);
+		if (clsName == null) throw new NullPointerException(THERE_IS_NO_CLASS_NAME);
 		return this.entityAmounts.get(key(addon, clsName)).remove(index);
 	}
 	
+	/**
+	 * gets a copy of all start entities of this user placer which belong to the given {@link SCAddon} and have the given class name (see
+	 * {@link AddonEntities#entityClassses()})
+	 * <p>
+	 * the index of the list returned can be used to remove them (see {@link #remove(SCAddon, String, int)})
+	 * 
+	 * @param addon   the addon
+	 * @param clsName the class name (see {@link AddonEntities#entityClassses()})
+	 * @return the entities from the given addon with the given class name
+	 */
 	public List<Map<String, EntityTraitWithVal>> get(SCAddon addon, String clsName) {
-		if (addon == null) throw new NullPointerException("the given addon is missing");
-		if (clsName == null) throw new NullPointerException("the given class name is missing");
+		if (addon == null) throw new NullPointerException(NO_ADDON);
+		if (clsName == null) throw new NullPointerException(THERE_IS_NO_CLASS_NAME);
 		List<Map<String, EntityTraitWithVal>> list   = this.entityAmounts.get(key(addon, clsName));
 		List<Map<String, EntityTraitWithVal>> result = new ArrayList<>();
 		for (Map<String, EntityTraitWithVal> map : list) {
@@ -295,8 +361,14 @@ public class DefaultUserPlacer implements UserPlacer {
 		return result;
 	}
 	
+	/**
+	 * returns all start entities of this user placer which belong to the given {@link SCAddon}
+	 * 
+	 * @param addon the addon which should have no start entities
+	 * @return all start entities of this user placer which belong to the given {@link SCAddon}
+	 */
 	public Map<String, List<Map<String, EntityTraitWithVal>>> get(SCAddon addon) {
-		if (addon == null) throw new NullPointerException("the given addon is missing");
+		if (addon == null) throw new NullPointerException(NO_ADDON);
 		Map<String, List<Map<String, EntityTraitWithVal>>> result = new HashMap<>();
 		for (Entry<String, List<Map<String, EntityTraitWithVal>>> entry : this.entityAmounts.entrySet()) {
 			String                                key  = entry.getKey();
@@ -314,6 +386,11 @@ public class DefaultUserPlacer implements UserPlacer {
 		return result;
 	}
 	
+	/**
+	 * returns all start entities of this user placer
+	 * 
+	 * @return all start entities of this user placer
+	 */
 	public Map<SCAddon, Map<String, List<Map<String, EntityTraitWithVal>>>> getAll() {
 		Map<SCAddon, Map<String, List<Map<String, EntityTraitWithVal>>>> result = new HashMap<>();
 		for (Entry<String, List<Map<String, EntityTraitWithVal>>> entry : this.entityAmounts.entrySet()) {
@@ -333,8 +410,8 @@ public class DefaultUserPlacer implements UserPlacer {
 		return result;
 	}
 	
-	private List<Map<String, EntityTraitWithVal>> get0(SCAddon addon, String clsName) {
-		return this.entityAmounts.computeIfAbsent(key(addon, clsName), s -> new ArrayList<>());
+	private static List<Map<String, EntityTraitWithVal>> get0(Map<String, List<Map<String, EntityTraitWithVal>>> entityAmounts, SCAddon addon, String clsName) {
+		return entityAmounts.computeIfAbsent(key(addon, clsName), s -> new ArrayList<>());
 	}
 	
 	private static String key(SCAddon addon, String clsName) { return addon.name + '\0' + clsName; }
