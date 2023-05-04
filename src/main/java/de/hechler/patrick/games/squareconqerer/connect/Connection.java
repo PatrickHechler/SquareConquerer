@@ -414,6 +414,12 @@ public class Connection implements Closeable, WrongInputHandler {
 			} catch (IOException e) {
 				if (!Thread.currentThread().isInterrupted()) throw e;
 				err = e;
+			} finally {
+				if (serverPW != null) {
+					for (int i = 0; i < serverPW.length; i++) {
+						serverPW[i] = '\0';
+					}
+				}
 			}
 			for (Socket sok : soks) {
 				try {

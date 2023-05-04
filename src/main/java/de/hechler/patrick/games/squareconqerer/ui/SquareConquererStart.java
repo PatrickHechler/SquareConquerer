@@ -172,15 +172,15 @@ public class SquareConquererStart {
 		} else {
 			if (pw != null) {
 				if (name != null) {
-					cui.setUsr(User.create(name, pw));
+					cui.user(User.create(name, pw));
 				} else {
-					cui.setUsr(RootUser.create(pw));
+					cui.user(RootUser.create(pw));
 				}
 			} else if (name != null) {
-				cui.setName(name);
+				cui.name(name);
 			}
 			if (serverpw != null) {
-				cui.setSPW(serverpw);
+				cui.serverPW(serverpw);
 			}
 			
 			if (worldFile != null) {
@@ -193,7 +193,7 @@ public class SquareConquererStart {
 			}
 		}
 		if (consoleInter || consoleNoInter) {
-			cui.setInteractive(consoleInter);
+			cui.interactive(consoleInter);
 		}
 		cui.run();
 	}

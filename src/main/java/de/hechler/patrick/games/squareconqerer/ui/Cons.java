@@ -34,6 +34,7 @@ public interface Cons {
 	 * reads a password (if possible without echo) after prompting
 	 * 
 	 * @param prompt the prompt to print before reading the password
+	 * 
 	 * @return the password wich was read
 	 */
 	char[] readPassword(String prompt);
@@ -49,6 +50,7 @@ public interface Cons {
 	 * reads a line after prompting
 	 * 
 	 * @param prompt the prompt to print before reading the line
+	 * 
 	 * @return the line wich was read
 	 */
 	String readLine(String prompt);
@@ -59,5 +61,17 @@ public interface Cons {
 	 * @param line the line to print
 	 */
 	void writeLine(String line);
+	
+	/**
+	 * writes the given lines
+	 * <p>
+	 * passing an {@link String#isEmpty() empty} string as argument will result in nothing
+	 * 
+	 * @param lines the lines to write
+	 */
+	default void writeLines(String lines) {
+		if (lines.indexOf('\n') != -1 || lines.indexOf('\r') != -1) lines.lines().sequential().forEach(this::writeLine);
+		else if (!lines.isEmpty()) writeLine(lines);
+	}
 	
 }
