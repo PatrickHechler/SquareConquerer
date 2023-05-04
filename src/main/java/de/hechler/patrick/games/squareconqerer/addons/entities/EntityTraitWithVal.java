@@ -18,12 +18,13 @@ package de.hechler.patrick.games.squareconqerer.addons.entities;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.text.Format;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 
 /**
- * this interface is used to represent a single trait/ability together with the
- * value of an entity
+ * this interface is used to represent a single trait/ability together with the value of an entity
  * 
  * @author pat
  */
@@ -49,22 +50,52 @@ public sealed interface EntityTraitWithVal {
 	/**
 	 * a number trait<br>
 	 * for example something like max lives for example
+	 * 
+	 * @param trait the {@link #trait()}
+	 * @param value the value
 	 */
 	public record NumberTrait(EntityTrait.NumberTrait trait, int value) implements EntityTraitWithVal {
 		
+		private static final String TRAIT_IS_NULL = Messages.getString("EntityTraitWithVal.no-trait"); //$NON-NLS-1$
+		private static final String THE_GIVEN_VALUE_IS_TOO_SMALL = Messages.getString("EntityTraitWithVal.value-too-small"); //$NON-NLS-1$
+		private static final String THE_GIVEN_VALUE_IS_TOO_LARGE = Messages.getString("EntityTraitWithVal.value-too-large"); //$NON-NLS-1$
+		private static final String VALUE_IS_NULL = Messages.getString("EntityTraitWithVal.no-value"); //$NON-NLS-1$
+		private static final String I_HAVE_A_DIFFERENT_VERSION_OF_THE_ENUM_CLASS = Messages.getString("EntityTraitWithVal.different-version-of-enum-class"); //$NON-NLS-1$
+		private static final Format DID_NOT_READ_THE_EXPECTED_CLASS = Messages.getFormat("EntityTraitWithVal.read-unexpected-enum-class"); //$NON-NLS-1$
+		
+		/**
+		 * creates a new number trait
+		 * 
+		 * @param trait the {@link #trait()}
+		 * @param value the {@link #value()}
+		 */
 		public NumberTrait {
-			if (trait == null) throw new NullPointerException("trait is null");
-			if (value < trait.minValue()) throw new IllegalArgumentException("the given value is too small");
-			if (value > trait.maxValue()) throw new IllegalArgumentException("the given value is too large");
+			if (trait == null) throw new NullPointerException(TRAIT_IS_NULL);
+			if (value < trait.minValue()) throw new IllegalArgumentException(THE_GIVEN_VALUE_IS_TOO_SMALL);
+			if (value > trait.maxValue()) throw new IllegalArgumentException(THE_GIVEN_VALUE_IS_TOO_LARGE);
 		}
 		
 	}
 	
+	/**
+	 * a enum trait
+	 * 
+	 * @author Patrick Hechler
+	 * @param trait the {@link #trait()}
+	 * @param value the value
+	 * @param <E>   the enum type
+	 */
 	public record EnumTrait<E extends Enum<?>>(EntityTrait.EnumTrait<E> trait, E value) implements EntityTraitWithVal {
 		
+		/**
+		 * creates a new enum trait
+		 * 
+		 * @param trait the {@link #trait()}
+		 * @param value the {@link #value()}
+		 */
 		public EnumTrait {
-			if (trait == null) throw new NullPointerException("trait is null");
-			if (value == null) throw new NullPointerException("value is null");
+			if (trait == null) throw new NullPointerException(NumberTrait.TRAIT_IS_NULL);
+			if (value == null) throw new NullPointerException(NumberTrait.VALUE_IS_NULL);
 		}
 		
 	}
@@ -72,11 +103,20 @@ public sealed interface EntityTraitWithVal {
 	/**
 	 * a boolean trait<br>
 	 * for example something like has the trait or not
+	 * 
+	 * @param trait the {@link #trait()}
+	 * @param value the value
 	 */
 	public record BooleanTrait(EntityTrait.BooleanTrait trait, boolean value) implements EntityTraitWithVal {
 		
+		/**
+		 * creates a new boolean trait
+		 * 
+		 * @param trait the {@link #trait()}
+		 * @param value the value
+		 */
 		public BooleanTrait {
-			if (trait == null) throw new NullPointerException("trait is null");
+			if (trait == null) throw new NullPointerException(NumberTrait.TRAIT_IS_NULL);
 		}
 		
 	}
@@ -84,20 +124,66 @@ public sealed interface EntityTraitWithVal {
 	/**
 	 * this is a trait, which is just there (it is not possible to disable/modify it)<br>
 	 * for example can swim for a ship
+	 * 
+	 * @param trait the {@link #trait()}
 	 */
 	public record JustATrait(EntityTrait.JustATrait trait) implements EntityTraitWithVal {
 		
+		/**
+		 * creates a new trait value
+		 * 
+		 * @param trait the {@link #trait()}
+		 */
 		public JustATrait {
-			if (trait == null) throw new NullPointerException("trait is null");
+			if (trait == null) throw new NullPointerException(NumberTrait.TRAIT_IS_NULL);
 		}
 		
 	}
 	
+	/** @see #writeTrait(EntityTraitWithVal, Connection) */
 	static final int ST_JAT = 0x17FA0EAA;
+	/** @see #writeTrait(EntityTraitWithVal, Connection) */
 	static final int ST_BT  = 0xDF28A844;
+	/** @see #writeTrait(EntityTraitWithVal, Connection) */
 	static final int ST_NT  = 0x41CF008F;
+	/** @see #writeTrait(EntityTraitWithVal, Connection) */
 	static final int ST_ET  = 0xFF5EF588;
 	
+	/**
+	 * writes the given trait
+	 * <ul>
+	 * <li>if the trait is a {@link JustATrait}:
+	 * <ol>
+	 * <li>{@link Connection#writeInt(int) writes} {@value #ST_JAT}</li>
+	 * </ol>
+	 * </li>
+	 * <li>if the trait is a {@link BooleanTrait}:
+	 * <ol>
+	 * <li>{@link Connection#writeInt(int) writes} {@value #ST_BT}</li>
+	 * <li>{@link Connection#writeByte(int) writes} <code>{@link BooleanTrait#value()} ? 1 : 0</code></li>
+	 * </ol>
+	 * </li>
+	 * <li>if the trait is a {@link NumberTrait}:
+	 * <ol>
+	 * <li>{@link Connection#writeInt(int) writes} {@value #ST_NT}</li>
+	 * <li>{@link Connection#writeInt(int) writes} {@link NumberTrait#value()}</li>
+	 * </ol>
+	 * </li>
+	 * <li>if the trait is a {@link EnumTrait}:
+	 * <ol>
+	 * <li>{@link Connection#writeInt(int) writes} {@value #ST_ET}</li>
+	 * <li>{@link Connection#writeClass(Class) writes} the {@link EntityTrait.EnumTrait#cls() class}</li>
+	 * <li>{@link Connection#writeString(String) writes} the {@link EnumTrait#value() values} {@link Enum#name() name}</li>
+	 * <li>{@link Connection#writeInt(int) writes} the {@link EnumTrait#value() values} {@link Enum#ordinal() ordinal}</li>
+	 * <li>{@link Connection#writeClass(Class) writes} the {@link Class#getEnumConstants() enum constant} count of {@link EntityTrait.EnumTrait#cls() class}</li>
+	 * </ol>
+	 * </li>
+	 * </ul>
+	 * 
+	 * @param trait the trait to send
+	 * @param conn  the connection
+	 * @throws IOException if an IO error occurs
+	 */
 	static void writeTrait(EntityTraitWithVal trait, Connection conn) throws IOException {
 		switch (trait) {
 		case JustATrait jat -> conn.writeInt(ST_JAT);
@@ -120,6 +206,17 @@ public sealed interface EntityTraitWithVal {
 		}
 	}
 	
+	/**
+	 * reads a {@link EntityTraitWithVal} which holds the given trait
+	 * <p>
+	 * if the trait which was read is not from the same type as the given trait, this operation fails
+	 * 
+	 * @param trait the trait of the value to read
+	 * @param conn  the connection
+	 * @return the value of the trait which was read
+	 * @throws IOException if an IO error occurs
+	 * @see #writeTrait(EntityTraitWithVal, Connection)
+	 */
 	static EntityTraitWithVal readTrait(EntityTrait trait, Connection conn) throws IOException {
 		return switch (trait) {
 		case EntityTrait.JustATrait jat -> {
@@ -137,14 +234,14 @@ public sealed interface EntityTraitWithVal {
 		case EntityTrait.EnumTrait<?> et -> {
 			conn.readInt(ST_ET);
 			Class<?> cls = conn.readClass();
-			if (cls != et.cls()) throw new StreamCorruptedException("did not read the expected class");
+			if (cls != et.cls()) throw new StreamCorruptedException(Messages.format(NumberTrait.DID_NOT_READ_THE_EXPECTED_CLASS, et.cls(), cls));
 			String   name    = conn.readString();
 			int      ordinal = conn.readPos();
 			int      clen    = conn.readStrictPos();
 			Object[] consts  = cls.getEnumConstants();
-			if (clen != consts.length) throw new IllegalStateException("I have a different version of the enum class");
+			if (clen != consts.length) throw new IllegalStateException(NumberTrait.I_HAVE_A_DIFFERENT_VERSION_OF_THE_ENUM_CLASS);
 			Enum<?> e = (Enum<?>) consts[ordinal];
-			if (!e.name().equals(name)) throw new IllegalStateException("I have a different version of the enum class");
+			if (!e.name().equals(name)) throw new IllegalStateException(NumberTrait.I_HAVE_A_DIFFERENT_VERSION_OF_THE_ENUM_CLASS);
 			yield et.withVal(e);
 		}
 		};

@@ -23,20 +23,60 @@ import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.world.stuff.ImageableObj;
 
+/**
+ * this is the superclass of {@link Unit} and {@link Building}
+ * 
+ * @author Patrick Hechler
+ */
 public sealed interface Entity extends ImageableObj permits Unit, Building {
 	
+	/**
+	 * returns the current x coordinate of this entity
+	 * 
+	 * @return the current x coordinate of this entity
+	 */
 	int x();
 	
+	/**
+	 * returns the current y coordinate of this entity
+	 * 
+	 * @return the current y coordinate of this entity
+	 */
 	int y();
 	
+	/**
+	 * returns the current owner of this entity
+	 * 
+	 * @return the current owner of this entity
+	 */
 	User owner();
 	
+	/**
+	 * returns the current lives of this entity
+	 * 
+	 * @return the current lives of this entity
+	 */
 	int lives();
 	
+	/**
+	 * returns the maximum lives of this entity
+	 * 
+	 * @return the maximum lives of this entity
+	 */
 	int maxLives();
 	
+	/**
+	 * returns the current view range of this entity
+	 * 
+	 * @return the current view range of this entity
+	 */
 	int viewRange();
 	
+	/**
+	 * returns a copy of this current entity
+	 * 
+	 * @return a copy of this current entity
+	 */
 	Entity copy();
 	
 	/**
@@ -50,8 +90,18 @@ public sealed interface Entity extends ImageableObj permits Unit, Building {
 		return Collections.emptyList();
 	}
 	
+	/**
+	 * returns the localized name of this entity
+	 * 
+	 * @return the localized name of this entity
+	 */
 	String localName();
 	
+	/**
+	 * returns the global ordinal value of this entity
+	 * 
+	 * @return the global ordinal value of this entity
+	 */
 	@Override
 	default int ordinal() {
 		return switch (this) {
@@ -60,6 +110,11 @@ public sealed interface Entity extends ImageableObj permits Unit, Building {
 		};
 	}
 	
+	/**
+	 * returns the addon local ordinal value of this entity
+	 * 
+	 * @return the addon local ordinal value of this entity
+	 */
 	int addonLocalOrdinal();
 	
 }
