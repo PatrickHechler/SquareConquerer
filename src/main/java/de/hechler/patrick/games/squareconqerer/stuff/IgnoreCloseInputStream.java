@@ -20,52 +20,78 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/**
+ * this class is used to use a stream which should not be closed
+ * 
+ * @author Patrick Hechler
+ */
 public class IgnoreCloseInputStream extends InputStream {
 	
 	private final InputStream in;
 	
+	/**
+	 * creates a new input stream which just delegates to the given input stream, but ignores the {@link #close()} operation
+	 * 
+	 * @param in the input stream on which this ignore close stream should delegate to
+	 */
 	public IgnoreCloseInputStream(InputStream in) { this.in = in; }
-
+	
+	/** {@inheritDoc} */
 	@Override
-	public int read() throws IOException { return in.read(); }
-
+	public int read() throws IOException { return this.in.read(); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public int read(byte[] b) throws IOException { return in.read(b); }
-
+	public int read(byte[] b) throws IOException { return this.in.read(b); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public int read(byte[] b, int off, int len) throws IOException { return in.read(b, off, len); }
-
+	public int read(byte[] b, int off, int len) throws IOException { return this.in.read(b, off, len); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public String toString() { return in.toString(); }
-
+	public byte[] readAllBytes() throws IOException { return this.in.readAllBytes(); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public byte[] readAllBytes() throws IOException { return in.readAllBytes(); }
-
+	public byte[] readNBytes(int len) throws IOException { return this.in.readNBytes(len); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public byte[] readNBytes(int len) throws IOException { return in.readNBytes(len); }
-
+	public int readNBytes(byte[] b, int off, int len) throws IOException { return this.in.readNBytes(b, off, len); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public int readNBytes(byte[] b, int off, int len) throws IOException { return in.readNBytes(b, off, len); }
-
+	public long skip(long n) throws IOException { return this.in.skip(n); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public long skip(long n) throws IOException { return in.skip(n); }
-
+	public void skipNBytes(long n) throws IOException { this.in.skipNBytes(n); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public void skipNBytes(long n) throws IOException { in.skipNBytes(n); }
-
+	public int available() throws IOException { return this.in.available(); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public int available() throws IOException { return in.available(); }
-
+	public void mark(int readlimit) { this.in.mark(readlimit); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public void mark(int readlimit) { in.mark(readlimit); }
-
+	public void reset() throws IOException { this.in.reset(); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public void reset() throws IOException { in.reset(); }
-
+	public boolean markSupported() { return this.in.markSupported(); }
+	
+	/** {@inheritDoc} */
 	@Override
-	public boolean markSupported() { return in.markSupported(); }
-
+	public long transferTo(OutputStream out) throws IOException { return this.in.transferTo(out); }
+	
+	/**
+	 * does nothing and just returns
+	 */
 	@Override
-	public long transferTo(OutputStream out) throws IOException { return in.transferTo(out); }
+	public void close() throws IOException {/**/}
 	
 }

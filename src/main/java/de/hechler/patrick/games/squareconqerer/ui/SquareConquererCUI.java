@@ -47,6 +47,11 @@ import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
 import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 
+/**
+ * this class is used to communicate with the user using a console or streams
+ * 
+ * @author Patrick Hechler
+ */
 public class SquareConquererCUI implements Runnable {
 	
 	private static final String HELP = "help"; //$NON-NLS-1$
@@ -107,6 +112,12 @@ public class SquareConquererCUI implements Runnable {
 	
 	private List<Object> tasks = new LinkedList<>();
 	
+	/**
+	 * this is equivalent to <code>{@link #SquareConquererCUI(Cons) new SquareConquererCU}({@link System#console()} != null ?
+	 * {@link ConsoleCons#ConsoleCons(Console) new ConsoleCons}({@link System#console()}) :
+	 * {@link IOCons#IOCons(Scanner, java.io.PrintStream) new IOCons}
+	 * ({@link Scanner#Scanner(InputStream) new Scanner}({@link System#in}, {@link System#out})))</code>
+	 */
 	public SquareConquererCUI() {
 		Console console = System.console();
 		if (console != null) {
@@ -119,13 +130,24 @@ public class SquareConquererCUI implements Runnable {
 		}
 	}
 	
+	/**
+	 * this is equivalent to <code>{@link #SquareConquererCUI(Cons, boolean) new SquareConquererCUI}(c, c instanceof {@link ConsoleCons})</code>
+	 * 
+	 * @param c the {@link Cons} to be used
+	 */
 	public SquareConquererCUI(Cons c) {
 		this(c, c instanceof ConsoleCons);
 	}
 	
+	/**
+	 * creates a new {@link SquareConquererCUI} using the given {@link Cons} and mode
+	 * 
+	 * @param c           the {@link Cons} to be used
+	 * @param interactive if the {@link Cons} should be in interactive mode or not
+	 */
 	public SquareConquererCUI(Cons c, boolean interactive) {
 		if (c == null) {
-			throw new NullPointerException("Con c is null");
+			throw new NullPointerException("there is no Cons");
 		}
 		this.c           = c;
 		this.interactive = interactive;
@@ -188,21 +210,21 @@ public class SquareConquererCUI implements Runnable {
 	
 	@Override
 	public void run() {
-		boolean greet = interactive;
+		boolean greet = this.interactive;
 		while (true) {
 			doTasks();
 			if (greet) { // no need to greet scripts
-				c.writeLine("Welcome to the Square Conquerer Console");
-				c.writeLine("if you don't know what to do use the '" + HELP + "' command");
+				this.c.writeLine("Welcome to the Square Conquerer Console");
+				this.c.writeLine("if you don't know what to do use the '" + HELP + "' command");
 				greet = false;
 			}
-			String line = (interactive ? c.readLine(prompt()) : c.readLine()).trim();
+			String line = (this.interactive ? this.c.readLine(prompt()) : this.c.readLine()).trim();
 			if (line.isEmpty()) {
 				continue;
 			}
 			List<String> args = arguments(line);
 			if (args.isEmpty()) {
-				c.writeLine("stange, there is nothing");
+				this.c.writeLine("stange, there is nothing");
 				continue;
 			}
 			exec(args);
@@ -221,35 +243,35 @@ public class SquareConquererCUI implements Runnable {
 			case CMD_SETPW -> cmdSetPW(args);
 			case CMD_SERVERPW -> cmdServerPW(args);
 			case CMD_QUIT, CMD_EXIT -> cmdQuit(args);
-			default -> c.writeLine("unknown command: '" + args.get(0) + "'");
+			default -> this.c.writeLine("unknown command: '" + args.get(0) + "'");
 			}
 		} catch (RuntimeException e) {
-			c.writeLine("error while executing the command: " + e.toString());
+			this.c.writeLine("error while executing the command: " + e.toString());
 		}
 	}
 	
 	private void cmdQuit(List<String> args) {
 		if (args.size() == 1) {
-			if (interactive) {
-				c.writeLine("goodbye, exit now with 0");
+			if (this.interactive) {
+				this.c.writeLine("goodbye, exit now with 0");
 			}
 			System.exit(0);
 		}
 		for (int i = 1; i < args.size(); i++) {
 			if (HELP.equalsIgnoreCase(args.get(i))) {
-				c.writeLine("quit help:");
-				c.writeLine("no args: terminates this program with the exit value 0");
-				c.writeLine("help: print this message");
-				c.writeLine("<NUMBER>: terminates this program with the given exit value");
-				c.writeLine("anything else: terminates this program with the exit value 1");
+				this.c.writeLine("quit help:");
+				this.c.writeLine("no args: terminates this program with the exit value 0");
+				this.c.writeLine("help: print this message");
+				this.c.writeLine("<NUMBER>: terminates this program with the given exit value");
+				this.c.writeLine("anything else: terminates this program with the exit value 1");
 			} else {
 				try {
 					int e = Integer.parseInt(args.get(i));
-					c.writeLine("goodbye, exit now with " + e);
+					this.c.writeLine("goodbye, exit now with " + e);
 					System.exit(e);
 				} catch (NumberFormatException e) {
-					c.writeLine("error while parsing exit number: " + e.toString());
-					c.writeLine("goodbye, exit now with 1");
+					this.c.writeLine("error while parsing exit number: " + e.toString());
+					this.c.writeLine("goodbye, exit now with 1");
 					System.exit(1);
 				}
 			}
@@ -259,8 +281,8 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdServerPW(List<String> args) {
 		if (args.size() == 1) {
 			switch (ask("do you want to [s]et" + (serverPW != null ? "/[r]emove" : "") + " the server password or do [n]othing? ",
-					serverPW != null ? "srn" : "sn")) {
-			case 's' -> serverPW = c.readPassword("enter now the new server password: ");
+				serverPW != null ? "srn" : "sn")) {
+			case 's' -> serverPW = this.c.readPassword("enter now the new server password: ");
 			case 'r' -> serverPW = null;
 			case 'n' -> {/**/}
 			default -> throw new AssertionError("illegal return value from ask");
@@ -270,36 +292,36 @@ public class SquareConquererCUI implements Runnable {
 		for (int i = 1; i < args.size(); i++) {
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
-				c.writeLine("server password help:");
-				c.writeLine("status: print an message indicating if there is currently a server password set");
-				c.writeLine("set: prompt for the new server password");
-				c.writeLine("remove: remove and clear the current server password");
-				c.writeLine("remove-no-fail: same as remove, but do not show an error message if there is no server password");
+				this.c.writeLine("server password help:");
+				this.c.writeLine("status: print an message indicating if there is currently a server password set");
+				this.c.writeLine("set: prompt for the new server password");
+				this.c.writeLine("remove: remove and clear the current server password");
+				this.c.writeLine("remove-no-fail: same as remove, but do not show an error message if there is no server password");
 			}
 			case "status" -> {
 				if (serverPW != null) {
-					c.writeLine("I hava a server password set");
+					this.c.writeLine("I hava a server password set");
 				} else {
-					c.writeLine("I don't have a server password set");
+					this.c.writeLine("I don't have a server password set");
 				}
 			}
 			case "set" -> {
 				if (++i >= args.size()) {
-					c.writeLine("not enugh arguments for the set arg");
+					this.c.writeLine("not enugh arguments for the set arg");
 					return;
 				}
-				serverPW = c.readPassword("enter the new server password");
-				c.writeLine("the server password was updated");
+				serverPW = this.c.readPassword("enter the new server password");
+				this.c.writeLine("the server password was updated");
 			}
 			case "remove" -> {
 				if (serverPW == null) {
-					c.writeLine("there is no server password I could remove");
+					this.c.writeLine("there is no server password I could remove");
 					return;
 				}
 				serverPW = null;
 			}
 			case "remove-no-fail" -> serverPW = null;
-			default -> c.writeLine("unknown argument: " + args.get(i));
+			default -> this.c.writeLine("unknown argument: " + args.get(i));
 			}
 		}
 	}
@@ -307,18 +329,18 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdSetPW(List<String> args) {
 		if (args.size() == 1) {
 			switch (ask("set [y]our password" + (usr instanceof RootUser ? ", [s]omeones password" : "") + " or do [n]othing? ",
-					usr instanceof RootUser ? "ysn" : "yn")) {
+				usr instanceof RootUser ? "ysn" : "yn")) {
 			case 'y' -> setMyPW();
 			case 's' -> {
-				String name = c.readLine("enter now the username of the given user: ");
+				String name = this.c.readLine("enter now the username of the given user: ");
 				User   user = ((RootUser) usr).get(name);
 				if (user == null) {
-					c.writeLine("the user '" + name + "' could not be found");
+					this.c.writeLine("the user '" + name + "' could not be found");
 					return;
 				}
-				char[] npw = c.readPassword("enter now the new password of the user: ");
+				char[] npw = this.c.readPassword("enter now the new password of the user: ");
 				((RootUser) usr).changePW(user, npw);
-				c.writeLine("the password of the user '" + name + "' changed");
+				this.c.writeLine("the password of the user '" + name + "' changed");
 			}
 			case 'n' -> {/**/}
 			default -> throw new AssertionError("illegal return value from ask");
@@ -328,19 +350,19 @@ public class SquareConquererCUI implements Runnable {
 		for (int i = 1; i < args.size(); i++) {
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
-				c.writeLine("setpw help:");
-				c.writeLine("without args: prompt whoses password should be changed and then change the password");
-				c.writeLine("args:");
-				c.writeLine(HELP + ": print this message");
-				c.writeLine("set/of <USERNAME>: prompt for the new password of USERNAME");
-				c.writeLine("me: prompt for your new password");
-				c.writeLine("  note, that if you are connected to an server, that connection will become invalid");
-				c.writeLine("<USERNAME>: prompt for the new password of USERNAME");
-				c.writeLine("  note, that if the username is 'set' or 'me' they are triggered instead");
+				this.c.writeLine("setpw help:");
+				this.c.writeLine("without args: prompt whoses password should be changed and then change the password");
+				this.c.writeLine("args:");
+				this.c.writeLine(HELP + ": print this message");
+				this.c.writeLine("set/of <USERNAME>: prompt for the new password of USERNAME");
+				this.c.writeLine("me: prompt for your new password");
+				this.c.writeLine("  note, that if you are connected to an server, that connection will become invalid");
+				this.c.writeLine("<USERNAME>: prompt for the new password of USERNAME");
+				this.c.writeLine("  note, that if the username is 'set' or 'me' they are triggered instead");
 			}
 			case "set", "of" -> {
 				if (++i >= args.size()) {
-					c.writeLine("there are not enugh arguments for the set/of argument");
+					this.c.writeLine("there are not enugh arguments for the set/of argument");
 					return;
 				}
 				setPW(args.get(i));
@@ -355,7 +377,7 @@ public class SquareConquererCUI implements Runnable {
 		if (arg.equals(username) || arg.equals(usr == null ? RootUser.ROOT_NAME : usr.name())) {
 			setMyPW();
 		} else if (!(usr instanceof RootUser root)) {
-			c.writeLine("this is not your username and you are not root");
+			this.c.writeLine("this is not your username and you are not root");
 		} else {
 			setOtherPW(arg, root);
 		}
@@ -364,15 +386,15 @@ public class SquareConquererCUI implements Runnable {
 	private void setOtherPW(String name, RootUser root) {
 		User user = root.get(name);
 		if (user == null) {
-			c.writeLine("the user '" + name + "' could not be found");
+			this.c.writeLine("the user '" + name + "' could not be found");
 		}
-		char[] npw = c.readPassword("enter now the new password of the user: ");
+		char[] npw = this.c.readPassword("enter now the new password of the user: ");
 		((RootUser) usr).changePW(user, npw);
-		c.writeLine("the password of the user '" + name + "' changed");
+		this.c.writeLine("the password of the user '" + name + "' changed");
 	}
 	
 	private void setMyPW() {
-		char[] pw = c.readPassword("enter your new password: ");
+		char[] pw = this.c.readPassword("enter your new password: ");
 		if (username != null) {
 			usr = User.create(username, pw);
 		} else if (usr == null) {
@@ -380,7 +402,7 @@ public class SquareConquererCUI implements Runnable {
 		} else {
 			usr.changePassword(pw);
 		}
-		c.writeLine("your password was changed");
+		this.c.writeLine("your password was changed");
 	}
 	
 	private void cmdServer(List<String> args) {
@@ -391,35 +413,35 @@ public class SquareConquererCUI implements Runnable {
 		for (int i = 1; i < args.size(); i++) {
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
-				c.writeLine("server help:");
-				c.writeLine("base commands:");
-				c.writeLine("  status: print an message indicating if you are running a server/are connected to a server or nothing of it");
-				c.writeLine("remote server commands:");
-				c.writeLine("  connect <SERVER_ADDRESS>: connect to the given server");
-				c.writeLine("  disconnect: disconnect from the server you are currently connected to");
-				c.writeLine("your server commands:");
-				c.writeLine("  start [PORT]: start your own server");
-				c.writeLine("    use minus ('-') instead of PORT to use the defaul port " + Connection.DEFAULT_PORT);
-				c.writeLine("    if the loaded world is no root world, accepted connections will not get an user world, but the direct world");
-				c.writeLine("    you need to be logged in as root");
-				c.writeLine("  stop: stop your own server");
+				this.c.writeLine("server help:");
+				this.c.writeLine("base commands:");
+				this.c.writeLine("  status: print an message indicating if you are running a server/are connected to a server or nothing of it");
+				this.c.writeLine("remote server commands:");
+				this.c.writeLine("  connect <SERVER_ADDRESS>: connect to the given server");
+				this.c.writeLine("  disconnect: disconnect from the server you are currently connected to");
+				this.c.writeLine("your server commands:");
+				this.c.writeLine("  start [PORT]: start your own server");
+				this.c.writeLine("    use minus ('-') instead of PORT to use the defaul port " + Connection.DEFAULT_PORT);
+				this.c.writeLine("    if the loaded world is no root world, accepted connections will not get an user world, but the direct world");
+				this.c.writeLine("    you need to be logged in as root");
+				this.c.writeLine("  stop: stop your own server");
 			}
 			case "status" -> {
 				if (serverThread != null) {
-					c.writeLine("the server thread is currently running");
+					this.c.writeLine("the server thread is currently running");
 				} else if (world instanceof RemoteWorld) {
-					c.writeLine("your loaded world is a remote world");
+					this.c.writeLine("your loaded world is a remote world");
 				} else {
-					c.writeLine("it seems that there is no server running and your world does not seem to be connected to some server");
+					this.c.writeLine("it seems that there is no server running and your world does not seem to be connected to some server");
 				}
 			}
 			case "connect" -> {
 				if (++i >= args.size()) {
-					c.writeLine("there are not enugh arguments for the connect argument");
+					this.c.writeLine("there are not enugh arguments for the connect argument");
 					return;
 				}
 				if (usr == null) {
-					c.writeLine("you are not logged in, retry after you logged in (look at " + CMD_SETPW + " and " + CMD_USERNAME + ')');
+					this.c.writeLine("you are not logged in, retry after you logged in (look at " + CMD_SETPW + " and " + CMD_USERNAME + ')');
 					return;
 				}
 				int    port = Connection.DEFAULT_PORT;
@@ -430,7 +452,7 @@ public class SquareConquererCUI implements Runnable {
 						port = Integer.parseInt(addr.substring(li + 1));
 						addr = addr.substring(1, li - 1);
 					} catch (NumberFormatException e) {
-						c.writeLine("could not parse the port: " + e.toString());
+						this.c.writeLine("could not parse the port: " + e.toString());
 						return;
 					}
 				}
@@ -443,39 +465,39 @@ public class SquareConquererCUI implements Runnable {
 					}
 					world = new RemoteWorld(conn);
 				} catch (IOException e) {
-					c.writeLine("error while connecting: " + e.toString());
+					this.c.writeLine("error while connecting: " + e.toString());
 					return;
 				}
 			}
 			case "disconnect" -> {
 				if (!(world instanceof RemoteWorld rw)) {
-					c.writeLine("I don't know any server connection");
+					this.c.writeLine("I don't know any server connection");
 					return;
 				}
 				world = null;
 				try {
 					rw.close();
-					c.writeLine("closed old remote world successfully");
+					this.c.writeLine("closed old remote world successfully");
 				} catch (IOException e) {
-					c.writeLine("error while closing: (proceed anyway, do not retry) " + e.toString());
+					this.c.writeLine("error while closing: (proceed anyway, do not retry) " + e.toString());
 				}
 			}
 			case "start" -> {
 				if (++i >= args.size()) {
-					c.writeLine("there are not enugh arguments for the start argument");
+					this.c.writeLine("there are not enugh arguments for the start argument");
 					return;
 				}
 				synchronized (this) {
 					if (serverThread != null) {
-						c.writeLine("I am already running an server");
+						this.c.writeLine("I am already running an server");
 						return;
 					}
 					if (world == null) {
-						c.writeLine("there is no world loaded");
+						this.c.writeLine("there is no world loaded");
 						return;
 					}
 					if (!(world instanceof RootWorld rw)) {
-						c.writeLine("your loaded world is no root world");
+						this.c.writeLine("your loaded world is no root world");
 						return;
 					}
 					try {
@@ -488,13 +510,13 @@ public class SquareConquererCUI implements Runnable {
 											try {
 												Connection.ServerAccept.accept(port, rw, (conn, sok) -> {
 																	if (sok == null) {
-																		c.writeLine("the user '" + conn.modCnt() + "' disconnected");
+																		this.c.writeLine("the user '" + conn.modCnt() + "' disconnected");
 																	} else {
-																		c.writeLine("the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress());
+																		this.c.writeLine("the user '" + conn.modCnt() + "' logged in from " + sok.getInetAddress());
 																	}
 																}, cs, spw);
 											} catch (IOException e) {
-												c.writeLine("error at the server thread: " + e.toString());
+												this.c.writeLine("error at the server thread: " + e.toString());
 											} finally {
 												synchronized (SquareConquererCUI.this) {
 													if (serverThread == Thread.currentThread()) {
@@ -504,9 +526,9 @@ public class SquareConquererCUI implements Runnable {
 												}
 											}
 										});
-						c.writeLine("started the server thread");
+						this.c.writeLine("started the server thread");
 					} catch (NumberFormatException e) {
-						c.writeLine("error parsing the port: " + e.toString());
+						this.c.writeLine("error parsing the port: " + e.toString());
 						return;
 					}
 				}
@@ -514,19 +536,19 @@ public class SquareConquererCUI implements Runnable {
 			case "stop" -> {
 				Thread st = serverThread;
 				if (st == null) {
-					c.writeLine("there seems to be no server running");
+					this.c.writeLine("there seems to be no server running");
 					return;
 				}
 				st.interrupt();
 				try {
 					st.join(1000L);
 				} catch (InterruptedException e) {
-					c.writeLine("I was interrupted: " + e.toString());
+					this.c.writeLine("I was interrupted: " + e.toString());
 				}
 				if (st.isAlive()) {
-					c.writeLine("I told the server thread to stop");
+					this.c.writeLine("I told the server thread to stop");
 				} else {
-					c.writeLine("the server stopped");
+					this.c.writeLine("the server stopped");
 				}
 				Map<User, Connection> cs = connects;
 				if (cs != null) {
@@ -540,7 +562,7 @@ public class SquareConquererCUI implements Runnable {
 					}
 				}
 			}
-			default -> c.writeLine("unknown argument: " + args.get(i));
+			default -> this.c.writeLine("unknown argument: " + args.get(i));
 			}
 		}
 	}
@@ -548,7 +570,7 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdServerNoArgs() {
 		Thread st = serverThread;
 		if (st != null) {
-			c.writeLine("the server is currently running");
+			this.c.writeLine("the server is currently running");
 			if (ask("dou you want to [c]lose the server [n]othing?", "cn") == 'c') {
 				st.interrupt();
 				try {
@@ -557,13 +579,13 @@ public class SquareConquererCUI implements Runnable {
 					e.printStackTrace();
 				}
 				if (st.isAlive()) {
-					c.writeLine("I told the server thread to stop");
+					this.c.writeLine("I told the server thread to stop");
 				} else {
-					c.writeLine("stopped the server, all remote connections should be closed now");
+					this.c.writeLine("stopped the server, all remote connections should be closed now");
 				}
 			}
 		} else if (world instanceof RemoteWorld rw) {
-			c.writeLine("you are currently connected to a server");
+			this.c.writeLine("you are currently connected to a server");
 			if (ask("dou you want to [d]isconnect or do [n]othing?", "dn") == 'd') {
 				World nw = null;
 				if (ask("dou you want to contain your current world in build mode? ([y]es|[n]o)", "yn") == 'y') {
@@ -579,22 +601,22 @@ public class SquareConquererCUI implements Runnable {
 				}
 				try {
 					rw.close();
-					c.writeLine("closed old world successfully");
+					this.c.writeLine("closed old world successfully");
 				} catch (IOException e) {
-					c.writeLine("error while closing: (proceed anyway, do not retry) " + e.toString());
+					this.c.writeLine("error while closing: (proceed anyway, do not retry) " + e.toString());
 				}
 				world = nw;
 			}
 		} else if (usr == null) {
-			c.writeLine("you are not logged in, retry after you logged in (take a look at the " + CMD_SETPW + " and " + CMD_USERNAME + " commands)");
+			this.c.writeLine("you are not logged in, retry after you logged in (take a look at the " + CMD_SETPW + " and " + CMD_USERNAME + " commands)");
 		} else {
 			switch (ask("do you want to [c]onnect to a server" + (world instanceof RootWorld ? ", [s]tart a server" : "") + " or do [n]othing?",
-					world instanceof RootWorld ? "csn" : "cn")) {
+				world instanceof RootWorld ? "csn" : "cn")) {
 			case 'c' -> {
 				if (world != null && ask("if you proceed you current world will be discarded. ([p]rocced/[c]ancel)? ", "pc") == 'c') {
 					return;
 				}
-				String host = c.readLine("type now the serverhost: ").trim();
+				String host = this.c.readLine("type now the serverhost: ").trim();
 				int    port = Connection.DEFAULT_PORT;
 				int    li   = host.lastIndexOf(':');
 				if (li != -1 && li - 1 == host.lastIndexOf(']') && host.charAt(0) == '[') {
@@ -602,7 +624,7 @@ public class SquareConquererCUI implements Runnable {
 						port = Integer.parseInt(host.substring(li + 1));
 						host = host.substring(1, li - 1);
 					} catch (NumberFormatException e) {
-						c.writeLine("error while parsing the port: " + e.toString());
+						this.c.writeLine("error while parsing the port: " + e.toString());
 						return;
 					}
 				}
@@ -616,14 +638,14 @@ public class SquareConquererCUI implements Runnable {
 						conn = Connection.ClientConnect.connect(host, port, usr);
 					}
 					world = new RemoteWorld(conn);
-					c.writeLine("connected successful to " + host + " (at port " + port + ')');
+					this.c.writeLine("connected successful to " + host + " (at port " + port + ')');
 				} catch (IOException e) {
-					c.writeLine("error: " + e.toString());
+					this.c.writeLine("error: " + e.toString());
 				}
 			}
 			case 's' -> {
 				RootWorld rw      = (RootWorld) world;
-				String    portStr = c.readLine("enter now the port on which the server should listen (default is " + Connection.DEFAULT_PORT + "): ").trim();
+				String    portStr = this.c.readLine("enter now the port on which the server should listen (default is " + Connection.DEFAULT_PORT + "): ").trim();
 				int       port    = portStr.isEmpty() ? Connection.DEFAULT_PORT : Integer.parseInt(portStr);
 				char[]    sp      = serverPW;
 				serverPW = null;
@@ -635,16 +657,16 @@ public class SquareConquererCUI implements Runnable {
 						connects = cs0;
 						Connection.ServerAccept.accept(port, rw, (conn, sok) -> {
 							if (sok == null) {
-								c.writeLine("the user '" + conn.usr.name() + "' disconnected");
+								this.c.writeLine("the user '" + conn.usr.name() + "' disconnected");
 							} else {
-								c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
+								this.c.writeLine("the user '" + conn.usr.name() + "' logged in from " + sok.getInetAddress());
 							}
 						}, cs0, sp);
 					} catch (IOException e) {
-						c.writeLine("error on server thread: " + e.toString());
+						this.c.writeLine("error on server thread: " + e.toString());
 					}
 				});
-				c.writeLine("started server");
+				this.c.writeLine("started server");
 			}
 			case 'n' -> {/**/}
 			default -> throw new AssertionError("illegal return value from ask");
@@ -660,97 +682,97 @@ public class SquareConquererCUI implements Runnable {
 		for (int i = 1; i < args.size(); i++) {
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
-				c.writeLine(CMD_WORLD + " help: change or display the world");
-				c.writeLine("base commands: (those work always)");
-				c.writeLine("  " + HELP + ": print this message");
-				c.writeLine("  load-all <SAVE_FILE>: load everything from the file");
-				c.writeLine("    the loaded world will be in root mode");
-				c.writeLine("    if there is no user this operation will fail");
-				c.writeLine("    if the user is currently not root, it will be after this operation");
-				c.writeLine("    if the user already is root, all subusers will be deleted");
-				c.writeLine("    the SAVE_FILE has to be created with save-all or save-all-force");
-				c.writeLine("  load <SAVE_FILE>: load other users and world from the file");
-				c.writeLine("    the loaded world will be in build mode");
-				c.writeLine("    if there is no user this operation will fail");
-				c.writeLine("    if the user is currently not root, it will be after this operation");
-				c.writeLine("    if the user already is root, all subusers will be deleted");
-				c.writeLine("    the SAVE_FILE has to be created with save or save-force");
-				c.writeLine("  create <X-LEN/WIDTH> <Y-LEN/HEIGHT>: create a new build world with the given sizes");
-				c.writeLine("    note that this command needs you to be logged in");
-				c.writeLine("    note that this command will convert you to a new root user");
-				c.writeLine("    the newly created world will be in build mode");
-				c.writeLine("simple commands: (work, when there is an world)");
-				c.writeLine("  print or print.types: print all tile types of the world");
-				c.writeLine("  print.resources: print all resources of the world");
-				c.writeLine("  tile <X> <Y>: print the tile at the given coordinates");
-				c.writeLine("  to-build: convert the world to a build world");
-				c.writeLine("  save <FILE>: save the current world to the given file");
-				c.writeLine("  save-force <FILE>: like save, but do not ask if the file already exist");
-				c.writeLine("root world commands: (world needs to be in root mode)");
-				c.writeLine("  save-all <FILE>: save everything to the given file");
-				c.writeLine("  save-all-force <FILE>: like save-all, but do not ask if the file already exist");
-				c.writeLine("build world commands: (world needs to be in build mode)");
-				c.writeLine("  build: convert the world to a root world");
-				c.writeLine("  tile.type <TYPE> <X> <Y>: set the type of the given tile");
-				c.writeLine("    valid TYPE values: water sand grass forest swamp mountain not-explored");
-				c.writeLine("    [sand grass forest swamp] accept the '+hill' suffix");
-				c.writeLine("    [water] accepts the '+deep' suffix");
-				c.writeLine("    all types except of not-explored accept the '+normal' suffix, which is just an alias for no suffix");
-				c.writeLine("    if there is only a suffix given it will replace the current suffix (if this is valid)");
-				c.writeLine("  tile.resource <RESOURCE> <X> <Y>: set the resource of the given tile");
-				c.writeLine("    valid RESOURCE values: none gold iron coal");
-				c.writeLine("  fill-random: all tiles with type not-explored with random values");
-				c.writeLine("    note that the potential existing resource values of these types will be randomly overwritten");
+				this.c.writeLine(CMD_WORLD + " help: change or display the world");
+				this.c.writeLine("base commands: (those work always)");
+				this.c.writeLine("  " + HELP + ": print this message");
+				this.c.writeLine("  load-all <SAVE_FILE>: load everything from the file");
+				this.c.writeLine("    the loaded world will be in root mode");
+				this.c.writeLine("    if there is no user this operation will fail");
+				this.c.writeLine("    if the user is currently not root, it will be after this operation");
+				this.c.writeLine("    if the user already is root, all subusers will be deleted");
+				this.c.writeLine("    the SAVE_FILE has to be created with save-all or save-all-force");
+				this.c.writeLine("  load <SAVE_FILE>: load other users and world from the file");
+				this.c.writeLine("    the loaded world will be in build mode");
+				this.c.writeLine("    if there is no user this operation will fail");
+				this.c.writeLine("    if the user is currently not root, it will be after this operation");
+				this.c.writeLine("    if the user already is root, all subusers will be deleted");
+				this.c.writeLine("    the SAVE_FILE has to be created with save or save-force");
+				this.c.writeLine("  create <X-LEN/WIDTH> <Y-LEN/HEIGHT>: create a new build world with the given sizes");
+				this.c.writeLine("    note that this command needs you to be logged in");
+				this.c.writeLine("    note that this command will convert you to a new root user");
+				this.c.writeLine("    the newly created world will be in build mode");
+				this.c.writeLine("simple commands: (work, when there is an world)");
+				this.c.writeLine("  print or print.types: print all tile types of the world");
+				this.c.writeLine("  print.resources: print all resources of the world");
+				this.c.writeLine("  tile <X> <Y>: print the tile at the given coordinates");
+				this.c.writeLine("  to-build: convert the world to a build world");
+				this.c.writeLine("  save <FILE>: save the current world to the given file");
+				this.c.writeLine("  save-force <FILE>: like save, but do not ask if the file already exist");
+				this.c.writeLine("root world commands: (world needs to be in root mode)");
+				this.c.writeLine("  save-all <FILE>: save everything to the given file");
+				this.c.writeLine("  save-all-force <FILE>: like save-all, but do not ask if the file already exist");
+				this.c.writeLine("build world commands: (world needs to be in build mode)");
+				this.c.writeLine("  build: convert the world to a root world");
+				this.c.writeLine("  tile.type <TYPE> <X> <Y>: set the type of the given tile");
+				this.c.writeLine("    valid TYPE values: water sand grass forest swamp mountain not-explored");
+				this.c.writeLine("    [sand grass forest swamp] accept the '+hill' suffix");
+				this.c.writeLine("    [water] accepts the '+deep' suffix");
+				this.c.writeLine("    all types except of not-explored accept the '+normal' suffix, which is just an alias for no suffix");
+				this.c.writeLine("    if there is only a suffix given it will replace the current suffix (if this is valid)");
+				this.c.writeLine("  tile.resource <RESOURCE> <X> <Y>: set the resource of the given tile");
+				this.c.writeLine("    valid RESOURCE values: none gold iron coal");
+				this.c.writeLine("  fill-random: all tiles with type not-explored with random values");
+				this.c.writeLine("    note that the potential existing resource values of these types will be randomly overwritten");
 			}
 			case "load-all" -> {
 				if (++i >= args.size()) {
-					c.writeLine("not enugh args for the load argument");
+					this.c.writeLine("not enugh args for the load argument");
 					return;
 				}
 				Path p = Path.of(args.get(i));
 				if (!Files.exists(p)) {
-					c.writeLine("the file does not exist");
+					this.c.writeLine("the file does not exist");
 					return;
 				}
 				if (!Files.isRegularFile(p)) {
-					c.writeLine("the path does not refer to a regular file");
+					this.c.writeLine("the path does not refer to a regular file");
 					return;
 				}
 				if (usr == null) {
-					c.writeLine("there is no user logged in");
+					this.c.writeLine("there is no user logged in");
 					return;
 				}
 				if (!(usr instanceof RootUser root) || !root.users().isEmpty()) {
-					c.writeLine("changed to root user");
+					this.c.writeLine("changed to root user");
 				}
 				usr      = usr.makeRoot();
 				username = null;
 				try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 					world = RootWorld.loadEverything(conn);
 				} catch (IOException e) {
-					c.writeLine("error: " + e.toString());
+					this.c.writeLine("error: " + e.toString());
 				}
 			}
 			case "load" -> {
 				if (++i >= args.size()) {
-					c.writeLine("not enugh args for the load argument");
+					this.c.writeLine("not enugh args for the load argument");
 					return;
 				}
 				Path p = Path.of(args.get(i));
 				if (!Files.exists(p)) {
-					c.writeLine("the file does not exist");
+					this.c.writeLine("the file does not exist");
 					return;
 				}
 				if (!Files.isRegularFile(p)) {
-					c.writeLine("the path does not refer to a regular file");
+					this.c.writeLine("the path does not refer to a regular file");
 					return;
 				}
 				if (usr == null) {
-					c.writeLine("there is no user logged in");
+					this.c.writeLine("there is no user logged in");
 					return;
 				}
 				if (!(usr instanceof RootUser root) || !root.users().isEmpty()) {
-					c.writeLine("changed to root user");
+					this.c.writeLine("changed to root user");
 				}
 				usr      = usr.makeRoot();
 				username = null;
@@ -758,19 +780,19 @@ public class SquareConquererCUI implements Runnable {
 					((RootUser) usr).load(conn);
 					Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) usr).users());
 					world = RootWorld.Builder.createBuilder((RootUser) usr, tiles);
-					c.writeLine("loaded world and users successfully from the file");
+					this.c.writeLine("loaded world and users successfully from the file");
 				} catch (IOException e) {
-					c.writeLine("error: " + e.toString());
+					this.c.writeLine("error: " + e.toString());
 				}
 			}
 			case "create" -> {
 				if (usr == null) {
-					c.writeLine("you need to be logged in for the create operation");
+					this.c.writeLine("you need to be logged in for the create operation");
 					return;
 				}
 				i += 2;
 				if (i >= args.size()) {
-					c.writeLine("not enugh arguments for create <xlen> <ylen>");
+					this.c.writeLine("not enugh arguments for create <xlen> <ylen>");
 					return;
 				}
 				int xlen;
@@ -779,14 +801,14 @@ public class SquareConquererCUI implements Runnable {
 					xlen = Integer.parseInt(args.get(i - 1));
 					ylen = Integer.parseInt(args.get(i));
 				} catch (NumberFormatException nfe) {
-					c.writeLine("could not parse the world size: <" + args.get(i - 1) + "> <" + args.get(i) + "> error: " + nfe);
+					this.c.writeLine("could not parse the world size: <" + args.get(i - 1) + "> <" + args.get(i) + "> error: " + nfe);
 					return;
 				}
 				if (world instanceof RemoteWorld rw) {
 					try {
 						rw.close();
 					} catch (IOException e) {
-						c.writeLine("error while closing remote world: (I will ignore the error and proceed now)");
+						this.c.writeLine("error while closing remote world: (I will ignore the error and proceed now)");
 						e.printStackTrace();
 					}
 				}
@@ -794,7 +816,7 @@ public class SquareConquererCUI implements Runnable {
 				Thread st = serverThread;
 				while (st != null) {
 					st.interrupt();
-					c.writeLine("close now the server thread");
+					this.c.writeLine("close now the server thread");
 					try {
 						st.join(1000L);
 					} catch (InterruptedException e) {
@@ -821,24 +843,24 @@ public class SquareConquererCUI implements Runnable {
 			case "tile" -> {
 				i += 2;
 				if (i >= args.size()) {
-					c.writeLine("not enugh arguments for the tile argument");
+					this.c.writeLine("not enugh arguments for the tile argument");
 					return;
 				}
 				if (world == null) {
-					c.writeLine("there is no world, so I can not print a tile from the world");
+					this.c.writeLine("there is no world, so I can not print a tile from the world");
 					return;
 				}
 				int x = Integer.parseInt(args.get(i - 1));
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
-					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					this.c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
 					return;
 				}
 				writeTile(x, y);
 			}
 			case "to-build" -> {
 				if (world == null) {
-					c.writeLine("there is no world, so I can't convert it");
+					this.c.writeLine("there is no world, so I can't convert it");
 					return;
 				}
 				World old = world;
@@ -859,19 +881,19 @@ public class SquareConquererCUI implements Runnable {
 					}
 				}
 				world = b;
-				c.writeLine("successfully converted the current world to a build world");
+				this.c.writeLine("successfully converted the current world to a build world");
 			}
 			case "save-all", "save-all-force" -> {
 				if (++i >= args.size()) {
-					c.writeLine("not enugh arguments for the save argument");
+					this.c.writeLine("not enugh arguments for the save argument");
 					return;
 				}
 				if (world == null) {
-					c.writeLine("there is no world I can save");
+					this.c.writeLine("there is no world I can save");
 					return;
 				}
 				if (!(world instanceof RootWorld rw)) {
-					c.writeLine("the current world is not in root world");
+					this.c.writeLine("the current world is not in root world");
 					return;
 				}
 				Path p = Path.of(args.get(i));
@@ -880,18 +902,18 @@ public class SquareConquererCUI implements Runnable {
 				}
 				try (OutputStream out = Files.newOutputStream(p); Connection conn = Connection.OneWayAccept.acceptWriteOnly(out, usr)) {
 					rw.saveEverything(conn);
-					c.writeLine("saved everything in the given file");
+					this.c.writeLine("saved everything in the given file");
 				} catch (IOException e) {
-					c.writeLine("error while saving: " + e.toString());
+					this.c.writeLine("error while saving: " + e.toString());
 				}
 			}
 			case "save", "save-force" -> {
 				if (++i >= args.size()) {
-					c.writeLine("not enugh arguments for the save argument");
+					this.c.writeLine("not enugh arguments for the save argument");
 					return;
 				}
 				if (world == null) {
-					c.writeLine("there is no world I can save");
+					this.c.writeLine("there is no world I can save");
 					return;
 				}
 				Path p = Path.of(args.get(i));
@@ -907,45 +929,45 @@ public class SquareConquererCUI implements Runnable {
 						}
 					}
 					OpenWorld.saveWorld(world, conn);
-					c.writeLine("saved wolrd and users in the given file");
+					this.c.writeLine("saved wolrd and users in the given file");
 				} catch (IOException e) {
-					c.writeLine("error while saving: " + e.toString());
+					this.c.writeLine("error while saving: " + e.toString());
 				}
 			}
 			case "build" -> {
 				if (world == null) {
-					c.writeLine("there is no world, so I can't build it");
+					this.c.writeLine("there is no world, so I can't build it");
 					return;
 				}
 				if (!(world instanceof RootWorld.Builder b)) {
-					c.writeLine("the world is no build world, I can only build build worlds");
+					this.c.writeLine("the world is no build world, I can only build build worlds");
 					return;
 				}
 				try {
 					world = b.create();
-					c.writeLine("builded the current world");
+					this.c.writeLine("builded the current world");
 				} catch (IllegalStateException | NullPointerException e) {
-					c.writeLine("the build failed: " + e.toString());
+					this.c.writeLine("the build failed: " + e.toString());
 				}
 			}
 			case "tile.type" -> {
 				i += 3;
 				if (i >= args.size()) {
-					c.writeLine("not enugh arguments for the tile.type argument");
+					this.c.writeLine("not enugh arguments for the tile.type argument");
 					return;
 				}
 				if (world == null) {
-					c.writeLine("there is no world, so I can't modify it");
+					this.c.writeLine("there is no world, so I can't modify it");
 					return;
 				}
 				if (!(world instanceof RootWorld.Builder b)) {
-					c.writeLine("the world is no build world, I can only modify build worlds");
+					this.c.writeLine("the world is no build world, I can only modify build worlds");
 					return;
 				}
 				int x = Integer.parseInt(args.get(i - 1));
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
-					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					this.c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
 					return;
 				}
 				GroundType type = switch (args.get(i - 2).toLowerCase()) {
@@ -959,7 +981,7 @@ public class SquareConquererCUI implements Runnable {
 				case "+normal" -> {
 					Tile old = b.get(x, y);
 					if (old == null || old.ground == null || old.ground == GroundType.NOT_EXPLORED) {
-						c.writeLine("the current type does not accept the +normal suffix");
+						this.c.writeLine("the current type does not accept the +normal suffix");
 						yield null;
 					}
 					yield old.ground.addNormal(false, true);
@@ -968,7 +990,7 @@ public class SquareConquererCUI implements Runnable {
 				case "+deep" -> {
 					Tile old = b.get(x, y);
 					if (old == null || old.ground == null || !old.ground.isWater()) {
-						c.writeLine("the current type does not accept the +deep suffix");
+						this.c.writeLine("the current type does not accept the +deep suffix");
 						yield null;
 					}
 					yield GroundType.WATER_DEEP;
@@ -980,13 +1002,13 @@ public class SquareConquererCUI implements Runnable {
 				case "+hill" -> {
 					Tile old = b.get(x, y);
 					if (old == null || old.ground == null || !old.ground.isHill() && !old.ground.isFlat()) {
-						c.writeLine("the current type does not accept the +hill suffix");
+						this.c.writeLine("the current type does not accept the +hill suffix");
 						yield null;
 					}
 					yield old.ground.addHill(false, true);
 				}
 				default -> {
-					c.writeLine("unknown type: '" + args.get(i - 2) + '\'');
+					this.c.writeLine("unknown type: '" + args.get(i - 2) + '\'');
 					yield null;
 				}
 				};
@@ -997,21 +1019,21 @@ public class SquareConquererCUI implements Runnable {
 			case "tile.resource" -> {
 				i += 3;
 				if (i >= args.size()) {
-					c.writeLine("not enugh arguments for the tile.type argument");
+					this.c.writeLine("not enugh arguments for the tile.type argument");
 					return;
 				}
 				if (world == null) {
-					c.writeLine("there is no world, so I can't modify it");
+					this.c.writeLine("there is no world, so I can't modify it");
 					return;
 				}
 				if (!(world instanceof RootWorld.Builder b)) {
-					c.writeLine("the world is no build world, I can only modify build worlds");
+					this.c.writeLine("the world is no build world, I can only modify build worlds");
 					return;
 				}
 				int x = Integer.parseInt(args.get(i - 1));
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= world.xlen() || y < 0 || y >= world.ylen()) {
-					c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
+					this.c.writeLine("coordinate is out of bounds: (xlen=" + world.xlen() + "|ylen=" + world.ylen() + ") (x=" + x + "|y=" + y + ")");
 					return;
 				}
 				OreResourceType res = switch (args.get(i - 2).toLowerCase()) {
@@ -1020,7 +1042,7 @@ public class SquareConquererCUI implements Runnable {
 				case "iron" -> OreResourceType.IRON_ORE;
 				case "coal" -> OreResourceType.COAL_ORE;
 				default -> {
-					c.writeLine("unknown type: '" + args.get(i - 2) + '\'');
+					this.c.writeLine("unknown type: '" + args.get(i - 2) + '\'');
 					yield null;
 				}
 				};
@@ -1030,16 +1052,16 @@ public class SquareConquererCUI implements Runnable {
 			}
 			case "fill-random" -> {
 				if (world == null) {
-					c.writeLine("there is no world, so I can't modify it");
+					this.c.writeLine("there is no world, so I can't modify it");
 					return;
 				}
 				if (!(world instanceof RootWorld.Builder b)) {
-					c.writeLine("the world is no build world, I can only modify build worlds");
+					this.c.writeLine("the world is no build world, I can only modify build worlds");
 					return;
 				}
 				b.fillRandom();
 			}
-			default -> c.writeLine("unknown argument: '" + args.get(i) + '\'');
+			default -> this.c.writeLine("unknown argument: '" + args.get(i) + '\'');
 			}
 		}
 	}
@@ -1055,13 +1077,13 @@ public class SquareConquererCUI implements Runnable {
 					int ylen = readNumber("enter now the Y-Length (Height) if the World", 1, Integer.MAX_VALUE);
 					if (ylen > 0) {
 						world = new RootWorld.Builder((RootUser) usr, xlen, ylen);
-						c.writeLine("created new world");
+						this.c.writeLine("created new world");
 						if (ask("fill world with random tiles? ([y]es|[n]o): ", "yn") == 'y') {
 							((RootWorld.Builder) world).fillRandom();
-							c.writeLine("filled world with random tiles");
+							this.c.writeLine("filled world with random tiles");
 							if (ask("build world? ([y]es|[n]o): ", "yn") == 'y') {
 								world = ((RootWorld.Builder) world).create();
-								c.writeLine("world builded");
+								this.c.writeLine("world builded");
 							}
 						}
 					}
@@ -1082,9 +1104,9 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void writeTile(int x, int y) {
 		Tile tile = world.tile(x, y);
-		c.writeLine("Tile: (" + x + '|' + y + ')');
-		c.writeLine("  Type: " + tile.ground);
-		c.writeLine("  Resource: " + tile.resource);
+		this.c.writeLine("Tile: (" + x + '|' + y + ')');
+		this.c.writeLine("  Type: " + tile.ground);
+		this.c.writeLine("  Resource: " + tile.resource);
 	}
 	
 	private void cmdWorldInteractiveLoad() {
@@ -1092,7 +1114,7 @@ public class SquareConquererCUI implements Runnable {
 		do {
 			Path p;
 			do {
-				p = Path.of(c.readLine("enter now the file, which should be loaded: "));
+				p = Path.of(this.c.readLine("enter now the file, which should be loaded: "));
 			} while (retry(!Files.exists(p) || !Files.isRegularFile(p)));
 			if (!Files.exists(p) || !Files.isRegularFile(p)) {
 				break;
@@ -1101,29 +1123,29 @@ public class SquareConquererCUI implements Runnable {
 			try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
 				((RootUser) usr).load(conn);
 				Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) usr).users());
-				c.writeLine("loaded from file, build now the world");
+				this.c.writeLine("loaded from file, build now the world");
 				try {
 					world = RootWorld.Builder.create((RootUser) usr, tiles);
 				} catch (IllegalStateException e) {
-					c.writeLine("build failed: " + e.toString());
-					c.writeLine("world stays in build mode now");
+					this.c.writeLine("build failed: " + e.toString());
+					this.c.writeLine("world stays in build mode now");
 				}
 			} catch (IOException e) {
-				c.writeLine("error: " + e.toString());
+				this.c.writeLine("error: " + e.toString());
 			}
 		} while (retry(true));
 	}
 	
 	private void rootLogin(boolean askPW) {
 		if (askPW) {
-			char[] pw = c.readPassword("enter now the password");
+			char[] pw = this.c.readPassword("enter now the password");
 			if (usr != null && !(usr instanceof RootUser)) {
 				username = "";
 			}
 			usr = RootUser.create(pw);
 			if (username != null) {
 				username = null;
-				c.writeLine("changed to root user");
+				this.c.writeLine("changed to root user");
 			}
 		} else {
 			usr = usr.makeRoot();
@@ -1132,16 +1154,16 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdWorldAllTilesResources() {
 		if (world == null) {
-			c.writeLine("there is no world I can print");
+			this.c.writeLine("there is no world I can print");
 			return;
 		}
-		c.writeLine(" : no resource");
-		c.writeLine("G: gold ore");
-		c.writeLine("I: iron ore");
-		c.writeLine("C: coal ore");
+		this.c.writeLine(" : no resource");
+		this.c.writeLine("G: gold ore");
+		this.c.writeLine("I: iron ore");
+		this.c.writeLine("C: coal ore");
 		int xlen = world.xlen();
 		int ylen = world.ylen();
-		c.writeLine("world (" + xlen + '|' + ylen + "):");
+		this.c.writeLine("world (" + xlen + '|' + ylen + "):");
 		for (int y = 0; y < ylen; y++) {
 			StringBuilder b = new StringBuilder(xlen);
 			for (int x = 0; x < xlen; x++) {
@@ -1154,30 +1176,30 @@ public class SquareConquererCUI implements Runnable {
 				default -> throw new AssertionError("unknown tile resource: " + t.resource.name());
 				});
 			}
-			c.writeLine(b.toString());
+			this.c.writeLine(b.toString());
 		}
 	}
 	
 	private void cmdWorldAllTilesType() {
 		if (world == null) {
-			c.writeLine("there is no world I can print");
+			this.c.writeLine("there is no world I can print");
 			return;
 		}
-		c.writeLine("#: not explored");
-		c.writeLine("w: water");
-		c.writeLine("W: water deep");
-		c.writeLine("b: sand");
-		c.writeLine("B: sand hill");
-		c.writeLine("g: grass");
-		c.writeLine("G: grass hill");
-		c.writeLine("f: forest");
-		c.writeLine("F: forest hill");
-		c.writeLine("s: swamp");
-		c.writeLine("S: swamp hill");
-		c.writeLine("m: mountain");
+		this.c.writeLine("#: not explored");
+		this.c.writeLine("w: water");
+		this.c.writeLine("W: water deep");
+		this.c.writeLine("b: sand");
+		this.c.writeLine("B: sand hill");
+		this.c.writeLine("g: grass");
+		this.c.writeLine("G: grass hill");
+		this.c.writeLine("f: forest");
+		this.c.writeLine("F: forest hill");
+		this.c.writeLine("s: swamp");
+		this.c.writeLine("S: swamp hill");
+		this.c.writeLine("m: mountain");
 		int xlen = world.xlen();
 		int ylen = world.ylen();
-		c.writeLine("world (" + xlen + '|' + ylen + "):");
+		this.c.writeLine("world (" + xlen + '|' + ylen + "):");
 		for (int y = 0; y < ylen; y++) {
 			StringBuilder b = new StringBuilder(xlen);
 			for (int x = 0; x < xlen; x++) {
@@ -1198,7 +1220,7 @@ public class SquareConquererCUI implements Runnable {
 				default -> throw new AssertionError("unknown tile type: " + t.ground.name());
 				});
 			}
-			c.writeLine(b.toString());
+			this.c.writeLine(b.toString());
 		}
 	}
 	
@@ -1210,16 +1232,16 @@ public class SquareConquererCUI implements Runnable {
 		for (int i = 1; i < args.size(); i++) {
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
-				c.writeLine(CMD_USERNAME + " help: set or get your username");
-				c.writeLine(HELP + ": print this message");
-				c.writeLine("set <USERNAME>: set the new username");
-				c.writeLine("get: print the current username");
-				c.writeLine("without arguments, print the current username and then prompt for a new username");
+				this.c.writeLine(CMD_USERNAME + " help: set or get your username");
+				this.c.writeLine(HELP + ": print this message");
+				this.c.writeLine("set <USERNAME>: set the new username");
+				this.c.writeLine("get: print the current username");
+				this.c.writeLine("without arguments, print the current username and then prompt for a new username");
 			}
 			case "set" -> {
 				i++;
 				if (i >= args.size()) {
-					c.writeLine("not enugh arguments for the set arg");
+					this.c.writeLine("not enugh arguments for the set arg");
 					return;
 				}
 				String cur = args.get(i);
@@ -1234,9 +1256,9 @@ public class SquareConquererCUI implements Runnable {
 			case "get" -> {
 				String cur = usr == null ? username : usr.name();
 				cur = cur == null ? RootUser.ROOT_NAME : cur;
-				c.writeLine(cur);
+				this.c.writeLine(cur);
 			}
-			default -> c.writeLine("unknown argument: '" + args.get(i) + '\'');
+			default -> this.c.writeLine("unknown argument: '" + args.get(i) + '\'');
 			}
 		}
 	}
@@ -1244,9 +1266,9 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdUsernameNoArgs() {
 		String cur = usr == null ? username : usr.name();
 		if (cur != null) {
-			c.writeLine("your current username is '" + cur + '\'');
+			this.c.writeLine("your current username is '" + cur + '\'');
 		}
-		cur = c.readLine("enter your new username: ");
+		cur = this.c.readLine("enter your new username: ");
 		if (usr == null) {
 			username = RootUser.ROOT_NAME.equals(cur) ? null : cur;
 		} else if (RootUser.ROOT_NAME.equals(cur)) {
@@ -1268,15 +1290,15 @@ public class SquareConquererCUI implements Runnable {
 			for (int i = 1; i < args.size(); i++) {
 				switch (args.get(i).toLowerCase()) {
 				case HELP -> {
-					c.writeLine("Status command: help");
-					c.writeLine("without arguments, write all status types");
-					c.writeLine("with arguments:");
-					c.writeLine("  '" + HELP + "' write this message");
-					c.writeLine("  'user' write the user status");
-					c.writeLine("  'world-remote-size' update the size of the remote world and then write the world status");
-					c.writeLine("  'world-remote-all' or 'world-remote-world' update the complete remote world and then write the world status");
-					c.writeLine("  'server' write the server status");
-					c.writeLine("  'serverpw' or 'server-pw' write the server password status");
+					this.c.writeLine("Status command: help");
+					this.c.writeLine("without arguments, write all status types");
+					this.c.writeLine("with arguments:");
+					this.c.writeLine("  '" + HELP + "' write this message");
+					this.c.writeLine("  'user' write the user status");
+					this.c.writeLine("  'world-remote-size' update the size of the remote world and then write the world status");
+					this.c.writeLine("  'world-remote-all' or 'world-remote-world' update the complete remote world and then write the world status");
+					this.c.writeLine("  'server' write the server status");
+					this.c.writeLine("  'serverpw' or 'server-pw' write the server password status");
 				}
 				case "user" -> cmdStatusUser();
 				case "world" -> cmdStatusWorld();
@@ -1284,7 +1306,7 @@ public class SquareConquererCUI implements Runnable {
 				case "world-remote-all", "world-remote-world" -> cmdStatusWorldRemoteAll();
 				case "server" -> cmdStatusServer();
 				case "serverpw", "server-pw" -> cmdStatusServerPW();
-				default -> c.writeLine("unknown argument: '" + args.get(i) + "'");
+				default -> this.c.writeLine("unknown argument: '" + args.get(i) + "'");
 				}
 			}
 		}
@@ -1292,33 +1314,33 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdStatusServerPW() {
 		if (serverPW != null) {
-			c.writeLine("serverPassword: set");
+			this.c.writeLine("serverPassword: set");
 		} else {
-			c.writeLine("serverPassword: there is no server password");
+			this.c.writeLine("serverPassword: there is no server password");
 			if (serverThread != null) {
-				c.writeLine("  note that I remove my reference of the server password after starting the server");
-				c.writeLine("  only because I do not know a server password, does not mean that the server knows no password");
+				this.c.writeLine("  note that I remove my reference of the server password after starting the server");
+				this.c.writeLine("  only because I do not know a server password, does not mean that the server knows no password");
 			}
 		}
 	}
 	
 	private void cmdStatusServer() {
 		if (serverThread != null) {
-			c.writeLine("MyServer: running");
+			this.c.writeLine("MyServer: running");
 		} else {
-			c.writeLine("MyServer: there is no server");
+			this.c.writeLine("MyServer: there is no server");
 		}
 	}
 	
 	private void cmdStatusWorldRemoteAll() {
 		if (world == null || !(world instanceof RemoteWorld rw)) {
-			c.writeLine("there is no remote world");
+			this.c.writeLine("there is no remote world");
 			return;
 		}
 		try {
 			rw.updateWorld();
-			c.writeLine("World: remote world loaded");
-			c.writeLine("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
+			this.c.writeLine("World: remote world loaded");
+			this.c.writeLine("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -1326,13 +1348,13 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdStatusWorldRemoteSize() {
 		if (world == null || !(world instanceof RemoteWorld rw)) {
-			c.writeLine("there is no remote world");
+			this.c.writeLine("there is no remote world");
 			return;
 		}
 		try {
 			rw.updateWorldSize();
-			c.writeLine("World: remote world loaded");
-			c.writeLine("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
+			this.c.writeLine("World: remote world loaded");
+			this.c.writeLine("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -1341,101 +1363,101 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdStatusWorld() {
 		boolean writeBounds = true;
 		if (world == null) {
-			c.writeLine("World: there is no world");
+			this.c.writeLine("World: there is no world");
 			writeBounds = false;
 		} else if (world instanceof RootWorld) {
-			c.writeLine("World: root world loaded");
+			this.c.writeLine("World: root world loaded");
 		} else if (world instanceof RootWorld.Builder) {
-			c.writeLine("World: builder world loaded");
+			this.c.writeLine("World: builder world loaded");
 		} else if (world instanceof RemoteWorld rw) {
-			c.writeLine("World: remote world loaded");
+			this.c.writeLine("World: remote world loaded");
 			if (rw.loadedBounds()) {
-				c.writeLine("  Bounds: not loaded");
+				this.c.writeLine("  Bounds: not loaded");
 				writeBounds = false;
 			}
 		} else if (world instanceof UserWorld) {
-			c.writeLine("World: user world loaded");
+			this.c.writeLine("World: user world loaded");
 		} else {
-			c.writeLine("World: unknown world type loaded");
-			c.writeLine("  Type: " + world.getClass().getSimpleName());
+			this.c.writeLine("World: unknown world type loaded");
+			this.c.writeLine("  Type: " + world.getClass().getSimpleName());
 		}
 		if (writeBounds) {
-			c.writeLine("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
+			this.c.writeLine("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
 		}
 	}
 	
 	private void cmdStatusUser() {
 		if (usr == null) {
-			c.writeLine("User: there is no User");
+			this.c.writeLine("User: there is no User");
 			if (username != null) {
-				c.writeLine("  UserName: " + username);
+				this.c.writeLine("  UserName: " + username);
 			}
 		} else {
-			c.writeLine("User: Name: " + usr.name());
+			this.c.writeLine("User: Name: " + usr.name());
 		}
 	}
 	
 	private void cmdVersion(List<String> args) {
 		if (args.size() == 1) {
-			c.writeLine("Square Conquerer Console version: " + Settings.VERSION_STRING);
+			this.c.writeLine("Square Conquerer Console version: " + Settings.VERSION_STRING);
 		} else if (args.size() == 2 && HELP.equalsIgnoreCase(args.get(1))) {
-			c.writeLine("without args, I only write some version information and I can not do much more");
-			c.writeLine("with one argument, I write this message, when the argumentis the " + HELP + " argument");
-			c.writeLine("In all other cases I print an error message");
+			this.c.writeLine("without args, I only write some version information and I can not do much more");
+			this.c.writeLine("with one argument, I write this message, when the argumentis the " + HELP + " argument");
+			this.c.writeLine("In all other cases I print an error message");
 		} else {
-			c.writeLine("I dont know what I should do with arguments!");
+			this.c.writeLine("I dont know what I should do with arguments!");
 		}
 	}
 	
 	private void cmdHelp(List<String> args) {
 		switch (args.size()) {
 		case 1 -> {
-			c.writeLine("Square Conquerer Console " + Settings.VERSION_STRING + " help:");
-			c.writeLine("Commands:");
-			c.writeLine("  " + CMD_HELP);
-			c.writeLine("    print this message");
-			c.writeLine("  " + CMD_VERSION);
-			c.writeLine("    print version information");
-			c.writeLine("  " + CMD_STATUS);
-			c.writeLine("    print status information");
-			c.writeLine("  " + CMD_USERNAME);
-			c.writeLine("    set your username");
-			c.writeLine("  " + CMD_WORLD);
-			c.writeLine("    change or display the world");
-			c.writeLine("  " + CMD_SERVER);
-			c.writeLine("    connect to a server or start/stop your server");
-			c.writeLine("  " + CMD_SETPW);
-			c.writeLine("    change the password (your or someone others, it doesn't matter)");
-			c.writeLine("  " + CMD_SERVERPW);
-			c.writeLine("    set the server password");
-			c.writeLine("  " + CMD_QUIT);
-			c.writeLine("    quit this program");
-			c.writeLine("  " + CMD_EXIT);
-			c.writeLine("    alias for " + CMD_QUIT);
-			c.writeLine("");
-			c.writeLine("General:");
-			c.writeLine("  all comands support the " + HELP + " argument");
-			c.writeLine("  If you want further information for a specific command, ask the command");
-			c.writeLine("  or use " + CMD_HELP + " <command>");
-			c.writeLine("");
-			c.writeLine("  passwords will never be accepted in the arguments");
+			this.c.writeLine("Square Conquerer Console " + Settings.VERSION_STRING + " help:");
+			this.c.writeLine("Commands:");
+			this.c.writeLine("  " + CMD_HELP);
+			this.c.writeLine("    print this message");
+			this.c.writeLine("  " + CMD_VERSION);
+			this.c.writeLine("    print version information");
+			this.c.writeLine("  " + CMD_STATUS);
+			this.c.writeLine("    print status information");
+			this.c.writeLine("  " + CMD_USERNAME);
+			this.c.writeLine("    set your username");
+			this.c.writeLine("  " + CMD_WORLD);
+			this.c.writeLine("    change or display the world");
+			this.c.writeLine("  " + CMD_SERVER);
+			this.c.writeLine("    connect to a server or start/stop your server");
+			this.c.writeLine("  " + CMD_SETPW);
+			this.c.writeLine("    change the password (your or someone others, it doesn't matter)");
+			this.c.writeLine("  " + CMD_SERVERPW);
+			this.c.writeLine("    set the server password");
+			this.c.writeLine("  " + CMD_QUIT);
+			this.c.writeLine("    quit this program");
+			this.c.writeLine("  " + CMD_EXIT);
+			this.c.writeLine("    alias for " + CMD_QUIT);
+			this.c.writeLine("");
+			this.c.writeLine("General:");
+			this.c.writeLine("  all comands support the " + HELP + " argument");
+			this.c.writeLine("  If you want further information for a specific command, ask the command");
+			this.c.writeLine("  or use " + CMD_HELP + " <command>");
+			this.c.writeLine("");
+			this.c.writeLine("  passwords will never be accepted in the arguments");
 		}
 		case 2 -> {
 			if (CMD_HELP.equalsIgnoreCase(args.get(1))) {
-				c.writeLine("print a general help message or the help message of the argument");
+				this.c.writeLine("print a general help message or the help message of the argument");
 			} else {
 				args.set(0, args.get(1));
 				args.set(1, HELP);
 				exec(args);
 			}
 		}
-		default -> c.writeLine("either give me the name of an command as argument or no argument");
+		default -> this.c.writeLine("either give me the name of an command as argument or no argument");
 		}
 	}
 	
 	private char ask(String prompt, String validChars) {
 		while (true) {
-			String line = c.readLine(prompt).trim();
+			String line = this.c.readLine(prompt).trim();
 			if (line.isEmpty()) continue;
 			char character = line.charAt(0);
 			if (validChars.indexOf(character) == -1) continue;
@@ -1482,9 +1504,9 @@ public class SquareConquererCUI implements Runnable {
 		do {
 			if (askUsr) {
 				if (askUN) {
-					username = c.readLine("enter now your username: ");
+					username = this.c.readLine("enter now your username: ");
 				}
-				char[] pw = c.readPassword("enter now your password: ");
+				char[] pw = this.c.readPassword("enter now your password: ");
 				usr = User.create(username, pw);
 			}
 			if (usr != null) {
@@ -1496,9 +1518,9 @@ public class SquareConquererCUI implements Runnable {
 						conn = Connection.ClientConnect.connect(cst.host, cst.port, usr);
 					}
 					world = new RemoteWorld(conn);
-					c.writeLine("connected to the server, remote world created");
+					this.c.writeLine("connected to the server, remote world created");
 				} catch (IOException e) {
-					c.writeLine("could not connect to the server: " + e.toString());
+					this.c.writeLine("could not connect to the server: " + e.toString());
 				}
 			}
 		} while (retry(world == null));
@@ -1508,7 +1530,7 @@ public class SquareConquererCUI implements Runnable {
 		if (world == null) {
 			boolean load;
 			while (true) {
-				String line = c.readLine("[l]oad world or create a [n]ew world?").trim();
+				String line = this.c.readLine("[l]oad world or create a [n]ew world?").trim();
 				if (line.isEmpty()) {
 					continue;
 				}
@@ -1536,13 +1558,13 @@ public class SquareConquererCUI implements Runnable {
 									try {
 										Connection.ServerAccept.accept(sst.port, rw, (conn, sok) -> {
 															if (sok == null) {
-																c.writeLine("the user '" + conn.usr.name() + "' disskonnected");
+																this.c.writeLine("the user '" + conn.usr.name() + "' disskonnected");
 															} else {
-																c.writeLine("accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")");
+																this.c.writeLine("accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")");
 															}
 														}, cs, serverPW);
 									} catch (IOException e) {
-										c.writeLine("error on server thread: " + e.toString());
+										this.c.writeLine("error on server thread: " + e.toString());
 									} finally {
 										synchronized (SquareConquererCUI.this) {
 											if (serverThread == Thread.currentThread()) {
@@ -1552,7 +1574,7 @@ public class SquareConquererCUI implements Runnable {
 										}
 									}
 								});
-				c.writeLine("the server should now accept connections");
+				this.c.writeLine("the server should now accept connections");
 			}
 		}
 	}
@@ -1575,19 +1597,19 @@ public class SquareConquererCUI implements Runnable {
 		do {
 			Path loadFile;
 			do {
-				loadFile = Path.of(c.readLine("enter now the path of the save-file: "));
+				loadFile = Path.of(this.c.readLine("enter now the path of the save-file: "));
 				if (!Files.exists(loadFile)) {
-					c.writeLine("the file '" + loadFile + "' does not exist");
+					this.c.writeLine("the file '" + loadFile + "' does not exist");
 					continue;
 				}
 				if (!Files.isRegularFile(loadFile)) {
-					c.writeLine("the pat '" + loadFile + "' does not refer to a file");
+					this.c.writeLine("the pat '" + loadFile + "' does not refer to a file");
 					continue;
 				}
 				break;
 			} while (retry(true));
 			if (askPW) {
-				char[] pw = c.readPassword("enter now the password: ");
+				char[] pw = this.c.readPassword("enter now the password: ");
 				usr = RootUser.create(pw);
 			} else {
 				usr = usr.makeRoot();
@@ -1600,14 +1622,14 @@ public class SquareConquererCUI implements Runnable {
 		boolean askUsr = usr == null;
 		do {
 			if (askUsr) {
-				c.writeLine("load now the file '" + loadFile + "'");
-				char[] pw = c.readPassword("enter the password: ");
+				this.c.writeLine("load now the file '" + loadFile + "'");
+				char[] pw = this.c.readPassword("enter the password: ");
 				if (username != null && !RootUser.ROOT_NAME.equals(username)) {
-					c.writeLine("changed to root user");
+					this.c.writeLine("changed to root user");
 				}
 				usr = RootUser.create(pw);
 			} else if (!(usr instanceof RootUser)) {
-				c.writeLine("changed to root user");
+				this.c.writeLine("changed to root user");
 				usr = usr.makeRoot();
 			} else { // reset other users
 				usr = usr.makeRoot();
@@ -1618,11 +1640,11 @@ public class SquareConquererCUI implements Runnable {
 	private int readNumber(String prompt, int min, int max) {
 		int val = -1;
 		do {
-			String line = c.readLine(prompt);
+			String line = this.c.readLine(prompt);
 			try {
 				val = Integer.parseInt(line);
 			} catch (NumberFormatException e) {
-				c.writeLine("error: " + e.toString());
+				this.c.writeLine("error: " + e.toString());
 			}
 		} while (retry(val < min || val > max, "the minimum number is " + min + (max != Integer.MAX_VALUE ? " and the maximum number is " + max : "")));
 		return val;
@@ -1635,7 +1657,7 @@ public class SquareConquererCUI implements Runnable {
 	private boolean retry(boolean failed, String errorPrompt) {
 		if (!failed) return false;
 		while (true) {
-			String line = c.readLine(errorPrompt).trim();
+			String line = this.c.readLine(errorPrompt).trim();
 			if (line.isEmpty()) continue;
 			switch (line.charAt(0)) {
 			case 'y', 'Y':
@@ -1657,15 +1679,15 @@ public class SquareConquererCUI implements Runnable {
 			try {
 				world = ((RootWorld.Builder) world).create();
 			} catch (IllegalStateException ise) {
-				c.writeLine("could not build the world: " + ise);
-				c.writeLine("the current world is in building mode");
+				this.c.writeLine("could not build the world: " + ise);
+				this.c.writeLine("the current world is in building mode");
 			}
 			username = null;
-			c.writeLine("world successful loaded");
+			this.c.writeLine("world successful loaded");
 			return false;
 		} catch (IOException e) {
 			usr = null;
-			c.writeLine("error: " + e.toString());
+			this.c.writeLine("error: " + e.toString());
 			return true;
 		}
 	}

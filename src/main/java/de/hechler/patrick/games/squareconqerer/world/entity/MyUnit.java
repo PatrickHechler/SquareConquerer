@@ -19,14 +19,42 @@ package de.hechler.patrick.games.squareconqerer.world.entity;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.world.resource.Resource;
 
+/**
+ * this class provides an abstract implementation of the {@link Building} interface for extern use
+ * 
+ * @author Patrick Hechler
+ */
 public abstract non-sealed class MyUnit extends UnitImpl {
 	
-	public MyUnit(int x, int y, User usr, int maxlives, int lives, int viewRange, int carryMaxAmount, int carryAmount, Resource res) {
-		super(x, y, usr, maxlives, lives, viewRange, carryMaxAmount, carryAmount, res);
-	}
-	
+	/**
+	 * create a new unit with the given values
+	 * 
+	 * @param x              the {@link #x()} coordinate
+	 * @param y              the {@link #y()} coordinate
+	 * @param usr            the {@link #owner()}
+	 * @param maxlives       the {@link #maxLives()} and {@link #lives()}
+	 * @param viewRange      the {@link #viewRange()}
+	 * @param carryMaxAmount the {@link #carryMaxAmount()}
+	 */
 	public MyUnit(int x, int y, User usr, int maxlives, int viewRange, int carryMaxAmount) {
 		super(x, y, usr, maxlives, viewRange, carryMaxAmount);
+	}
+	
+	/**
+	 * create a new unit with the given values
+	 * 
+	 * @param x              the {@link #x()} coordinate
+	 * @param y              the {@link #y()} coordinate
+	 * @param usr            the {@link #owner()}
+	 * @param maxlives       the {@link #maxLives()}
+	 * @param lives          the {@link #lives()}
+	 * @param viewRange      the {@link #viewRange()}
+	 * @param carryMaxAmount the {@link #carryMaxAmount()}
+	 * @param carryAmount    the {@link #carryAmount()}
+	 * @param res            the {@link #carryRes()}
+	 */
+	public MyUnit(int x, int y, User usr, int maxlives, int lives, int viewRange, int carryMaxAmount, int carryAmount, Resource res) {
+		super(x, y, usr, maxlives, lives, viewRange, carryMaxAmount, carryAmount, res);
 	}
 	
 }

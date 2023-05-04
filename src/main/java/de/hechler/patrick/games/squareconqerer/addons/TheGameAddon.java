@@ -99,14 +99,14 @@ public final class TheGameAddon extends SCAddon implements AddonDefaults {
 						new SCPageEntry.TextEntry("\tYou found a bug, please report it: "), //
 						new SCPageEntry.LinkEntry("bug Issues", "https://github.com/PatrickHechler/SquareConquerer/issues?q=is%3Aissue+is%3Aopen+label%3Abug")//
 				), //
-				new SCPageBlock.SeperatingBlock(true), //
+				new SCPageBlock.SeparatingBlock(true), //
 				new SCPageBlock.EntryBlock(//
 						new SCPageEntry.TextEntry("General "), //
 						selfReference(deep), //
 						new SCPageEntry.TextEntry(": "),
 						new SCPageEntry.LinkEntry("readme", "https://github.com/PatrickHechler/SquareConquerer/blob/master/readme.md")//
 				), //
-				new SCPageBlock.SeperatingBlock(false), //
+				new SCPageBlock.SeparatingBlock(false), //
 				new SCPageBlock.TextBlock(//
 						/*		*/"Tutorials:"//
 				), //

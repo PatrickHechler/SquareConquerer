@@ -19,37 +19,60 @@ package de.hechler.patrick.games.squareconqerer.ui;
 import java.io.PrintStream;
 import java.util.Scanner;
 
+/**
+ * this implementation of the {@link Cons} interface delegates to a {@link Scanner} and {@link PrintStream}
+ * 
+ * @author Patrick Hechler
+ */
 public class IOCons implements Cons {
 	
 	private final Scanner     in;
 	private final PrintStream out;
 	
+	/**
+	 * create a new {@link IOCons} with the given {@link Scanner} and {@link PrintStream}
+	 * @param in the {@link Scanner} of the IO-cons
+	 * @param out the {@link PrintStream} of the IO-cons
+	 */
 	public IOCons(Scanner in, PrintStream out) { this.in = in; this.out = out; }
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this is the same as <code>{@link #readLine()}.{@link String#toCharArray() toCharArray()}</code>
+	 */
 	@Override
 	public char[] readPassword() {
 		return readLine().toCharArray();
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * this is the same as <code>{@link #readLine(String) readLine(prompt)}.{@link String#toCharArray() toCharArray()}</code>
+	 */
 	@Override
 	public char[] readPassword(String prompt) {
 		return readLine(prompt).toCharArray();
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public String readLine() {
-		return in.nextLine();
+		return this.in.nextLine();
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public String readLine(String prompt) {
-		out.print(prompt);
-		return in.nextLine();
+		this.out.print(prompt);
+		return this.in.nextLine();
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public void writeLine(String line) {
-		out.println(line);
+		this.out.println(line);
 	}
 	
 }

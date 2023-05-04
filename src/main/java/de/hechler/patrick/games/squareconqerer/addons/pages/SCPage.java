@@ -21,22 +21,41 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
+
+/**
+ * this class represents a page, which be displayed to the user
+ * 
+ * @author Patrick Hechler
+ * 
+ * @param blocks the blocks of this page
+ */
 public record SCPage(List<SCPageBlock> blocks) {
 	
+	private static final String THERE_ARE_NO_BLOCKS = Messages.getString("SCPage.no-blocks"); //$NON-NLS-1$
+	private static final String NULL_BLOCKS_ARE_NOT_SUPPORETD = Messages.getString("SCPage.there-is-a-no-block"); //$NON-NLS-1$
+	
+	/**
+	 * create an page from the given blocks
+	 * 
+	 * @param blocks the blocks of the page
+	 */
 	public SCPage(List<SCPageBlock> blocks) {
+		if (blocks == null) throw new NullPointerException(THERE_ARE_NO_BLOCKS);
 		ArrayList<SCPageBlock> list = new ArrayList<>(blocks);
 		for (SCPageBlock b : list) {
-			if (b == null) throw new NullPointerException("null blocks are not supporetd!");
+			if (b == null) throw new NullPointerException(NULL_BLOCKS_ARE_NOT_SUPPORETD);
 		}
 		this.blocks = Collections.unmodifiableList(list);
 	}
-
+	
+	/**
+	 * create an page from the given blocks
+	 * 
+	 * @param blocks the blocks of the page
+	 */
 	public SCPage(SCPageBlock... blocks) {
 		this(Arrays.asList(blocks));
 	}
-
-	public SCPage(SCPageBlock block) {
-		this(List.of(block));
-	}
-
+	
 }

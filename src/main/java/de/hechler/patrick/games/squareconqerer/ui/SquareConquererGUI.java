@@ -108,7 +108,7 @@ import de.hechler.patrick.games.squareconqerer.addons.SCAddon;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCLicense;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
-import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock.SeperatingBlock;
+import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock.SeparatingBlock;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.stuff.IntMap;
@@ -283,7 +283,7 @@ public class SquareConquererGUI {
 			List<SCPageBlock> blocks = new ArrayList<>();
 			blocks.addAll(SCAddon.theGame().credits().blocks());
 			for (SCAddon addon : SCAddon.onlyAddons()) {
-				blocks.add(new SCPageBlock.SeperatingBlock(true));
+				blocks.add(new SCPageBlock.SeparatingBlock(true));
 				blocks.addAll(addon.credits().blocks());
 			}
 			SCPage page = new SCPage(blocks);
@@ -305,7 +305,7 @@ public class SquareConquererGUI {
 			List<SCPageBlock> blocks = new ArrayList<>();
 			blocks.addAll(SCAddon.theGame().help().blocks());
 			for (SCAddon addon : SCAddon.onlyAddons()) {
-				blocks.add(new SCPageBlock.SeperatingBlock(true));
+				blocks.add(new SCPageBlock.SeparatingBlock(true));
 				blocks.addAll(addon.help().blocks());
 			}
 			SCPage page = new SCPage(blocks);
@@ -369,7 +369,7 @@ public class SquareConquererGUI {
 		int maxx = 0;
 		for (SCPageBlock block : page.blocks()) {
 			switch (block) {
-			case SCPageBlock.SeperatingBlock sb -> yoff += pageAddSepBlock(dp, yoff, sb);
+			case SCPageBlock.SeparatingBlock sb -> yoff += pageAddSepBlock(dp, yoff, sb);
 			case SCPageBlock.EntryBlock eb -> {
 				int xoff = 0;
 				int yadd = 0;
@@ -411,7 +411,7 @@ public class SquareConquererGUI {
 		initDialog(dialog, true);
 	}
 	
-	private static int pageAddSepBlock(JPanel dp, int yoff, SeperatingBlock sb) {
+	private static int pageAddSepBlock(JPanel dp, int yoff, SeparatingBlock sb) {
 		JPanel panel = new JPanel();
 		panel.setBackground(Color.BLACK);
 		panel.setForeground(Color.BLACK);

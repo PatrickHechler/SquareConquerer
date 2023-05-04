@@ -19,22 +19,42 @@ package de.hechler.patrick.games.squareconqerer.stuff;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * this class is used to use a stream which should not be closed
+ * 
+ * @author Patrick Hechler
+ */
 public class IgnoreCloseOutputStream extends OutputStream {
 	
 	private final OutputStream out;
 	
+	/**
+	 * creates a new output stream which just delegates to the given input stream, but ignores the {@link #close()} operation
+	 * 
+	 * @param out the output stream on which this ignore close stream should delegate to
+	 */
 	public IgnoreCloseOutputStream(OutputStream out) { this.out = out; }
 	
+	/** {@inheritDoc} */
 	@Override
 	public void write(int b) throws IOException { out.write(b); }
 	
+	/** {@inheritDoc} */
 	@Override
 	public void write(byte[] b) throws IOException { out.write(b); }
 	
+	/** {@inheritDoc} */
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException { out.write(b, off, len); }
 	
+	/** {@inheritDoc} */
 	@Override
 	public void flush() throws IOException { out.flush(); }
+	
+	/**
+	 * does nothing and just returns
+	 */
+	@Override
+	public void close() throws IOException {/**/}
 	
 }

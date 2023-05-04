@@ -16,5 +16,10 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.addons.pages;
 
-
+/**
+ * this class is used to represent licenses
+ * @author Patrick Hechler
+ * @param name the name of the license
+ * @param text the license text
+ */
 public record SCLicense(String name, String text) {}

@@ -21,16 +21,42 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
+
+/**
+ * {@link SCPage pages} are build from blocks, which implement this interface
+ * 
+ * @author Patrick Hechler
+ */
 public sealed interface SCPageBlock {
 	
-	record SeperatingBlock(boolean bold) implements SCPageBlock {}
+	/**
+	 * a {@link SeparatingBlock} is just a line from the left to the right
+	 * 
+	 * @author Patrick Hechler
+	 * 
+	 * @param bold <code>true</code> if the line should be large and <code>false</code>
+	 */
+	record SeparatingBlock(boolean bold) implements SCPageBlock {}
 	
+	/**
+	 * an entry block fills an line with its {@link SCPageEntry page entries}
+	 * 
+	 * @author Patrick Hechler
+	 * 
+	 * @param entries the entries
+	 */
 	record EntryBlock(List<SCPageEntry> entries) implements SCPageBlock {
 		
+		private static final String NULL_ENTRIES_ARE_NOT_SUPPORTED = Messages.getString("SCPageBlock.found-a-not-existing-entry"); //$NON-NLS-1$
+		private static final String THERE_ARE_NO_ENTRIES = Messages.getString("SCPageBlock.no-entries"); //$NON-NLS-1$
+		private static final String THERE_IS_NO_TEXT = Messages.getString("SCPageBlock.no-text"); //$NON-NLS-1$
+		
 		public EntryBlock(List<SCPageEntry> entries) {
+			if (entries == null) throw new NullPointerException(THERE_ARE_NO_ENTRIES);
 			ArrayList<SCPageEntry> list = new ArrayList<>(entries);
 			for (SCPageEntry e : list) {
-				if (e == null) throw new NullPointerException("null entries are not supported!");
+				if (e == null) throw new NullPointerException(NULL_ENTRIES_ARE_NOT_SUPPORTED);
 			}
 			this.entries = Collections.unmodifiableList(list);
 		}
@@ -41,10 +67,17 @@ public sealed interface SCPageBlock {
 		
 	}
 	
+	/**
+	 * an text block fills its place with the (possibly multiline) text
+	 * 
+	 * @author Patrick Hechler
+	 * 
+	 * @param text the (possibly multiline) text
+	 */
 	record TextBlock(String text) implements SCPageBlock {
 		
 		public TextBlock {
-			if (text == null) throw new NullPointerException("null texts are not supported");
+			if (text == null) throw new NullPointerException(EntryBlock.THERE_IS_NO_TEXT);
 		}
 		
 	}

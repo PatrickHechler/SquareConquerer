@@ -16,9 +16,27 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.interfaces;
 
-
+/**
+ * this interface represents an operation which accepts two values of type <code>A</code> and <code>B</code><br>
+ * the operation is allowed to throw an error of type <code>E</code>
+ * 
+ * @author Patrick Hechler
+ * @param <A> the first value type
+ * @param <B> the second value type
+ * @param <E> the error type which can be thrown
+ */
+@FunctionalInterface
 public interface ThrowBiConsumer<A, B, E extends Throwable> {
 	
+	/**
+	 * accepts the two values
+	 * <p>
+	 * this operation may throw an error (of type <code>E</code>)
+	 * 
+	 * @param a the first value
+	 * @param b the second value
+	 * @throws E the error which can be thrown
+	 */
 	void accept(A a, B b) throws E;
 	
 }

@@ -16,6 +16,9 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.exceptions.enums;
 
+import java.util.function.Function;
+
+import de.hechler.patrick.games.squareconqerer.Messages;
 
 /**
  * this class is used to tell why something went wrong
@@ -40,10 +43,10 @@ public enum ErrorType {
 	 */
 	UNKNOWN(0x9922EA84);
 	
-	private static final String STR_UNKNOWN = "unknown";
-	private static final String STR_NOT_STARTED = "the game did not start yet";
-	private static final String STR_INVALID_TURN = "the turn was invalid";
-	private static final String STR_BLOCKED_WAY = "blocked way";
+	private static final String STR_UNKNOWN      = Messages.getString("ErrorType.str-unknown");      //$NON-NLS-1$
+	private static final String STR_NOT_STARTED  = Messages.getString("ErrorType.str-not-started");  //$NON-NLS-1$
+	private static final String STR_INVALID_TURN = Messages.getString("ErrorType.str-invalid-turn"); //$NON-NLS-1$
+	private static final String STR_BLOCKED_WAY  = Messages.getString("ErrorType.str-blocked-way");  //$NON-NLS-1$
 	
 	/**
 	 * the identifier used to send this error type
@@ -55,6 +58,27 @@ public enum ErrorType {
 		this.identifier = identifier;
 	}
 	
+	/**
+	 * returns the {@link ErrorType} with the given identifier
+	 * 
+	 * @param <T>        the error thrown when an illegal identifier was passed
+	 * @param identifier the identifier
+	 * @param err        the error function
+	 * @return the {@link ErrorType} with the given identifier
+	 * @throws T when an illegal identifier was passed
+	 */
+	public static <T extends Throwable> ErrorType ofIdentifier(int identifier, Function<int[], T> err) throws T {
+		return switch (identifier) {
+		case ErrorIdentifiers.BLOCKED_WAY -> BLOCKED_WAY;
+		case ErrorIdentifiers.INVALID_TURN -> INVALID_TURN;
+		case ErrorIdentifiers.NOT_STARTED -> NOT_STARTED;
+		case ErrorIdentifiers.UNKNOWN -> UNKNOWN;
+		default ->
+			throw err.apply(new int[] { ErrorIdentifiers.BLOCKED_WAY, ErrorIdentifiers.INVALID_TURN, ErrorIdentifiers.NOT_STARTED, ErrorIdentifiers.UNKNOWN, });
+		};
+	}
+	
+	/** {@inheritDoc} */
 	@Override
 	public String toString() {
 		return switch (this) {
@@ -69,9 +93,11 @@ public enum ErrorType {
 
 class ErrorIdentifiers {
 	
-	static final int BLOCKED_WAY=0xDD41CD00;
-	static final int INVALID_TURN=0x6E826655;
-	static final int NOT_STARTED=0x70098916;
-	static final int UNKNOWN=0x9922EA84;
-
+	static final int BLOCKED_WAY  = 0xDD41CD00;
+	static final int INVALID_TURN = 0x6E826655;
+	static final int NOT_STARTED  = 0x70098916;
+	static final int UNKNOWN      = 0x9922EA84;
+	
+	private ErrorIdentifiers() {}
+	
 }

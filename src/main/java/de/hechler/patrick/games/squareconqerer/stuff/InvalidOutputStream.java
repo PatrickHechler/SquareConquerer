@@ -19,13 +19,42 @@ package de.hechler.patrick.games.squareconqerer.stuff;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
+
+/**
+ * used for streams which just fails
+ * 
+ * @author Patrick Hechler
+ */
 public class InvalidOutputStream extends OutputStream {
 	
+	private static final String THIS_STREAM_IS_INVALID = Messages.getString("InvalidOutputStream.invalid-stream"); //$NON-NLS-1$
+	
+	/**
+	 * the instance of the {@link InvalidOutputStream}
+	 */
 	public static final InvalidOutputStream INSTANCE = new InvalidOutputStream();
 	
+	
+	/**
+	 * throws an {@link UnsupportedOperationException}
+	 * 
+	 * @throws UnsupportedOperationException always
+	 */
 	@Override
 	public void write(int b) throws IOException {
-		throw new UnsupportedOperationException("this stream is invalid");
+		throw new UnsupportedOperationException(THIS_STREAM_IS_INVALID);
+	}
+	
+	/**
+	 * throws an {@link UnsupportedOperationException}
+	 * 
+	 * @throws UnsupportedOperationException always
+	 */
+	@Override
+	@SuppressWarnings("unused")
+	public void write(byte[] b, int off, int len) throws IOException {
+		throw new UnsupportedOperationException(THIS_STREAM_IS_INVALID);
 	}
 	
 }

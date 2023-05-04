@@ -16,10 +16,20 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.squareconqerer.interfaces;
 
-
+/**
+ * this interface describes code that can be executed and sometimes (or always/never) throws a <code>T</code> (or {@link RuntimeException})
+ * 
+ * @author Patrick Hechler
+ * @param <T> the {@link Throwable} which can be thrown when executing the {@link Executable}
+ */
 @FunctionalInterface
 public interface Executable<T extends Throwable> {
 	
+	/**
+	 * executes this executable, which may result in an error of type <code>T</code> (or {@link RuntimeException})
+	 * 
+	 * @throws T sometimes
+	 */
 	void execute() throws T;
 	
 }

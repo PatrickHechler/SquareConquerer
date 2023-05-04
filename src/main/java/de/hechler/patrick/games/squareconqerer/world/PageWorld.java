@@ -287,7 +287,7 @@ public class PageWorld {
 				fillFromEntryBlock(frc, f, x, t, xPos, eb);
 				return;
 			}
-			case SCPageBlock.SeperatingBlock sb -> yPos += sbHigh(sb);
+			case SCPageBlock.SeparatingBlock sb -> yPos += sbHigh(sb);
 			}
 		}
 		System.err.println(ERROR_INVALID_LINE);
@@ -319,7 +319,7 @@ public class PageWorld {
 		}
 	}
 	
-	private static int sbHigh(SCPageBlock.SeperatingBlock sb) { return sb.bold() ? 5 : 3; }
+	private static int sbHigh(SCPageBlock.SeparatingBlock sb) { return sb.bold() ? 5 : 3; }
 	
 	private static int draw(Graphics2D g, SCPageBlock block, Font f, FontRenderContext frc, int ch, int xStartOff, int yoff, int lineWhidth, int ysub) {
 		switch (block) {
@@ -335,7 +335,7 @@ public class PageWorld {
 			}
 			yoff += ch;
 		}
-		case SCPageBlock.SeperatingBlock sb -> {
+		case SCPageBlock.SeparatingBlock sb -> {
 			g.drawLine(3, yoff + 1 - ysub, lineWhidth - 3, yoff + 1 - ysub);
 			if (sb.bold()) {
 				g.drawLine(2, yoff + 2 - ysub, lineWhidth - 2, yoff + 2 - ysub);
@@ -379,7 +379,7 @@ public class PageWorld {
 			}
 			dim.width = Math.max(dim.width, xlen);
 		}
-		case SCPageBlock.SeperatingBlock sb -> dim.height += sbHigh(sb);
+		case SCPageBlock.SeparatingBlock sb -> dim.height += sbHigh(sb);
 		case SCPageBlock.TextBlock tb -> {
 			dim.height += tb.text().lines().count() * ch;
 			dim.width   = Math.max(dim.width, xStartOff

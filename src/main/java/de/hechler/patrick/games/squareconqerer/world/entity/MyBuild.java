@@ -20,12 +20,37 @@ import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.stuff.IntMap;
 import de.hechler.patrick.games.squareconqerer.world.resource.ProducableResourceType;
 
+/**
+ * this class provides an abstract implementation of the {@link Building} interface for extern use
+ * 
+ * @author Patrick Hechler
+ */
 public abstract non-sealed class MyBuild extends BuildingImpl {
 	
+	/**
+	 * create a new building with the given values
+	 * 
+	 * @param x               the {@link #x()} coordinate
+	 * @param y               the {@link #y()} coordinate
+	 * @param usr             the {@link #owner()}
+	 * @param maxlives        the {@link #maxLives()} and {@link #lives()}
+	 * @param neededResources the {@link #neededResources()}
+	 */
 	public MyBuild(int x, int y, User usr, int maxlives, IntMap<ProducableResourceType> neededResources) {
 		super(x, y, usr, maxlives, neededResources);
 	}
 	
+	/**
+	 * create a new building with the given values
+	 * 
+	 * @param x                   the {@link #x()} coordinate
+	 * @param y                   the {@link #y()} coordinate
+	 * @param usr                 the {@link #owner()}
+	 * @param maxlives            the {@link #maxLives()}
+	 * @param lives               the {@link #lives()}
+	 * @param neededResources     the {@link #neededResources()}
+	 * @param remainingBuildTurns the {@link #remainingBuildTurns()}
+	 */
 	public MyBuild(int x, int y, User usr, int maxlives, int lives, IntMap<ProducableResourceType> neededResources, int remainingBuildTurns) {
 		super(x, y, usr, maxlives, lives, neededResources, remainingBuildTurns);
 	}
