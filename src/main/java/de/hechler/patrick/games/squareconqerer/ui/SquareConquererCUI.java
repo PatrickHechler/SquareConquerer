@@ -1,4 +1,4 @@
-// This file is part of the Square Conquerer Project
+// This file is part of the Square Conquerer ProjectNKN
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 // Copyright (C) 2023 Patrick Hechler
 //
@@ -55,10 +55,37 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
  */
 public class SquareConquererCUI implements Runnable {
 	
-	private static final String WORLD_NOARG_PROMPT_ENTER_Y_LEN = "enter now the Y-Length (Height) if the World";
-	private static final String WORLD_NOARG_PROMPT_ENTER_X_LEN = "enter now the X-Length (Width) if the World";
-	private static final String WORLD_NOARG_L_OAD_FILE_CREATE_N_EW_OR_C_ANCEL = "[l]oad from file or create [n]ew world (or [c]ancel)";
-	private static final String WORLD_NOARG_C_HAGE_OR_D_ISPLAY = "[c]hange or [d]isplay the current world? ";
+	private static final String STATUS_SERVER_NO_SERVER = "OurServer: there is no server";
+	private static final String STATUS_SERVER_NO_CONNECTS = "-";
+	private static final String STATUS_SERVER_RUNNING = "OurServer: running, there are {0} connections";
+	private static final String STATUS_SERVER_PW_NONE_BUT_SERVER_RUNNING =
+		"  note that I remove my reference of the server password after starting the server\n  only because I do not know a server password, does not mean that the server knows no password";
+	private static final String STATUS_SERVER_PW_THERE_IS_NONE           = "serverPassword: there is no server password";
+	private static final String STATUS_SERVER_PW_THERE_IS_ONE            = "serverPassword: there is one";
+	private static final String STATUS_HELP_BLA_BLA                      =
+		"Status command: help\nwithout arguments, write all status types\nwith arguments:\n  {0}: write this message\n  {1}: write the user status\n  world-remote-size: update the size of the remote world and then write the world status\n  {2}: or {3} update the complete remote world and then write the world status\n  {4}: write the server status\n  {5} or {6}: write the server password status";
+	private static final String USERNAME_ENTER_YOUR_NEW_USERNAME         = "enter your new username: ";
+	private static final String USERNAME_CURRENT_USERNAME_               = "your current username is ''{0}''";
+	private static final String USERNAME_HELP_CMD_0_HELP_1_SET_2_GET_3   =
+		"{0} help: set or get your username\n{1}: print this message\n{2} <USERNAME>: set the new username\n{3}: print the current username\nwithout arguments, print the current username and then prompt for a new username";
+	// world constants
+	private static final String WORLD_PRINT_GROUNDS_LEGEND                                                    =
+		"{0}: not explored\n{1}: water\n{2}: water deep\n{3}: sand\n{4}: sand hill\n{5}: grass\n{6}: grass hill\n{7}: forest\n{8}: forest hill\n{9}: swamp\n{10}: swamp hill\n{11}: mountain";
+	private static final String WORLD_PRINT_SIZES                                                             = "world ({0}|{1}):";
+	private static final String WORLD_PRINT_RESOURCES_LEGEND                                                  =
+		"resources\n  {0}: gold ore\n  {1}: iron ore\n  {2}: coal ore";
+	private static final String WORLD_PRINT_MISSING_WORLD                                                     = "there is no world I can print";
+	private static final String WORLD_LOAD_PROMPT_ENTER_FILE_TO_BE_LOADED                                     = "enter now the file, which should be loaded: ";
+	private static final String WRITE_TILE_X_0_Y_1_GROUND_2_RESOURCE_3                                        = "Tile: ({0}|{1})\n  Type: {2}\n  Resource: {3}";
+	private static final String WORLD_NOARG_ENTER_Y_COORDINATE_OF_TILE                                        = "enter now the Y-coordinate of the tile";
+	private static final String WORLD_NOARG_ENTER_X_COORDINATE_OF_TILE                                        = "enter now the X-coordinate of the tile";
+	private static final String WORLD_NOARG_DISPLAY_C_OMPLETE_OR_T_ILE                                        = "display the [c]omplete world or only a [t]ile";
+	private static final String WORLD_NOARG_CREATE_NEW_FINISH                                                 = "created new world";
+	private static final String WORLD_NOARG_PROMPT_ENTER_Y_LEN                                                = "enter now the Y-Length (Height) if the World";
+	private static final String WORLD_NOARG_PROMPT_ENTER_X_LEN                                                = "enter now the X-Length (Width) if the World";
+	private static final String WORLD_NOARG_L_OAD_FILE_CREATE_N_EW_OR_C_ANCEL                                 =
+		"[l]oad from file or create [n]ew world (or [c]ancel)";
+	private static final String WORLD_NOARG_C_HAGE_OR_D_ISPLAY                                                = "[c]hange or [d]isplay the current world? ";
 	private static final String WORLD_TILE_RESOURCE_UNKNOWN_RESOURCE                                          = "unknown resource type: ''{0}''";
 	private static final String WORLD_TILE_TYPE_UNKNOWN_GROUND                                                = "unknown ground type: ''{0}''";
 	private static final String WORLD_TILE_TYPE_CURRENT_TYPE_0_NOT_ACCEPT_1_SUFFIX                            =
@@ -89,90 +116,96 @@ public class SquareConquererCUI implements Runnable {
 		"could not parse the world size: <{0}> <{1}> error: {2}";
 	private static final String WORLD_CREATE_NOT_LOGGED_IN                                                    = "you need to be logged in for the create operation";
 	private static final String WORLD_LOAD_LOADED_WORLD_AND_USERS_SUCCESSFULLY                                = "loaded world and users successfully from the file";
-	private static final String WORLD_LAOD_LOADED_EVERYTHING                                                  = "loaded everything from the file";
+	private static final String WORLD_LOAD_FINISH_LOAD                                                        = "loaded everything from the file";
 	private static final String WORLD_LOAD_ERROR_ON_LOAD                                                      = "error while loading: {0}";
 	private static final String WORLD_LOAD_CHANGED_TO_ROOT                                                    = "changed to root user";
 	private static final String WORLD_LOAD_NOT_LOGGED_IN                                                      = "there is no user logged in";
 	private static final String WORLD_LOAD_NO_REGULAR_FILE                                                    = "the path does not refer to a regular file";
 	private static final String WORLD_LOAD_FILE_NOT_EXIST                                                     = "the file does not exist";
 	private static final String WORLD_HELP_BLA_BLA_MNY_ARGS                                                   =
-		"{0} help: change or display the world\nbase commands: (those work always)\n  {1}: print this message\n  {2} <SAVE_FILE>: load everything from the file\n    the loaded world will be in root mode\n    if there is no user this operation will fail\n    if the user is currently not root, it will be after this operation\n    if the user already is root, all subusers will be deleted\n    the SAVE_FILE has to be created with save-all or save-all-force\n  {3} <SAVE_FILE>: load other users and world from the file\n    the loaded world will be in build mode\n    if there is no user this operation will fail\n    if the user is currently not root, it will be after this operation\n    if the user already is root, all subusers will be deleted\n    the SAVE_FILE has to be created with save or save-force\n  {4} <X-LEN/WIDTH> <Y-LEN/HEIGHT>: create a new build world with the given sizes\n    note that this command needs you to be logged in\n    note that this command will convert you to a new root user\n    the newly created world will be in build mode\nsimple commands: (work, when there is an world)\n  {5} or print.types: print all tile types of the world\n  {6}: print all resources of the world\n  {7} <X> <Y>: print the tile at the given coordinates\n  {8}: convert the world to a build world\n  {9} <FILE>: save the current world to the given file\n  {10} <FILE>: like save, but do not ask if the file already exist\nroot world commands: (world needs to be in root mode)\n  {11} <FILE>: save everything to the given file\n  {12} <FILE>: like save-all, but do not ask if the file already exist\nbuild world commands: (world needs to be in build mode)\n  {13}: convert the world to a root world\n  {14} <TYPE> <X> <Y>: set the type of the given tile\n    valid TYPE values: water sand grass forest swamp mountain not-explored\n    [sand grass forest swamp] accept the ''+hill'' suffix\n    [water] accepts the ''+deep'' suffix\n    all types except of not-explored accept the ''+normal'' suffix, which is just an alias for no suffix\n    if there is only a suffix given it will replace the current suffix (if this is valid)\\n  {15} <RESOURCE> <X> <Y>: set the resource of the given tile\n    valid RESOURCE values: none gold iron coal\n  {16}: all tiles with type not-explored with random values\n    the random tiles may depend on their enviromnet (in contrast to {17})\n    note that the potential existing resource values of these types will be randomly overwritten\n  {18}: all tiles with type not-explored with random values\n    note that the potential existing resource values of these types will be randomly overwritten";
-	// server constants
-	private static final String SERVER_STARTED_SERVER                                                     = "started server";
-	private static final String SERVER_SERVER_STOPPED_WITH_ERROR                                          = "the server stopped with an error: ";
-	private static final String SERVER_CLOSED_MESSAGE                                                     =
+		"{0} help: change or display the world\nbase commands: (those work always)\n  {1}: print this message\n  {2} <SAVE_FILE>: load everything from the file\n    the loaded world will be in root mode\n    if there is no user this operation will fail\n    if the user is currently not root, it will be after this operation\n    if the user already is root, all subusers will be deleted\n    the SAVE_FILE has to be created with save-all or save-all-force\n  {3} <SAVE_FILE>: load other users and world from the file\n    the loaded world will be in build mode\n    if there is no user this operation will fail\n    if the user is currently not root, it will be after this operation\n    if the user already is root, all subusers will be deleted\n    the SAVE_FILE has to be created with save or save-force\n  {4} <X-LEN/WIDTH> <Y-LEN/HEIGHT>: create a new build world with the given sizes\n    note that this command needs you to be logged in\n    note that this command will convert you to a new root user\n    the newly created world will be in build mode\nsimple commands: (work, when there is an world)\n  {5} or print.types: print all tile types of the world\n  {6}: print all resources of the world\n  {7} <X> <Y>: print the tile at the given coordinates\n  {8}: convert the world to a build world\n  {9} <FILE>: save the current world to the given file\n  {10} <FILE>: like save, but do not ask if the file already exist\nroot world commands: (world needs to be in root mode)\n  {11} <FILE>: save everything to the given file\n  {12} <FILE>: like save-all, but do not ask if the file already exist\nbuild world commands: (world needs to be in build mode)\n  {13}: convert the world to a root world\n  {14} <TYPE> <X> <Y>: set the type of the given tile\n    valid TYPE values: water sand grass forest swamp mountain not-explored\n    [sand grass forest swamp] accept the ''+hill'' suffix\n    [water] accepts the ''+deep'' suffix\n    all types except of not-explored accept the ''+normal'' suffix, which is just an alias for no suffix\n    if there is only a suffix given it will replace the current suffix (if this is valid)\\n  {15} <RESOURCE> <X> <Y>: set the resource of the given tile\n    valid RESOURCE values: none gold iron coal\n  {16}: all tiles with type not-explored with random values\n    the random tiles may depend on their enviromnet (in contrast to {17})\n    note that the potential existing resource values of these types will be randomly overwritten\n  {18}: all tiles with type not-explored with random values\n    note that the potential existing resource values of these types will be randomly overwritten";	// server
+																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																						// constants
+	private static final String SERVER_STARTED_SERVER                                                         = "started server";
+	private static final String SERVER_SERVER_STOPPED_WITH_ERROR                                              = "the server stopped with an error: ";
+	private static final String SERVER_CLOSED_MESSAGE                                                         =
 		"stopped the server, all remote connections should be closed now";
-	private static final String SERVER_NOARG_ENTER_NOW_SERVER_PORT_DEFAULT_IS_0                           =
+	private static final String SERVER_NOARG_ENTER_NOW_SERVER_PORT_DEFAULT_IS_0                               =
 		"enter now the port on which the server should listen (default is {0}): ";
-	private static final String SERVER_NOARG_ERROR_DURING_CONNECT                                         = "error while connecting to the server: {0}";
-	private static final String SERVER_NOARG_CONNECTED_TO_0_AT_PORT_1                                     = "connected successful to {0} (at port {1})";
-	private static final String SERVER_NOARG_PROMPT_ENTER_SERVERHOST                                      = "enter now the serverhost: ";
-	private static final String SERVER_NOARG_P_ROCEED_AND_DISCARD_WORLD_OR_C_ANCEL                        =
+	private static final String SERVER_NOARG_ERROR_DURING_CONNECT                                             = "error while connecting to the server: {0}";
+	private static final String SERVER_NOARG_CONNECTED_TO_0_AT_PORT_1                                         = "connected successful to {0} (at port {1})";
+	private static final String SERVER_NOARG_PROMPT_ENTER_SERVERHOST                                          = "enter now the serverhost: ";
+	private static final String SERVER_NOARG_P_ROCEED_AND_DISCARD_WORLD_OR_C_ANCEL                            =
 		"if you proceed you current world will be discarded. ([p]rocced/[c]ancel)? ";
-	private static final String SERVER_NOARG_S_TART_SERVER                                                = ", [s]tart a server";
-	private static final String SERVER_NOARG_C_ONNECT_0_OR_N_OTHING                                       =
+	private static final String SERVER_NOARG_S_TART_SERVER                                                    = ", [s]tart a server";
+	private static final String SERVER_NOARG_C_ONNECT_0_OR_N_OTHING                                           =
 		"do you want to [c]onnect to a server{0} or do [n]othing?";
-	private static final String SERVER_NOARG_NOT_LOGGED_IN                                                =
+	private static final String SERVER_NOARG_NOT_LOGGED_IN                                                    =
 		"you are not logged in, retry after you logged in (take a look at the {0} and {1} commands)";
-	private static final String SERVER_NOARG_ERROR_WHILE_DISCONNECT_NO_RETRY_0                            = "error while closing: (proceed anyway, do not retry) ";
-	private static final String SERVER_NOARG_DISCONNECTED                                                 = "closed old world successfully";
-	private static final String SERVER_NOARG_CONTAIN_CUR_WORLD_AS_BUILD_YN                                =
+	private static final String SERVER_NOARG_ERROR_WHILE_DISCONNECT_NO_RETRY_0                                =
+		"error while closing: (proceed anyway, do not retry) ";
+	private static final String SERVER_NOARG_DISCONNECTED                                                     = "closed old world successfully";
+	private static final String SERVER_NOARG_CONTAIN_CUR_WORLD_AS_BUILD_YN                                    =
 		"dou you want to contain your current world in build mode? ([y]es|[n]o)";
-	private static final String SERVER_NOARG_D_ISCONNECT_OR_N_OTHING                                      = "dou you want to [d]isconnect or do [n]othing?";
-	private static final String SERVER_NOARG_CONNECTE_TO_SERVER                                           = "you are currently connected to a server";
-	private static final String SERVER_NOARG_C_LOSE_SERVER_OR_N_OTHING                                    = "dou you want to [c]lose the server [n]othing?";
-	private static final String SERVER_NOARG_SERVER_IS_RUNNING                                            = "the server is currently running";
-	private static final String SERVER_STOP_STOPPED                                                       = "the server stopped";
-	private static final String SERVER_STOP_TOLD_TO_STOP                                                  = "I told the server thread to stop";
-	private static final String SERVER_STOP_NO_SERVER                                                     = "there seems to be no server running";
-	private static final String SERVER_START_STARTED_SERVER                                               = "started the server thread";
-	private static final String SERVER_START_ERROR_AT_SERVER_THREAD_0                                     = "error at the server thread: {0}";
-	private static final String SERVER_START_USER_0_LOGGED_IN_FROM_1                                      = "the user ''{0}'' logged in from {1}";
-	private static final String SERVER_USER_0_DISCONNECTED                                                = "the user ''{0}'' disconnected";
-	private static final String SERVER_START_NO_ROOT_WORLD                                                = "your loaded world is no root world";
-	private static final String SERVER_START_MISSING_WORLD                                                = "there is no world loaded";
-	private static final String SERVER_START_ALREADY_RUNNING                                              = "I am already running an server";
-	private static final String SERVER_DISCONNECT_DISCONNECTING_ERROR_NOT_RETRY_0                         = "error while disconnecting: (do not retry) {0}";
-	private static final String SERVER_DISCONNECT_CLOSED_REMOTE_WORLD                                     = "closed old remote world successfully";
-	private static final String SERVER_DISCONNECT_NO_SERVER_CONNECTION                                    = "I don't know any server connection";
-	private static final String SERVER_CONNECT_ERROR_WHILE_CONNECTING_0                                   = "error while connecting: {0}";
-	private static final String SERVER_COULD_NOT_PARSE_PORT_0                                             = "could not parse the port: {0}";
-	private static final String SERVER_CONNECT_NOT_LOGGED_IN                                              =
+	private static final String SERVER_NOARG_D_ISCONNECT_OR_N_OTHING                                          = "dou you want to [d]isconnect or do [n]othing?";
+	private static final String SERVER_NOARG_CONNECTE_TO_SERVER                                               = "you are currently connected to a server";
+	private static final String SERVER_NOARG_C_LOSE_SERVER_OR_N_OTHING                                        = "dou you want to [c]lose the server [n]othing?";
+	private static final String SERVER_NOARG_SERVER_IS_RUNNING                                                = "the server is currently running";
+	private static final String SERVER_STOP_STOPPED                                                           = "the server stopped";
+	private static final String SERVER_STOP_TOLD_TO_STOP                                                      = "I told the server thread to stop";
+	private static final String SERVER_STOP_NO_SERVER                                                         = "there seems to be no server running";
+	private static final String SERVER_START_STARTED_SERVER                                                   = "started the server thread";
+	private static final String SERVER_START_ERROR_AT_SERVER_THREAD_0                                         = "error at the server thread: {0}";
+	private static final String SERVER_START_USER_0_LOGGED_IN_FROM_1                                          = "the user ''{0}'' logged in from {1}";
+	private static final String SERVER_USER_0_DISCONNECTED                                                    = "the user ''{0}'' disconnected";
+	private static final String SERVER_START_NO_ROOT_WORLD                                                    = "your loaded world is no root world";
+	private static final String SERVER_START_MISSING_WORLD                                                    = "there is no world loaded";
+	private static final String SERVER_START_ALREADY_RUNNING                                                  = "I am already running an server";
+	private static final String SERVER_DISCONNECT_DISCONNECTING_ERROR_NOT_RETRY_0                             = "error while disconnecting: (do not retry) {0}";
+	private static final String SERVER_DISCONNECT_CLOSED_REMOTE_WORLD                                         = "closed old remote world successfully";
+	private static final String SERVER_DISCONNECT_NO_SERVER_CONNECTION                                        = "I don't know any server connection";
+	private static final String SERVER_CONNECT_ERROR_WHILE_CONNECTING_0                                       = "error while connecting: {0}";
+	private static final String SERVER_COULD_NOT_PARSE_PORT_0                                                 = "could not parse the port: {0}";
+	private static final String SERVER_CONNECT_NOT_LOGGED_IN                                                  =
 		"you are not logged in, retry after you logged in (look at {0} and {1})";
-	private static final String SERVER_STATUS_NOTHING                                                     =
+	private static final String SERVER_STATUS_NOTHING                                                         =
 		"it seems that there is no server running and your world does not seem to be connected to some server";
-	private static final String SERVER_STATS_CONNECTED                                                    = "your loaded world is a remote world";
-	private static final String SERVER_STATUS_RUNNING                                                     = "the server thread is currently running";
-	private static final String SERVER_HELP_STATUS_0_CONNECT_1_DISCONNECT_2_START_3_DEFAULT_PORT_4_STOP_5 =
-		"server help:\nbase commands:\n  {0}: print an message indicating if you are running a server/are connected to a server or nothing of it\nremote server commands:\n  {1} <SERVER_ADDRESS>: connect to the given server\n  {2}: disconnect from the server you are currently connected to\nyour server commands:\n  {3} [PORT]: start your own server\n    use minus (''-'') instead of PORT to use the defaul port {4}\n    if the loaded world is no root world, accepted connections will not get an user world, but the direct world\n    you need to be logged in as root\n  {5}: stop your own server";
-	// set password constants
-	private static final String SET_PW_PROMPT_ENTER_YOUR_PASSWORD = "enter now the new password of the user: ";
-	private static final String SET_PW_PROMPT_ENTER_USER_PASSWORD = "enter now the new password of the user: ";
-	private static final String SET_PW_PROMPT_ENTER_USERNAME      = "enter now the username of the given user: ";
-	private static final String SET_PW_YOUR_PW_WAS_CHANGED        = "your password was changed";
-	private static final String SET_PW_PW_OF_0_CHANGED            = "the password of the user ''{0}'' changed";
-	private static final String SET_PW_ONLY_ROOT_HAS_OTHR_USRS    = "this is not your username and you are not root";
-	private static final String SET_PW_USER_0_NOT_FOUND           = "the user ''{0}'' could not be found";
-	private static final String SET_PW_HELP_0_SET_OF_1_2_ME_3     =
+	private static final String SERVER_STATS_CONNECTED                                                        = "your loaded world is a remote world";
+	private static final String SERVER_STATUS_RUNNING                                                         = "the server thread is currently running";
+	private static final String SERVER_HELP_STATUS_0_CONNECT_1_DISCONNECT_2_START_3_DEFAULT_PORT_4_STOP_5     =
+		"server help:\nbase commands:\n  {0}: print an message indicating if you are running a server/are connected to a server or nothing of it\nremote server commands:\n  {1} <SERVER_ADDRESS>: connect to the given server\n  {2}: disconnect from the server you are currently connected to\nyour server commands:\n  {3} [PORT]: start your own server\n    use minus (''-'') instead of PORT to use the defaul port {4}\n    if the loaded world is no root world, accepted connections will not get an user world, but the direct world\n    you need to be logged in as root\n  {5}: stop your own server"; 	// set
+																																																																																																																																																					 	// password
+																																																																																																																																																					 	// constants
+	private static final String SET_PW_PROMPT_ENTER_YOUR_PASSWORD                                             = "enter now the new password of the user: ";
+	private static final String SET_PW_PROMPT_ENTER_USER_PASSWORD                                             = "enter now the new password of the user: ";
+	private static final String SET_PW_PROMPT_ENTER_USERNAME                                                  = "enter now the username of the given user: ";
+	private static final String SET_PW_YOUR_PW_WAS_CHANGED                                                    = "your password was changed";
+	private static final String SET_PW_PW_OF_0_CHANGED                                                        = "the password of the user ''{0}'' changed";
+	private static final String SET_PW_ONLY_ROOT_HAS_OTHR_USRS                                                = "this is not your username and you are not root";
+	private static final String SET_PW_USER_0_NOT_FOUND                                                       = "the user ''{0}'' could not be found";
+	private static final String SET_PW_HELP_0_SET_OF_1_2_ME_3                                                 =
 		"setpw help:\nwithout args: prompt whoses password should be changed and then change the password\nargs:\n{0}: print this message\n{1}/{2} <USERNAME>: prompt for the new password of USERNAME\n{3}: prompt for your new password\n  note, that if you are connected to an server, that connection will become invalid\n<USERNAME>: prompt for the new password of USERNAME\n  note, that if the username is ''{1}'', ''{2}'' or ''{3}'' the arguments are triggered instead";
-	private static final String SET_PW_S_OMEONES_PASSWORD         = ", [s]omeones password";
-	private static final String SET_PW_Y_OUR_PW_0_OR_DO_N_OTHING  = "set [y]our password{0} or do [n]othing? ";
-	// server PW constants
-	private static final String SERVER_PW_PROMPT_ENTER_NEW_SERVER_PASSWORD              = "enter now the new server password: ";
-	private static final String SERVER_PW_REMOVE_THERE_IS_NO_SERVER_PW                  = "there is no server password I could remove";
-	private static final String SERVER_PW_STATUS_THERE_IS_SPW                           = "I hava a server password set";
-	private static final String SERVER_PW_UPDATED_SERVER_PW                             = "the server password was updated";
-	private static final String SERVER_PW_STATUS_THERE_IS_NO_SPW                        = "I don't hava a server password";
-	private static final String SERVER_PW_HELP_0_STATUS_1_SET_2_REMOVE_3_REMOVE_NO_FAIL =
+	private static final String SET_PW_S_OMEONES_PASSWORD                                                     = ", [s]omeones password";
+	private static final String SET_PW_Y_OUR_PW_0_OR_DO_N_OTHING                                              = "set [y]our password{0} or do [n]othing? "; 	// server
+																																							 	// PW
+																																							 	// constants
+	private static final String SERVER_PW_PROMPT_ENTER_NEW_SERVER_PASSWORD                                    = "enter now the new server password: ";
+	private static final String SERVER_PW_REMOVE_THERE_IS_NO_SERVER_PW                                        = "there is no server password I could remove";
+	private static final String SERVER_PW_STATUS_THERE_IS_SPW                                                 = "I hava a server password set";
+	private static final String SERVER_PW_UPDATED_SERVER_PW                                                   = "the server password was updated";
+	private static final String SERVER_PW_STATUS_THERE_IS_NO_SPW                                              = "I don't hava a server password";
+	private static final String SERVER_PW_HELP_0_STATUS_1_SET_2_REMOVE_3_REMOVE_NO_FAIL                       =
 		"server password help:\n{0}: print an message indicating if there is currently a server password set\n{1}: prompt for the new server password\n{2}: remove and clear the current server password\n{3}: same as remove, but do not show an error message if there is no server password";
-	private static final String SERVER_PW_R_EMOVE                                       = "/[r]emove";
-	private static final String SERVER_PW_S_ET_0_THE_SERVER_PW_OR_DO_N_OTHING           = "do you want to [s]et{0} the server password or do [n]othing? ";
+	private static final String SERVER_PW_R_EMOVE                                                             = "/[r]emove";
+	private static final String SERVER_PW_S_ET_0_THE_SERVER_PW_OR_DO_N_OTHING                                 =
+		"do you want to [s]et{0} the server password or do [n]othing? ";
 	// quit constants
 	private static final String QUIT_ERROR_WHILE_PARSING_EXIT_NUMBER_0 = "error while parsing exit number: {0}";
 	private static final String QUIT_HELP_BLA_BLA_HELP_WITH_0          =
 		"quit help:\nno args: terminates this program with the exit value 0\n{0}: print this message\n<NUMBER>: terminates this program with the given exit value\nanything else: terminates this program with the exit value 1";
 	private static final String QUIT_GOODBYE_EXIT_NOW_WITH_0           = "goodbye, exit now with {0}";
 	// general constants
+	private static final String UNKNOWN_GROUND_TYPE_0                             = "unknown ground type: {0}";
+	private static final String UNKNOWN_TILE_RESOURCE_0                           = "unknown tile resource: {0}";
 	private static final String COORDINATE_IS_OUT_OF_BOUNDS_XLEN_0_YLEN_1_X_2_Y_3 = "coordinate is out of bounds: (xlen={0}|ylen={1}) (x={2}|y={3})";
 	private static final String INTERRUPT_ERROR_0                                 = "I was interrupted: {0}";
 	private static final String NOT_ENUGH_ARGUMENTS_FOR_THE_0_ARG                 = "not enugh arguments for the {0} arg";
@@ -879,7 +912,7 @@ public class SquareConquererCUI implements Runnable {
 				this.username = null;
 				try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, this.usr)) {
 					this.world = RootWorld.loadEverything(conn);
-					this.c.writeLines(WORLD_LAOD_LOADED_EVERYTHING);
+					this.c.writeLines(WORLD_LOAD_FINISH_LOAD);
 				} catch (IOException e) {
 					this.c.writeLines(MessageFormat.format(WORLD_LOAD_ERROR_ON_LOAD, e));
 				}
@@ -1225,33 +1258,25 @@ public class SquareConquererCUI implements Runnable {
 			switch (ask(WORLD_NOARG_L_OAD_FILE_CREATE_N_EW_OR_C_ANCEL, "lnc")) { //$NON-NLS-1$
 			case 'l' -> cmdWorldInteractiveLoad();
 			case 'n' -> {
-				rootLogin(usr == null);
+				rootLogin(this.usr == null);
 				int xlen = readNumber(WORLD_NOARG_PROMPT_ENTER_X_LEN, 1, Integer.MAX_VALUE);
 				if (xlen > 0) {
 					int ylen = readNumber(WORLD_NOARG_PROMPT_ENTER_Y_LEN, 1, Integer.MAX_VALUE);
 					if (ylen > 0) {
-						world = new RootWorld.Builder((RootUser) usr, xlen, ylen);
-						this.c.writeLines("created new world");
-						if (ask("fill world with random tiles? ([y]es|[n]o): ", "yn") == 'y') {
-							((RootWorld.Builder) world).fillRandom();
-							this.c.writeLines("filled world with random tiles");
-							if (ask("build world? ([y]es|[n]o): ", "yn") == 'y') {
-								world = ((RootWorld.Builder) world).create();
-								this.c.writeLines("world builded");
-							}
-						}
+						this.world = new RootWorld.Builder((RootUser) this.usr, xlen, ylen);
+						this.c.writeLines(WORLD_NOARG_CREATE_NEW_FINISH);
 					}
 				}
 			}
 			case 'c' -> { return; }
-			default -> throw new AssertionError("illegal return value from ask!"); //$NON-NLS-1$
+			default -> throw new AssertionError("illegal return value from ask!"); //$NON-NLS-1$ this should never happen
 			}
-		} else if (ask("display the [c]omplete world or only a [t]ile", "ct") == 'c') {
+		} else if (ask(WORLD_NOARG_DISPLAY_C_OMPLETE_OR_T_ILE, "ct") == 'c') { //$NON-NLS-1$
 			cmdWorldAllTilesType();
 		} else {
-			int x = readNumber("enter now the X-coordinate of the tile", 0, world.xlen());
+			int x = readNumber(WORLD_NOARG_ENTER_X_COORDINATE_OF_TILE, 0, this.world.xlen() - 1);
 			if (x >= 0) {
-				int y = readNumber("enter now the Y-coordinate of the tile", 0, world.ylen());
+				int y = readNumber(WORLD_NOARG_ENTER_Y_COORDINATE_OF_TILE, 0, this.world.ylen() - 1);
 				if (y >= 0) {
 					writeTile(x, y);
 				}
@@ -1260,77 +1285,68 @@ public class SquareConquererCUI implements Runnable {
 	}
 	
 	private void writeTile(int x, int y) {
-		Tile tile = world.tile(x, y);
-		this.c.writeLines("Tile: (" + x + '|' + y + ')');
-		this.c.writeLines("  Type: " + tile.ground);
-		this.c.writeLines("  Resource: " + tile.resource);
+		Tile tile = this.world.tile(x, y);
+		this.c.writeLines(MessageFormat.format(WRITE_TILE_X_0_Y_1_GROUND_2_RESOURCE_3, Integer.toString(x), Integer.toString(y), tile.ground, tile.resource));
 	}
 	
 	private void cmdWorldInteractiveLoad() {
-		boolean askPW = usr == null;
+		boolean askPW = this.usr == null;
 		do {
 			Path p;
 			do {
-				p = Path.of(this.c.readLine("enter now the file, which should be loaded: "));
+				p = Path.of(this.c.readLine(WORLD_LOAD_PROMPT_ENTER_FILE_TO_BE_LOADED));
 			} while (retry(!Files.exists(p) || !Files.isRegularFile(p)));
 			if (!Files.exists(p) || !Files.isRegularFile(p)) {
 				break;
 			}
 			rootLogin(askPW);
-			try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr)) {
-				((RootUser) usr).load(conn);
-				Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) usr).users());
-				this.c.writeLines("loaded from file, build now the world");
-				try {
-					world = RootWorld.Builder.create((RootUser) usr, tiles);
-				} catch (IllegalStateException e) {
-					this.c.writeLines("build failed: " + e.toString());
-					this.c.writeLines("world stays in build mode now");
-				}
+			try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, this.usr)) {
+				((RootUser) this.usr).load(conn);
+				Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) this.usr).users());
+				this.world = RootWorld.Builder.createBuilder((RootUser) this.usr, tiles);
+				this.c.writeLines(WORLD_LOAD_FINISH_LOAD);
 			} catch (IOException e) {
-				this.c.writeLines("error: " + e.toString());
+				this.c.writeLines(MessageFormat.format(WORLD_LOAD_ERROR_ON_LOAD, e));
 			}
 		} while (retry(true));
 	}
 	
 	private void rootLogin(boolean askPW) {
 		if (askPW) {
-			char[] pw = this.c.readPassword("enter now the password");
-			if (usr != null && !(usr instanceof RootUser)) {
-				username = "";
+			char[] pw = this.c.readPassword(SET_PW_PROMPT_ENTER_YOUR_PASSWORD);
+			if (this.usr != null && !(this.usr instanceof RootUser)) {
+				this.username = ""; //$NON-NLS-1$ just for the log msg
 			}
-			usr = RootUser.create(pw);
-			if (username != null) {
-				username = null;
+			this.usr = RootUser.create(pw);
+			if (this.username != null) {
+				this.username = null;
 				this.c.writeLines(WORLD_LOAD_CHANGED_TO_ROOT);
 			}
 		} else {
-			usr = usr.makeRoot();
+			this.usr = this.usr.makeRoot();
 		}
 	}
 	
+	@SuppressWarnings("preview")
 	private void cmdWorldAllTilesResources() {
-		if (world == null) {
-			this.c.writeLines("there is no world I can print");
+		if (this.world == null) {
+			this.c.writeLines(WORLD_PRINT_MISSING_WORLD);
 			return;
 		}
-		this.c.writeLines(" : no resource");
-		this.c.writeLines("G: gold ore");
-		this.c.writeLines("I: iron ore");
-		this.c.writeLines("C: coal ore");
-		int xlen = world.xlen();
-		int ylen = world.ylen();
-		this.c.writeLines("world (" + xlen + '|' + ylen + "):");
+		this.c.writeLines(MessageFormat.format(WORLD_PRINT_RESOURCES_LEGEND, "G", "I", "C")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		int xlen = this.world.xlen();
+		int ylen = this.world.ylen();
+		this.c.writeLines(MessageFormat.format(WORLD_PRINT_SIZES, Integer.toString(xlen), Integer.toString(ylen)));
 		for (int y = 0; y < ylen; y++) {
 			StringBuilder b = new StringBuilder(xlen);
 			for (int x = 0; x < xlen; x++) {
-				Tile t = world.tile(x, y);
+				Tile t = this.world.tile(x, y);
 				b.append(switch (t.resource) {
 				case Object o when o == OreResourceType.NONE -> ' ';
 				case Object o when o == OreResourceType.GOLD_ORE -> 'G';
 				case Object o when o == OreResourceType.IRON_ORE -> 'I';
 				case Object o when o == OreResourceType.COAL_ORE -> 'C';
-				default -> throw new AssertionError("unknown tile resource: " + t.resource.name());
+				default -> throw new AssertionError(MessageFormat.format(UNKNOWN_TILE_RESOURCE_0, t.resource.name()));
 				});
 			}
 			this.c.writeLines(b.toString());
@@ -1338,29 +1354,18 @@ public class SquareConquererCUI implements Runnable {
 	}
 	
 	private void cmdWorldAllTilesType() {
-		if (world == null) {
-			this.c.writeLines("there is no world I can print");
+		if (this.world == null) {
+			this.c.writeLines(WORLD_PRINT_MISSING_WORLD);
 			return;
 		}
-		this.c.writeLines("#: not explored");
-		this.c.writeLines("w: water");
-		this.c.writeLines("W: water deep");
-		this.c.writeLines("b: sand");
-		this.c.writeLines("B: sand hill");
-		this.c.writeLines("g: grass");
-		this.c.writeLines("G: grass hill");
-		this.c.writeLines("f: forest");
-		this.c.writeLines("F: forest hill");
-		this.c.writeLines("s: swamp");
-		this.c.writeLines("S: swamp hill");
-		this.c.writeLines("m: mountain");
-		int xlen = world.xlen();
-		int ylen = world.ylen();
-		this.c.writeLines("world (" + xlen + '|' + ylen + "):");
+		this.c.writeLines(MessageFormat.format(WORLD_PRINT_GROUNDS_LEGEND, "#", "w", "W", "b", "B", "g", "G", "f", "F", "s", "S", "m")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$
+		int xlen = this.world.xlen();
+		int ylen = this.world.ylen();
+		this.c.writeLines(MessageFormat.format(WORLD_PRINT_SIZES, Integer.toString(xlen), Integer.toString(ylen)));
 		for (int y = 0; y < ylen; y++) {
 			StringBuilder b = new StringBuilder(xlen);
 			for (int x = 0; x < xlen; x++) {
-				Tile t = world.tile(x, y);
+				Tile t = this.world.tile(x, y);
 				b.append(switch (t.ground) {
 				case NOT_EXPLORED -> '#';
 				case WATER_NORMAL -> 'w';
@@ -1374,7 +1379,7 @@ public class SquareConquererCUI implements Runnable {
 				case SWAMP -> 's';
 				case SWAMP_HILL -> 'S';
 				case MOUNTAIN -> 'm';
-				default -> throw new AssertionError("unknown tile type: " + t.ground.name());
+				default -> throw new AssertionError(MessageFormat.format(UNKNOWN_GROUND_TYPE_0, t.ground.name()));
 				});
 			}
 			this.c.writeLines(b.toString());
@@ -1387,53 +1392,51 @@ public class SquareConquererCUI implements Runnable {
 			return;
 		}
 		for (int i = 1; i < args.size(); i++) {
+			final String argSet = "set"; //$NON-NLS-1$
+			final String argGet = "get"; //$NON-NLS-1$
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
-				this.c.writeLines(CMD_USERNAME + " help: set or get your username");
-				this.c.writeLines(HELP + ": print this message");
-				this.c.writeLines("set <USERNAME>: set the new username");
-				this.c.writeLines("get: print the current username");
-				this.c.writeLines("without arguments, print the current username and then prompt for a new username");
+				this.c.writeLines(MessageFormat.format(USERNAME_HELP_CMD_0_HELP_1_SET_2_GET_3, CMD_USERNAME, HELP, argSet, argGet));
 			}
-			case "set" -> {
+			case argSet -> {
 				i++;
 				if (i >= args.size()) {
-					this.c.writeLines("not enugh arguments for the set arg");
+					this.c.writeLines(MessageFormat.format(NOT_ENUGH_ARGUMENTS_FOR_THE_0_ARG, argSet));
 					return;
 				}
 				String cur = args.get(i);
-				if (usr == null) {
-					username = RootUser.ROOT_NAME.equals(cur) ? null : cur;
+				if (this.usr == null) {
+					this.username = RootUser.ROOT_NAME.equals(cur) ? null : cur;
 				} else if (RootUser.ROOT_NAME.equals(cur)) {
-					usr = usr.makeRoot();
+					this.usr = this.usr.makeRoot();
 				} else {
-					usr = usr.changeName(cur);
+					this.usr = this.usr.changeName(cur);
 				}
 			}
-			case "get" -> {
-				String cur = usr == null ? username : usr.name();
+			case argGet -> {
+				String cur = this.usr == null ? this.username : this.usr.name();
 				cur = cur == null ? RootUser.ROOT_NAME : cur;
 				this.c.writeLines(cur);
 			}
-			default -> this.c.writeLines("unknown argument: '" + args.get(i) + '\'');
+			default -> this.c.writeLines(MessageFormat.format(UNKNOWN_ARGUMENT_0, args.get(i)));
 			}
 		}
 	}
 	
 	private void cmdUsernameNoArgs() {
-		String cur = usr == null ? username : usr.name();
+		String cur = this.usr == null ? this.username : this.usr.name();
 		if (cur != null) {
-			this.c.writeLines("your current username is '" + cur + '\'');
+			this.c.writeLines(MessageFormat.format(USERNAME_CURRENT_USERNAME_, cur));
 		}
-		cur = this.c.readLine("enter your new username: ");
-		if (usr == null) {
-			username = RootUser.ROOT_NAME.equals(cur) ? null : cur;
+		cur = this.c.readLine(USERNAME_ENTER_YOUR_NEW_USERNAME);
+		if (this.usr == null) {
+			this.username = RootUser.ROOT_NAME.equals(cur) ? null : cur;
 		} else if (RootUser.ROOT_NAME.equals(cur)) {
-			if (!(usr instanceof RootUser)) {
-				usr = usr.makeRoot();
+			if (!(this.usr instanceof RootUser)) {
+				this.usr = this.usr.makeRoot();
 			}
 		} else {
-			usr = usr.changeName(cur);
+			this.usr = this.usr.changeName(cur);
 		}
 	}
 	
@@ -1445,73 +1448,74 @@ public class SquareConquererCUI implements Runnable {
 			cmdStatusServerPW();
 		} else {
 			for (int i = 1; i < args.size(); i++) {
+				final String argUser             = "user"; //$NON-NLS-1$
+				final String argWorld            = "world"; //$NON-NLS-1$
+				final String argWorldRemoteSize  = "world-remote-size"; //$NON-NLS-1$
+				final String argWorldRemoteAll   = "world-remote-all"; //$NON-NLS-1$
+				final String argWorldRemoteWorld = "world-remote-world"; //$NON-NLS-1$
+				final String argServer           = "server"; //$NON-NLS-1$
+				final String argServerpw         = "serverpw"; //$NON-NLS-1$
+				final String argServerPW         = "server-pw"; //$NON-NLS-1$
 				switch (args.get(i).toLowerCase()) {
 				case HELP -> {
-					this.c.writeLines("Status command: help");
-					this.c.writeLines("without arguments, write all status types");
-					this.c.writeLines("with arguments:");
-					this.c.writeLines("  '" + HELP + "' write this message");
-					this.c.writeLines("  'user' write the user status");
-					this.c.writeLines("  'world-remote-size' update the size of the remote world and then write the world status");
-					this.c.writeLines("  'world-remote-all' or 'world-remote-world' update the complete remote world and then write the world status");
-					this.c.writeLines("  'server' write the server status");
-					this.c.writeLines("  'serverpw' or 'server-pw' write the server password status");
+					this.c.writeLines(
+						MessageFormat.format(STATUS_HELP_BLA_BLA, HELP, argUser, argWorldRemoteAll, argWorldRemoteWorld, argServer, argServerpw, argServerPW));
 				}
-				case "user" -> cmdStatusUser();
-				case "world" -> cmdStatusWorld();
-				case "world-remote-size" -> cmdStatusWorldRemoteSize();
-				case "world-remote-all", "world-remote-world" -> cmdStatusWorldRemoteAll();
-				case "server" -> cmdStatusServer();
-				case "serverpw", "server-pw" -> cmdStatusServerPW();
-				default -> this.c.writeLines("unknown argument: '" + args.get(i) + "'");
+				case argUser -> cmdStatusUser();
+				case argWorld -> cmdStatusWorld();
+				case argWorldRemoteSize -> cmdStatusWorldRemoteSize();
+				case argWorldRemoteAll, argWorldRemoteWorld -> cmdStatusWorldRemoteAll();
+				case argServer -> cmdStatusServer();
+				case argServerpw, argServerPW -> cmdStatusServerPW();
+				default -> this.c.writeLines(MessageFormat.format(UNKNOWN_ARGUMENT_0, args.get(i)));
 				}
 			}
 		}
 	}
 	
 	private void cmdStatusServerPW() {
-		if (serverPW != null) {
-			this.c.writeLines("serverPassword: set");
+		if (this.serverPW != null) {
+			this.c.writeLines(STATUS_SERVER_PW_THERE_IS_ONE);
 		} else {
-			this.c.writeLines("serverPassword: there is no server password");
-			if (serverThread != null) {
-				this.c.writeLines("  note that I remove my reference of the server password after starting the server");
-				this.c.writeLines("  only because I do not know a server password, does not mean that the server knows no password");
+			this.c.writeLines(STATUS_SERVER_PW_THERE_IS_NONE);
+			if (this.serverThread != null) {
+				this.c.writeLines(STATUS_SERVER_PW_NONE_BUT_SERVER_RUNNING);
 			}
 		}
 	}
 	
 	private void cmdStatusServer() {
-		if (serverThread != null) {
-			this.c.writeLines("MyServer: running");
+		if (this.serverThread != null) {
+			Map<User, Connection> cs = this.connects;
+			this.c.writeLines(MessageFormat.format(STATUS_SERVER_RUNNING, cs == null ? STATUS_SERVER_NO_CONNECTS : Integer.toString(cs.size())));
 		} else {
-			this.c.writeLines("MyServer: there is no server");
+			this.c.writeLines(STATUS_SERVER_NO_SERVER);
 		}
 	}
 	
 	private void cmdStatusWorldRemoteAll() {
-		if (world == null || !(world instanceof RemoteWorld rw)) {
+		if (this.world == null || !(this.world instanceof RemoteWorld rw)) {
 			this.c.writeLines("there is no remote world");
 			return;
 		}
 		try {
 			rw.updateWorld();
 			this.c.writeLines("World: remote world loaded");
-			this.c.writeLines("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
+			this.c.writeLines("  Bounds: [xlen=" + this.world.xlen() + " ylen=" + this.world.ylen() + ']');
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
 	private void cmdStatusWorldRemoteSize() {
-		if (world == null || !(world instanceof RemoteWorld rw)) {
+		if (this.world == null || !(this.world instanceof RemoteWorld rw)) {
 			this.c.writeLines("there is no remote world");
 			return;
 		}
 		try {
 			rw.updateWorldSize();
 			this.c.writeLines("World: remote world loaded");
-			this.c.writeLines("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
+			this.c.writeLines("  Bounds: [xlen=" + this.world.xlen() + " ylen=" + this.world.ylen() + ']');
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -1519,27 +1523,27 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdStatusWorld() {
 		boolean writeBounds = true;
-		if (world == null) {
+		if (this.world == null) {
 			this.c.writeLines("World: there is no world");
 			writeBounds = false;
-		} else if (world instanceof RootWorld) {
+		} else if (this.world instanceof RootWorld) {
 			this.c.writeLines("World: root world loaded");
-		} else if (world instanceof RootWorld.Builder) {
+		} else if (this.world instanceof RootWorld.Builder) {
 			this.c.writeLines("World: builder world loaded");
-		} else if (world instanceof RemoteWorld rw) {
+		} else if (this.world instanceof RemoteWorld rw) {
 			this.c.writeLines("World: remote world loaded");
 			if (rw.loadedBounds()) {
 				this.c.writeLines("  Bounds: not loaded");
 				writeBounds = false;
 			}
-		} else if (world instanceof UserWorld) {
+		} else if (this.world instanceof UserWorld) {
 			this.c.writeLines("World: user world loaded");
 		} else {
 			this.c.writeLines("World: unknown world type loaded");
-			this.c.writeLines("  Type: " + world.getClass().getSimpleName());
+			this.c.writeLines("  Type: " + this.world.getClass().getSimpleName());
 		}
 		if (writeBounds) {
-			this.c.writeLines("  Bounds: [xlen=" + world.xlen() + " ylen=" + world.ylen() + ']');
+			this.c.writeLines("  Bounds: [xlen=" + this.world.xlen() + " ylen=" + this.world.ylen() + ']');
 		}
 	}
 	
@@ -1674,17 +1678,17 @@ public class SquareConquererCUI implements Runnable {
 					} else {
 						conn = Connection.ClientConnect.connect(cst.host, cst.port, usr);
 					}
-					world = new RemoteWorld(conn);
+					this.world = new RemoteWorld(conn);
 					this.c.writeLines("connected to the server, remote world created");
 				} catch (IOException e) {
 					this.c.writeLines("could not connect to the server: " + e.toString());
 				}
 			}
-		} while (retry(world == null));
+		} while (retry(this.world == null));
 	}
 	
 	private void doTaskStartServer(StartServerTask sst) {
-		if (world == null) {
+		if (this.world == null) {
 			boolean load;
 			while (true) {
 				String line = this.c.readLine("[l]oad world or create a [n]ew world?").trim();
@@ -1706,9 +1710,9 @@ public class SquareConquererCUI implements Runnable {
 				subTaskStartServerNewWorld();
 			}
 		}
-		if (world != null) {
+		if (this.world != null) {
 			synchronized (this) {
-				final RootWorld       rw = (RootWorld) world;
+				final RootWorld       rw = (RootWorld) this.world;
 				Map<User, Connection> cs = new HashMap<>();
 				connects     = cs;
 				serverThread = threadStart(() -> {
@@ -1745,7 +1749,7 @@ public class SquareConquererCUI implements Runnable {
 			if (ylen > 0) {
 				RootWorld.Builder b = new RootWorld.Builder((RootUser) usr, xlen, ylen);
 				b.fillRandom();
-				world = b.create();
+				this.world = b.create();
 			}
 		}
 	}
@@ -1831,22 +1835,17 @@ public class SquareConquererCUI implements Runnable {
 	private boolean loadFile(Path loadFile) {
 		try (InputStream in = Files.newInputStream(loadFile)) {
 			Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr);
-			RootUser   root = (RootUser) usr;
+			RootUser   root = (RootUser) this.usr;
 			root.load(conn);
 			Tile[][] tiles = RemoteWorld.loadWorld(conn, root.users());
-			world = RootWorld.Builder.createBuilder(root, tiles);
-			try {
-				world = ((RootWorld.Builder) world).create();
-			} catch (IllegalStateException ise) {
-				this.c.writeLines("could not build the world: " + ise);
-				this.c.writeLines("the current world is in building mode");
-			}
-			username = null;
-			this.c.writeLines("world successful loaded");
+			this.world = RootWorld.Builder.createBuilder(root, tiles);
+			this.username = null;
+			this.c.writeLines(WORLD_LOAD_LOADED_WORLD_AND_USERS_SUCCESSFULLY);
+			this.c.writeLines(WORLD_TO_BUILD_FINISH);
 			return false;
 		} catch (IOException e) {
-			usr = null;
-			this.c.writeLines("error: " + e.toString());
+			this.usr = null;
+			this.c.writeLines(MessageFormat.format(WORLD_LOAD_ERROR_ON_LOAD, e));
 			return true;
 		}
 	}
