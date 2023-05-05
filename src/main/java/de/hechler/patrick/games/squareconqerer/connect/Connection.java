@@ -1019,6 +1019,7 @@ public class Connection implements Closeable, WrongInputHandler {
 	
 	/**
 	 * this is the same as {@link #blocked(int, Executable, Executable) blocked(0, exec, null)}
+	 * @param <T> the type of the throwable the executable may throw
 	 * 
 	 * @param exec the executable to execute
 	 * 
