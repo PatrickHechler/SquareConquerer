@@ -55,9 +55,13 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
  */
 public class SquareConquererCUI implements Runnable {
 	
-	private static final String STATUS_SERVER_NO_SERVER = "OurServer: there is no server";
-	private static final String STATUS_SERVER_NO_CONNECTS = "-";
-	private static final String STATUS_SERVER_RUNNING = "OurServer: running, there are {0} connections";
+	private static final String STATUS_BOUNDS_XLEN_0_YLEN_1              = "  Bounds: [xlen={0} ylen={1}]";
+	private static final String STATUS_REMOTE_WORLD_SIZES_UPDATED        = "Status: remote world sizes updated";
+	private static final String STATUS_REMOTE_WORLD_SIZE_UPDATED         = "World: remote world sizes updated";
+	private static final String STATUS_MISSING_REMOTE_WORLD              = "there is no remote world";
+	private static final String STATUS_SERVER_NO_SERVER                  = "OurServer: there is no server";
+	private static final String STATUS_SERVER_NO_CONNECTS                = "-";
+	private static final String STATUS_SERVER_RUNNING                    = "OurServer: running, there are {0} connections";
 	private static final String STATUS_SERVER_PW_NONE_BUT_SERVER_RUNNING =
 		"  note that I remove my reference of the server password after starting the server\n  only because I do not know a server password, does not mean that the server knows no password";
 	private static final String STATUS_SERVER_PW_THERE_IS_NONE           = "serverPassword: there is no server password";
@@ -1495,13 +1499,13 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdStatusWorldRemoteAll() {
 		if (this.world == null || !(this.world instanceof RemoteWorld rw)) {
-			this.c.writeLines("there is no remote world");
+			this.c.writeLines(STATUS_MISSING_REMOTE_WORLD);
 			return;
 		}
 		try {
 			rw.updateWorld();
-			this.c.writeLines("World: remote world loaded");
-			this.c.writeLines("  Bounds: [xlen=" + this.world.xlen() + " ylen=" + this.world.ylen() + ']');
+			this.c.writeLines(STATUS_REMOTE_WORLD_SIZES_UPDATED);
+			this.c.writeLines(MessageFormat.format(STATUS_BOUNDS_XLEN_0_YLEN_1, Integer.toString(this.world.xlen()), Integer.toString(this.world.ylen())));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -1509,13 +1513,13 @@ public class SquareConquererCUI implements Runnable {
 	
 	private void cmdStatusWorldRemoteSize() {
 		if (this.world == null || !(this.world instanceof RemoteWorld rw)) {
-			this.c.writeLines("there is no remote world");
+			this.c.writeLines(STATUS_MISSING_REMOTE_WORLD);
 			return;
 		}
 		try {
 			rw.updateWorldSize();
-			this.c.writeLines("World: remote world loaded");
-			this.c.writeLines("  Bounds: [xlen=" + this.world.xlen() + " ylen=" + this.world.ylen() + ']');
+			this.c.writeLines(STATUS_REMOTE_WORLD_SIZE_UPDATED);
+			this.c.writeLines(MessageFormat.format(STATUS_BOUNDS_XLEN_0_YLEN_1, Integer.toString(this.world.xlen()), Integer.toString(this.world.ylen())));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -1531,7 +1535,7 @@ public class SquareConquererCUI implements Runnable {
 		} else if (this.world instanceof RootWorld.Builder) {
 			this.c.writeLines("World: builder world loaded");
 		} else if (this.world instanceof RemoteWorld rw) {
-			this.c.writeLines("World: remote world loaded");
+			this.c.writeLines(STATUS_REMOTE_WORLD_SIZE_UPDATED);
 			if (rw.loadedBounds()) {
 				this.c.writeLines("  Bounds: not loaded");
 				writeBounds = false;
@@ -1838,7 +1842,7 @@ public class SquareConquererCUI implements Runnable {
 			RootUser   root = (RootUser) this.usr;
 			root.load(conn);
 			Tile[][] tiles = RemoteWorld.loadWorld(conn, root.users());
-			this.world = RootWorld.Builder.createBuilder(root, tiles);
+			this.world    = RootWorld.Builder.createBuilder(root, tiles);
 			this.username = null;
 			this.c.writeLines(WORLD_LOAD_LOADED_WORLD_AND_USERS_SUCCESSFULLY);
 			this.c.writeLines(WORLD_TO_BUILD_FINISH);
