@@ -35,6 +35,7 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.hechler.patrick.games.squareconqerer.Messages;
 import de.hechler.patrick.games.squareconqerer.Settings;
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.User.RootUser;
@@ -55,156 +56,166 @@ import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
  */
 public class SquareConquererCUI implements Runnable {
 	
-	private static final String ERROR_WHILE_EXECUTING_TASK_0 = "error while executing task: {0}";
+	// help method constants
+	private static final String ASK_RETRY_Y_ES_N_O                        = Messages.getString("SquareConquererCUI.ask~retry"); //$NON-NLS-1$
+	private static final String READN_NUM_AND_THE_MAXIMUM_NUMBER_IS       = Messages.getString("SquareConquererCUI.read-num~max-num-addition"); //$NON-NLS-1$
+	private static final String READN_NUM_THE_MINIMUM_NUMBER_IS_0_1       = Messages.getString("SquareConquererCUI.read-num~min-num-is"); //$NON-NLS-1$
+	private static final String READN_NUM_COULD_NOT_PARSE_THE_NUMBER_0_1  = Messages.getString("SquareConquererCUI.read-num~invalid-number"); //$NON-NLS-1$
+	private static final String LOAD_TASK_LOAD_NOW_THE_FILE_0             = Messages.getString("SquareConquererCUI.load-task~load-file"); //$NON-NLS-1$
+	private static final String PROMPT_L_OAD_WORLD_OR_CREATE_A_N_EW_WORLD = Messages.getString("SquareConquererCUI.prompt~l_oad-or-create-n_ew-world"); //$NON-NLS-1$
+	private static final String ERROR_WHILE_EXECUTING_TASK_0              = Messages.getString("SquareConquererCUI.error-while-exec-task"); //$NON-NLS-1$
 	// help constants
-	private static final String HELP_TOO_MANY_ARGS   = "either give me the name of an command as argument or no argument";
-	private static final String HELP_HELP_MESSAGE    = "print a general help message or the help message of the argument";
-	private static final String HELP_GENERAL_MESSAGE = "Square Conquerer Console {0} help:\\nCommands:\\n  {1}\\n    print this message\\n  {2}\\n    print version information\\n  {3}\\n    print status information\\n  {4}\\n    set your username\\n  {5}\\n    change or display the world\\n  {6}\\n    connect to a server or start/stop your server\\n  {7}\\n    change the password (your or someone others, it doesn''t matter)\\n  {8}\\n    set the server password\\n  {9}\\n    quit this program\\n  {10}\\n    alias for {11}\\n\\nGeneral:\\n  all comands support the {12} argument\\n  If you want further information for a specific command, ask the command\\n  or use {13} <command>\\n\\n  passwords will never be accepted in the arguments";
+	private static final String HELP_TOO_MANY_ARGS   = Messages.getString("SquareConquererCUI.help~too-many-args"); //$NON-NLS-1$
+	private static final String HELP_HELP_MESSAGE    = Messages.getString("SquareConquererCUI.help~help"); //$NON-NLS-1$
+	private static final String HELP_GENERAL_MESSAGE = Messages.getString("SquareConquererCUI.help~general-help"); //$NON-NLS-1$
 	// version constants
-	private static final String VERSION_HELP_0_BLA_BLA             = "without args, I only write some version information and I can not do much more\nwith one argument, I write this message, when the argument is the {0} argument\nIn all other cases I print an error message";
-	private static final String VERSION_SQUARE_CONQUERER_VERSION_0 = "Square Conquerer version: {0}";
+	private static final String VERSION_HELP_0_BLA_BLA             = Messages.getString("SquareConquererCUI.version~help"); //$NON-NLS-1$
+	private static final String VERSION_SQUARE_CONQUERER_VERSION_0 = Messages.getString("SquareConquererCUI.version~version"); //$NON-NLS-1$
 	// status constants
-	private static final String STATUS_USER_NAME_0                       = "User: Name: {0}";
-	private static final String STATUS_USER_NOT_LOGGED_IN_USERNAME_0     = "User: the user is not logged in, username: {0}";
-	private static final String STATUS_BOUNDS_XLEN_0_YLEN_1              = "  Bounds: [xlen={0} ylen={1}]";
-	private static final String STATUS_WORLD_UNKNOWN_TYPE_0              = "World: unknown world type loaded\n  Type: {0}";
-	private static final String STATUS_WORLD_USER_WORLD_LOADED           = "World: user world loaded";
-	private static final String STATUS_BOUNDS_NOT_LOADED                 = "  Bounds: not loaded";
-	private static final String STATUS_WORLD_BUILDER_WORLD_LOADED        = "World: build world loaded";
-	private static final String STATUS_WORLD_ROOT_WORLD_LOADED           = "World: root world loaded";
-	private static final String STATUS_WORLD_NO_WORLD                    = "World: there is no world";
-	private static final String STATUS_REMOTE_WORLD_SIZES_UPDATED        = "World: remote world sizes updated";
-	private static final String STATUS_MISSING_REMOTE_WORLD              = "there is no remote world";
-	private static final String STATUS_SERVER_NO_SERVER                  = "OurServer: there is no server";
-	private static final String STATUS_SERVER_NO_CONNECTS                = "-";
-	private static final String STATUS_SERVER_RUNNING                    = "OurServer: running, there are {0} connections";
-	private static final String STATUS_SERVER_PW_NONE_BUT_SERVER_RUNNING = "  note that I remove my reference of the server password after starting the server\n  only because I do not know a server password, does not mean that the server knows no password";
-	private static final String STATUS_SERVER_PW_THERE_IS_NONE           = "serverPassword: there is no server password";
-	private static final String STATUS_SERVER_PW_THERE_IS_ONE            = "serverPassword: there is one";
-	private static final String STATUS_HELP_BLA_BLA                      = "Status command: help\nwithout arguments, write all status types\nwith arguments:\n  {0}: write this message\n  {1}: write the user status\n  world-remote-size: update the size of the remote world and then write the world status\n  {2}: or {3} update the complete remote world and then write the world status\n  {4}: write the server status\n  {5} or {6}: write the server password status";
-	private static final String USERNAME_ENTER_YOUR_NEW_USERNAME         = "enter your new username: ";
-	private static final String USERNAME_CURRENT_USERNAME_               = "your current username is ''{0}''";
-	private static final String USERNAME_HELP_CMD_0_HELP_1_SET_2_GET_3   = "{0} help: set or get your username\n{1}: print this message\n{2} <USERNAME>: set the new username\n{3}: print the current username\nwithout arguments, print the current username and then prompt for a new username";
+	private static final String STATUS_USER_NAME_0                       = Messages.getString("SquareConquererCUI.status~user-name"); //$NON-NLS-1$
+	private static final String STATUS_USER_NOT_LOGGED_IN_USERNAME_0     = Messages.getString("SquareConquererCUI.status~user-not-logged-in-name"); //$NON-NLS-1$
+	private static final String STATUS_BOUNDS_XLEN_0_YLEN_1              = Messages.getString("SquareConquererCUI.status~world-bounds"); //$NON-NLS-1$
+	private static final String STATUS_WORLD_UNKNOWN_TYPE_0              = Messages.getString("SquareConquererCUI.status~unknown-world-type"); //$NON-NLS-1$
+	private static final String STATUS_WORLD_USER_WORLD_LOADED           = Messages.getString("SquareConquererCUI.status~user-world"); //$NON-NLS-1$
+	private static final String STATUS_BOUNDS_NOT_LOADED                 = Messages.getString("SquareConquererCUI.status~bounds-not-loaded"); //$NON-NLS-1$
+	private static final String STATUS_WORLD_BUILDER_WORLD_LOADED        = Messages.getString("SquareConquererCUI.status~build-world"); //$NON-NLS-1$
+	private static final String STATUS_WORLD_ROOT_WORLD_LOADED           = Messages.getString("SquareConquererCUI.status~root-world"); //$NON-NLS-1$
+	private static final String STATUS_WORLD_NO_WORLD                    = Messages.getString("SquareConquererCUI.status~no-world"); //$NON-NLS-1$
+	private static final String STATUS_REMOTE_WORLD_SIZES_UPDATED        = Messages.getString("SquareConquererCUI.status~remote-world-sizes-updated"); //$NON-NLS-1$
+	private static final String STATUS_MISSING_REMOTE_WORLD              = Messages.getString("SquareConquererCUI.status~no-remote-world"); //$NON-NLS-1$
+	private static final String STATUS_SERVER_NO_SERVER                  = Messages.getString("SquareConquererCUI.status~no-server"); //$NON-NLS-1$
+	private static final String STATUS_SERVER_NO_CONNECTS                = Messages.getString("SquareConquererCUI.status~none-(connects)"); //$NON-NLS-1$
+	private static final String STATUS_SERVER_RUNNING                    = Messages.getString("SquareConquererCUI.status~server-n-connects"); //$NON-NLS-1$
+	private static final String STATUS_SERVER_PW_NONE_BUT_SERVER_RUNNING = Messages.getString("SquareConquererCUI.status~no-server-pw-but-server-running"); //$NON-NLS-1$
+	private static final String STATUS_SERVER_PW_THERE_IS_NONE           = Messages.getString("SquareConquererCUI.status~no-server-pw"); //$NON-NLS-1$
+	private static final String STATUS_SERVER_PW_THERE_IS_ONE            = Messages.getString("SquareConquererCUI.status~server-pw-yes"); //$NON-NLS-1$
+	private static final String STATUS_HELP_BLA_BLA                      = Messages.getString("SquareConquererCUI.status~help"); //$NON-NLS-1$
+	private static final String USERNAME_ENTER_YOUR_NEW_USERNAME         = Messages.getString("SquareConquererCUI.username~enter-your-new"); //$NON-NLS-1$
+	private static final String USERNAME_CURRENT_USERNAME_               = Messages.getString("SquareConquererCUI.username~your-current"); //$NON-NLS-1$
+	private static final String USERNAME_HELP_CMD_0_HELP_1_SET_2_GET_3   = Messages.getString("SquareConquererCUI.username~help"); //$NON-NLS-1$
 	// world constants
-	private static final String WORLD_PRINT_GROUNDS_LEGEND                                                    = "{0}: not explored\n{1}: water\n{2}: water deep\n{3}: sand\n{4}: sand hill\n{5}: grass\n{6}: grass hill\n{7}: forest\n{8}: forest hill\n{9}: swamp\n{10}: swamp hill\n{11}: mountain";
-	private static final String WORLD_PRINT_SIZES                                                             = "world ({0}|{1}):";
-	private static final String WORLD_PRINT_RESOURCES_LEGEND                                                  = "resources\n  {0}: gold ore\n  {1}: iron ore\n  {2}: coal ore";
-	private static final String WORLD_PRINT_MISSING_WORLD                                                     = "there is no world I can print";
-	private static final String WORLD_LOAD_PROMPT_ENTER_FILE_TO_BE_LOADED                                     = "enter now the file, which should be loaded: ";
-	private static final String WRITE_TILE_X_0_Y_1_GROUND_2_RESOURCE_3                                        = "Tile: ({0}|{1})\n  Type: {2}\n  Resource: {3}";
-	private static final String WORLD_NOARG_ENTER_Y_COORDINATE_OF_TILE                                        = "enter now the Y-coordinate of the tile";
-	private static final String WORLD_NOARG_ENTER_X_COORDINATE_OF_TILE                                        = "enter now the X-coordinate of the tile";
-	private static final String WORLD_NOARG_DISPLAY_C_OMPLETE_OR_T_ILE                                        = "display the [c]omplete world or only a [t]ile";
-	private static final String WORLD_NOARG_CREATE_NEW_FINISH                                                 = "created new world";
-	private static final String WORLD_NOARG_PROMPT_ENTER_Y_LEN                                                = "enter now the Y-Length (Height) if the World";
-	private static final String WORLD_NOARG_PROMPT_ENTER_X_LEN                                                = "enter now the X-Length (Width) if the World";
-	private static final String WORLD_NOARG_L_OAD_FILE_CREATE_N_EW_OR_C_ANCEL                                 = "[l]oad from file or create [n]ew world (or [c]ancel)";
-	private static final String WORLD_NOARG_C_HAGE_OR_D_ISPLAY                                                = "[c]hange or [d]isplay the current world? ";
-	private static final String WORLD_TILE_RESOURCE_UNKNOWN_RESOURCE                                          = "unknown resource type: ''{0}''";
-	private static final String WORLD_TILE_TYPE_UNKNOWN_GROUND                                                = "unknown ground type: ''{0}''";
-	private static final String WORLD_TILE_TYPE_CURRENT_TYPE_0_NOT_ACCEPT_1_SUFFIX                            = "the current type ({0}) does not accept the {1} suffix";
-	private static final String WORLD_MODIFY_NO_BUILD_WORLD                                                   = "the world is no build world, I can only modify build worlds";
-	private static final String WORLD_MODIFY_MISSING_WORLD                                                    = "there is no world, so I can't modify it";
-	private static final String WORLD_BUILD_ERROR_ON_BUILD                                                    = "the build failed: {0}";
-	private static final String WORLD_BUILD_FINISH                                                            = "builded the current world";
-	private static final String WORLD_BUILD_NO_BUILD_WORLD                                                    = "the world is no build world, I can only build build worlds";
-	private static final String WORLD_SAVE_FINISH                                                             = "saved wolrd and users in the given file";
-	private static final String WORLD_SAVE__ALL_ERROR_ON_SAVE                                                 = "error while saving: ";
-	private static final String WORLD_SAVE_ALL_FINISH                                                         = "saved everything in the given file";
-	private static final String WORLD_SAVE__ALL_FILE_EXISTS_P_ROCEED_C_ANCEL                                  = "the save file already exists, proceed? ([p]roceed|[c]ancel)";
-	private static final String WORLD_SAVE_ALL_NOT_ROOT_WORLD                                                 = "the current world is not a root world";
-	private static final String WORLD_SAVE_ALL_MISSING_WORLD                                                  = "there is no world I can save";
-	private static final String WORLD_TO_BUILD_FINISH                                                         = "successfully converted the current world to a build world";
-	private static final String WORLD_CONVERT_MISSING_WORLD                                                   = "there is no world, so I can't convert it";
-	private static final String WORLD_TILE_MISSING_WORLD_TO_PRINT                                             = "there is no world, so I can not print a tile from the world";
-	private static final String WORLD_CREATE_CLOSE_SERVER_THREAD                                              = "close now the server thread";
-	private static final String WORLD_CREATE_ERROR_ON_CLOSING_REMOTE_WORLD_I_IGNORE_ERROR_AND_PROCEED_ERROR_0 = "error while closing remote world: (I will ignore the error and proceed now) error: {0}";
-	private static final String WORLD_CREATE_COULD_NOT_PARSE_THE_WORLD_SIZE_0_1_ERROR_2                       = "could not parse the world size: <{0}> <{1}> error: {2}";
-	private static final String WORLD_CREATE_NOT_LOGGED_IN                                                    = "you need to be logged in for the create operation";
-	private static final String WORLD_LOAD_LOADED_WORLD_AND_USERS_SUCCESSFULLY                                = "loaded world and users successfully from the file";
-	private static final String WORLD_LOAD_FINISH_LOAD                                                        = "loaded everything from the file";
-	private static final String WORLD_LOAD_ERROR_ON_LOAD                                                      = "error while loading: {0}";
-	private static final String WORLD_LOAD_CHANGED_TO_ROOT                                                    = "changed to root user";
-	private static final String WORLD_LOAD_NOT_LOGGED_IN                                                      = "there is no user logged in";
-	private static final String WORLD_LOAD_NO_REGULAR_FILE                                                    = "the path does not refer to a regular file";
-	private static final String WORLD_LOAD_FILE_NOT_EXIST                                                     = "the file does not exist";
-	private static final String WORLD_HELP_BLA_BLA_MNY_ARGS                                                   = "{0} help: change or display the world\nbase commands: (those work always)\n  {1}: print this message\n  {2} <SAVE_FILE>: load everything from the file\n    the loaded world will be in root mode\n    if there is no user this operation will fail\n    if the user is currently not root, it will be after this operation\n    if the user already is root, all subusers will be deleted\n    the SAVE_FILE has to be created with save-all or save-all-force\n  {3} <SAVE_FILE>: load other users and world from the file\n    the loaded world will be in build mode\n    if there is no user this operation will fail\n    if the user is currently not root, it will be after this operation\n    if the user already is root, all subusers will be deleted\n    the SAVE_FILE has to be created with save or save-force\n  {4} <X-LEN/WIDTH> <Y-LEN/HEIGHT>: create a new build world with the given sizes\n    note that this command needs you to be logged in\n    note that this command will convert you to a new root user\n    the newly created world will be in build mode\nsimple commands: (work, when there is an world)\n  {5} or print.types: print all tile types of the world\n  {6}: print all resources of the world\n  {7} <X> <Y>: print the tile at the given coordinates\n  {8}: convert the world to a build world\n  {9} <FILE>: save the current world to the given file\n  {10} <FILE>: like save, but do not ask if the file already exist\nroot world commands: (world needs to be in root mode)\n  {11} <FILE>: save everything to the given file\n  {12} <FILE>: like save-all, but do not ask if the file already exist\nbuild world commands: (world needs to be in build mode)\n  {13}: convert the world to a root world\n  {14} <TYPE> <X> <Y>: set the type of the given tile\n    valid TYPE values: water sand grass forest swamp mountain not-explored\n    [sand grass forest swamp] accept the ''+hill'' suffix\n    [water] accepts the ''+deep'' suffix\n    all types except of not-explored accept the ''+normal'' suffix, which is just an alias for no suffix\n    if there is only a suffix given it will replace the current suffix (if this is valid)\\n  {15} <RESOURCE> <X> <Y>: set the resource of the given tile\n    valid RESOURCE values: none gold iron coal\n  {16}: all tiles with type not-explored with random values\n    the random tiles may depend on their enviromnet (in contrast to {17})\n    note that the potential existing resource values of these types will be randomly overwritten\n  {18}: all tiles with type not-explored with random values\n    note that the potential existing resource values of these types will be randomly overwritten"; // server
-																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																															// constants
-	private static final String SERVER_STARTED_SERVER                                                         = "started server";
-	private static final String SERVER_SERVER_STOPPED_WITH_ERROR                                              = "the server stopped with an error: ";
-	private static final String SERVER_CLOSED_MESSAGE                                                         = "stopped the server, all remote connections should be closed now";
-	private static final String SERVER_NOARG_ENTER_NOW_SERVER_PORT_DEFAULT_IS_0                               = "enter now the port on which the server should listen (default is {0}): ";
-	private static final String SERVER_NOARG_ERROR_DURING_CONNECT                                             = "error while connecting to the server: {0}";
-	private static final String SERVER_NOARG_CONNECTED_TO_0_AT_PORT_1                                         = "connected successful to {0} (at port {1})";
-	private static final String SERVER_NOARG_PROMPT_ENTER_SERVERHOST                                          = "enter now the serverhost: ";
-	private static final String SERVER_NOARG_P_ROCEED_AND_DISCARD_WORLD_OR_C_ANCEL                            = "if you proceed you current world will be discarded. ([p]rocced/[c]ancel)? ";
-	private static final String SERVER_NOARG_S_TART_SERVER                                                    = ", [s]tart a server";
-	private static final String SERVER_NOARG_C_ONNECT_0_OR_N_OTHING                                           = "do you want to [c]onnect to a server{0} or do [n]othing?";
-	private static final String SERVER_NOARG_NOT_LOGGED_IN                                                    = "you are not logged in, retry after you logged in (take a look at the {0} and {1} commands)";
-	private static final String SERVER_NOARG_ERROR_WHILE_DISCONNECT_NO_RETRY_0                                = "error while closing: (proceed anyway, do not retry) ";
-	private static final String SERVER_NOARG_DISCONNECTED                                                     = "closed old world successfully";
-	private static final String SERVER_NOARG_CONTAIN_CUR_WORLD_AS_BUILD_YN                                    = "dou you want to contain your current world in build mode? ([y]es|[n]o)";
-	private static final String SERVER_NOARG_D_ISCONNECT_OR_N_OTHING                                          = "dou you want to [d]isconnect or do [n]othing?";
-	private static final String SERVER_NOARG_CONNECTE_TO_SERVER                                               = "you are currently connected to a server";
-	private static final String SERVER_NOARG_C_LOSE_SERVER_OR_N_OTHING                                        = "dou you want to [c]lose the server [n]othing?";
-	private static final String SERVER_NOARG_SERVER_IS_RUNNING                                                = "the server is currently running";
-	private static final String SERVER_STOP_STOPPED                                                           = "the server stopped";
-	private static final String SERVER_STOP_TOLD_TO_STOP                                                      = "I told the server thread to stop";
-	private static final String SERVER_STOP_NO_SERVER                                                         = "there seems to be no server running";
-	private static final String SERVER_START_STARTED_SERVER                                                   = "started the server thread";
-	private static final String SERVER_START_ERROR_AT_SERVER_THREAD_0                                         = "error at the server thread: {0}";
-	private static final String SERVER_START_USER_0_LOGGED_IN_FROM_1                                          = "the user ''{0}'' logged in from {1}";
-	private static final String SERVER_USER_0_DISCONNECTED                                                    = "the user ''{0}'' disconnected";
-	private static final String SERVER_START_NO_ROOT_WORLD                                                    = "your loaded world is no root world";
-	private static final String SERVER_START_MISSING_WORLD                                                    = "there is no world loaded";
-	private static final String SERVER_START_ALREADY_RUNNING                                                  = "I am already running an server";
-	private static final String SERVER_DISCONNECT_DISCONNECTING_ERROR_NOT_RETRY_0                             = "error while disconnecting: (do not retry) {0}";
-	private static final String SERVER_DISCONNECT_CLOSED_REMOTE_WORLD                                         = "closed old remote world successfully";
-	private static final String SERVER_DISCONNECT_NO_SERVER_CONNECTION                                        = "I don't know any server connection";
-	private static final String SERVER_CONNECT_ERROR_WHILE_CONNECTING_0                                       = "error while connecting: {0}";
-	private static final String SERVER_COULD_NOT_PARSE_PORT_0                                                 = "could not parse the port: {0}";
-	private static final String SERVER_CONNECT_NOT_LOGGED_IN                                                  = "you are not logged in, retry after you logged in (look at {0} and {1})";
-	private static final String SERVER_STATUS_NOTHING                                                         = "it seems that there is no server running and your world does not seem to be connected to some server";
-	private static final String SERVER_STATS_CONNECTED                                                        = "your loaded world is a remote world";
-	private static final String SERVER_STATUS_RUNNING                                                         = "the server thread is currently running";
-	private static final String SERVER_HELP_STATUS_0_CONNECT_1_DISCONNECT_2_START_3_DEFAULT_PORT_4_STOP_5     = "server help:\nbase commands:\n  {0}: print an message indicating if you are running a server/are connected to a server or nothing of it\nremote server commands:\n  {1} <SERVER_ADDRESS>: connect to the given server\n  {2}: disconnect from the server you are currently connected to\nyour server commands:\n  {3} [PORT]: start your own server\n    use minus (''-'') instead of PORT to use the defaul port {4}\n    if the loaded world is no root world, accepted connections will not get an user world, but the direct world\n    you need to be logged in as root\n  {5}: stop your own server";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               // set
-																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																															// password
-																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																															// constants
-	private static final String SET_PW_PROMPT_ENTER_YOUR_PASSWORD                                             = "enter now your new password: ";
-	private static final String SET_PW_PROMPT_ENTER_USER_PASSWORD                                             = "enter now the new password of the user: ";
-	private static final String SET_PW_PROMPT_ENTER_USERNAME                                                  = "enter now the username of the given user: ";
-	private static final String SET_PW_YOUR_PW_WAS_CHANGED                                                    = "your password was changed";
-	private static final String SET_PW_PW_OF_0_CHANGED                                                        = "the password of the user ''{0}'' changed";
-	private static final String SET_PW_ONLY_ROOT_HAS_OTHR_USRS                                                = "this is not your username and you are not root";
-	private static final String SET_PW_USER_0_NOT_FOUND                                                       = "the user ''{0}'' could not be found";
-	private static final String SET_PW_HELP_0_SET_OF_1_2_ME_3                                                 = "setpw help:\nwithout args: prompt whoses password should be changed and then change the password\nargs:\n{0}: print this message\n{1}/{2} <USERNAME>: prompt for the new password of USERNAME\n{3}: prompt for your new password\n  note, that if you are connected to an server, that connection will become invalid\n<USERNAME>: prompt for the new password of USERNAME\n  note, that if the username is ''{1}'', ''{2}'' or ''{3}'' the arguments are triggered instead";
-	private static final String SET_PW_S_OMEONES_PASSWORD                                                     = ", [s]omeones password";
-	private static final String SET_PW_Y_OUR_PW_0_OR_DO_N_OTHING                                              = "set [y]our password{0} or do [n]othing? ";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // server
-																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																															// PW
-																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																															// constants
-	private static final String SERVER_PW_PROMPT_ENTER_NEW_SERVER_PASSWORD                                    = "enter now the new server password: ";
-	private static final String SERVER_PW_REMOVE_THERE_IS_NO_SERVER_PW                                        = "there is no server password I could remove";
-	private static final String SERVER_PW_STATUS_THERE_IS_SPW                                                 = "I hava a server password set";
-	private static final String SERVER_PW_UPDATED_SERVER_PW                                                   = "the server password was updated";
-	private static final String SERVER_PW_STATUS_THERE_IS_NO_SPW                                              = "I don't hava a server password";
-	private static final String SERVER_PW_HELP_0_STATUS_1_SET_2_REMOVE_3_REMOVE_NO_FAIL                       = "server password help:\n{0}: print an message indicating if there is currently a server password set\n{1}: prompt for the new server password\n{2}: remove and clear the current server password\n{3}: same as remove, but do not show an error message if there is no server password";
-	private static final String SERVER_PW_R_EMOVE                                                             = "/[r]emove";
-	private static final String SERVER_PW_S_ET_0_THE_SERVER_PW_OR_DO_N_OTHING                                 = "do you want to [s]et{0} the server password or do [n]othing? ";
+	private static final String WORLD_LOAD_THE_PATH_0_DOES_NOT_A_FILE        = Messages.getString("SquareConquererCUI.world~load~path-is-no-file"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_THE_FILE_0_DOES_NOT_EXIST         = Messages.getString("SquareConquererCUI.world~load~path-not-exist"); //$NON-NLS-1$
+	private static final String WORLD_PRINT_GROUNDS_LEGEND                   = Messages.getString("SquareConquererCUI.world~print-ground~legend"); //$NON-NLS-1$
+	private static final String WORLD_PRINT_SIZES                            = Messages.getString("SquareConquererCUI.world~print-size"); //$NON-NLS-1$
+	private static final String WORLD_PRINT_RESOURCES_LEGEND                 = Messages.getString("SquareConquererCUI.world~print-resource~legend"); //$NON-NLS-1$
+	private static final String WORLD_PRINT_MISSING_WORLD                    = Messages.getString("SquareConquererCUI.world~print~no-world"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_PROMPT_ENTER_FILE_TO_BE_LOADED    = Messages.getString("SquareConquererCUI.world~load~enter-load-file"); //$NON-NLS-1$
+	private static final String WRITE_TILE_X_0_Y_1_GROUND_2_RESOURCE_3       = Messages.getString("SquareConquererCUI.world~print~single-tile"); //$NON-NLS-1$
+	private static final String WORLD_NOARG_ENTER_Y_COORDINATE_OF_TILE       = Messages.getString("SquareConquererCUI.world~prompt~enter-x-coordinate"); //$NON-NLS-1$
+	private static final String WORLD_NOARG_ENTER_X_COORDINATE_OF_TILE       = Messages.getString("SquareConquererCUI.world~prompt~enter-y-coordinate"); //$NON-NLS-1$
+	private static final String WORLD_NOARG_DISPLAY_C_OMPLETE_OR_T_ILE       = Messages.getString("SquareConquererCUI.world~prompt~c_omplete-world-or-t_ile"); //$NON-NLS-1$
+	private static final String WORLD_NOARG_CREATE_NEW_FINISH                = Messages.getString("SquareConquererCUI.world~created-world"); //$NON-NLS-1$
+	private static final String WORLD_NOARG_PROMPT_ENTER_Y_LEN               = Messages.getString("SquareConquererCUI.world~prompt~enter-y-len"); //$NON-NLS-1$
+	private static final String WORLD_NOARG_PROMPT_ENTER_X_LEN               = Messages.getString("SquareConquererCUI.world~prompt~enter-x-len"); //$NON-NLS-1$
+	private static final String WORLD_NOARG_L_OAD_N_EW_OR_C_ANCEL            =
+		Messages.getString("SquareConquererCUI.world~prompt~l_oad-file-or-n_ew-world-or-c_ancel"); //$NON-NLS-1$
+	private static final String WORLD_NOARG_PROMPT_C_HAGE_OR_D_ISPLAY        = Messages.getString("SquareConquererCUI.world~prompt~c_hange-or-d_isplay"); //$NON-NLS-1$
+	private static final String WORLD_TILE_RESOURCE_UNKNOWN_RESOURCE         = Messages.getString("SquareConquererCUI.world~unknown-resource-type"); //$NON-NLS-1$
+	private static final String WORLD_TILE_TYPE_UNKNOWN_GROUND               = Messages.getString("SquareConquererCUI.world~unknown-ground-type"); //$NON-NLS-1$
+	private static final String WORLD_TILE_TYPE_NOT_ACCEPT_SUFFIX            = Messages.getString("SquareConquererCUI.world~type-0-no-accepts-suffix-1"); //$NON-NLS-1$
+	private static final String WORLD_MODIFY_NO_BUILD_WORLD                  = Messages.getString("SquareConquererCUI.world~world-not-in-build-mode"); //$NON-NLS-1$
+	private static final String WORLD_MODIFY_MISSING_WORLD                   = Messages.getString("SquareConquererCUI.world~no-world-to-be-modified"); //$NON-NLS-1$
+	private static final String WORLD_BUILD_ERROR_ON_BUILD                   = Messages.getString("SquareConquererCUI.world~build-failed"); //$NON-NLS-1$
+	private static final String WORLD_BUILD_FINISH                           = Messages.getString("SquareConquererCUI.world~build-finish"); //$NON-NLS-1$
+	private static final String WORLD_BUILD_NO_BUILD_WORLD                   = Messages.getString("SquareConquererCUI.world~only-build-can-be-build"); //$NON-NLS-1$
+	private static final String WORLD_SAVE_FINISH                            = Messages.getString("SquareConquererCUI.world~save~finish"); //$NON-NLS-1$
+	private static final String WORLD_SAVE__ALL_ERROR_ON_SAVE                = Messages.getString("SquareConquererCUI.world~save~error-on-save"); //$NON-NLS-1$
+	private static final String WORLD_SAVE_ALL_FINISH                        = Messages.getString("SquareConquererCUI.world~save-all~finish"); //$NON-NLS-1$
+	private static final String WORLD_SAVE__ALL_FILE_EXISTS_P_ROCEED_C_ANCEL = Messages.getString("SquareConquererCUI.world~save~file-exists-proceed"); //$NON-NLS-1$
+	private static final String WORLD_SAVE_ALL_NOT_ROOT_WORLD                = Messages.getString("SquareConquererCUI.world~save-all~no-root-world"); //$NON-NLS-1$
+	private static final String WORLD_SAVE_ALL_MISSING_WORLD                 = Messages.getString("SquareConquererCUI.world~save~no-world"); //$NON-NLS-1$
+	private static final String WORLD_TO_BUILD_FINISH                        = Messages.getString("SquareConquererCUI.world~build~converted-to-build"); //$NON-NLS-1$
+	private static final String WORLD_CONVERT_MISSING_WORLD                  = Messages.getString("SquareConquererCUI.world~convert~no-world"); //$NON-NLS-1$
+	private static final String WORLD_TILE_MISSING_WORLD_TO_PRINT            = Messages.getString("SquareConquererCUI.world~print-tile~no-world"); //$NON-NLS-1$
+	private static final String WORLD_CREATE_CLOSE_SERVER_THREAD             = Messages.getString("SquareConquererCUI.world~server~close-server-thread"); //$NON-NLS-1$
+	private static final String WORLD_CREATE_ERROR_CLOSING_REMOTE_WORLD      = Messages.getString("SquareConquererCUI.world~server~error-on-close"); //$NON-NLS-1$
+	private static final String WORLD_CREATE_COULD_NOT_PARSE_THE_WORLD_SIZE  = Messages.getString("SquareConquererCUI.world~create~unparsable-world-size"); //$NON-NLS-1$
+	private static final String WORLD_CREATE_NOT_LOGGED_IN                   = Messages.getString("SquareConquererCUI.world~create~no-user"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_LOADED_WORLD_AND_USERS            = Messages.getString("SquareConquererCUI.world~load~finish"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_FINISH_LOAD                       = Messages.getString("SquareConquererCUI.world~load-all~finish"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_ERROR_ON_LOAD                     = Messages.getString("SquareConquererCUI.world~load~error-on-load"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_CHANGED_TO_ROOT                   = Messages.getString("SquareConquererCUI.world~load~changed-to-root"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_NOT_LOGGED_IN                     = Messages.getString("SquareConquererCUI.world~load~no-user"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_NO_REGULAR_FILE                   = Messages.getString("SquareConquererCUI.world~load~no-regular-file"); //$NON-NLS-1$
+	private static final String WORLD_LOAD_FILE_NOT_EXIST                    = Messages.getString("SquareConquererCUI.world~load~path-not-exist2"); //$NON-NLS-1$
+	private static final String WORLD_HELP_BLA_BLA_MNY_ARGS                  = Messages.getString("SquareConquererCUI.world~help"); //$NON-NLS-1$
+	// server constants
+	private static final String SERVER_STARTED_SERVER                           = Messages.getString("SquareConquererCUI.server~started"); //$NON-NLS-1$
+	private static final String SERVER_SERVER_STOPPED_WITH_ERROR                = Messages.getString("SquareConquererCUI.server~error-on-stop-TODO-Messages.format"); //$NON-NLS-1$
+	private static final String SERVER_CLOSED_MESSAGE                           = Messages.getString("SquareConquererCUI.server~stopped"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_ENTER_NOW_SERVER_PORT_DEFAULT_IS_0 = Messages.getString("SquareConquererCUI.server~enter-now-port"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_ERROR_DURING_CONNECT               = Messages.getString("SquareConquererCUI.server~error-on-connect"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_CONNECTED_TO_0_AT_PORT_1           = Messages.getString("SquareConquererCUI.server~connect~finish"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_PROMPT_ENTER_SERVERHOST            = Messages.getString("SquareConquererCUI.server~enter-host"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_P_ROCEED_OR_C_ANCEL                = Messages.getString("SquareConquererCUI.server~proceed-will-discard-current-world"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_S_TART_SERVER                      = Messages.getString("SquareConquererCUI.server~s_tart-own-server-addition"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_C_ONNECT_0_OR_N_OTHING             = Messages.getString("SquareConquererCUI.server~c_onnect-or-n_othing"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_NOT_LOGGED_IN                      = Messages.getString("SquareConquererCUI.server~no-user"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_ERROR_WHILE_DISCONNECT_NO_RETRY_0  = Messages.getString("SquareConquererCUI.server~error-on-disconnect"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_DISCONNECTED                       = Messages.getString("SquareConquererCUI.server~disconeccted"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_CONTAIN_CUR_WORLD_AS_BUILD_YN      = Messages.getString("SquareConquererCUI.server~contain-cur-world-as-build_yes/no"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_PROMPT_D_ISCONNECT_OR_N_OTHING     = Messages.getString("SquareConquererCUI.server~d_isconnect-or-n_othing"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_CONNECTE_TO_SERVER                 = Messages.getString("SquareConquererCUI.server~currently-connected-to-server"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_C_LOSE_SERVER_OR_N_OTHING          = Messages.getString("SquareConquererCUI.server~c_lose-server-or-n_othing"); //$NON-NLS-1$
+	private static final String SERVER_NOARG_SERVER_IS_RUNNING                  = Messages.getString("SquareConquererCUI.server~server-is-running"); //$NON-NLS-1$
+	private static final String SERVER_STOP_STOPPED                             = Messages.getString("SquareConquererCUI.server~stopped2"); //$NON-NLS-1$
+	private static final String SERVER_STOP_TOLD_TO_STOP                        = Messages.getString("SquareConquererCUI.server~told-to-stop"); //$NON-NLS-1$
+	private static final String SERVER_STOP_NO_SERVER                           = Messages.getString("SquareConquererCUI.server~no-server"); //$NON-NLS-1$
+	private static final String SERVER_START_STARTED_SERVER                     = Messages.getString("SquareConquererCUI.server~started2"); //$NON-NLS-1$
+	private static final String SERVER_START_ERROR_AT_SERVER_THREAD_0           = Messages.getString("SquareConquererCUI.server~error-on-server-thread"); //$NON-NLS-1$
+	private static final String SERVER_START_USER_0_LOGGED_IN_FROM_1            = Messages.getString("SquareConquererCUI.server~notfy-user-log-in"); //$NON-NLS-1$
+	private static final String SERVER_USER_0_DISCONNECTED                      = Messages.getString("SquareConquererCUI.server~notfy-user-disconnect"); //$NON-NLS-1$
+	private static final String SERVER_START_NO_ROOT_WORLD                      = Messages.getString("SquareConquererCUI.server~start~no-root-world"); //$NON-NLS-1$
+	private static final String SERVER_START_MISSING_WORLD                      = Messages.getString("SquareConquererCUI.server~start~no-world"); //$NON-NLS-1$
+	private static final String SERVER_START_ALREADY_RUNNING                    = Messages.getString("SquareConquererCUI.server~start~already-started"); //$NON-NLS-1$
+	private static final String SERVER_DISCONNECT_DISCONNECTING_ERROR_NO_RETRY  = Messages.getString("SquareConquererCUI.server~disconnect~error-on-disconnect"); //$NON-NLS-1$
+	private static final String SERVER_DISCONNECT_CLOSED_REMOTE_WORLD           = Messages.getString("SquareConquererCUI.server~disconnect~closed-remote-world2"); //$NON-NLS-1$
+	private static final String SERVER_DISCONNECT_NO_SERVER_CONNECTION          = Messages.getString("SquareConquererCUI.server~disconnect~no-connection"); //$NON-NLS-1$
+	private static final String SERVER_CONNECT_ERROR_WHILE_CONNECTING_0         = Messages.getString("SquareConquererCUI.server~connect~error-on-connect"); //$NON-NLS-1$
+	private static final String SERVER_COULD_NOT_PARSE_PORT_0                   = Messages.getString("SquareConquererCUI.server~connect~unparsable-port"); //$NON-NLS-1$
+	private static final String SERVER_CONNECT_NOT_LOGGED_IN                    = Messages.getString("SquareConquererCUI.server~connect~no-user"); //$NON-NLS-1$
+	private static final String SERVER_STATUS_NOTHING                           = Messages.getString("SquareConquererCUI.server~status~nothing"); //$NON-NLS-1$
+	private static final String SERVER_STATS_CONNECTED                          = Messages.getString("SquareConquererCUI.server~status~remote-world"); //$NON-NLS-1$
+	private static final String SERVER_STATUS_RUNNING                           = Messages.getString("SquareConquererCUI.server~status~connected"); //$NON-NLS-1$
+	private static final String SERVER_HELP_BLA_BLA                             = Messages.getString("SquareConquererCUI.server~help");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               // set //$NON-NLS-1$
+																																		                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               // password
+																																		                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               // constants
+	private static final String SET_PW_PROMPT_ENTER_YOUR_PASSWORD               = Messages.getString("SquareConquererCUI.ser-pw~your-new-pw"); //$NON-NLS-1$
+	private static final String SET_PW_PROMPT_ENTER_USER_PASSWORD               = Messages.getString("SquareConquererCUI.ser-pw~usrs-new-pw"); //$NON-NLS-1$
+	private static final String SET_PW_PROMPT_ENTER_USERNAME                    = Messages.getString("SquareConquererCUI.ser-pw~enter-username"); //$NON-NLS-1$
+	private static final String SET_PW_YOUR_PW_WAS_CHANGED                      = Messages.getString("SquareConquererCUI.ser-pw~your-pw-changed"); //$NON-NLS-1$
+	private static final String SET_PW_PW_OF_0_CHANGED                          = Messages.getString("SquareConquererCUI.ser-pw~usrs-pw-changed"); //$NON-NLS-1$
+	private static final String SET_PW_ONLY_ROOT_HAS_OTHR_USRS                  = Messages.getString("SquareConquererCUI.ser-pw~only-root-change-other"); //$NON-NLS-1$
+	private static final String SET_PW_USER_0_NOT_FOUND                         = Messages.getString("SquareConquererCUI.ser-pw~usr-not-found"); //$NON-NLS-1$
+	private static final String SET_PW_HELP_0_SET_OF_1_2_ME_3                   = Messages.getString("SquareConquererCUI.ser-pw~help"); //$NON-NLS-1$
+	private static final String SET_PW_S_OMEONES_PASSWORD                       = Messages.getString("SquareConquererCUI.ser-pw~s_omeones-pw-addition"); //$NON-NLS-1$
+	private static final String SET_PW_Y_OUR_PW_0_OR_DO_N_OTHING                = Messages.getString("SquareConquererCUI.ser-pw~set-y_our-pw-or-n_othing");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // server //$NON-NLS-1$
+	// PW
+	// constants
+	private static final String SERVER_PW_PROMPT_ENTER_NEW_SERVER_PASSWORD    = Messages.getString("SquareConquererCUI.server-pw~enter-new"); //$NON-NLS-1$
+	private static final String SERVER_PW_REMOVE_THERE_IS_NO_SERVER_PW        = Messages.getString("SquareConquererCUI.server-pw~no-server-pw-to-remove"); //$NON-NLS-1$
+	private static final String SERVER_PW_STATUS_THERE_IS_SPW                 = Messages.getString("SquareConquererCUI.server-pw~there-is-server-pw"); //$NON-NLS-1$
+	private static final String SERVER_PW_UPDATED_SERVER_PW                   = Messages.getString("SquareConquererCUI.server-pw~updated"); //$NON-NLS-1$
+	private static final String SERVER_PW_STATUS_THERE_IS_NO_SPW              = Messages.getString("SquareConquererCUI.server-pw~no-server-pw"); //$NON-NLS-1$
+	private static final String SERVER_PW_HELP_BLA_BLA                        = Messages.getString("SquareConquererCUI.server-pw~help"); //$NON-NLS-1$
+	private static final String SERVER_PW_R_EMOVE                             = Messages.getString("SquareConquererCUI.server-pw~r_emove-addition"); //$NON-NLS-1$
+	private static final String SERVER_PW_S_ET_0_THE_SERVER_PW_OR_DO_N_OTHING = Messages.getString("SquareConquererCUI.server-pw~s_et-server-pw-or-n_othing"); //$NON-NLS-1$
 	// quit constants
-	private static final String QUIT_ERROR_WHILE_PARSING_EXIT_NUMBER_0 = "error while parsing exit number: {0}";
-	private static final String QUIT_HELP_BLA_BLA_HELP_WITH_0          = "quit help:\nno args: terminates this program with the exit value 0\n{0}: print this message\n<NUMBER>: terminates this program with the given exit value\nanything else: terminates this program with the exit value 1";
-	private static final String QUIT_GOODBYE_EXIT_NOW_WITH_0           = "goodbye, exit now with {0}";
+	private static final String QUIT_ERROR_WHILE_PARSING_EXIT_NUMBER_0 = Messages.getString("SquareConquererCUI.quit~unparsable-exit-num"); //$NON-NLS-1$
+	private static final String QUIT_HELP_BLA_BLA_HELP_WITH_0          = Messages.getString("SquareConquererCUI.quit~help"); //$NON-NLS-1$
+	private static final String QUIT_GOODBYE_EXIT_NOW_WITH_0           = Messages.getString("SquareConquererCUI.quit~bye"); //$NON-NLS-1$
 	// general constants
-	private static final String UNKNOWN_GROUND_TYPE_0                             = "unknown ground type: {0}";
-	private static final String UNKNOWN_TILE_RESOURCE_0                           = "unknown tile resource: {0}";
-	private static final String COORDINATE_IS_OUT_OF_BOUNDS_XLEN_0_YLEN_1_X_2_Y_3 = "coordinate is out of bounds: (xlen={0}|ylen={1}) (x={2}|y={3})";
-	private static final String INTERRUPT_ERROR_0                                 = "I was interrupted: {0}";
-	private static final String NOT_ENUGH_ARGUMENTS_FOR_THE_0_ARG                 = "not enugh arguments for the {0} arg";
-	private static final String UNKNOWN_ARGUMENT_0                                = "unknown argument: {0}";
-	private static final String ERROR_WHILE_EXECUTING_THE_COMMAND_0               = "error while executing the command: {0}";
-	private static final String UNKNOWN_COMMAND_0                                 = "unknown command: ''{0}''";
-	private static final String GREET_BLA_BLA_HELP_WITH_0_COMMAND                 = "Welcome to the Square Conquerer Console\nif you don''t know what to do use the ''{0}'' command";
-	private static final String THERE_IS_NO_CONS                                  = "there is no Cons";
+	private static final String UNKNOWN_GROUND_TYPE_0                             = Messages.getString("SquareConquererCUI.general~unknown-ground"); //$NON-NLS-1$
+	private static final String UNKNOWN_TILE_RESOURCE_0                           = Messages.getString("SquareConquererCUI.general~unknown-resource"); //$NON-NLS-1$
+	private static final String COORDINATE_IS_OUT_OF_BOUNDS_XLEN_0_YLEN_1_X_2_Y_3 = Messages.getString("SquareConquererCUI.general~coordinate-out-of-bounds"); //$NON-NLS-1$
+	private static final String INTERRUPT_ERROR_0                                 = Messages.getString("SquareConquererCUI.general~interrupted"); //$NON-NLS-1$
+	private static final String NOT_ENUGH_ARGUMENTS_FOR_THE_0_ARG                 = Messages.getString("SquareConquererCUI.general~no-enugh-args"); //$NON-NLS-1$
+	private static final String UNKNOWN_ARGUMENT_0                                = Messages.getString("SquareConquererCUI.general~unknow-arg"); //$NON-NLS-1$
+	private static final String ERROR_WHILE_EXECUTING_THE_COMMAND_0               = Messages.getString("SquareConquererCUI.general~error-on-exec"); //$NON-NLS-1$
+	private static final String UNKNOWN_COMMAND_0                                 = Messages.getString("SquareConquererCUI.general~unknown-command"); //$NON-NLS-1$
+	private static final String GREET_BLA_BLA_HELP_WITH_0_COMMAND                 = Messages.getString("SquareConquererCUI.greet"); //$NON-NLS-1$
+	private static final String THERE_IS_NO_CONS                                  = Messages.getString("SquareConquererCUI.no-cons"); //$NON-NLS-1$
 	
 	private static final String HELP = "help"; //$NON-NLS-1$
 	
@@ -472,7 +483,7 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdServerPW(List<String> args) {
 		if (args.size() == 1) {
 			switch (ask(MessageFormat.format(SERVER_PW_S_ET_0_THE_SERVER_PW_OR_DO_N_OTHING, (this.serverPW != null ? SERVER_PW_R_EMOVE : "")), //$NON-NLS-1$
-					this.serverPW != null ? "srn" : "sn")) { //$NON-NLS-1$ //$NON-NLS-2$
+				this.serverPW != null ? "srn" : "sn")) { //$NON-NLS-1$ //$NON-NLS-2$
 			case 's' -> this.serverPW = this.c.readPassword(SERVER_PW_PROMPT_ENTER_NEW_SERVER_PASSWORD);
 			case 'r' -> this.serverPW = null;
 			case 'n' -> {/**/}
@@ -487,7 +498,7 @@ public class SquareConquererCUI implements Runnable {
 			final String argRemoveNoFail = "remove-no-fail"; //$NON-NLS-1$
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
-				this.c.writeLines(MessageFormat.format(SERVER_PW_HELP_0_STATUS_1_SET_2_REMOVE_3_REMOVE_NO_FAIL, argStatus, argSet, argRemove, argRemoveNoFail));
+				this.c.writeLines(MessageFormat.format(SERVER_PW_HELP_BLA_BLA, argStatus, argSet, argRemove, argRemoveNoFail));
 			}
 			case argStatus -> {
 				if (this.serverPW != null) {
@@ -520,7 +531,7 @@ public class SquareConquererCUI implements Runnable {
 	private void cmdSetPW(List<String> args) {
 		if (args.size() == 1) {
 			switch (ask(MessageFormat.format(SET_PW_Y_OUR_PW_0_OR_DO_N_OTHING, (this.usr instanceof RootUser ? SET_PW_S_OMEONES_PASSWORD : "")), //$NON-NLS-1$
-					this.usr instanceof RootUser ? "ysn" : "yn")) { //$NON-NLS-1$ //$NON-NLS-2$
+				this.usr instanceof RootUser ? "ysn" : "yn")) { //$NON-NLS-1$ //$NON-NLS-2$
 			case 'y' -> setMyPW();
 			case 's' -> {
 				String name = this.c.readLine(SET_PW_PROMPT_ENTER_USERNAME);
@@ -604,8 +615,7 @@ public class SquareConquererCUI implements Runnable {
 			final String argStop       = "stop";       //$NON-NLS-1$
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
-				this.c.writeLines(MessageFormat.format(SERVER_HELP_STATUS_0_CONNECT_1_DISCONNECT_2_START_3_DEFAULT_PORT_4_STOP_5, argStatus, argConnect,
-						argDisconnect, argStart, "" + Connection.DEFAULT_PORT, argStop)); //$NON-NLS-1$
+				this.c.writeLines(MessageFormat.format(SERVER_HELP_BLA_BLA, argStatus, argConnect, argDisconnect, argStart, "" + Connection.DEFAULT_PORT, argStop)); //$NON-NLS-1$
 			}
 			case argStatus -> {
 				if (this.serverThread != null) {
@@ -660,7 +670,7 @@ public class SquareConquererCUI implements Runnable {
 					rw.close();
 					this.c.writeLines(SERVER_DISCONNECT_CLOSED_REMOTE_WORLD);
 				} catch (IOException e) {
-					this.c.writeLines(MessageFormat.format(SERVER_DISCONNECT_DISCONNECTING_ERROR_NOT_RETRY_0, e));
+					this.c.writeLines(MessageFormat.format(SERVER_DISCONNECT_DISCONNECTING_ERROR_NO_RETRY, e));
 				}
 			}
 			case argStart -> {
@@ -694,10 +704,10 @@ public class SquareConquererCUI implements Runnable {
 																				this.c.writeLines(MessageFormat.format(SERVER_USER_0_DISCONNECTED, conn.usr.name()));
 																			} else {
 																				this.c.writeLines(MessageFormat.format(SERVER_START_USER_0_LOGGED_IN_FROM_1,
-																						conn.usr.name(), sok.getInetAddress()));
+																					conn.usr.name(), sok.getInetAddress()));
 																			}
 																		},
-															cs, spw);
+														cs, spw);
 												} catch (IOException e) {
 													this.c.writeLines(MessageFormat.format(SERVER_START_ERROR_AT_SERVER_THREAD_0, e));
 												} finally {
@@ -760,7 +770,7 @@ public class SquareConquererCUI implements Runnable {
 			}
 		} else if (this.world instanceof RemoteWorld rw) {
 			this.c.writeLines(SERVER_NOARG_CONNECTE_TO_SERVER);
-			if (ask(SERVER_NOARG_D_ISCONNECT_OR_N_OTHING, "dn") == 'd') { //$NON-NLS-1$
+			if (ask(SERVER_NOARG_PROMPT_D_ISCONNECT_OR_N_OTHING, "dn") == 'd') { //$NON-NLS-1$
 				World nw = null;
 				if (ask(SERVER_NOARG_CONTAIN_CUR_WORLD_AS_BUILD_YN, "yn") == 'y') { //$NON-NLS-1$
 					int               xlen = rw.xlen();
@@ -785,9 +795,9 @@ public class SquareConquererCUI implements Runnable {
 			this.c.writeLines(MessageFormat.format(SERVER_NOARG_NOT_LOGGED_IN, CMD_SETPW, CMD_USERNAME));
 		} else {
 			switch (ask(MessageFormat.format(SERVER_NOARG_C_ONNECT_0_OR_N_OTHING, (this.world instanceof RootWorld ? SERVER_NOARG_S_TART_SERVER : "")), //$NON-NLS-1$
-					this.world instanceof RootWorld ? "csn" : "cn")) { //$NON-NLS-1$ //$NON-NLS-2$
+				this.world instanceof RootWorld ? "csn" : "cn")) { //$NON-NLS-1$ //$NON-NLS-2$
 			case 'c' -> {
-				if (this.world != null && ask(SERVER_NOARG_P_ROCEED_AND_DISCARD_WORLD_OR_C_ANCEL, "pc") == 'c') { //$NON-NLS-1$
+				if (this.world != null && ask(SERVER_NOARG_P_ROCEED_OR_C_ANCEL, "pc") == 'c') { //$NON-NLS-1$
 					return;
 				}
 				String host = this.c.readLine(SERVER_NOARG_PROMPT_ENTER_SERVERHOST).trim();
@@ -874,8 +884,8 @@ public class SquareConquererCUI implements Runnable {
 			switch (args.get(i).toLowerCase()) {
 			case HELP -> {
 				this.c.writeLines(MessageFormat.format(WORLD_HELP_BLA_BLA_MNY_ARGS, CMD_WORLD, HELP, argLoadAll, argLoad, argCreate, argPrint, argPrintResources,
-						argTile, argToBuild, argSave, argSaveForce, argSaveAll, argSaveAllForce, argBuild, argTileType, argTileResource, argFillRandom,
-						argFillTotallyRandom, argFillTotallyRandom));
+					argTile, argToBuild, argSave, argSaveForce, argSaveAll, argSaveAllForce, argBuild, argTileType, argTileResource, argFillRandom,
+					argFillTotallyRandom, argFillTotallyRandom));
 			}
 			case argLoadAll -> {
 				if (++i >= args.size()) {
@@ -934,7 +944,7 @@ public class SquareConquererCUI implements Runnable {
 					((RootUser) this.usr).load(conn);
 					Tile[][] tiles = RemoteWorld.loadWorld(conn, ((RootUser) this.usr).users());
 					this.world = RootWorld.Builder.createBuilder((RootUser) this.usr, tiles);
-					this.c.writeLines(WORLD_LOAD_LOADED_WORLD_AND_USERS_SUCCESSFULLY);
+					this.c.writeLines(WORLD_LOAD_LOADED_WORLD_AND_USERS);
 				} catch (IOException e) {
 					this.c.writeLines(MessageFormat.format(WORLD_LOAD_ERROR_ON_LOAD, e));
 				}
@@ -955,14 +965,14 @@ public class SquareConquererCUI implements Runnable {
 					xlen = Integer.parseInt(args.get(i - 1));
 					ylen = Integer.parseInt(args.get(i));
 				} catch (NumberFormatException nfe) {
-					this.c.writeLines(MessageFormat.format(WORLD_CREATE_COULD_NOT_PARSE_THE_WORLD_SIZE_0_1_ERROR_2, args.get(i - 1), args.get(i), nfe));
+					this.c.writeLines(MessageFormat.format(WORLD_CREATE_COULD_NOT_PARSE_THE_WORLD_SIZE, args.get(i - 1), args.get(i), nfe));
 					return;
 				}
 				if (this.world instanceof RemoteWorld rw) {
 					try {
 						rw.close();
 					} catch (IOException e) {
-						this.c.writeLines(MessageFormat.format(WORLD_CREATE_ERROR_ON_CLOSING_REMOTE_WORLD_I_IGNORE_ERROR_AND_PROCEED_ERROR_0, e));
+						this.c.writeLines(MessageFormat.format(WORLD_CREATE_ERROR_CLOSING_REMOTE_WORLD, e));
 					}
 				}
 				this.world = null;
@@ -996,7 +1006,7 @@ public class SquareConquererCUI implements Runnable {
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= this.world.xlen() || y < 0 || y >= this.world.ylen()) {
 					this.c.writeLines(MessageFormat.format(COORDINATE_IS_OUT_OF_BOUNDS_XLEN_0_YLEN_1_X_2_Y_3, Integer.toString(this.world.xlen()),
-							Integer.toString(this.world.ylen()), Integer.toString(x), Integer.toString(y)));
+						Integer.toString(this.world.ylen()), Integer.toString(x), Integer.toString(y)));
 					return;
 				}
 				writeTile(x, y);
@@ -1111,7 +1121,7 @@ public class SquareConquererCUI implements Runnable {
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= this.world.xlen() || y < 0 || y >= this.world.ylen()) {
 					this.c.writeLines(MessageFormat.format(COORDINATE_IS_OUT_OF_BOUNDS_XLEN_0_YLEN_1_X_2_Y_3, Integer.toString(this.world.xlen()),
-							Integer.toString(this.world.ylen()), Integer.toString(x), Integer.toString(y)));
+						Integer.toString(this.world.ylen()), Integer.toString(x), Integer.toString(y)));
 					return;
 				}
 				final String normalSuffix = "+normal"; //$NON-NLS-1$
@@ -1129,8 +1139,7 @@ public class SquareConquererCUI implements Runnable {
 				case normalSuffix -> {
 					Tile old = b.get(x, y);
 					if (old == null || old.ground == null || old.ground == GroundType.NOT_EXPLORED) {
-						this.c.writeLines(MessageFormat.format(WORLD_TILE_TYPE_CURRENT_TYPE_0_NOT_ACCEPT_1_SUFFIX,
-								old == null ? GroundType.NOT_EXPLORED : old.ground, normalSuffix));
+						this.c.writeLines(MessageFormat.format(WORLD_TILE_TYPE_NOT_ACCEPT_SUFFIX, old == null ? GroundType.NOT_EXPLORED : old.ground, normalSuffix));
 						yield null;
 					}
 					yield old.ground.addNormal(false, true);
@@ -1139,8 +1148,7 @@ public class SquareConquererCUI implements Runnable {
 				case deepSuffix -> {
 					Tile old = b.get(x, y);
 					if (old == null || old.ground == null || !old.ground.isWater()) {
-						this.c.writeLines(MessageFormat.format(WORLD_TILE_TYPE_CURRENT_TYPE_0_NOT_ACCEPT_1_SUFFIX,
-								old == null ? GroundType.NOT_EXPLORED : old.ground, deepSuffix));
+						this.c.writeLines(MessageFormat.format(WORLD_TILE_TYPE_NOT_ACCEPT_SUFFIX, old == null ? GroundType.NOT_EXPLORED : old.ground, deepSuffix));
 						yield null;
 					}
 					yield GroundType.WATER_DEEP;
@@ -1152,8 +1160,7 @@ public class SquareConquererCUI implements Runnable {
 				case hillSuffix -> {
 					Tile old = b.get(x, y);
 					if (old == null || old.ground == null || !old.ground.isHill() && !old.ground.isFlat()) {
-						this.c.writeLines(MessageFormat.format(WORLD_TILE_TYPE_CURRENT_TYPE_0_NOT_ACCEPT_1_SUFFIX,
-								old == null ? GroundType.NOT_EXPLORED : old.ground, hillSuffix));
+						this.c.writeLines(MessageFormat.format(WORLD_TILE_TYPE_NOT_ACCEPT_SUFFIX, old == null ? GroundType.NOT_EXPLORED : old.ground, hillSuffix));
 						yield null;
 					}
 					yield old.ground.addHill(false, true);
@@ -1185,7 +1192,7 @@ public class SquareConquererCUI implements Runnable {
 				int y = Integer.parseInt(args.get(i));
 				if (x < 0 || x >= this.world.xlen() || y < 0 || y >= this.world.ylen()) {
 					this.c.writeLines(MessageFormat.format(COORDINATE_IS_OUT_OF_BOUNDS_XLEN_0_YLEN_1_X_2_Y_3, Integer.toString(this.world.xlen()),
-							Integer.toString(this.world.ylen()), Integer.toString(x), Integer.toString(y)));
+						Integer.toString(this.world.ylen()), Integer.toString(x), Integer.toString(y)));
 					return;
 				}
 				OreResourceType res = switch (args.get(i - 2).toLowerCase()) {
@@ -1244,8 +1251,8 @@ public class SquareConquererCUI implements Runnable {
 	}
 	
 	private void cmdWorldNoArgs() {
-		if (this.world == null || ask(WORLD_NOARG_C_HAGE_OR_D_ISPLAY, "cd") == 'c') { //$NON-NLS-1$
-			switch (ask(WORLD_NOARG_L_OAD_FILE_CREATE_N_EW_OR_C_ANCEL, "lnc")) { //$NON-NLS-1$
+		if (this.world == null || ask(WORLD_NOARG_PROMPT_C_HAGE_OR_D_ISPLAY, "cd") == 'c') { //$NON-NLS-1$
+			switch (ask(WORLD_NOARG_L_OAD_N_EW_OR_C_ANCEL, "lnc")) { //$NON-NLS-1$
 			case 'l' -> cmdWorldInteractiveLoad();
 			case 'n' -> {
 				rootLogin(this.usr == null);
@@ -1286,8 +1293,13 @@ public class SquareConquererCUI implements Runnable {
 			do {
 				p = Path.of(this.c.readLine(WORLD_LOAD_PROMPT_ENTER_FILE_TO_BE_LOADED));
 			} while (retry(!Files.exists(p) || !Files.isRegularFile(p)));
-			if (!Files.exists(p) || !Files.isRegularFile(p)) {
-				break;
+			if (!Files.exists(p)) {
+				this.c.writeLines(MessageFormat.format(WORLD_LOAD_THE_FILE_0_DOES_NOT_EXIST, p));
+				continue;
+			}
+			if (!Files.isRegularFile(p)) {
+				this.c.writeLines(MessageFormat.format(WORLD_LOAD_THE_PATH_0_DOES_NOT_A_FILE, p));
+				continue;
 			}
 			rootLogin(askPW);
 			try (InputStream in = Files.newInputStream(p); Connection conn = Connection.OneWayAccept.acceptReadOnly(in, this.usr)) {
@@ -1449,7 +1461,7 @@ public class SquareConquererCUI implements Runnable {
 				switch (args.get(i).toLowerCase()) {
 				case HELP -> {
 					this.c.writeLines(
-							MessageFormat.format(STATUS_HELP_BLA_BLA, HELP, argUser, argWorldRemoteAll, argWorldRemoteWorld, argServer, argServerpw, argServerPW));
+						MessageFormat.format(STATUS_HELP_BLA_BLA, HELP, argUser, argWorldRemoteAll, argWorldRemoteWorld, argServer, argServerpw, argServerPW));
 				}
 				case argUser -> cmdStatusUser();
 				case argWorld -> cmdStatusWorld();
@@ -1558,7 +1570,7 @@ public class SquareConquererCUI implements Runnable {
 		switch (args.size()) {
 		case 1 -> {
 			this.c.writeLines(MessageFormat.format(HELP_GENERAL_MESSAGE, Settings.VERSION_STRING, CMD_HELP, CMD_VERSION, CMD_STATUS, CMD_USERNAME, CMD_WORLD,
-					CMD_SERVER, CMD_SETPW, CMD_SERVERPW, CMD_QUIT, CMD_EXIT, CMD_QUIT, HELP, CMD_HELP));
+				CMD_SERVER, CMD_SETPW, CMD_SERVERPW, CMD_QUIT, CMD_EXIT, CMD_QUIT, HELP, CMD_HELP));
 		}
 		case 2 -> {
 			if (CMD_HELP.equalsIgnoreCase(args.get(1))) {
@@ -1630,9 +1642,9 @@ public class SquareConquererCUI implements Runnable {
 				try {
 					Connection conn;
 					if (this.serverPW != null) {
-						conn = Connection.ClientConnect.connectNew(cst.host, cst.port, usr, serverPW);
+						conn = Connection.ClientConnect.connectNew(cst.host, cst.port, this.usr, this.serverPW);
 					} else {
-						conn = Connection.ClientConnect.connect(cst.host, cst.port, usr);
+						conn = Connection.ClientConnect.connect(cst.host, cst.port, this.usr);
 					}
 					this.world = new RemoteWorld(conn);
 				} catch (IOException e) {
@@ -1646,7 +1658,7 @@ public class SquareConquererCUI implements Runnable {
 		if (this.world == null) {
 			boolean load;
 			while (true) {
-				String line = this.c.readLine("[l]oad world or create a [n]ew world?").trim();
+				String line = this.c.readLine(PROMPT_L_OAD_WORLD_OR_CREATE_A_N_EW_WORLD).trim();
 				if (line.isEmpty()) {
 					continue;
 				}
@@ -1669,40 +1681,39 @@ public class SquareConquererCUI implements Runnable {
 			synchronized (this) {
 				final RootWorld       rw = (RootWorld) this.world;
 				Map<User, Connection> cs = new HashMap<>();
-				connects     = cs;
-				serverThread = threadStart(() -> {
-									try {
-										Connection.ServerAccept.accept(sst.port, rw, (conn, sok) -> {
-															if (sok == null) {
-																this.c.writeLines("the user '" + conn.usr.name() + "' disskonnected");
-															} else {
-																this.c.writeLines(
-																		"accepted connection from '" + conn.usr.name() + "' (" + sok.getInetAddress() + ")");
-															}
-														},
-												cs, serverPW);
-									} catch (IOException e) {
-										this.c.writeLines(SERVER_SERVER_STOPPED_WITH_ERROR + e.toString());
-									} finally {
-										synchronized (SquareConquererCUI.this) {
-											if (serverThread == Thread.currentThread()) {
-												serverThread = null;
-												connects     = null;
-											}
-										}
-									}
-								});
-				this.c.writeLines("the server should now accept connections");
+				this.connects = cs;
+				
+				this.serverThread = threadStart(() -> {
+					try {
+						Connection.ServerAccept.accept(sst.port, rw, (conn, sok) -> {
+							if (sok == null) {
+								this.c.writeLines(MessageFormat.format(SERVER_USER_0_DISCONNECTED, conn.usr.name()));
+							} else {
+								this.c.writeLines(MessageFormat.format(SERVER_START_USER_0_LOGGED_IN_FROM_1, conn.usr.name(), sok.getInetAddress()));
+							}
+						}, cs, this.serverPW);
+					} catch (IOException e) {
+						this.c.writeLines(SERVER_SERVER_STOPPED_WITH_ERROR + e.toString());
+					} finally {
+						synchronized (SquareConquererCUI.this) {
+							if (this.serverThread == Thread.currentThread()) {
+								this.serverThread = null;
+								this.connects     = null;
+							}
+						}
+					}
+				});
+				this.c.writeLines(SERVER_START_STARTED_SERVER);
 			}
 		}
 	}
 	
 	private void subTaskStartServerNewWorld() {
-		int xlen = readNumber("enter now the X-length of the world (Width): ", 1, Integer.MAX_VALUE);
+		int xlen = readNumber(WORLD_NOARG_PROMPT_ENTER_X_LEN, 1, Integer.MAX_VALUE);
 		if (xlen > 0) {
-			int ylen = readNumber("enter now the Y-length of the world (Height): ", 1, Integer.MAX_VALUE);
+			int ylen = readNumber(WORLD_NOARG_PROMPT_ENTER_Y_LEN, 1, Integer.MAX_VALUE);
 			if (ylen > 0) {
-				RootWorld.Builder b = new RootWorld.Builder((RootUser) usr, xlen, ylen);
+				RootWorld.Builder b = new RootWorld.Builder((RootUser) this.usr, xlen, ylen);
 				b.fillRandom();
 				this.world = b.create();
 			}
@@ -1710,47 +1721,47 @@ public class SquareConquererCUI implements Runnable {
 	}
 	
 	private void subTaskStartServerLoadWorld() {
-		boolean askPW = usr == null;
+		boolean askPW = this.usr == null;
 		boolean fail;
 		do {
 			Path loadFile;
 			do {
-				loadFile = Path.of(this.c.readLine("enter now the path of the save-file: "));
+				loadFile = Path.of(this.c.readLine(WORLD_LOAD_PROMPT_ENTER_FILE_TO_BE_LOADED));
 				if (!Files.exists(loadFile)) {
-					this.c.writeLines("the file '" + loadFile + "' does not exist");
+					this.c.writeLines(MessageFormat.format(WORLD_LOAD_THE_FILE_0_DOES_NOT_EXIST, loadFile));
 					continue;
 				}
 				if (!Files.isRegularFile(loadFile)) {
-					this.c.writeLines("the pat '" + loadFile + "' does not refer to a file");
+					this.c.writeLines(MessageFormat.format(WORLD_LOAD_THE_PATH_0_DOES_NOT_A_FILE, loadFile));
 					continue;
 				}
 				break;
 			} while (retry(true));
 			if (askPW) {
-				char[] pw = this.c.readPassword("enter now the password: ");
-				usr = RootUser.create(pw);
+				char[] pw = this.c.readPassword(SET_PW_PROMPT_ENTER_YOUR_PASSWORD);
+				this.usr = RootUser.create(pw);
 			} else {
-				usr = usr.makeRoot();
+				this.usr = this.usr.makeRoot();
 			}
 			fail = loadFile(loadFile);
 		} while (retry(fail));
 	}
 	
 	private void doTaskLoadFile(Path loadFile) {
-		boolean askUsr = usr == null;
+		boolean askUsr = this.usr == null;
 		do {
 			if (askUsr) {
-				this.c.writeLines("load now the file '" + loadFile + "'");
-				char[] pw = this.c.readPassword("enter the password: ");
-				if (username != null && !RootUser.ROOT_NAME.equals(username)) {
+				this.c.writeLines(MessageFormat.format(LOAD_TASK_LOAD_NOW_THE_FILE_0, loadFile));
+				char[] pw = this.c.readPassword(SET_PW_PROMPT_ENTER_YOUR_PASSWORD);
+				if (this.username != null && !RootUser.ROOT_NAME.equals(this.username)) {
 					this.c.writeLines(WORLD_LOAD_CHANGED_TO_ROOT);
 				}
-				usr = RootUser.create(pw);
-			} else if (!(usr instanceof RootUser)) {
+				this.usr = RootUser.create(pw);
+			} else if (!(this.usr instanceof RootUser)) {
 				this.c.writeLines(WORLD_LOAD_CHANGED_TO_ROOT);
-				usr = usr.makeRoot();
+				this.usr = this.usr.makeRoot();
 			} else { // reset other users
-				usr = usr.makeRoot();
+				this.usr = this.usr.makeRoot();
 			}
 		} while (retry(loadFile(loadFile)));
 	}
@@ -1758,18 +1769,19 @@ public class SquareConquererCUI implements Runnable {
 	private int readNumber(String prompt, int min, int max) {
 		int val = -1;
 		do {
-			String line = this.c.readLine(prompt);
+			String line = this.c.readLine(prompt).trim();
 			try {
 				val = Integer.parseInt(line);
 			} catch (NumberFormatException e) {
-				this.c.writeLines("error: " + e.toString());
+				this.c.writeLines(MessageFormat.format(READN_NUM_COULD_NOT_PARSE_THE_NUMBER_0_1, line, e.toString()));
 			}
-		} while (retry(val < min || val > max, "the minimum number is " + min + (max != Integer.MAX_VALUE ? " and the maximum number is " + max : "")));
+		} while (retry(val < min || val > max, MessageFormat.format(READN_NUM_THE_MINIMUM_NUMBER_IS_0_1, Integer.toString(min),
+			(max != Integer.MAX_VALUE ? READN_NUM_AND_THE_MAXIMUM_NUMBER_IS + max : "")))); //$NON-NLS-1$
 		return val;
 	}
 	
 	private boolean retry(boolean failed) {
-		return retry(failed, "retry? ([y]es|[n]o)");
+		return retry(failed, ASK_RETRY_Y_ES_N_O);
 	}
 	
 	private boolean retry(boolean failed, String errorPrompt) {
@@ -1789,13 +1801,13 @@ public class SquareConquererCUI implements Runnable {
 	
 	private boolean loadFile(Path loadFile) {
 		try (InputStream in = Files.newInputStream(loadFile)) {
-			Connection conn = Connection.OneWayAccept.acceptReadOnly(in, usr);
+			Connection conn = Connection.OneWayAccept.acceptReadOnly(in, this.usr);
 			RootUser   root = (RootUser) this.usr;
 			root.load(conn);
 			Tile[][] tiles = RemoteWorld.loadWorld(conn, root.users());
 			this.world    = RootWorld.Builder.createBuilder(root, tiles);
 			this.username = null;
-			this.c.writeLines(WORLD_LOAD_LOADED_WORLD_AND_USERS_SUCCESSFULLY);
+			this.c.writeLines(WORLD_LOAD_LOADED_WORLD_AND_USERS);
 			this.c.writeLines(WORLD_TO_BUILD_FINISH);
 			return false;
 		} catch (IOException e) {

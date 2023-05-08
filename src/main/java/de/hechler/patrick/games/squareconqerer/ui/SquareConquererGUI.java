@@ -773,6 +773,7 @@ public class SquareConquererGUI {
 			JComboBox<String> combo = new JComboBox<>(names);
 			dp.add(combo);
 			combo.addActionListener(e1 -> {
+				@SuppressWarnings("unlikely-arg-type")
 				Connection conn = (this.logView == null ? this : this.logView).connects.get(usrs[combo.getSelectedIndex()]);
 				if (conn == null) {
 					JOptionPane.showMessageDialog(combo, "the user seeems to be disconnected", "no connection", JOptionPane.ERROR_MESSAGE);
