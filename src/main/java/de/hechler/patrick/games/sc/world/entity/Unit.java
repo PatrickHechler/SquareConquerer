@@ -16,8 +16,8 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.entity;
 
-import de.hechler.patrick.games.sc.addable.UnitType;
+import de.hechler.patrick.games.sc.addons.addable.UnitType;
 
-public non-sealed interface Unit extends Entity<Unit, UnitType> {
+public non-sealed interface Unit extends Entity<UnitType, Unit> {
 	
 }

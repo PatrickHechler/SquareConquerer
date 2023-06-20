@@ -14,18 +14,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.players;
+package de.hechler.patrick.games.sc.ui.pages;
 
-import java.util.HashMap;
-import java.util.Map;
 
-public class Group {
-	
-	public final String              name;
-	private final Map<String, Group> sub = new HashMap<>();
-	
-	public Group(String name) {
-		this.name = name;
-	}
+public record TextOnlyPage(String title, String content) {
 	
 }

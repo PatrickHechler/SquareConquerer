@@ -16,8 +16,8 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.entity;
 
-import de.hechler.patrick.games.sc.addable.BuildType;
+import de.hechler.patrick.games.sc.addons.addable.BuildType;
 
-public non-sealed interface Build extends Entity<Build, BuildType> {
+public non-sealed interface Build extends Entity<BuildType, Build> {
 	
 }

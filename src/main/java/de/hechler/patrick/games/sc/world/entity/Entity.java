@@ -16,13 +16,9 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.entity;
 
-import de.hechler.patrick.games.sc.Imagable;
-import de.hechler.patrick.games.sc.addable.EntityType;
+import de.hechler.patrick.games.sc.addons.addable.EntityType;
+import de.hechler.patrick.games.sc.world.WorldThing;
 
-public sealed interface Entity<M extends Entity<M, T>, T extends EntityType> extends Imagable permits Unit, Build {
-	
-	T type();
-	
-	M unmodifiable();
+public sealed interface Entity<T extends EntityType, M extends Entity<T, M>> extends WorldThing<T, M> permits Unit, Build {
 	
 }

@@ -16,29 +16,34 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
-import de.hechler.patrick.games.sc.players.User;
+import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
 public class CompleteWorld implements World {
-
+	
+	private final User     usr;
+	private final Tile[][] tiles;
+	
+	
+	
 	@Override
-	public User user() { 
-	// TODO Auto-generated method stub
-	return null; }
-
+	public User user() {
+		return this.usr;
+	}
+	
 	@Override
-	public int xlen() { 
-	// TODO Auto-generated method stub
-	return 0; }
-
+	public int xlen() {
+		return this.tiles.length;
+	}
+	
 	@Override
-	public int ylen() { 
-	// TODO Auto-generated method stub
-	return 0; }
-
+	public int ylen() {
+		return this.tiles[0].length;
+	}
+	
 	@Override
-	public Tile tile(int x, int y) { 
-	// TODO Auto-generated method stub
-	return null; }
-	// TODO
+	public Tile tile(int x, int y) {
+		return this.tiles[x][y].unmodifiable();
+	}
+	
 }

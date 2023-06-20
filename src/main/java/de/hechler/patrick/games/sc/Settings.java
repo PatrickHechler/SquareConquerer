@@ -30,7 +30,6 @@ public class Settings {
 	
 	private Settings() {}
 	
-	@SuppressWarnings("preview")
 	private static final OfVirtual OF_VIRTUAL = Thread.ofVirtual();
 	
 	public static final String PROPS_PATH_KEY = "squareconquerer.settings.path";

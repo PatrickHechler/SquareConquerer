@@ -14,12 +14,23 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.addable;
+package de.hechler.patrick.games.sc.addons.addable;
 
-public abstract sealed class EntityType extends AddableType permits UnitType, BuildType {
+import java.util.Map;
+import java.util.Objects;
+
+import de.hechler.patrick.games.sc.values.ValueSpec;
+
+public abstract sealed class AddableType permits EntityType, GroundType, ResourceType {
 	
-	public EntityType(String name, String localName) {
-		super(name, localName);
+	public final String                 name;
+	public final String                 localName;
+	public final Map<String, ValueSpec> values;
+	
+	public AddableType(String name, String localName, Map<String, ValueSpec> values) {
+		this.name      = Objects.requireNonNull(name, "name is null");
+		this.localName = Objects.requireNonNullElse(localName, name);
+		this.values    = Map.copyOf(values);
 	}
 	
 }

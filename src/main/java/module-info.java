@@ -28,10 +28,12 @@ module de.hechler.patrick.games.squareconqerer {
 	requires jdk.incubator.concurrent;
 	
 	exports de.hechler.patrick.games.sc;
-	exports de.hechler.patrick.games.sc.addable;
+	exports de.hechler.patrick.games.sc.addons.addable;
 	exports de.hechler.patrick.games.sc.addons;
 	exports de.hechler.patrick.games.sc.connect;
-	exports de.hechler.patrick.games.sc.players;
+	exports de.hechler.patrick.games.sc.ui.pages;
+	exports de.hechler.patrick.games.sc.ui.players;
+	exports de.hechler.patrick.games.sc.values;
 	exports de.hechler.patrick.games.sc.world;
 	exports de.hechler.patrick.games.sc.world.entity;
 	exports de.hechler.patrick.games.sc.world.ground;

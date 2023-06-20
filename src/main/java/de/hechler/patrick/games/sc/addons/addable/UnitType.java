@@ -14,11 +14,16 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.world.resource;
+package de.hechler.patrick.games.sc.addons.addable;
 
-import de.hechler.patrick.games.sc.addons.addable.ResourceType;
-import de.hechler.patrick.games.sc.world.WorldThing;
+import java.util.Map;
 
-public interface Resource extends WorldThing<ResourceType, Resource> {
+import de.hechler.patrick.games.sc.values.ValueSpec;
+
+public abstract non-sealed class UnitType extends EntityType {
+	
+	public UnitType(String name, String localName, Map<String, ValueSpec> values) {
+		super(name, localName, values);
+	}
 	
 }

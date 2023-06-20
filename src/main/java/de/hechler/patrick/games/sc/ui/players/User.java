@@ -14,7 +14,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.players;
+package de.hechler.patrick.games.sc.ui.players;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -64,6 +64,10 @@ public class User implements Closeable {
 	
 	public static User createUser(String name, char[] pw) {
 		return new User(new Secret0(name, pw));
+	}
+	
+	public boolean isRoot() {
+		return this.parent == null;
 	}
 	
 	public User get(String name) {

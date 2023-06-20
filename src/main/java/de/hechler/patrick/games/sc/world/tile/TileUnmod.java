@@ -24,28 +24,57 @@ import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 
-public interface Tile {
+public class TileUnmod implements Tile {
 	
-	Ground ground();
+	private final Tile t;
 	
-	int resourceCount();
+	public TileUnmod(Tile t) {
+		this.t = t;
+	}
 	
-	Resource resource(int index);
+	public Ground ground() {
+		return this.t.ground();
+	}
 	
-	List<Resource> resourcesList();
+	public int resourceCount() {
+		return this.t.resourceCount();
+	}
 	
-	Stream<Resource> resourcesStream();
+	public Resource resource(int index) {
+		return this.t.resource(index);
+	}
 	
-	Build build();
+	public List<Resource> resourcesList() {
+		return this.t.resourcesList();
+	}
 	
-	int unitCount();
+	public Stream<Resource> resourcesStream() {
+		return this.t.resourcesStream();
+	}
 	
-	Unit unit(int index);
+	public Build build() {
+		return this.t.build();
+	}
 	
-	List<Unit> unitsList();
+	public int unitCount() {
+		return this.t.unitCount();
+	}
 	
-	Stream<Unit> unitsStream();
+	public Unit unit(int index) {
+		return this.t.unit(index);
+	}
 	
-	Tile unmodifiable();
+	public List<Unit> unitsList() {
+		return this.t.unitsList();
+	}
+	
+	public Stream<Unit> unitsStream() {
+		return this.t.unitsStream();
+	}
+	
+	@Override
+	public Tile unmodifiable() {
+		return this;
+	}
 	
 }

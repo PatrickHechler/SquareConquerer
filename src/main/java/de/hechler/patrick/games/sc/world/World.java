@@ -16,7 +16,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
-import de.hechler.patrick.games.sc.players.User;
+import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
 public interface World {

@@ -44,7 +44,7 @@ import java.util.function.IntFunction;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 
-import de.hechler.patrick.games.sc.players.User;
+import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
 import de.hechler.patrick.games.sc.world.OpenWorld;
 import de.hechler.patrick.games.sc.world.UserWorld;

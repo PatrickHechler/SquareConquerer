@@ -14,12 +14,16 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.addable;
+package de.hechler.patrick.games.sc.ui.players;
 
-public abstract non-sealed class BuildType extends EntityType {
+public class Group {
 	
-	public BuildType(String name, String localName) {
-		super(name, localName);
+	public final String              name;
+	
+	// TODO
+	
+	public Group(String name) {
+		this.name = name;
 	}
 	
 }
