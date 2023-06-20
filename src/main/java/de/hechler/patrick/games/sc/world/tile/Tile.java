@@ -14,7 +14,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.world;
+package de.hechler.patrick.games.sc.world.tile;
 
 import java.util.ArrayList;
 import java.util.List;

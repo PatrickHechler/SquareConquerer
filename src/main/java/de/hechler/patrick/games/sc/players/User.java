@@ -40,6 +40,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.hechler.patrick.games.sc.connect.Connection;
+import de.hechler.patrick.games.sc.connect.Connection.ClientConnect;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
 
 public class User implements Closeable {
@@ -63,6 +64,25 @@ public class User implements Closeable {
 	
 	public static User createUser(String name, char[] pw) {
 		return new User(new Secret0(name, pw));
+	}
+	
+	public User get(String name) {
+		Objects.requireNonNull(name, "name");
+		@SuppressWarnings("resource")
+		User u = this.parent == null ? this : this.parent;
+		synchronized (u) {
+			if (this.s.name.equals(name)) {
+				return this;
+			}
+			if (this.childs == null) {
+				throw new IllegalArgumentException("no user with name '" + name + "' found");
+			}
+			User usr = this.childs.get(name);
+			if (usr == null) {
+				throw new IllegalArgumentException("no user with name '" + name + "' found");
+			}
+			return usr;
+		}
 	}
 	
 	public User addUser(String name, char[] pw) {
@@ -160,6 +180,21 @@ public class User implements Closeable {
 	 * @return the name of this user
 	 */
 	public String name() { return this.s.name; }
+	
+	/**
+	 * this is an intern method, calling it from any class other than {@link ClientConnect} will result in an {@link IllegalCallerException}
+	 * 
+	 * @return the password array of this user
+	 * 
+	 * @throws IllegalCallerException if the caller is not valid
+	 */
+	public synchronized char[] _pw() throws IllegalCallerException {
+		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != Connection.ClientConnect.class) {
+			throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+		}
+		return this.s._pw;
+	}
 	
 	private static final SecureRandom RND;
 	
@@ -278,6 +313,7 @@ public class User implements Closeable {
 			}
 			for (int i = 0; i < s._pw.length; i++) s._pw[i] = '\0';
 			this.s = null;
+			this.modCnt++;
 		}
 	}
 	

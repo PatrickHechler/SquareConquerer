@@ -16,6 +16,29 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
-public class CompleteWorld {
+import de.hechler.patrick.games.sc.players.User;
+import de.hechler.patrick.games.sc.world.tile.Tile;
+
+public class CompleteWorld implements World {
+
+	@Override
+	public User user() { 
+	// TODO Auto-generated method stub
+	return null; }
+
+	@Override
+	public int xlen() { 
+	// TODO Auto-generated method stub
+	return 0; }
+
+	@Override
+	public int ylen() { 
+	// TODO Auto-generated method stub
+	return 0; }
+
+	@Override
+	public Tile tile(int x, int y) { 
+	// TODO Auto-generated method stub
+	return null; }
 	// TODO
 }

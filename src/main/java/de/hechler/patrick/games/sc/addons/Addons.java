@@ -57,6 +57,17 @@ public class Addons {
 		return addons;
 	}
 	
+	/**
+	 * reload all addons.
+	 * <p>
+	 * this method may lead to some hidden bugs, when there is still a open world or something, which uses some now potentially disabled addons or is not aware of
+	 * some new addons
+	 */
+	public static synchronized void reloadAddons() {
+		addons = null;
+		loadAddons();
+	}
+	
 	private static synchronized void loadAddons() {
 		if (addons != null) return;
 		Map<String, Addon>           as = new HashMap<>();

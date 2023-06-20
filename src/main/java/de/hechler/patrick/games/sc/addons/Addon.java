@@ -16,26 +16,32 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.addons;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import de.hechler.patrick.games.sc.addable.AddableType;
 import de.hechler.patrick.utils.objects.Version;
 
 public abstract class Addon {
 	
-	public final String            name;
-	public final String            localName;
-	private final String[]         groups;
-	private final Supplier<String> licenseSup;
-	private String                 license;
-	public final Version           version;
+	public final String                             name;
+	public final String                             localName;
+	private final String[]                          groups;
+	private final Supplier<String>                  licenseSup;
+	private String                                  license;
+	public final Version                            version;
+	public final Map<String, ? extends AddableType> add;
 	
-	public Addon(String name, String localName, String[] groups, Supplier<String> licenseSup, Version version) {
+	public Addon(String name, String localName, String[] groups, Supplier<String> licenseSup, Version version, Map<String, ? extends AddableType> add) {
 		this.name       = Objects.requireNonNull(name, "name is null");
 		this.localName  = Objects.requireNonNullElse(localName, name);
 		this.groups     = groups.clone();
 		this.licenseSup = Objects.requireNonNull(licenseSup, "license is null");
 		this.version    = Objects.requireNonNull(version, "version is null");
+		this.add        = Map.copyOf(add);
 	}
 	
 	public int groupDepth() {

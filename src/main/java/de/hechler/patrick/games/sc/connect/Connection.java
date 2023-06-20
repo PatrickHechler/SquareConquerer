@@ -16,15 +16,15 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.connect;
 
-import static de.hechler.patrick.games.sc.Settings.*;
+import static de.hechler.patrick.games.sc.Settings.threadStart;
 
+import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
-import java.lang.reflect.Executable;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -46,12 +46,17 @@ import javax.crypto.CipherOutputStream;
 
 import de.hechler.patrick.games.sc.players.User;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
+import de.hechler.patrick.games.sc.world.OpenWorld;
+import de.hechler.patrick.games.sc.world.UserWorld;
 import de.hechler.patrick.games.sc.world.World;
+import de.hechler.patrick.utils.interfaces.Executable;
 import de.hechler.patrick.utils.interfaces.ThrowBiConsumer;
+import de.hechler.patrick.utils.objects.IgnoreCloseInputStream;
+import de.hechler.patrick.utils.objects.IgnoreCloseOutputStream;
 import de.hechler.patrick.utils.objects.InvalidInputStream;
 import de.hechler.patrick.utils.objects.InvalidOutputStream;
 
-public class Connection {
+public class Connection implements WrongInputHandler, Closeable {
 	
 	/**
 	 * this {@link WrongInputHandler} just always throws an {@link StreamCorruptedException} (or {@link EOFException} in
@@ -400,7 +405,7 @@ public class Connection {
 			throw err;
 		}
 		
-		private static Connection accept(Socket sok, RootUser root, char[] serverPW) throws IOException {
+		private static Connection accept(Socket sok, User root, char[] serverPW) throws IOException {
 			InputStream  in  = sok.getInputStream();
 			OutputStream out = sok.getOutputStream();
 			try {
@@ -418,7 +423,7 @@ public class Connection {
 			}
 		}
 		
-		private static Connection accept(InputStream in, OutputStream out, IntConsumer setTimeout, RootUser root, char[] serverPW) throws IOException {
+		private static Connection accept(InputStream in, OutputStream out, IntConsumer setTimeout, User root, char[] serverPW) throws IOException {
 			if (readInt(DEFAULT_WRONG_INPUT, in, ClientConnect.C_CONECT, ClientConnect.C_NEW) != ClientConnect.C_CONECT) {
 				if (serverPW == null) {
 					in.close();
@@ -472,7 +477,7 @@ public class Connection {
 			}
 		}
 		
-		private static Connection acceptNew(InputStream in, OutputStream out, IntConsumer setTimeout, RootUser root, char[] serverPW) throws IOException {
+		private static Connection acceptNew(InputStream in, OutputStream out, IntConsumer setTimeout, User root, char[] serverPW) throws IOException {
 			writeInt(out, ClientConnect.S_NEW);
 			byte[] salt     = new byte[64];
 			byte[] saltHalf = new byte[32];
@@ -525,10 +530,10 @@ public class Connection {
 				writeInt(cout, ClientConnect.SUB_NEW);
 				readInt(DEFAULT_WRONG_INPUT, cin, ClientConnect.SUB_NEW);
 				String name = readString(DEFAULT_WRONG_INPUT, cin);
-				User   usr  = root.add(name, pw);
+				User   usr  = root.addUser(name, pw);
 				writeInt(cout, ClientConnect.FS_CONECT);
 				readInt(DEFAULT_WRONG_INPUT, cin, ClientConnect.FC_CONECT);
-				return new Connection(usr, cin, cout, setTimeout, User.startModCnt());
+				return new Connection(usr, cin, cout, setTimeout, 0);
 			} catch (Throwable t) {
 				cin.close();
 				cout.close();
@@ -659,7 +664,7 @@ public class Connection {
 		 * @throws IOException if an IO error occurs
 		 */
 		public static Connection connectNew(InputStream in, OutputStream out, IntConsumer setTimeout, User usr, char[] serverPW) throws IOException {
-			if (serverPW == null) throw new NullPointerException(THERE_IS_NO_SERVER_PASSWORD);
+			if (serverPW == null) throw new NullPointerException("server password");
 			writeInt(out, C_NEW);
 			readInt(DEFAULT_WRONG_INPUT, in, S_NEW);
 			byte[] salt     = new byte[64];
@@ -689,7 +694,7 @@ public class Connection {
 				User.fillRandom(saltHalf);
 				tcout.write(saltHalf);
 				System.arraycopy(saltHalf, 0, salt, 32, 32);
-				ByteBuffer buf = StandardCharsets.UTF_8.encode(CharBuffer.wrap(usr.pw()));
+				ByteBuffer buf = StandardCharsets.UTF_8.encode(CharBuffer.wrap(usr._pw()));
 				int        len = buf.limit();
 				writeInt(tcout, len);
 				if (buf.hasArray()) {
@@ -853,7 +858,7 @@ public class Connection {
 	 * @throws IllegalStateException if the current {@link WrongInputHandler} is not the same as the <code>oldWIH</code>
 	 */
 	public synchronized void replaceWongInput(WrongInputHandler oldWIH, WrongInputHandler newWIH) throws IllegalStateException {
-		if (this.wih != oldWIH) throw new IllegalStateException(DIFFERENT_WRONG_INPUT_HANDLER);
+		if (this.wih != oldWIH) throw new IllegalStateException("I have not the expected wih");
 		this.wih = newWIH;
 	}
 	
@@ -982,7 +987,7 @@ public class Connection {
 	 * @throws UnsupportedOperationException if this connection does not support timeout
 	 */
 	public void setTimeout(int timeout) throws UnsupportedOperationException {
-		if (this.setTimeout == null) throw new UnsupportedOperationException(NO_TIMEOUT_SUPPORTED);
+		if (this.setTimeout == null) throw new UnsupportedOperationException("I support no timeout");
 		this.setTimeout.accept(timeout);
 	}
 	
@@ -1255,7 +1260,7 @@ public class Connection {
 			if (readInt(CLS_NAMED, CLS_UNNAMED) == CLS_NAMED) {
 				String modName = readString();
 				Module mod     =
-					ModuleLayer.boot().findModule(modName).orElseThrow(() -> new NoClassDefFoundError(String.format(COULD_NOT_FIND_MODULE_0, modName)));
+					ModuleLayer.boot().findModule(modName).orElseThrow(() -> new NoClassDefFoundError(String.format("could not find the module %s", modName)));
 				return Class.forName(mod, readString());
 			}
 			return Class.forName(readString());
@@ -1324,7 +1329,7 @@ public class Connection {
 	 * @throws IOException if an IO error occurs
 	 */
 	public void writeByte(int val) throws IOException {
-		if ((val & 0xFF) != val) throw new IllegalArgumentException(String.format(VALUE_OUT_OF_THE_BYTE_BOUNDS_0X_0, Integer.toHexString(val)));
+		if ((val & 0xFF) != val) throw new IllegalArgumentException(String.format("value out of the byte bounds %X", Integer.valueOf(val)));
 		this.out.write(val);
 	}
 	
@@ -1383,8 +1388,6 @@ public class Connection {
 	
 	/**
 	 * {@inheritDoc}
-	 * <p>
-	 * all calls after the first call will be ignored
 	 */
 	@Override
 	public void close() throws IOException {
@@ -1425,7 +1428,7 @@ public class Connection {
 		int val = in.read();
 		if (val != -1) return val;
 		wih.wrongInputEOF(1, 1);
-		throw new AssertionError(EOF_HANDLER_RETURNED_NORMALLY);
+		throw new AssertionError("eof handler returned normally!");
 	}
 	
 	private static int readByte(WrongInputHandler wih, InputStream in, int a, int b) throws IOException {

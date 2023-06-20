@@ -19,14 +19,41 @@ package de.hechler.patrick.games.sc.world;
 import de.hechler.patrick.games.sc.players.User;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
-public interface World {
+public class UserWorld implements World {
 	
-	User user();
+	public UserWorld(CompleteWorld rw, User usr, int modCnt) { // TODO Auto-generated constructor stub
+	}
 	
-	int xlen();
+	public static World of(CompleteWorld rw, User usr, int modCnt) {
+		if (rw.user() == usr) {
+			return rw;
+		}
+		usr.checkModCnt(modCnt);
+		return new UserWorld(rw, usr, modCnt);
+	}
+	// TODO
 	
-	int ylen();
+	@Override
+	public User user() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
-	Tile tile(int x, int y);
+	@Override
+	public int xlen() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 	
+	@Override
+	public int ylen() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	@Override
+	public Tile tile(int x, int y) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
