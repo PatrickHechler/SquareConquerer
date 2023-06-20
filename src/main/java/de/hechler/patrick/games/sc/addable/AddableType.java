@@ -14,25 +14,18 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
+package de.hechler.patrick.games.sc.addable;
 
-/**
- * this is the Square Conquerer module.
- * <p>
- * this module contains the base game.
- * 
- * @author Patrick Hechler
- */
-module de.hechler.patrick.games.squareconqerer {
+import java.util.Objects;
+
+public abstract sealed class AddableType permits EntityType, GroundType, ResourceType {
 	
-	requires transitive java.desktop;
-	requires jdk.incubator.concurrent;
+	public final String name;
+	public final String localName;
 	
-	exports de.hechler.patrick.games.sc;
-	exports de.hechler.patrick.games.sc.addable;
-	exports de.hechler.patrick.games.sc.addons;
-	exports de.hechler.patrick.games.sc.world;
-	exports de.hechler.patrick.games.sc.world.entity;
-	exports de.hechler.patrick.games.sc.world.ground;
-	exports de.hechler.patrick.games.sc.world.resource;
+	public AddableType(String name, String localName) {
+		this.name      = Objects.requireNonNull(name, "name is null");
+		this.localName = Objects.requireNonNullElse(localName, name);
+	}
 	
 }
