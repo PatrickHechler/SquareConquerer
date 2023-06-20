@@ -24,6 +24,11 @@ public class CompleteWorld implements World {
 	private final User     usr;
 	private final Tile[][] tiles;
 	
+	private CompleteWorld(User usr, Tile[][] tiles) {
+		this.usr = usr;
+		this.tiles = tiles;
+	}
+	
 	
 	
 	@Override

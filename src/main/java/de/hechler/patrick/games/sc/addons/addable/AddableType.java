@@ -20,8 +20,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import de.hechler.patrick.games.sc.values.ValueSpec;
+import de.hechler.patrick.games.sc.world.World;
+import de.hechler.patrick.games.sc.world.WorldThing;
 
-public abstract sealed class AddableType permits EntityType, GroundType, ResourceType {
+public abstract sealed class AddableType<M extends AddableType<M, A>, A extends WorldThing<M, A>> permits EntityType<?,?>, GroundType, ResourceType {
 	
 	public final String                 name;
 	public final String                 localName;
@@ -32,5 +34,9 @@ public abstract sealed class AddableType permits EntityType, GroundType, Resourc
 		this.localName = Objects.requireNonNullElse(localName, name);
 		this.values    = Map.copyOf(values);
 	}
+	
+	public abstract A withDefaultValues(World w, int x, int y);
+	
+	public abstract A withRandomValues(World w, int x, int y);
 	
 }

@@ -19,8 +19,9 @@ package de.hechler.patrick.games.sc.addons.addable;
 import java.util.Map;
 
 import de.hechler.patrick.games.sc.values.ValueSpec;
+import de.hechler.patrick.games.sc.world.entity.Unit;
 
-public abstract non-sealed class UnitType extends EntityType {
+public abstract non-sealed class UnitType extends EntityType<UnitType, Unit> {
 	
 	public UnitType(String name, String localName, Map<String, ValueSpec> values) {
 		super(name, localName, values);

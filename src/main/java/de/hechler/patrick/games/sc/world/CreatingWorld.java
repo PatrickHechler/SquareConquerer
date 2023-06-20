@@ -14,17 +14,40 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.addons.addable;
+package de.hechler.patrick.games.sc.world;
 
-import java.util.Map;
+import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.world.tile.Tile;
 
-import de.hechler.patrick.games.sc.values.ValueSpec;
-import de.hechler.patrick.games.sc.world.ground.Ground;
-
-public abstract non-sealed class GroundType extends AddableType<GroundType, Ground> {
+public class CreatingWorld implements World {
 	
-	public GroundType(String name, String localName, Map<String, ValueSpec> values) {
-		super(name, localName, values);
+	private final User     usr;
+	private final Tile[][] tiles;
+	
+	
+	public CreatingWorld(User usr, int xlen, int ylen) {
+		this.usr = usr;
+		this.tiles = new Tile[xlen][ylen];
+	}
+	
+	@Override
+	public User user() {
+		return this.usr;
+	}
+	
+	@Override
+	public int xlen() {
+		return this.tiles.length;
+	}
+	
+	@Override
+	public int ylen() {
+		return this.tiles[0].length;
+	}
+	
+	@Override
+	public Tile tile(int x, int y) {
+		return this.tiles[x][y].unmodifiable();
 	}
 	
 }

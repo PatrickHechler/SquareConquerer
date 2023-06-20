@@ -19,8 +19,9 @@ package de.hechler.patrick.games.sc.addons.addable;
 import java.util.Map;
 
 import de.hechler.patrick.games.sc.values.ValueSpec;
+import de.hechler.patrick.games.sc.world.entity.Build;
 
-public abstract non-sealed class BuildType extends EntityType {
+public abstract non-sealed class BuildType extends EntityType<BuildType, Build> {
 	
 	public BuildType(String name, String localName, Map<String, ValueSpec> values) {
 		super(name, localName, values);
