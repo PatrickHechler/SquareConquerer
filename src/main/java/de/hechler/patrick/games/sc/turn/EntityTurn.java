@@ -14,40 +14,22 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.world;
+package de.hechler.patrick.games.sc.turn;
 
-import de.hechler.patrick.games.sc.ui.players.User;
-import de.hechler.patrick.games.sc.world.tile.Tile;
+import de.hechler.patrick.games.sc.world.entity.Entity;
 
-public class CreatingWorld implements World {
+/**
+ * this interface is used to let an entity do stuff
+ * 
+ * @author Patrick Hechler
+ */
+public sealed interface EntityTurn permits CarryTurn, MoveTurn, StoreTurn {
 	
-	private final User     usr;
-	private final Tile[][] tiles;
-	
-	
-	public CreatingWorld(User usr, int xlen, int ylen) {
-		this.usr = usr;
-		this.tiles = new Tile[xlen][ylen];
-	}
-	
-	@Override
-	public User user() {
-		return this.usr;
-	}
-	
-	@Override
-	public int xlen() {
-		return this.tiles.length;
-	}
-	
-	@Override
-	public int ylen() {
-		return this.tiles[0].length;
-	}
-	
-	@Override
-	public Tile tile(int x, int y) {
-		return this.tiles[x][y].unmodifiable();
-	}
+	/**
+	 * returns the (main) entity on which this turn operates
+	 * 
+	 * @return the (main) entity on which this turn operates
+	 */
+	Entity<?, ?> entity();
 	
 }

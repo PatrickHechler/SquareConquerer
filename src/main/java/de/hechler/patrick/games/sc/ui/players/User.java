@@ -25,6 +25,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -172,7 +173,7 @@ public class User implements Closeable {
 	public synchronized int modifyCount() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ServerAccept.class && caller != Connection.OneWayAccept.class && caller != CompleteWorld.class
-			&& caller != Connection.ClientConnect.class && caller != Connection.class) {
+				&& caller != Connection.ClientConnect.class && caller != Connection.class) {
 			throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
 		}
 		return this.modCnt;
@@ -348,5 +349,43 @@ public class User implements Closeable {
 		}
 		
 	}
+	
+	public static User nopw(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	public void save(Connection conn) {
+		// TODO Auto-generated method stub
+	}
+	
+	public User addNopw(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	public Map<String, User> users() {
+		if (this.parent != null) {
+			throw new IllegalStateException("only the root can return its users");
+		}
+		Map<String, User> c = new HashMap<>(this.childs);
+		c.put(this.s.name, this);
+		return Collections.unmodifiableMap(c);
+	}
+
+	public Map<String, User> subUsers() {
+		if (this.parent != null) {
+			throw new IllegalStateException("only the root can return its users");
+		}
+		return Collections.unmodifiableMap(this.childs);
+	}
+
+	public void load(Connection conn) { 
+	// TODO Auto-generated method stub
+	 }
+
+	public void allowNewUsers(boolean b) { 
+	// TODO Auto-generated method stub
+	 }
 	
 }

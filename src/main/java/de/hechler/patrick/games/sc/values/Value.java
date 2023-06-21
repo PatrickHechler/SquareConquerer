@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.world.WorldThing;
 
 public sealed interface Value {
 	
@@ -97,6 +98,15 @@ public sealed interface Value {
 		public UserListValue(String name, List<User> value) {
 			this.name  = Objects.requireNonNull(name, "name");
 			this.value = List.copyOf(value);
+		}
+		
+	}
+	
+	record WorldThingValue(String name, WorldThing<?,?> value) implements Value {
+		
+		public WorldThingValue {
+			Objects.requireNonNull(name, "name");
+			Objects.requireNonNull(value, "value");
 		}
 		
 	}

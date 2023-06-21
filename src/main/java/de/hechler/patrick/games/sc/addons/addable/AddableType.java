@@ -16,27 +16,80 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.addons.addable;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.TreeMap;
 
 import de.hechler.patrick.games.sc.values.ValueSpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.BooleanSpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.DoubleSpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.EnumSpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.IntSpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.JustASpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.LongSpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.StringSpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.UserListSpec;
+import de.hechler.patrick.games.sc.values.ValueSpec.UserSpec;
 import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
+import de.hechler.patrick.utils.objects.Random2;
 
-public abstract sealed class AddableType<M extends AddableType<M, A>, A extends WorldThing<M, A>> permits EntityType<?,?>, GroundType, ResourceType {
+public abstract sealed class AddableType<M extends AddableType<M, A>, A extends WorldThing<M, A>> permits EntityType<?, ?>, GroundType, ResourceType {
 	
-	public final String                 name;
-	public final String                 localName;
-	public final Map<String, ValueSpec> values;
+	public final String                          name;
+	public final String                          localName;
+	public final NavigableMap<String, ValueSpec> values;
 	
 	public AddableType(String name, String localName, Map<String, ValueSpec> values) {
-		this.name      = Objects.requireNonNull(name, "name is null");
+		this.name      = Objects.requireNonNull(name, "name");
 		this.localName = Objects.requireNonNullElse(localName, name);
-		this.values    = Map.copyOf(values);
+		this.values    = Collections.unmodifiableNavigableMap(new TreeMap<>(values));
 	}
 	
-	public abstract A withDefaultValues(World w, int x, int y);
+	public abstract A withDefaultValues(World w, Random2 r, int x, int y);
 	
-	public abstract A withRandomValues(World w, int x, int y);
+	public abstract A withRandomValues(World w, Random2 r, int x, int y);
+	
+	public abstract Map<String, ValueSpec> specs();
+	
+	public abstract ValueSpec spec(String name);
+	
+	public JustASpec justSpec(String name) {
+		return (JustASpec) spec(name);
+	}
+	
+	public IntSpec intSpec(String name) {
+		return (IntSpec) spec(name);
+	}
+	
+	public LongSpec longSpec(String name) {
+		return (LongSpec) spec(name);
+	}
+	
+	public DoubleSpec doubleSpec(String name) {
+		return (DoubleSpec) spec(name);
+	}
+	
+	public BooleanSpec booleanSpec(String name) {
+		return (BooleanSpec) spec(name);
+	}
+	
+	public EnumSpec<?> enumSpec(String name) {
+		return (EnumSpec<?>) spec(name);
+	}
+	
+	public StringSpec stringSpec(String name) {
+		return (StringSpec) spec(name);
+	}
+	
+	public UserSpec userSpec(String name) {
+		return (UserSpec) spec(name);
+	}
+	
+	public UserListSpec userListSpec(String name) {
+		return (UserListSpec) spec(name);
+	}
 	
 }

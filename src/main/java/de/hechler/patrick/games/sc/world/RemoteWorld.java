@@ -16,6 +16,25 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
+import java.util.Map;
+
+import de.hechler.patrick.games.sc.connect.Connection;
+import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.world.resource.Resource;
+import de.hechler.patrick.games.sc.world.tile.Tile;
+
 public class RemoteWorld {
+
+	public static Tile[][] loadWorld(Connection conn, Map<String, User> users) { 
+	// TODO Auto-generated method stub
+	return null; }
 	// TODO
+
+	public static void loadWorld(Connection conn, Map<String, User> users, Tile[][] cach) { 
+	// TODO Auto-generated method stub
+	 }
+
+	public static Resource readRes(Connection conn) { 
+	// TODO Auto-generated method stub
+	return null; }
 }

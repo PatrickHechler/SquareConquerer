@@ -19,12 +19,14 @@ package de.hechler.patrick.games.sc.world.tile;
 import java.util.List;
 import java.util.stream.Stream;
 
+import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.world.entity.Build;
+import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 
-public class TileUnmod implements Tile {
+public final class TileUnmod implements Tile {
 	
 	private final Tile t;
 	
@@ -75,6 +77,36 @@ public class TileUnmod implements Tile {
 	@Override
 	public Tile unmodifiable() {
 		return this;
+	}
+	
+	@Override
+	public TileImpl copy() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public Entity<?, ?>[] entities() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public void addUnit(Unit u) throws TurnExecutionException {
+		// TODO Auto-generated method stub
+	}
+	
+	@Override
+	public void removeUnit(Unit u) throws TurnExecutionException {
+		// TODO Auto-generated method stub
+	}
+	
+	@Override
+	public boolean same(Tile t) {
+		if (t instanceof TileUnmod tu) {
+			t = tu.t;
+		}
+		return this.t.same(t);
 	}
 	
 }

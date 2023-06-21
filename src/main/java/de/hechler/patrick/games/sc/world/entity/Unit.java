@@ -17,7 +17,21 @@
 package de.hechler.patrick.games.sc.world.entity;
 
 import de.hechler.patrick.games.sc.addons.addable.UnitType;
+import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.values.Value.IntValue;
+import de.hechler.patrick.games.sc.world.tile.Tile;
 
-public non-sealed interface Unit extends Entity<UnitType, Unit> {
+public abstract non-sealed class Unit extends Entity<UnitType, Unit> {
+	
+	public static final String MOVE_RANGE = "move:range";
+	
+	public int moveRange() {
+		return intValue(MOVE_RANGE).value();
+	}
+	
+	public void changePos(int x, int y, Tile newTile, Tile oldTile) throws TurnExecutionException {
+		value(new IntValue(X, x));
+		value(new IntValue(Y, y));
+	}
 	
 }

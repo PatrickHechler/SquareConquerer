@@ -19,6 +19,6 @@ package de.hechler.patrick.games.sc.world.ground;
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
 import de.hechler.patrick.games.sc.world.WorldThing;
 
-public interface Ground extends WorldThing<GroundType, Ground> {
+public abstract non-sealed class Ground extends WorldThing<GroundType, Ground> {
 	
 }

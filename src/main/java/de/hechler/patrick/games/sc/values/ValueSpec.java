@@ -18,6 +18,7 @@ package de.hechler.patrick.games.sc.values;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.values.Value.BooleanValue;
@@ -29,6 +30,8 @@ import de.hechler.patrick.games.sc.values.Value.LongValue;
 import de.hechler.patrick.games.sc.values.Value.StringValue;
 import de.hechler.patrick.games.sc.values.Value.UserListValue;
 import de.hechler.patrick.games.sc.values.Value.UserValue;
+import de.hechler.patrick.games.sc.values.Value.WorldThingValue;
+import de.hechler.patrick.games.sc.world.WorldThing;
 
 public sealed interface ValueSpec {
 	
@@ -43,7 +46,7 @@ public sealed interface ValueSpec {
 		public JustAValue asValue() {
 			return new JustAValue(this.name);
 		}
-
+		
 	}
 	
 	record IntSpec(String name, long min, long max) implements ValueSpec {
@@ -165,6 +168,20 @@ public sealed interface ValueSpec {
 				throw new IllegalArgumentException("min=" + this.minSize + " max=" + this.maxSize + " size=" + s);
 			}
 			return new UserListValue(this.name, List.of(val));
+		}
+		
+	}
+	
+	record WorldThingSpec(String name, Consumer<WorldThing<?, ?>> validator) implements ValueSpec {
+		
+		public WorldThingSpec {
+			Objects.requireNonNull(name, "name");
+			Objects.requireNonNull(validator, "validator");
+		}
+		
+		public WorldThingValue withValue(WorldThing<?, ?> val) {
+			this.validator.accept(val);
+			return new WorldThingValue(this.name, val);
 		}
 		
 	}

@@ -18,6 +18,6 @@ package de.hechler.patrick.games.sc.world.entity;
 
 import de.hechler.patrick.games.sc.addons.addable.BuildType;
 
-public non-sealed interface Build extends Entity<BuildType, Build> {
+public abstract non-sealed class Build extends Entity<BuildType, Build> {
 	
 }

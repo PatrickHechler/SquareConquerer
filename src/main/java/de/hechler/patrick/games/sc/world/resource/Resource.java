@@ -19,6 +19,6 @@ package de.hechler.patrick.games.sc.world.resource;
 import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.world.WorldThing;
 
-public interface Resource extends WorldThing<ResourceType, Resource> {
+public abstract non-sealed class Resource extends WorldThing<ResourceType, Resource> {
 	
 }

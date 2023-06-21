@@ -19,6 +19,7 @@ package de.hechler.patrick.games.sc.world;
 import java.io.IOException;
 
 import de.hechler.patrick.games.sc.connect.Connection;
+import de.hechler.patrick.games.sc.world.resource.Resource;
 
 public class OpenWorld {
 
@@ -28,6 +29,14 @@ public class OpenWorld {
 	// TODO
 
 	public void execute() throws IOException{ 
+	// TODO Auto-generated method stub
+	 }
+
+	public static void saveWorld(World world, Connection conn) { 
+	// TODO Auto-generated method stub
+	 }
+
+	public static void writeRes(Connection conn, Resource res) { 
 	// TODO Auto-generated method stub
 	 }
 }

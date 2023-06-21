@@ -19,12 +19,14 @@ package de.hechler.patrick.games.sc.world.tile;
 import java.util.List;
 import java.util.stream.Stream;
 
+import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.world.entity.Build;
+import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 
-public interface Tile {
+public sealed interface Tile permits TileImpl, TileUnmod {
 	
 	Ground ground();
 	
@@ -47,5 +49,15 @@ public interface Tile {
 	Stream<Unit> unitsStream();
 	
 	Tile unmodifiable();
+	
+	TileImpl copy();
+	
+	Entity<?, ?>[] entities();
+	
+	void addUnit(Unit u) throws TurnExecutionException;
+	
+	void removeUnit(Unit u) throws TurnExecutionException;
+	
+	boolean same(Tile t);
 	
 }
