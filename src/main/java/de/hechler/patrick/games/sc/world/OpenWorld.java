@@ -32,7 +32,7 @@ public class OpenWorld {
 	// TODO Auto-generated method stub
 	 }
 
-	public static void saveWorld(World world, Connection conn) { 
+	public static void saveWorld(World world, Connection conn) throws IOException { 
 	// TODO Auto-generated method stub
 	 }
 

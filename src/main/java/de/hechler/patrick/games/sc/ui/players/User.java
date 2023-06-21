@@ -173,7 +173,7 @@ public class User implements Closeable {
 	public synchronized int modifyCount() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ServerAccept.class && caller != Connection.OneWayAccept.class && caller != CompleteWorld.class
-				&& caller != Connection.ClientConnect.class && caller != Connection.class) {
+			&& caller != Connection.ClientConnect.class && caller != Connection.class) {
 			throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
 		}
 		return this.modCnt;
@@ -372,20 +372,30 @@ public class User implements Closeable {
 		c.put(this.s.name, this);
 		return Collections.unmodifiableMap(c);
 	}
-
+	
 	public Map<String, User> subUsers() {
 		if (this.parent != null) {
 			throw new IllegalStateException("only the root can return its users");
 		}
 		return Collections.unmodifiableMap(this.childs);
 	}
-
-	public void load(Connection conn) { 
-	// TODO Auto-generated method stub
-	 }
-
-	public void allowNewUsers(boolean b) { 
-	// TODO Auto-generated method stub
-	 }
+	
+	public void load(Connection conn) {
+		// TODO Auto-generated method stub
+	}
+	
+	public void allowNewUsers(boolean b) {
+		// TODO Auto-generated method stub
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.s.name.hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		return obj == this;
+	}
 	
 }

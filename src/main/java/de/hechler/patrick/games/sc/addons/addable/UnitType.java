@@ -18,7 +18,7 @@ package de.hechler.patrick.games.sc.addons.addable;
 
 import java.util.Map;
 
-import de.hechler.patrick.games.sc.values.ValueSpec;
+import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 
 public abstract non-sealed class UnitType extends EntityType<UnitType, Unit> {

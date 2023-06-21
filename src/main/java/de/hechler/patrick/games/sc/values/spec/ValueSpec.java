@@ -14,17 +14,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.addons.addable;
+package de.hechler.patrick.games.sc.values.spec;
 
-import java.util.Map;
-
-import de.hechler.patrick.games.sc.values.spec.ValueSpec;
-import de.hechler.patrick.games.sc.world.entity.Entity;
-
-public abstract sealed class EntityType<T extends EntityType<T, E>, E extends Entity<T, E>> extends AddableType<T, E> permits UnitType, BuildType {
+public sealed interface ValueSpec
+	permits BooleanSpec, DoubleSpec, EnumSpec<?>, IntSpec, JustASpec, LongSpec, MapSpec, StringSpec, TypeSpec<?>, UserListSpec, UserSpec, WorldThingSpec {
 	
-	public EntityType(String name, String localName, Map<String, ValueSpec> values) {
-		super(name, localName, values);
-	}
+	String name();
 	
 }

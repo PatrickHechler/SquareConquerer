@@ -16,6 +16,7 @@
 //along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.utils.objects;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.random.RandomGenerator;
 
@@ -114,11 +115,9 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * Generates the next pseudorandom number. This method returns an {@code int} value such that, if the argument {@code bits} is between {@code 1} and {@code 32}
 	 * (inclusive), then that many low-order bits of the returned value will be (approximately) independently chosen bit values, each of which is (approximately)
 	 * equally likely to be {@code 0} or {@code 1}.
-	 *
 	 * <p>
 	 * <b>apiNote</b> The other random-producing methods in this class are implemented in terms of this method, so subclasses can override just this method to
 	 * provide a different source of pseudorandom numbers for the entire class.
-	 * 
 	 * <p>
 	 * <b>implSpec</b> The implementation in this class atomically updates the seed to
 	 * 
@@ -154,7 +153,6 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	
 	/**
 	 * Generates random bytes and places them into a user-supplied byte array. The number of random bytes produced is equal to the length of the byte array.
-	 *
 	 * <p>
 	 * <b>implSpec</b> The method {@code nextBytes} is implemented by class {@code Random} as if by:
 	 * 
@@ -180,7 +178,6 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * Returns the next pseudorandom, uniformly distributed {@code int} value from this random number generator's sequence. The general contract of {@code nextInt}
 	 * is that one {@code int} value is pseudorandomly generated and returned. All 2<sup>32</sup> possible {@code int} values are produced with (approximately) equal
 	 * probability.
-	 *
 	 * <p>
 	 * <b>implSpec</b> The method {@code nextInt} is implemented by class {@code Random} as if by:
 	 * 
@@ -201,17 +198,16 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * Returns a pseudorandom, uniformly distributed {@code int} value between 0 (inclusive) and the specified value (exclusive), drawn from this random number
 	 * generator's sequence. The general contract of {@code nextInt} is that one {@code int} value in the specified range is pseudorandomly generated and returned.
 	 * All {@code bound} possible {@code int} values are produced with (approximately) equal probability.
-	 *
 	 * <p>
 	 * <b>implSpec</b> The method {@code nextInt(int bound)} is implemented by class {@code Random} as if by:
 	 * 
 	 * <pre>{@code
 	 * public int nextInt(int bound) {
 	 * 	if (bound <= 0) throw new IllegalArgumentException("bound must be positive");
-	 *	
+	 * 	
 	 * 	if ((bound & -bound) == bound) // i.e., bound is a power of 2
 	 * 		return (int) ((bound * (long) next(31)) >> 31);
-	 *	
+	 * 	
 	 * 	int bits, val;
 	 * 	do {
 	 * 		bits = next(31);
@@ -237,7 +233,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * @param bound the upper bound (exclusive). Must be positive.
 	 * 
 	 * @return the next pseudorandom, uniformly distributed {@code int} value between zero (inclusive) and {@code bound} (exclusive) from this random number
-	 *         generator's sequence
+	 *             generator's sequence
 	 * 
 	 * @throws IllegalArgumentException if bound is not positive
 	 * 
@@ -264,7 +260,6 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	/**
 	 * Returns the next pseudorandom, uniformly distributed {@code long} value from this random number generator's sequence. The general contract of {@code nextLong}
 	 * is that one {@code long} value is pseudorandomly generated and returned.
-	 *
 	 * <p>
 	 * <b>implSpec</b> The method {@code nextLong} is implemented by class {@code Random} as if by:
 	 * 
@@ -284,11 +279,20 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 		return ((long) (next(32)) << 32) + next(32);
 	}
 	
+	public UUID nextUUID() {
+		long high = nextLong();
+		long low  = nextLong();
+		high &= 0x000F000000000000L;
+		high |= 0x0040000000000000L;
+		low  &= 0x3F00000000000000L;
+		low  |= 0x8000000000000000L;
+		return new UUID(high, low);
+	}
+	
 	/**
 	 * Returns the next pseudorandom, uniformly distributed {@code boolean} value from this random number generator's sequence. The general contract of
 	 * {@code nextBoolean} is that one {@code boolean} value is pseudorandomly generated and returned. The values {@code true} and {@code false} are produced with
 	 * (approximately) equal probability.
-	 *
 	 * <p>
 	 * <b>implSpec</b> The method {@code nextBoolean} is implemented by class {@code Random} as if by:
 	 * 
@@ -313,7 +317,6 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * The general contract of {@code nextFloat} is that one {@code float} value, chosen (approximately) uniformly from the range {@code 0.0f} (inclusive) to
 	 * {@code 1.0f} (exclusive), is pseudorandomly generated and returned. All 2<sup>24</sup> possible {@code float} values of the form
 	 * <i>m&nbsp;x&nbsp;</i>2<sup>-24</sup>, where <i>m</i> is a positive integer less than 2<sup>24</sup>, are produced with (approximately) equal probability.
-	 *
 	 * <p>
 	 * <b>implSpec</b> The method {@code nextFloat} is implemented by class {@code Random} as if by:
 	 * 
@@ -348,7 +351,6 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * <p>
 	 * The general contract of {@code nextDouble} is that one {@code double} value, chosen (approximately) uniformly from the range {@code 0.0d} (inclusive) to
 	 * {@code 1.0d} (exclusive), is pseudorandomly generated and returned.
-	 *
 	 * <p>
 	 * <b>implSpec</b> The method {@code nextDouble} is implemented by class {@code Random} as if by:
 	 * 
@@ -390,7 +392,6 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * <p>
 	 * The general contract of {@code nextGaussian} is that one {@code double} value, chosen from (approximately) the usual normal distribution with mean {@code 0.0}
 	 * and standard deviation {@code 1.0}, is pseudorandomly generated and returned.
-	 *
 	 * <p>
 	 * <b>implSpec</b> The method {@code nextGaussian} is implemented by class {@code Random} as if by a threadsafe version of the following:
 	 * 
@@ -422,7 +423,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * of only one call to {@code StrictMath.log} and one call to {@code StrictMath.sqrt}.
 	 * 
 	 * @return the next pseudorandom, Gaussian ("normally") distributed {@code double} value with mean {@code 0.0} and standard deviation {@code 1.0} from this
-	 *         random number generator's sequence
+	 *             random number generator's sequence
 	 */
 	@Override
 	public synchronized double nextGaussian() {

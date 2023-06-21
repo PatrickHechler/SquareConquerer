@@ -18,13 +18,17 @@ package de.hechler.patrick.games.sc.world.tile;
 
 import java.lang.StackWalker.Option;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
+import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
 import de.hechler.patrick.games.sc.world.entity.Build;
@@ -32,26 +36,28 @@ import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
+import de.hechler.patrick.utils.objects.Random2;
 import jdk.incubator.concurrent.ScopedValue;
 
 public final class TileImpl implements Tile {
 	
-	private Ground                              ground;
-	private final Map<Resource, List<Resource>> resources;
-	private Build                               build;
-	private final Map<Unit, List<Unit>>         units;
+	private final NavigableMap<ResourceType, Resource> resources = new TreeMap<>((a, b) -> a.name.compareTo(b.name));;
+	
+	private Ground           ground;
+	private Build            build;
+	private final List<Unit> units;
 	
 	public TileImpl(Ground ground) {
-		this.ground    = Objects.requireNonNull(ground, "ground is null");
-		this.resources = new TreeMap<>();
-		this.units     = new TreeMap<>();
+		this.ground = Objects.requireNonNull(ground, "ground is null");
+		this.units  = new ArrayList<>();
 	}
 	
-	public TileImpl(Ground ground, Map<Resource, List<Resource>> resources, Build build, Map<Unit, List<Unit>> units) {
-		this.ground    = ground;
-		this.resources = new TreeMap<>(resources); // the tree map uses a different init method for sorted maps
-		this.build     = build;
-		this.units     = new TreeMap<>(units);
+	public TileImpl(Ground ground, Map<ResourceType, Resource> resources, Build build, List<Unit> units) {
+		this.ground = ground;
+		this.resources.putAll(resources);
+		this.build = build;
+		this.units = new ArrayList<>(units);
+		this.units.sort(null);
 	}
 	
 	public Ground ground() {
@@ -63,17 +69,23 @@ public final class TileImpl implements Tile {
 	}
 	
 	public Resource resource(int index) {
-		Iterator<Resource> iter = this.resources.keySet().iterator();
+		Iterator<Entry<ResourceType, Resource>> iter = this.resources.entrySet().iterator();
 		while (index-- > 0) iter.next();
-		return iter.next().unmodifiable();
+		return iter.next().getValue().unmodifiable();
 	}
 	
 	public List<Resource> resourcesList() {
-		return this.resources.keySet().stream().map(Resource::unmodifiable).toList();
+		return this.resources.entrySet().stream().map(e -> e.getValue().unmodifiable()).toList();
 	}
 	
 	public Stream<Resource> resourcesStream() {
-		return this.resources.keySet().stream().map(Resource::unmodifiable);
+		return this.resources.entrySet().stream().map(e -> e.getValue().unmodifiable());
+	}
+	
+	public Map<ResourceType, Resource> resourcesMap() {
+		Map<ResourceType, Resource> m = new HashMap<>(this.resources);
+		m.replaceAll((t, r) -> r.unmodifiable());
+		return m;
 	}
 	
 	public Build build() {
@@ -85,17 +97,15 @@ public final class TileImpl implements Tile {
 	}
 	
 	public Unit unit(int index) {
-		Iterator<Unit> iter = this.units.keySet().iterator();
-		while (index-- > 0) iter.next();
-		return iter.next().unmodifiable();
+		return this.units.get(index).unmodifiable();
 	}
 	
 	public List<Unit> unitsList() {
-		return this.units.keySet().stream().map(Unit::unmodifiable).toList();
+		return this.units.stream().map(Unit::unmodifiable).toList();
 	}
 	
 	public Stream<Unit> unitsStream() {
-		return this.units.keySet().stream().map(Unit::unmodifiable);
+		return this.units.stream().map(Unit::unmodifiable);
 	}
 	
 	public Tile unmodifiable() {
@@ -118,7 +128,7 @@ public final class TileImpl implements Tile {
 		} else {
 			off = 0;
 		}
-		for (Entity<?, ?> e : this.units.keySet()) {
+		for (Entity<?, ?> e : this.units) {
 			result[off++] = e.unmodifiable();
 		}
 		return result;
@@ -151,13 +161,7 @@ public final class TileImpl implements Tile {
 				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
 			}
 		}
-		this.units.compute(u, (u0, ul) -> {
-			if (ul == null) {
-				ul = new ArrayList<>();
-			}
-			ul.add(u0);
-			return ul;
-		});
+		this.units.add(u);
 	}
 	
 	@Override
@@ -168,20 +172,48 @@ public final class TileImpl implements Tile {
 				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
 			}
 		}
-		this.units.compute(u, (u0, ul) -> {
-			for (int i = 0; i < ul.size(); i++) {
-				if (u0.same(ul.get(i))) {
-					ul.remove(i);
-					if (ul.isEmpty()) {
-						return null;
-					}
-					return ul;
-				}
-			}
+		if (!this.units.remove(u)) {
 			throw new AssertionError("did not found my unit");
+		}
+	}
+	
+	@Override
+	public void setBuild(Build b) throws TurnExecutionException {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		this.build = b;
+	}
+	
+	@Override
+	public void addResource(Resource r) {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		this.resources.merge(r.type(), r, (a, b) -> {
+			a.add(b);
+			return a;
 		});
 	}
-
+	
+	@Override
+	public Resource removeResource(Resource r, Random2 rnd) throws TurnExecutionException {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		Resource old = this.resources.get(r.type());
+		return old.sub(r, rnd);
+	}
+	
 	@Override
 	public boolean same(Tile t) {
 		if (this == t) return true;

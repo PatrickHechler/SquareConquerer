@@ -24,12 +24,27 @@ import de.hechler.patrick.games.sc.world.tile.Tile;
 
 public class UserWorld implements World {
 	
-	public UserWorld(CompleteWorld rw, User usr, int modCnt) { // TODO Auto-generated constructor stub
+	private final CompleteWorld rw;
+	private final User          usr;
+	public final int            modCnt;
+	
+	public UserWorld(CompleteWorld rw, User usr, int modCnt) {
+		this.rw     = rw;
+		this.usr    = usr;
+		this.modCnt = modCnt;
 	}
 	
 	public static World of(CompleteWorld rw, User usr, int modCnt) {
 		if (rw.user() == usr) {
 			return rw;
+		}
+		usr.checkModCnt(modCnt);
+		return new UserWorld(rw, usr, modCnt);
+	}
+	
+	public static UserWorld usrOf(CompleteWorld rw, User usr, int modCnt) {
+		if (rw.user() == usr) {
+			throw new IllegalArgumentException("this is user of, the root world is not allowed");
 		}
 		usr.checkModCnt(modCnt);
 		return new UserWorld(rw, usr, modCnt);
@@ -59,23 +74,24 @@ public class UserWorld implements World {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
-	public Tile[][] cach() { 
-	// TODO Auto-generated method stub
-	return null; }
-
+	
+	public Tile[][] cach() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
 	@Override
-	public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) { 
-	// TODO Auto-generated method stub
-	 }
-
+	public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+		// TODO Auto-generated method stub
+	}
+	
 	@Override
-	public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) { 
-	// TODO Auto-generated method stub
-	 }
-
+	public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+		// TODO Auto-generated method stub
+	}
+	
 	@Override
-	public void finish(Turn t) { 
-	// TODO Auto-generated method stub
-	 }
+	public void finish(Turn t) {
+		// TODO Auto-generated method stub
+	}
 }

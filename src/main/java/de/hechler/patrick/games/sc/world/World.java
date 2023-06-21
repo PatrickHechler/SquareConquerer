@@ -16,10 +16,13 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
 public interface World {
@@ -37,5 +40,7 @@ public interface World {
 	void removeNextTurnListener(BiConsumer<byte[], byte[]> listener);
 	
 	void finish(Turn t);
+	
+	Map<User, List<Entity<?, ?>>> entities();
 	
 }

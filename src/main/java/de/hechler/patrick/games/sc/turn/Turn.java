@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -55,7 +56,6 @@ public final class Turn {
 	 */
 	public Turn(World world) {
 		this.world = world;
-		
 		this.turns = new TreeMap<>((a, b) -> {
 			int ac = a.x();
 			int bc = b.x();
@@ -183,13 +183,13 @@ public final class Turn {
 			conn.writeInt(e.y());
 			switch (et) {
 			case CarryTurn ct -> {
-				conn.writeInt(this.world.tile(e.x(), e.y()).unitsList().indexOf(e));
+				conn.writeInt(indexOf(e));
 				conn.writeInt(ET_CARRY);
 				OpenWorld.writeRes(conn, ct.res());
 				conn.writeInt(ct.amount());
 			}
 			case MoveTurn mt -> {
-				conn.writeInt(this.world.tile(e.x(), e.y()).unitsList().indexOf(e));
+				conn.writeInt(indexOf(e));
 				conn.writeInt(ET_MOVE);
 				List<Direction> dirs = mt.dirs();
 				conn.writeInt(dirs.size());
@@ -198,7 +198,7 @@ public final class Turn {
 				}
 			}
 			case StoreTurn st -> {
-				conn.writeInt(this.world.tile(e.x(), e.y()).unitsList().indexOf(e));
+				conn.writeInt(indexOf(e));
 				conn.writeInt(ET_STORE);
 				conn.writeInt(st.amount());
 				OpenWorld.writeRes(conn, st.resource());
@@ -206,6 +206,16 @@ public final class Turn {
 			}
 		}
 		conn.writeInt(FIN_TURN);
+	}
+	
+	private int indexOf(Entity<?, ?> e) {
+		Iterator<Unit> iter = this.world.tile(e.x(), e.y()).unitsStream().sequential().iterator();
+		for (int i = 0; iter.hasNext(); i++) {
+			if (e.equals(iter.next())) {
+				return i;
+			}
+		}
+		throw new AssertionError("did not found the unit!");
 	}
 	
 }

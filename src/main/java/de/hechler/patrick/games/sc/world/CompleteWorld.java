@@ -51,8 +51,10 @@ import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.entity.Build;
 import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
+import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.init.DefaultUserPlacer;
 import de.hechler.patrick.games.sc.world.init.UserPlacer;
+import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 import de.hechler.patrick.games.sc.world.tile.TileImpl;
 import de.hechler.patrick.utils.objects.Random2;
@@ -493,7 +495,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	
 	private static long val(byte[] s, int off) {
 		return s[off] & 0xFF | ((s[off + 1] & 0xFFL) << 8) | ((s[off + 2] & 0xFFL) << 16) | ((s[off + 3] & 0xFFL) << 24) | ((s[off + 4] & 0xFFL) << 32)
-				| ((s[off + 5] & 0xFFL) << 40) | ((s[off + 6] & 0xFFL) << 48) | ((s[off + 7] & 0xFFL) << 56);
+			| ((s[off + 5] & 0xFFL) << 40) | ((s[off + 6] & 0xFFL) << 48) | ((s[off + 7] & 0xFFL) << 56);
 	}
 	
 	/**
@@ -636,7 +638,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			Build b = t.build();
 			if (b == null) throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			if (!(e instanceof Unit u)) throw new TurnExecutionException(ErrorType.INVALID_TURN);
-			b.giveRes(u, ct.res(), ct.amount());
+			b.giveRes(u, ct.res(), this.rnd);
 		}
 		case StoreTurn st -> {
 			checkHasUnit(e, t);
@@ -645,7 +647,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			if (!(e instanceof Unit u)) throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			b.store(u, st.resource(), st.amount());
 		}
-		default -> throw new AssertionError(String.format(UNKNOWN_ENTITY_TURN_TYPE, turn.getClass()));
+		default -> throw new AssertionError(String.format("unknown entity turn type: %s/%s", turn.getClass().getModule(), turn.getClass().getName()));
 		}
 	}
 	
@@ -702,7 +704,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	
 	private UserWorld usrOf(User usr, int usrModCnt) {
 		return this.subWorlds.compute(usr, (u, uw) -> {
-			if (uw != null && u.modifyCount() == uw.modCnt) return uw;
+			if (uw != null && usrModCnt == uw.modCnt) return uw;
 			return UserWorld.usrOf(this, usr, usrModCnt);
 		});
 	}
@@ -713,7 +715,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Map<User, List<Entity>> entities() {
+	public Map<User, List<Entity<?, ?>>> entities() {
 		return entities(this.tiles);
 	}
 	
@@ -724,52 +726,42 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 */
 	public static final class Builder implements World {
 		
-		private static final OreResourceType[] RES = OreResourceType.values();
-		private static final GroundType[]      TYPES;
-		
-		static {
-			GroundType[] v   = GroundType.values();
-			int          len = v.length - 1;
-			TYPES = new GroundType[len];
-			System.arraycopy(v, 1, TYPES, 0, len);
-		}
-		
 		private List<BiConsumer<byte[], byte[]>> nextTurnListeners = new ArrayList<>();
 		private final Tile[][]                   tiles;
 		private final Random2                    rnd;
-		private final RootUser                   root;
+		private final User                       root;
 		
 		private int resourceMask = 7;
 		
 		/**
-		 * creates a new {@link Building} with the given root, x-len and y-len
+		 * creates a new {@link Builder} with the given root, x-len and y-len
 		 * 
 		 * @param usr  the root user of the builder
 		 * @param xlen the x-len (width) of the builder
 		 * @param ylen the y-len (height) of the builder
 		 */
-		public Builder(RootUser usr, int xlen, int ylen) {
+		public Builder(User usr, int xlen, int ylen) {
 			this(usr, xlen, ylen, new Random2());
 		}
 		
 		/**
-		 * creates a new {@link Build} with the given root, x-len, y-len and random
+		 * creates a new {@link Builder} with the given root, x-len, y-len and random
 		 * 
 		 * @param usr  the root user of the builder
 		 * @param xlen the x-len (width) of the builder
 		 * @param ylen the y-len (height) of the builder
 		 * @param rnd  the random of the builder
 		 */
-		public Builder(RootUser usr, int xlen, int ylen, Random2 rnd) {
+		public Builder(User usr, int xlen, int ylen, Random2 rnd) {
 			if (xlen <= 0 || ylen <= 0) { throw new IllegalArgumentException("xlen=" + xlen + " ylen=" + ylen); } //$NON-NLS-1$ //$NON-NLS-2$
-			if (rnd == null) throw new NullPointerException(RND_IS_NULL);
-			if (usr == null) throw new NullPointerException(USR_IS_NULL);
+			if (rnd == null) throw new NullPointerException("random is null");
+			if (usr == null) throw new NullPointerException("user is null");
 			this.root  = usr;
 			this.tiles = new Tile[xlen][ylen];
 			this.rnd   = rnd;
 		}
 		
-		private Builder(RootUser usr, Tile[][] tiles, Random2 rnd) {
+		private Builder(User usr, Tile[][] tiles, Random2 rnd) {
 			this.root  = usr;
 			this.tiles = tiles;
 			this.rnd   = rnd;
@@ -795,7 +787,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			boolean unfilledTile = false;
 			for (int x = 0; x < this.tiles.length; x++) {
 				for (int y = 0; y < this.tiles[x].length; y++) {
-					if (this.tiles[x][y] != null && this.tiles[x][y].ground != GroundType.NOT_EXPLORED) {
+					if (this.tiles[x][y] != null && this.tiles[x][y].ground().type() != GroundType.NOT_EXPLORED_TYPE) {
 						continue;
 					}
 					Tile xDown = null;
@@ -930,11 +922,11 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			for (int x = 0; x < this.tiles.length; x += 8) {
 				for (int y = x % 16 == 0 ? 0 : 4; y < this.tiles[x].length; y += 8) {
 					if ((this.tiles[x][y] != null && this.tiles[x][y].ground != GroundType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
-							// tiles
-							|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground != GroundType.NOT_EXPLORED))
-							|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground != GroundType.NOT_EXPLORED))
-							|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground != GroundType.NOT_EXPLORED))
-							|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground != GroundType.NOT_EXPLORED))) {
+						// tiles
+						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground != GroundType.NOT_EXPLORED))
+						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground != GroundType.NOT_EXPLORED))
+						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground != GroundType.NOT_EXPLORED))
+						|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground != GroundType.NOT_EXPLORED))) {
 						continue;
 					}
 					int             rndVal = this.rnd.nextInt(TYPES.length << 1);
@@ -989,7 +981,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		
 		/** {@inheritDoc} */
 		@Override
-		public RootUser user() {
+		public User user() {
 			return this.root;
 		}
 		
@@ -1014,7 +1006,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		@Override
 		public Tile tile(int x, int y) {
 			if (this.tiles[x][y] == null) {
-				this.tiles[x][y] = new Tile(GroundType.NOT_EXPLORED, OreResourceType.NONE, true);
+				this.tiles[x][y] = new TileImpl(GroundType.NOT_EXPLORED_TYPE.newInstance(this.rnd));
 			}
 			return this.tiles[x][y];
 		}
@@ -1039,13 +1031,11 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * 
 		 * @param x the x coordinate of the tile
 		 * @param y the y coordinate of the tile
-		 * @param t the new type of the tile
+		 * @param g the new type of the tile
 		 */
-		public void set(int x, int y, GroundType t) {
+		public void setGround(int x, int y, Ground g) {
 			if (this.tiles[x][y] == null) {
-				this.tiles[x][y] = new Tile(t, OreResourceType.NONE, true);
-			} else {
-				this.tiles[x][y] = new Tile(t, this.tiles[x][y].resource, true);
+				this.tiles[x][y] = new TileImpl(g);
 			}
 			executeNTL();
 		}
@@ -1057,13 +1047,24 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * @param y the y coordinate of the tile
 		 * @param r the new resource type of the tile
 		 */
-		public void set(int x, int y, OreResourceType r) {
+		public void addResource(int x, int y, Resource r) {
 			if (this.tiles[x][y] == null) {
-				this.tiles[x][y] = new Tile(GroundType.NOT_EXPLORED, r, true);
-			} else {
-				this.tiles[x][y] = new Tile(this.tiles[x][y].ground, r, true);
+				return;
 			}
+			this.tiles[x][y].addResource(r);
 			executeNTL();
+		}
+		
+		public void removeResource(int x, int y, Resource r) {
+			if (this.tiles[x][y] == null) {
+				this.tiles[x][y] = new TileImpl(GroundType.NOT_EXPLORED_TYPE.newInstance(this.rnd));
+			}
+			try {
+				this.tiles[x][y].removeResource(r, this.rnd);
+				executeNTL();
+			} catch (TurnExecutionException e) {
+				throw new RuntimeException(e);
+			}
 		}
 		
 		/**
@@ -1071,13 +1072,14 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * 
 		 * @param x the x coordinate of the tile
 		 * @param y the y coordinate of the tile
-		 * @param t the new type of the tile
+		 * @param g the new type of the tile
 		 * @param r the new resource of the tile
 		 */
-		public void set(int x, int y, GroundType t, OreResourceType r) {
-			if (t == null) throw new NullPointerException(TYPE_IS_NULL);
-			if (r == null) throw new NullPointerException(RESOURCE_IS_NULL);
-			this.tiles[x][y] = new Tile(t, r, true);
+		public void setGroundResource(int x, int y, Ground g, Resource r) {
+			if (g == null) throw new NullPointerException("the ground is null");
+			if (r == null) throw new NullPointerException("the resource is null");
+			this.tiles[x][y] = new TileImpl(g);
+			this.tiles[x][y].addResource(r);
 			executeNTL();
 		}
 		
@@ -1088,9 +1090,41 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * @param y the y coordinate of the tile
 		 * @param t the new original value of the tile
 		 */
-		public void set(int x, int y, Tile t) {
+		public void setTile(int x, int y, Tile t) {
 			this.tiles[x][y] = t.copy();
 			executeNTL();
+		}
+		
+		/**
+		 * sets the building at the given coordinates
+		 * 
+		 * @param x     the x coordinate of the building
+		 * @param y     the y coordinate of the building
+		 * @param build the building to be placed at the given position
+		 */
+		public void setBuild(int x, int y, Build build) {
+			try {
+				tile(x, y).setBuild(build);
+				executeNTL();
+			} catch (TurnExecutionException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		/**
+		 * adds the unit at the given coordinates
+		 * 
+		 * @param x    the x coordinate of the unit
+		 * @param y    the y coordinate of the unit
+		 * @param unit the unit to be placed at the given position
+		 */
+		public void addUnit(int x, int y, Unit unit) {
+			try {
+				tile(x, y).addUnit(unit);
+				executeNTL();
+			} catch (TurnExecutionException e) {
+				throw new RuntimeException(e);
+			}
 		}
 		
 		/**
@@ -1100,7 +1134,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * 
 		 * @throws IllegalStateException if the world contains not yet explored tiles
 		 */
-		public RootWorld create() throws IllegalStateException {
+		public CompleteWorld create() throws IllegalStateException {
 			return create(this.root, this.tiles);
 		}
 		
@@ -1114,7 +1148,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * 
 		 * @throws IllegalStateException if the tiles are not valid for a root world
 		 */
-		public static RootWorld create(RootUser root, Tile[][] tiles) throws IllegalStateException {
+		public static CompleteWorld create(User root, Tile[][] tiles) throws IllegalStateException {
 			return create(root, tiles, null);
 		}
 		
@@ -1131,8 +1165,8 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				for (int y = 0; y < ts.length; y++) {
 					Tile t = ts[y];
 					if (t == null) { return false; }
-					if (t.ground == null || t.resource == null) { return false; }
-					if (t.ground == GroundType.NOT_EXPLORED) { return false; }
+					if (t.ground() == null) { return false; }
+					if (t.ground().type() == GroundType.NOT_EXPLORED_TYPE) { return false; }
 				}
 			}
 			return true;
@@ -1149,22 +1183,22 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * 
 		 * @throws IllegalStateException if the tiles are not valid for a root world
 		 */
-		public static RootWorld create(RootUser root, Tile[][] tiles, UserPlacer placer) throws IllegalStateException {
+		public static CompleteWorld create(User root, Tile[][] tiles, UserPlacer placer) throws IllegalStateException {
 			Tile[][] copy = new Tile[tiles.length][tiles[0].length];
 			for (int x = 0; x < copy.length; x++) {
 				Tile[] ts  = copy[x];
 				Tile[] ots = tiles[x];
-				if (ts.length != ots.length) throw new IllegalStateException(NON_RECTANGULAR_FORM);
+				if (ts.length != ots.length) throw new IllegalStateException("the given array has no rectangular form!");
 				for (int y = 0; y < ts.length; y++) {
 					Tile t = ots[y];
-					if (t == null) throw new IllegalStateException(NULL_TILE);
+					if (t == null) throw new IllegalStateException("there is a null tile!");
 					t = t.copy();
-					if (t.ground == null || t.resource == null) throw new NullPointerException(NULL_TYPE_OR_RESOURCE);
-					if (t.ground == GroundType.NOT_EXPLORED) throw new IllegalStateException(NOT_EXPLORED_TILE);
+					if (t.ground() == null) throw new NullPointerException("there is a tile with a null ground!");
+					if (t.ground().type() == GroundType.NOT_EXPLORED_TYPE) throw new IllegalStateException("there is a tile with a not yet explored ground!");
 					ts[y] = t;
 				}
 			}
-			return new RootWorld(root, copy, placer);
+			return new CompleteWorld(root, copy, placer);
 		}
 		
 		/**
@@ -1175,7 +1209,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * 
 		 * @return the newly created builder
 		 */
-		public static Builder createBuilder(RootUser root, Tile[][] tiles) {
+		public static Builder createBuilder(User root, Tile[][] tiles) {
 			return createBuilder(root, tiles, new Random2());
 		}
 		
@@ -1188,11 +1222,11 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * 
 		 * @return the newly created builder
 		 */
-		public static Builder createBuilder(RootUser root, Tile[][] tiles, Random2 rnd) {
+		public static Builder createBuilder(User root, Tile[][] tiles, Random2 rnd) {
 			Tile[][] copy = tiles.clone(); // do clone, so the rectangular form can not be destroyed
 			int      ylen = copy[0].length;
 			for (int x = 0; x < copy.length; x++) { // only enforce the rectangular form, the builder is allowed to contain invalid tiles
-				if (copy[x].length != ylen) throw new IllegalStateException(NON_RECTANGULAR_FORM);
+				if (copy[x].length != ylen) throw new IllegalStateException("the given array has no rectangular form!");
 			}
 			return new Builder(root, tiles, rnd);
 		}
@@ -1211,8 +1245,8 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Map<User, List<Entity>> entities() {
-			return RootWorld.entities(this.tiles);
+		public Map<User, List<Entity<?, ?>>> entities() {
+			return CompleteWorld.entities(this.tiles);
 		}
 		
 		/**
@@ -1222,37 +1256,13 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 */
 		@Override
 		public void finish(Turn t) throws UnsupportedOperationException {
-			throw new UnsupportedOperationException(BUILD_WORLD_NO_SUPPORT_TURNS);
-		}
-		
-		/**
-		 * sets the building at the given coordinates
-		 * 
-		 * @param x     the x coordinate of the building
-		 * @param y     the y coordinate of the building
-		 * @param build the building to be placed at the given position
-		 */
-		public void set(int x, int y, Building build) {
-			tile(x, y).build(build);
-			executeNTL();
-		}
-		
-		/**
-		 * sets the unit at the given coordinates
-		 * 
-		 * @param x    the x coordinate of the unit
-		 * @param y    the y coordinate of the unit
-		 * @param unit the unit to be placed at the given position
-		 */
-		public void set(int x, int y, Unit unit) {
-			tile(x, y).unit(unit);
-			executeNTL();
+			throw new UnsupportedOperationException("the build world does not support turns!");
 		}
 		
 	}
 	
-	private static Map<User, List<Entity>> entities(Tile[][] tiles) {
-		Map<User, List<Entity>> result = new HashMap<>();
+	private static Map<User, List<Entity<?, ?>>> entities(Tile[][] tiles) {
+		Map<User, List<Entity<?, ?>>> result = new HashMap<>();
 		for (int x = 0; x < tiles.length; x++) {
 			Tile[] ts = tiles[x];
 			for (int y = 0; y < ts.length; y++) {
@@ -1260,19 +1270,17 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				if (t == null) {
 					continue;
 				}
-				add(result, t.unit());
+				t.unitsStream().forEach(u -> add(result, u));
 				add(result, t.build());
 			}
 		}
 		return result;
 	}
 	
-	private static void add(Map<User, List<Entity>> result, Entity u) {
+	private static void add(Map<User, List<Entity<?, ?>>> result, Entity<?, ?> u) {
 		if (u != null) {
 			result.computeIfAbsent(u.owner(), usr -> new ArrayList<>()).add(u);
 		}
 	}
-	
-	private void addNopw(String string1) {}
 	
 }

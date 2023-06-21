@@ -16,14 +16,20 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.entity;
 
+import java.util.UUID;
+
 import de.hechler.patrick.games.sc.addons.addable.EntityType;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.WorldThing;
 
 public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity<T, M>> extends WorldThing<T, M> permits Unit, Build {
-
+	
+	public Entity(UUID uuid) {
+		super(uuid);
+	}
+	
 	public static final String OWNER = "owner";
-
+	
 	public User owner() {
 		return userValue(OWNER).value();
 	}

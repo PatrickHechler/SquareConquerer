@@ -16,15 +16,28 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.addons.addable;
 
+import java.io.IOError;
+import java.io.IOException;
 import java.util.Map;
 
-import de.hechler.patrick.games.sc.values.ValueSpec;
+import javax.imageio.ImageIO;
+
+import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.ground.Ground;
+import de.hechler.patrick.games.sc.world.ground.SimpleGroundType;
 
 public abstract non-sealed class GroundType extends AddableType<GroundType, Ground> {
 	
 	public GroundType(String name, String localName, Map<String, ValueSpec> values) {
 		super(name, localName, values);
 	}
+	
+	public static final SimpleGroundType NOT_EXPLORED_TYPE = new SimpleGroundType("base:not_explored", "not yet explored", () -> {
+		try {
+			return ImageIO.read(GroundType.class.getResource("/img/ground/not-explored.png"));
+		} catch (IOException e) {
+			throw new IOError(e);
+		}
+	});
 	
 }

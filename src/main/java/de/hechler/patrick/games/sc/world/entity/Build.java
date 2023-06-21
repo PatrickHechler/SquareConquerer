@@ -16,8 +16,54 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.entity;
 
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
 import de.hechler.patrick.games.sc.addons.addable.BuildType;
+import de.hechler.patrick.games.sc.addons.addable.ResourceType;
+import de.hechler.patrick.games.sc.error.ErrorType;
+import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.values.TypeValue;
+import de.hechler.patrick.games.sc.values.Value;
+import de.hechler.patrick.games.sc.values.WorldThingValue;
+import de.hechler.patrick.games.sc.world.resource.Resource;
+import de.hechler.patrick.utils.objects.Random2;
 
 public abstract non-sealed class Build extends Entity<BuildType, Build> {
+	
+	private static final String STORE = "store";
+	
+	public Build(UUID uuid) {
+		super(uuid);
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private Optional<Resource> resource(ResourceType res) {
+		Map<Value, Value> map = mapValue(STORE).value();
+		Value             val = map.get(new TypeValue(res.name, res));
+		if (val == null) return Optional.empty();
+		return (Optional) ((WorldThingValue) val).asOptional();
+	}
+	
+	public void giveRes(Unit u, Resource res, Random2 r) throws TurnExecutionException {
+		Resource myRes = resource(res.type()).orElseThrow(() -> new TurnExecutionException(ErrorType.INVALID_TURN));
+		Resource add   = myRes.sub(res, r);
+		try {
+			u.addResource(add);
+		} catch (Throwable t) {
+			myRes.add(add);
+			throw t;
+		}
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public void store(Unit u, Resource resource, int amount) {
+		resource(resource.type()).ifPresentOrElse(r -> r.add(resource), () -> {
+			ResourceType      res = resource.type();
+			Map<Value, Value> map = mapValue(STORE).value();
+			map.put(new TypeValue(res.name, res), new WorldThingValue(res.name, resource));
+		});
+	}
 	
 }

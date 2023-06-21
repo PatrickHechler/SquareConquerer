@@ -81,24 +81,27 @@ public final class TileUnmod implements Tile {
 	
 	@Override
 	public TileImpl copy() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.t.copy();
 	}
 	
 	@Override
 	public Entity<?, ?>[] entities() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.t.entities();
 	}
 	
 	@Override
 	public void addUnit(Unit u) throws TurnExecutionException {
-		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("this tile is unmodifiable");
 	}
 	
 	@Override
 	public void removeUnit(Unit u) throws TurnExecutionException {
-		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("this tile is unmodifiable");
+	}
+	
+	@Override
+	public void setBuild(Build b) throws TurnExecutionException {
+		throw new UnsupportedOperationException("this tile is unmodifiable");
 	}
 	
 	@Override

@@ -16,9 +16,15 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.ground;
 
+import java.util.UUID;
+
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
 import de.hechler.patrick.games.sc.world.WorldThing;
 
 public abstract non-sealed class Ground extends WorldThing<GroundType, Ground> {
+	
+	public Ground(UUID uuid) {
+		super(uuid);
+	}
 	
 }

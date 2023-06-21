@@ -18,7 +18,7 @@ package de.hechler.patrick.games.sc.addons.addable;
 
 import java.util.Map;
 
-import de.hechler.patrick.games.sc.values.ValueSpec;
+import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 
 public abstract non-sealed class ResourceType extends AddableType<ResourceType, Resource> {

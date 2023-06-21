@@ -24,9 +24,8 @@ import de.hechler.patrick.games.sc.world.resource.Resource;
  * 
  * @author Patrick Hechler
  * @param entity the unit which should carry the resources
- * @param res    the resource type
- * @param amount how much more the unit should carry after the turn finished
+ * @param res    the resource
  */
-public record CarryTurn(Unit entity, Resource res, int amount) implements EntityTurn {
+public record CarryTurn(Unit entity, Resource res) implements EntityTurn {
 	
 }

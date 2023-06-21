@@ -25,6 +25,7 @@ import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
+import de.hechler.patrick.utils.objects.Random2;
 
 public sealed interface Tile permits TileImpl, TileUnmod {
 	
@@ -54,9 +55,15 @@ public sealed interface Tile permits TileImpl, TileUnmod {
 	
 	Entity<?, ?>[] entities();
 	
+	void setBuild(Build b) throws TurnExecutionException;
+	
 	void addUnit(Unit u) throws TurnExecutionException;
 	
 	void removeUnit(Unit u) throws TurnExecutionException;
+	
+	void addResource(Resource r);
+	
+	Resource removeResource(Resource r, Random2 rnd) throws TurnExecutionException;
 	
 	boolean same(Tile t);
 	

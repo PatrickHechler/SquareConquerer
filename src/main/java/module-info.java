@@ -31,12 +31,16 @@ module de.hechler.patrick.games.squareconqerer {
 	exports de.hechler.patrick.games.sc.addons.addable;
 	exports de.hechler.patrick.games.sc.addons;
 	exports de.hechler.patrick.games.sc.connect;
+	exports de.hechler.patrick.games.sc.error;
+	exports de.hechler.patrick.games.sc.turn;
 	exports de.hechler.patrick.games.sc.ui.pages;
 	exports de.hechler.patrick.games.sc.ui.players;
 	exports de.hechler.patrick.games.sc.values;
+	exports de.hechler.patrick.games.sc.values.spec;
 	exports de.hechler.patrick.games.sc.world;
 	exports de.hechler.patrick.games.sc.world.entity;
 	exports de.hechler.patrick.games.sc.world.ground;
+	exports de.hechler.patrick.games.sc.world.init;
 	exports de.hechler.patrick.games.sc.world.resource;
 	exports de.hechler.patrick.games.sc.world.tile;
 	exports de.hechler.patrick.utils.interfaces;

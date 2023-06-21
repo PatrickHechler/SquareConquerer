@@ -21,17 +21,20 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.UUID;
 
-import de.hechler.patrick.games.sc.values.ValueSpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.BooleanSpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.DoubleSpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.EnumSpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.IntSpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.JustASpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.LongSpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.StringSpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.UserListSpec;
-import de.hechler.patrick.games.sc.values.ValueSpec.UserSpec;
+import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.values.Value;
+import de.hechler.patrick.games.sc.values.spec.BooleanSpec;
+import de.hechler.patrick.games.sc.values.spec.DoubleSpec;
+import de.hechler.patrick.games.sc.values.spec.EnumSpec;
+import de.hechler.patrick.games.sc.values.spec.IntSpec;
+import de.hechler.patrick.games.sc.values.spec.JustASpec;
+import de.hechler.patrick.games.sc.values.spec.LongSpec;
+import de.hechler.patrick.games.sc.values.spec.StringSpec;
+import de.hechler.patrick.games.sc.values.spec.UserListSpec;
+import de.hechler.patrick.games.sc.values.spec.UserSpec;
+import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
 import de.hechler.patrick.utils.objects.Random2;
@@ -47,6 +50,8 @@ public abstract sealed class AddableType<M extends AddableType<M, A>, A extends 
 		this.localName = Objects.requireNonNullElse(localName, name);
 		this.values    = Collections.unmodifiableNavigableMap(new TreeMap<>(values));
 	}
+	
+	public abstract A withValues(Map<String, Value> values, Random2 r) throws TurnExecutionException;
 	
 	public abstract A withDefaultValues(World w, Random2 r, int x, int y);
 	
