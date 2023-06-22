@@ -3,7 +3,6 @@ package de.hechler.patrick.games.sc.world.ground;
 import java.awt.Image;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
@@ -12,14 +11,12 @@ import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.utils.objects.Random2;
 
-public class SimpleGroundType extends GroundType {
+public abstract class SimpleGroundType extends GroundType {
 	
-	private final Supplier<Image> imgSup;
-	private Image                 img;
+	private Image img;
 	
-	public SimpleGroundType(String name, String localName, Supplier<Image> img) {
+	public SimpleGroundType(String name, String localName) {
 		super(name, localName, Map.of());
-		this.imgSup = img;
 	}
 	
 	public Ground newInstance(Random2 r) {
@@ -27,11 +24,11 @@ public class SimpleGroundType extends GroundType {
 	}
 	
 	@Override
-	public Ground withValues(Map<String, Value> values, Random2 r) throws TurnExecutionException {
+	public Ground withValues(Map<String, Value> values, UUID uuid) throws TurnExecutionException {
 		if (!values.isEmpty()) {
 			throw new IllegalArgumentException("too many values");
 		}
-		return new SimpleGround(r.nextUUID());
+		return new SimpleGround(uuid);
 	}
 	
 	@Override
@@ -54,6 +51,8 @@ public class SimpleGroundType extends GroundType {
 		throw new UnsupportedOperationException("I don't have any values");
 	}
 	
+	protected abstract Image loadImage();
+	
 	public class SimpleGround extends Ground {
 		
 		public SimpleGround(UUID uuid) {
@@ -64,7 +63,7 @@ public class SimpleGroundType extends GroundType {
 		public Image image(int width, int heigh) {
 			if (SimpleGroundType.this.img == null) {
 				synchronized (SimpleGroundType.this) {
-					SimpleGroundType.this.img = SimpleGroundType.this.imgSup.get();
+					SimpleGroundType.this.img = SimpleGroundType.this.loadImage();
 				}
 			}
 			return SimpleGroundType.this.img;

@@ -39,10 +39,12 @@ import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.utils.objects.Random2;
 import jdk.incubator.concurrent.ScopedValue;
 
+@SuppressWarnings("javadoc")
 public final class TileImpl implements Tile {
 	
-	private final NavigableMap<ResourceType, Resource> resources = new TreeMap<>((a, b) -> a.name.compareTo(b.name));;
+	private final NavigableMap<ResourceType, Resource> resources = new TreeMap<>((a, b) -> a.name.compareTo(b.name));
 	
+	private int              lastTimeSeen;
 	private Ground           ground;
 	private Build            build;
 	private final List<Unit> units;
@@ -58,6 +60,19 @@ public final class TileImpl implements Tile {
 		this.build = build;
 		this.units = new ArrayList<>(units);
 		this.units.sort(null);
+	}
+	
+	@Override
+	public boolean visible() {
+		return this.lastTimeSeen == -2;
+	}
+	
+	@Override
+	public int lastTimeSeen() {
+		if (this.lastTimeSeen == -2) {
+			throw new IllegalStateException("currently visible");
+		}
+		return this.lastTimeSeen;
 	}
 	
 	public Ground ground() {

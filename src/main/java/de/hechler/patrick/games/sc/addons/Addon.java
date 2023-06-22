@@ -27,21 +27,21 @@ import de.hechler.patrick.utils.objects.Version;
 
 public abstract class Addon {
 	
-	public final String                             name;
-	public final String                             localName;
-	private final String[]                          groups;
-	public final Version                            version;
-	public final Map<String, ? extends AddableType> add;
-	public final String                             licenseName;
-	private final Supplier<String>                  licenseSup;
-	private TextOnlyPage                            license;
-	private final Supplier<Page>                    creditsSup;
-	private Page                                    credits;
-	private final Supplier<Page>                    helpSup;
-	private Page                                    help;
+	public final String                                   name;
+	public final String                                   localName;
+	private final String[]                                groups;
+	public final Version                                  version;
+	public final Map<String, ? extends AddableType<?, ?>> add;
+	public final String                                   licenseName;
+	private final Supplier<String>                        licenseSup;
+	private TextOnlyPage                                  license;
+	private final Supplier<Page>                          creditsSup;
+	private Page                                          credits;
+	private final Supplier<Page>                          helpSup;
+	private Page                                          help;
 	
-	public Addon(String name, String localName, String[] groups, Version version, Map<String, ? extends AddableType> add, String licenseName,
-			Supplier<String> licenseText, Supplier<Page> credits, Supplier<Page> help) {
+	public Addon(String name, String localName, String[] groups, Version version, Map<String, ? extends AddableType<?, ?>> add, String licenseName,
+		Supplier<String> licenseText, Supplier<Page> credits, Supplier<Page> help) {
 		this.name        = Objects.requireNonNull(name, "name is null");
 		this.localName   = Objects.requireNonNullElse(localName, name);
 		this.groups      = groups.clone();
@@ -77,7 +77,7 @@ public abstract class Addon {
 	
 	public Page help() {
 		if (this.help == null) {
-			this.help= this.helpSup.get();
+			this.help = this.helpSup.get();
 		}
 		return this.help;
 	}

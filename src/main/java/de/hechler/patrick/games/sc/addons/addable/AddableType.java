@@ -51,7 +51,7 @@ public abstract sealed class AddableType<M extends AddableType<M, A>, A extends 
 		this.values    = Collections.unmodifiableNavigableMap(new TreeMap<>(values));
 	}
 	
-	public abstract A withValues(Map<String, Value> values, Random2 r) throws TurnExecutionException;
+	public abstract A withValues(Map<String, Value> values, UUID uuid) throws TurnExecutionException;
 	
 	public abstract A withDefaultValues(World w, Random2 r, int x, int y);
 	

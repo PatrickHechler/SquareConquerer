@@ -16,25 +16,86 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.sc.connect.Connection;
+import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
-public class RemoteWorld {
+public class RemoteWorld implements World {
+	
+	public RemoteWorld(Connection conn) {
+		
+	}
+	
+	public static Tile[][] loadWorld(Connection conn, Map<String, User> users) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	public static void loadWorld(Connection conn, Map<String, User> users, Tile[][] cach) {
+		// TODO Auto-generated method stub
+	}
+	
+	public static Resource readRes(Connection conn) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public User user() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public int xlen() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	@Override
+	public int ylen() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	@Override
+	public Tile tile(int x, int y) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+		// TODO Auto-generated method stub
+	}
+	
+	@Override
+	public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+		// TODO Auto-generated method stub
+	}
+	
+	@Override
+	public void finish(Turn t) {
+		// TODO Auto-generated method stub
+	}
+	
+	@Override
+	public Map<User, List<Entity<?, ?>>> entities() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-	public static Tile[][] loadWorld(Connection conn, Map<String, User> users) { 
+	@Override
+	public WorldThing<?, ?> get(UUID uuid) { 
 	// TODO Auto-generated method stub
 	return null; }
-	// TODO
-
-	public static void loadWorld(Connection conn, Map<String, User> users, Tile[][] cach) { 
-	// TODO Auto-generated method stub
-	 }
-
-	public static Resource readRes(Connection conn) { 
-	// TODO Auto-generated method stub
-	return null; }
+	
 }

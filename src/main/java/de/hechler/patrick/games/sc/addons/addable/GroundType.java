@@ -16,6 +16,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.addons.addable;
 
+import java.awt.Image;
 import java.io.IOError;
 import java.io.IOException;
 import java.util.Map;
@@ -23,8 +24,10 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 import de.hechler.patrick.games.sc.values.spec.ValueSpec;
+import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.ground.SimpleGroundType;
+import de.hechler.patrick.games.sc.world.tile.NeigbourTiles;
 
 public abstract non-sealed class GroundType extends AddableType<GroundType, Ground> {
 	
@@ -32,12 +35,32 @@ public abstract non-sealed class GroundType extends AddableType<GroundType, Grou
 		super(name, localName, values);
 	}
 	
-	public static final SimpleGroundType NOT_EXPLORED_TYPE = new SimpleGroundType("base:not_explored", "not yet explored", () -> {
-		try {
-			return ImageIO.read(GroundType.class.getResource("/img/ground/not-explored.png"));
-		} catch (IOException e) {
-			throw new IOError(e);
+	@SuppressWarnings("unused")
+	public static final SimpleGroundType NOT_EXPLORED_TYPE = new SimpleGroundType("base:not_explored", "not yet explored") {
+		
+		@Override
+		protected Image loadImage() {
+			try {
+				return ImageIO.read(GroundType.class.getResource("/img/ground/not-explored.png"));
+			} catch (IOException e) {
+				throw new IOError(e);
+			}
 		}
-	});
+		
+		@Override
+		public int propability(World world, int x, int y, NeigbourTiles neigbours) {
+			return 0;
+		}
+		
+		@Override
+		public Ground withNeigbours(World world, int x, int y, NeigbourTiles neigbours) {
+			throw new AssertionError("withNeigbours called, but my probability is zero!");
+		}
+		
+	};
+	
+	public abstract int propability(World world, int x, int y, NeigbourTiles neigbours);
+	
+	public abstract Ground withNeigbours(World world, int x, int y, NeigbourTiles neigbours);
 	
 }

@@ -19,12 +19,18 @@ package de.hechler.patrick.games.sc.addons.addable;
 import java.util.Map;
 
 import de.hechler.patrick.games.sc.values.spec.ValueSpec;
+import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.resource.Resource;
+import de.hechler.patrick.games.sc.world.tile.NeigbourTiles;
 
 public abstract non-sealed class ResourceType extends AddableType<ResourceType, Resource> {
 	
 	public ResourceType(String name, String localName, Map<String, ValueSpec> values) {
 		super(name, localName, values);
 	}
+
+	public abstract int propability(World world, int x, int y, NeigbourTiles neigbours);
+
+	public abstract Resource withNeigbours(World world, int x, int y, NeigbourTiles neigbours);
 	
 }

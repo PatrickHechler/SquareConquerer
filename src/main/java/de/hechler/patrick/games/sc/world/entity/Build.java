@@ -32,7 +32,7 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public abstract non-sealed class Build extends Entity<BuildType, Build> {
 	
-	private static final String STORE = "store";
+	public static final String STORE = "store";
 	
 	public Build(UUID uuid) {
 		super(uuid);

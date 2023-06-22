@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+import de.hechler.patrick.games.sc.addons.addable.AddableType;
+
 /**
  * this class can provides methods to get addons (for example all active addons or the addon which is responsible for an entity)
  * 
@@ -41,7 +43,8 @@ public class Addons {
 	 */
 	public static final String DISABLED_ADDONS_KEY = "squareconquerer.addons.disabled";                 //$NON-NLS-1$
 	
-	private static Map<String, Addon> addons;
+	private static Map<String, Addon>             addons;
+	private static Map<String, AddableType<?, ?>> added;
 	
 	/**
 	 * returns a unmodifiable map containing all addons
@@ -58,6 +61,24 @@ public class Addons {
 	}
 	
 	/**
+	 * returns the type with the given name
+	 * 
+	 * @param name the name of the type
+	 * 
+	 * @return the type with the given name
+	 */
+	public static AddableType<?, ?> type(String name) {
+		if (added == null) {
+			loadAddons();
+		}
+		AddableType<?, ?> a = added.get(name);
+		if (a == null) {
+			throw new IllegalArgumentException("the type '" + name + "' could not be found!");
+		}
+		return a;
+	}
+	
+	/**
 	 * reload all addons.
 	 * <p>
 	 * this method may lead to some hidden bugs, when there is still a open world or something, which uses some now potentially disabled addons or is not aware of
@@ -65,6 +86,7 @@ public class Addons {
 	 */
 	public static synchronized void reloadAddons() {
 		addons = null;
+		added  = null;
 		loadAddons();
 	}
 	
@@ -84,7 +106,17 @@ public class Addons {
 		}
 		removeDisabled(as, System.getProperty(DISABLED_ADDONS_KEY));
 		removeDisabled(as, System.getenv(DISABLED_ADDONS_KEY));
+		Map<String, AddableType<?, ?>> ad = HashMap.newHashMap(as.size() + (as.size() >>> 3));
+		for (Addon a : as.values()) {
+			a.add.forEach((n, add) -> {
+				AddableType<?, ?> old = ad.put(n, add);
+				if (old != null) {
+					throw new AssertionError("multiple things with the same name where added! name:" + n);
+				}
+			});
+		}
 		addons = Collections.unmodifiableMap(as);
+		added  = Collections.unmodifiableMap(ad);
 	}
 	
 	private static void removeDisabled(Map<String, Addon> as, String disabledList) {

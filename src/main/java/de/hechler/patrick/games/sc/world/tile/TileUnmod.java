@@ -25,13 +25,25 @@ import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
+import de.hechler.patrick.utils.objects.Random2;
 
+@SuppressWarnings("javadoc")
 public final class TileUnmod implements Tile {
 	
 	private final Tile t;
 	
 	public TileUnmod(Tile t) {
 		this.t = t;
+	}
+	
+	@Override
+	public boolean visible() {
+		return this.t.visible();
+	}
+	
+	@Override
+	public int lastTimeSeen() throws IllegalStateException {
+		return this.t.lastTimeSeen();
 	}
 	
 	public Ground ground() {
@@ -90,17 +102,27 @@ public final class TileUnmod implements Tile {
 	}
 	
 	@Override
-	public void addUnit(Unit u) throws TurnExecutionException {
+	public void addUnit(@SuppressWarnings("unused") Unit u) throws TurnExecutionException {
 		throw new UnsupportedOperationException("this tile is unmodifiable");
 	}
 	
 	@Override
-	public void removeUnit(Unit u) throws TurnExecutionException {
+	public void removeUnit(@SuppressWarnings("unused") Unit u) throws TurnExecutionException {
 		throw new UnsupportedOperationException("this tile is unmodifiable");
 	}
 	
 	@Override
-	public void setBuild(Build b) throws TurnExecutionException {
+	public void setBuild(@SuppressWarnings("unused") Build b) throws TurnExecutionException {
+		throw new UnsupportedOperationException("this tile is unmodifiable");
+	}
+	
+	@Override
+	public void addResource(@SuppressWarnings("unused") Resource r) {
+		throw new UnsupportedOperationException("this tile is unmodifiable");
+	}
+	
+	@Override
+	public Resource removeResource(@SuppressWarnings("unused") Resource r, @SuppressWarnings("unused") Random2 rnd) throws TurnExecutionException {
 		throw new UnsupportedOperationException("this tile is unmodifiable");
 	}
 	

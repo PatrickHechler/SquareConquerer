@@ -28,7 +28,17 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 		super(uuid);
 	}
 	
+	public static final String X     = "x";
+	public static final String Y     = "y";
 	public static final String OWNER = "owner";
+	
+	public int x() {
+		return intValue(X).value();
+	}
+	
+	public int y() {
+		return intValue(Y).value();
+	}
 	
 	public User owner() {
 		return userValue(OWNER).value();

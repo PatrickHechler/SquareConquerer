@@ -54,7 +54,7 @@ public abstract non-sealed class Resource extends WorldThing<ResourceType, Resou
 		}
 		Map<String, Value> vals = new HashMap<>(values());
 		vals.put(AMOUNT, new IntValue(AMOUNT, amount));
-		Resource result = type().withValues(vals, r);
+		Resource result = type().withValues(vals, r.nextUUID());
 		value(new IntValue(AMOUNT, amount));
 		return result;
 	}

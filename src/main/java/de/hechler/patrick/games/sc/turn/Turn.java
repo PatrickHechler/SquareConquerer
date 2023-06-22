@@ -136,8 +136,7 @@ public final class Turn {
 			case ET_CARRY -> {
 				e = this.world.tile(x, y).unit(conn.readPos());
 				Resource res    = RemoteWorld.readRes(conn);
-				int      amount = conn.readPos();
-				et = new CarryTurn((Unit) e, res, amount);
+				et = new CarryTurn((Unit) e, res);
 			}
 			case ET_MOVE -> {
 				e = this.world.tile(x, y).unit(conn.readPos());
@@ -185,8 +184,7 @@ public final class Turn {
 			case CarryTurn ct -> {
 				conn.writeInt(indexOf(e));
 				conn.writeInt(ET_CARRY);
-				OpenWorld.writeRes(conn, ct.res());
-				conn.writeInt(ct.amount());
+				OpenWorld.writeThing(conn, ct.res());
 			}
 			case MoveTurn mt -> {
 				conn.writeInt(indexOf(e));
@@ -201,7 +199,7 @@ public final class Turn {
 				conn.writeInt(indexOf(e));
 				conn.writeInt(ET_STORE);
 				conn.writeInt(st.amount());
-				OpenWorld.writeRes(conn, st.resource());
+				OpenWorld.writeThing(conn, st.resource());
 			}
 			}
 		}

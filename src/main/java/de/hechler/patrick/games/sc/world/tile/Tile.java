@@ -29,6 +29,22 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public sealed interface Tile permits TileImpl, TileUnmod {
 	
+	/**
+	 * returns <code>true</code> if this tile is currently visible and <code>false</code> if not
+	 * 
+	 * @return <code>true</code> if this tile is currently visible and <code>false</code> if not
+	 */
+	boolean visible();
+	
+	/**
+	 * returns the turn number where this tile was last seen
+	 * 
+	 * @return the turn number where this tile was last seen
+	 * 
+	 * @throws IllegalStateException if this tile is currently {@link #visible() visible}
+	 */
+	int lastTimeSeen() throws IllegalStateException;
+	
 	Ground ground();
 	
 	int resourceCount();

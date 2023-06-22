@@ -104,17 +104,6 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		return (TypeValue<A>) value(name);
 	}
 	
-	public static final String X = "x";
-	public static final String Y = "y";
-	
-	public int x() {
-		return intValue(X).value();
-	}
-	
-	public int y() {
-		return intValue(Y).value();
-	}
-	
 	// the order is needed for reproducibility
 	@Override
 	public final int compareTo(WorldThing<?, ?> o) {

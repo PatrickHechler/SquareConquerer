@@ -16,10 +16,14 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
 public class UserWorld implements World {
@@ -53,8 +57,7 @@ public class UserWorld implements World {
 	
 	@Override
 	public User user() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.usr;
 	}
 	
 	@Override
@@ -82,16 +85,29 @@ public class UserWorld implements World {
 	
 	@Override
 	public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
-		// TODO Auto-generated method stub
+		// well technically you can now remove the handler with a different user world or the complete world
+		this.rw.addNextTurnListener(listener);
 	}
 	
 	@Override
 	public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
-		// TODO Auto-generated method stub
+		this.rw.removeNextTurnListener(listener);
 	}
 	
 	@Override
 	public void finish(Turn t) {
 		// TODO Auto-generated method stub
 	}
+	
+	@Override
+	public Map<User, List<Entity<?, ?>>> entities() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public WorldThing<?, ?> get(UUID uuid) { 
+	// TODO Auto-generated method stub
+	return null; }
+	
 }

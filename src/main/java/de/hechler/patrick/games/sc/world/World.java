@@ -18,6 +18,7 @@ package de.hechler.patrick.games.sc.world;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 import de.hechler.patrick.games.sc.turn.Turn;
@@ -42,5 +43,7 @@ public interface World {
 	void finish(Turn t);
 	
 	Map<User, List<Entity<?, ?>>> entities();
+
+	WorldThing<?, ?> get(UUID uuid);
 	
 }

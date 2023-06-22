@@ -34,10 +34,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
+import de.hechler.patrick.games.sc.addons.Addon;
+import de.hechler.patrick.games.sc.addons.Addons;
+import de.hechler.patrick.games.sc.addons.addable.AddableType;
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
+import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.ErrorType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
@@ -55,6 +61,7 @@ import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.init.DefaultUserPlacer;
 import de.hechler.patrick.games.sc.world.init.UserPlacer;
 import de.hechler.patrick.games.sc.world.resource.Resource;
+import de.hechler.patrick.games.sc.world.tile.NeigbourTiles;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 import de.hechler.patrick.games.sc.world.tile.TileImpl;
 import de.hechler.patrick.utils.objects.Random2;
@@ -157,7 +164,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			throw new AssertionError(String.format("SHA-256 was not found: %s", e), e);
 		}
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		Connection            conn = Connection.createUnsecure(this.root, baos);
+		Connection            conn = Connection.createUnsecure(this.root, baos, this);
 		try {
 			saveEverything(conn, false);
 		} catch (IOException e) {
@@ -174,7 +181,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			throw new AssertionError(String.format("SHA-256 was not found: %s", e), e);
 		}
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		Connection            conn = Connection.createUnsecure(this.root, baos);
+		Connection            conn = Connection.createUnsecure(this.root, baos, this);
 		try {
 			OpenWorld.saveWorld(this, conn);
 		} catch (IOException e) {
@@ -579,7 +586,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	private synchronized void executeTurn() {
 		List<EntityTurn>      list = new ArrayList<>();                         // list is sorted: user names and then entity turns
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		Connection            conn = Connection.createUnsecure(this.root, baos);
+		Connection            conn = Connection.createUnsecure(this.root, baos, this);
 		for (Turn userturn : this.userTurns.values()) {
 			list.addAll(userturn.turns());
 			try {
@@ -720,7 +727,15 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	}
 	
 	/**
-	 * this class can be used to build a {@link RootWorld}
+	 * {@inheritDoc}
+	 */
+	@Override
+	public WorldThing<?, ?> get(UUID uuid) {
+		return get(this.tiles, uuid);
+	}
+	
+	/**
+	 * this class can be used to build a {@link CompleteWorld}
 	 * 
 	 * @author Patrick Hechler
 	 */
@@ -774,12 +789,15 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		}
 		
 		/**
-		 * replace all {@link Tile tiles} with <code>{@link Tile#ground} = {@link GroundType#NOT_EXPLORED not-explored}</code> to a random value.<br>
+		 * replace all {@link Tile tiles} with <code>{@link Tile#ground} = {@link GroundType#NOT_EXPLORED_TYPE not-explored}</code> to a random value.<br>
 		 * this method will try to generate random tiles which fit in their environment
 		 */
 		public void fillRandom() {
 			placeSomePoints();
-			while (fillOnce()) {/**/}
+			if (grounds == null) {
+				randomGrnd(0, 0);
+			}
+			while (fillOnce());
 			executeNTL();
 		}
 		
@@ -799,7 +817,8 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 					if (x < this.tiles.length - 1) { xUp = this.tiles[x + 1][y]; }
 					if (y < this.tiles[x].length - 1) { yUp = this.tiles[x][y + 1]; }
 					if (xDown != null || yDown != null || xUp != null || yUp != null) {
-						this.tiles[x][y] = tile(xDown, xUp, yDown, yUp);
+						NeigbourTiles neigbours = new NeigbourTiles(xDown, xUp, yDown, yUp);
+						this.tiles[x][y] = tile(x, y, neigbours);
 					} else {
 						unfilledTile = true;
 					}
@@ -808,157 +827,155 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			return unfilledTile;
 		}
 		
-		private Tile tile(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
-			GroundType      type = type(xDown, xUp, yDown, yUp);
-			OreResourceType ore  = resource(xDown, xUp, yDown, yUp);
-			return new Tile(type, ore, true);
+		private Tile tile(int x, int y, NeigbourTiles neigbours) {
+			Ground   ground   = type(x, y, neigbours);
+			Resource resource = resource(x, y, neigbours);
+			TileImpl t        = new TileImpl(ground);
+			if (resource != null) {
+				t.addResource(resource);
+			}
+			return t;
 		}
 		
-		private OreResourceType resource(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
-			int none = none(xDown) + none(xUp) + none(yDown) + none(yUp);
-			int gold = gold(xDown) + gold(xUp) + gold(yDown) + gold(yUp);
-			int iron = iron(xDown) + iron(xUp) + iron(yDown) + iron(yUp);
-			int coal = coal(xDown) + coal(xUp) + coal(yDown) + coal(yUp);
-			
-			int posNone = (none * 5) + 2;
-			int posGold = (gold * 4) + 1;
-			int posIron = (iron * 3) + 2;
-			int posCoal = (coal * 5) + 1;
-			int rndVal  = this.rnd.nextInt(posNone + posGold + posIron + posCoal);
-			
-			OreResourceType ore = null;
-			if (rndVal >= posNone) rndVal -= posNone;
-			else ore = OreResourceType.NONE;
-			if (rndVal >= posGold) rndVal -= posGold;
-			else if (ore == null) ore = OreResourceType.GOLD_ORE;
-			if (rndVal >= posIron) rndVal -= posIron;
-			else if (ore == null) ore = OreResourceType.IRON_ORE;
-			if (rndVal >= posCoal) {
-				/**/} //
-			else if (ore == null) ore = OreResourceType.COAL_ORE;
-			return ore;
+		private Resource resource(int x, int y, NeigbourTiles neigbours) {
+			int   sum   = 0;
+			int[] props = new int[resources.size() + 1];
+			sum      = 2 + emptyCount(neigbours);
+			props[0] = sum;
+			for (int i = 1; i < props.length; i++) {
+				int p = resources.get(i - 1).propability(this, x, y, neigbours);
+				props[i]  = p;
+				sum      += p;
+			}
+			int val = this.rnd.nextInt(sum);
+			int i;
+			for (i = 0; props[i] <= val; i++) {
+				val -= props[i];
+			}
+			return resources.get(i).withNeigbours(this, x, y, neigbours);
 		}
 		
-		// @formatter:off
-		private static int none(Tile t) { return t != null && t.resource == OreResourceType.NONE     ? 1 : 0; }
-		private static int gold(Tile t) { return t != null && t.resource == OreResourceType.GOLD_ORE ? 1 : 0; }
-		private static int iron(Tile t) { return t != null && t.resource == OreResourceType.IRON_ORE ? 1 : 0; }
-		private static int coal(Tile t) { return t != null && t.resource == OreResourceType.COAL_ORE ? 1 : 0; }
-		// @formatter:on
-		
-		private GroundType type(Tile xDown, Tile xUp, Tile yDown, Tile yUp) {
-			int ocean = ocean(xDown) + ocean(xUp) + ocean(yDown) + ocean(yUp);
-			int land  = land(xDown) + land(xUp) + land(yDown) + land(yUp);
-			if (ocean != 0 && land != 0) { return GroundType.WATER_NORMAL; }
-			int        water    = water(xDown) + water(xUp) + water(yDown) + water(yUp);
-			int        flat     = flat(xDown) + flat(xUp) + flat(yDown) + flat(yUp);
-			int        mountain = mountain(xDown) + mountain(xUp) + mountain(yDown) + mountain(yUp);
-			GroundType type     = rawType(xDown, xUp, yDown, yUp, ocean, water, flat, mountain);
-			if (type.isLand() && !type.isMountain()) {
-				int hill    = hill(xDown) + hill(xUp) + hill(yDown) + hill(yUp);
-				int posHill = (mountain * 4) + (hill * 2) + 1;
-				int posFlat = (flat * 2) + 1;
-				int rndVal1 = this.rnd.nextInt(posHill + posFlat);
-				if (rndVal1 < posHill) {
-					type = type.addHill(true, true);
-				}
-			} else if (type.isWater()) {
-				if (land == 0) {
-					int posOcean  = ocean * 2 + 1;
-					int posNormal = Math.max((water - ocean) * 2 + 1, 1);
-					int rndVal1   = this.rnd.nextInt(posOcean + posNormal);
-					if (rndVal1 < posOcean) {
-						type = GroundType.WATER_DEEP;
-					}
-				}
-			} else if (!type.isMountain()) throw new AssertionError(UNKNOWN_TILE_TYPE + type.name());
-			return type;
+		private static int emptyCount(NeigbourTiles neigbours) {
+			int res = 0;
+			if (neigbours.xDown() != null && neigbours.xDown().resourceCount() == 0) {
+				res++;
+			}
+			if (neigbours.yDown() != null && neigbours.yDown().resourceCount() == 0) {
+				res++;
+			}
+			if (neigbours.xUp() != null && neigbours.xUp().resourceCount() == 0) {
+				res++;
+			}
+			if (neigbours.yUp() != null && neigbours.yUp().resourceCount() == 0) {
+				res++;
+			}
+			return res;
 		}
 		
-		private GroundType rawType(Tile xDown, Tile xUp, Tile yDown, Tile yUp, int ocean, int water, int flat, int mountain) {
-			int sand   = sand(xDown) + sand(xUp) + sand(yDown) + sand(yUp);
-			int grass  = grass(xDown) + grass(xUp) + grass(yDown) + grass(yUp);
-			int forest = forest(xDown) + forest(xUp) + forest(yDown) + forest(yUp);
-			int swamp  = swamp(xDown) + swamp(xUp) + swamp(yDown) + swamp(yUp);
-			// ocean disables everything except water
-			// flat disables mountain
-			int        posWater    = (water * 2) + 1;
-			int        posMountain = ocean == 0 ? Math.max(mountain - (flat * 2) + 1, 1) : 0;
-			int        posSand     = ocean == 0 ? (sand * 2) + 1 : 0;
-			int        posGrass    = ocean == 0 ? (grass * 2) + 1 : 0;
-			int        posForest   = ocean == 0 ? (forest * 2) + 1 : 0;
-			int        posSwamp    = ocean == 0 ? (swamp * 2) + 1 : 0;
-			int        rndVal0     = this.rnd.nextInt(posWater + posMountain + posSand + posGrass + posForest + posSwamp);
-			GroundType type        = null;
-			if (rndVal0 >= posWater) rndVal0 -= posWater;
-			else type = GroundType.WATER_NORMAL;
-			if (rndVal0 >= posMountain) rndVal0 -= posMountain;
-			else if (type == null) type = GroundType.MOUNTAIN;
-			if (rndVal0 >= posSand) rndVal0 -= posSand;
-			else if (type == null) type = GroundType.SAND;
-			if (rndVal0 >= posGrass) rndVal0 -= posGrass;
-			else if (type == null) type = GroundType.GRASS;
-			if (rndVal0 >= posForest) rndVal0 -= posForest;
-			else if (type == null) type = GroundType.FOREST;
-			if (rndVal0 >= posSwamp && type == null) throw new AssertionError("illegal random value (this sould not be possible)"); //$NON-NLS-1$
-			else if (type == null) type = GroundType.SWAMP;
-			return type;
+		private Ground type(int x, int y, NeigbourTiles neigbours) {
+			int   sum   = 0;
+			int[] props = new int[grounds.size()];
+			for (int i = 0; i < props.length; i++) {
+				int p = grounds.get(i).propability(this, x, y, neigbours);
+				props[i]  = p;
+				sum      += p;
+			}
+			int val = this.rnd.nextInt(sum);
+			int i;
+			for (i = 0; props[i] <= val; i++) {
+				val -= props[i];
+			}
+			if (i == 0) {
+				return null;
+			}
+			return grounds.get(i - 1).withNeigbours(this, x, y, neigbours);
 		}
-		
-		// @formatter:off
-		private static int swamp(Tile t)    { return t != null && t.ground.isSwamp()    ? 1 : 0; }
-		private static int forest(Tile t)   { return t != null && t.ground.isForest()   ? 1 : 0; }
-		private static int grass(Tile t)    { return t != null && t.ground.isGrass()    ? 1 : 0; }
-		private static int sand(Tile t)     { return t != null && t.ground.isSand()     ? 1 : 0; }
-		private static int land(Tile t)     { return t != null && t.ground.isLand()     ? 1 : 0; }
-		private static int flat(Tile t)     { return t != null && t.ground.isFlat()     ? 1 : 0; }
-		private static int hill(Tile t)     { return t != null && t.ground.isHill()     ? 1 : 0; }
-		private static int ocean(Tile t)    { return t != null && t.ground.isDeep()    ? 1 : 0; }
-		private static int water(Tile t)    { return t != null && t.ground.isWater()    ? 1 : 0; }
-		private static int mountain(Tile t) { return t != null && t.ground.isMountain() ? 1 : 0; }
-		// @formatter:on
 		
 		private void placeSomePoints() {
 			for (int x = 0; x < this.tiles.length; x += 8) {
 				for (int y = x % 16 == 0 ? 0 : 4; y < this.tiles[x].length; y += 8) {
-					if ((this.tiles[x][y] != null && this.tiles[x][y].ground != GroundType.NOT_EXPLORED) // do not place nearby other tiles and do not overwrite
-						// tiles
-						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground != GroundType.NOT_EXPLORED))
-						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground != GroundType.NOT_EXPLORED))
-						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground != GroundType.NOT_EXPLORED))
-						|| (y + 1 < this.tiles[x].length && (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground != GroundType.NOT_EXPLORED))) {
+					if ((this.tiles[x][y] != null && this.tiles[x][y].ground().type() != GroundType.NOT_EXPLORED_TYPE)
+						// do not place nearby other tiles and do not overwrite tiles
+						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+						|| (y + 1 < this.tiles[x].length
+							&& (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))) {
 						continue;
 					}
-					int             rndVal = this.rnd.nextInt(TYPES.length << 1);
-					GroundType      t      = rndVal >= TYPES.length ? GroundType.WATER_DEEP : TYPES[rndVal];
-					OreResourceType r      = OreResourceType.NONE;
+					TileImpl t = new TileImpl(randomGrnd(x, y));
+					this.tiles[x][y] = t;
 					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
-						r = RES[this.rnd.nextInt(RES.length)];
+						Resource res = randomRes(x, y);
+						if (res != null) {
+							t.addResource(res);
+						}
 					}
-					this.tiles[x][y] = new Tile(t, r, true);
 				}
 			}
 		}
 		
 		/**
-		 * replace all {@link Tile tiles} with <code>{@link Tile#ground} = {@link GroundType#NOT_EXPLORED not-explored}</code> to a random value.<br>
+		 * replace all {@link Tile tiles} with <code>{@link Tile#ground} = {@link GroundType#NOT_EXPLORED_TYPE not-explored}</code> to a random value.<br>
 		 * unlike {@link #fillRandom()}, this method will just generate random tiles and ignores the environment of those tiles
 		 */
 		public void fillTotallyRandom() {
-			for (Tile[] ts : this.tiles) {
-				for (int i = 0; i < ts.length; i++) {
-					if (ts[i] != null && ts[i].ground != GroundType.NOT_EXPLORED) {
+			for (int x = 0; x < this.tiles.length; x++) {
+				Tile[] ts = this.tiles[x];
+				for (int y = 0; y < ts.length; y++) {
+					if (ts[y] != null && ts[y].ground().type() != GroundType.NOT_EXPLORED_TYPE) {
 						continue;
 					}
-					GroundType      t = TYPES[this.rnd.nextInt(TYPES.length)]; // skip not explored
-					OreResourceType r = OreResourceType.NONE;
+					TileImpl t = new TileImpl(randomGrnd(x, y));
+					ts[y] = t;
 					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
-						r = RES[this.rnd.nextInt(RES.length)];
+						Resource res = randomRes(x, y);
+						if (res != null) {
+							t.addResource(res);
+						}
 					}
-					ts[i] = new Tile(t, r, true);
 				}
 			}
 			executeNTL();
+		}
+		
+		private static List<GroundType>   grounds;
+		private static List<ResourceType> resources;
+		
+		private Resource randomRes(int x, int y) {
+			if (resources == null) {
+				randomRes(x, y);
+			}
+			if (resources.isEmpty()) {
+				return null;
+			}
+			return resources.get(this.rnd.nextInt(resources.size())).withRandomValues(this, this.rnd, x, y);
+		}
+		
+		private Ground randomGrnd(int x, int y) {
+			if (grounds == null) {
+				synchronized (Builder.class) {
+					if (grounds == null) {
+						List<GroundType>   gl = new ArrayList<>();
+						List<ResourceType> rl = new ArrayList<>();
+						for (Addon a : Addons.addons().values()) {
+							for (AddableType<?, ?> add : a.add.values()) {
+								if (add instanceof GroundType gt && gt != GroundType.NOT_EXPLORED_TYPE) {
+									gl.add(gt);
+								} else if (add instanceof ResourceType rt) {
+									rl.add(rt);
+								}
+							}
+						}
+						if (gl.isEmpty()) {
+							throw new AssertionError("no ground found!");
+						}
+						grounds   = gl;
+						resources = rl;
+					}
+				}
+			}
+			return grounds.get(this.rnd.nextInt(grounds.size())).withRandomValues(this, this.rnd, x, y);
 		}
 		
 		/**
@@ -999,7 +1016,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		
 		/**
 		 * returns the tile at the given position<br>
-		 * if there is no tile yet, a new visible {@link GroundType#NOT_EXPLORED not-explored} tile {@link OreResourceType#NONE without} resource will be generated
+		 * if there is no tile yet, a new visible {@link GroundType#NOT_EXPLORED_TYPE not-explored} tile will be generated
 		 * <p>
 		 * {@inheritDoc}
 		 */
@@ -1015,7 +1032,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * returns the tile at the given position
 		 * <p>
 		 * the difference between {@link #tile(int, int)} and {@link #get(int, int)} is, that this method returns <code>null</code>, if the tile is not set, while
-		 * {@link #tile(int, int)} creates a new non explored tile without resource in this case
+		 * {@link #tile(int, int)} creates a new non explored tile in this case
 		 * 
 		 * @param x the x coordinate
 		 * @param y the y coordinate
@@ -1041,7 +1058,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		}
 		
 		/**
-		 * sets the resource of the tile at the given coordinates
+		 * adds the resource of the tile at the given coordinates
 		 * 
 		 * @param x the x coordinate of the tile
 		 * @param y the y coordinate of the tile
@@ -1055,6 +1072,13 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			executeNTL();
 		}
 		
+		/**
+		 * removes the resource of the tile at the given coordinates
+		 * 
+		 * @param x the x coordinate of the tile
+		 * @param y the y coordinate of the tile
+		 * @param r the resource to be removed
+		 */
 		public void removeResource(int x, int y, Resource r) {
 			if (this.tiles[x][y] == null) {
 				this.tiles[x][y] = new TileImpl(GroundType.NOT_EXPLORED_TYPE.newInstance(this.rnd));
@@ -1063,7 +1087,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				this.tiles[x][y].removeResource(r, this.rnd);
 				executeNTL();
 			} catch (TurnExecutionException e) {
-				throw new RuntimeException(e);
+				throw new IllegalStateException(e);
 			}
 		}
 		
@@ -1107,7 +1131,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				tile(x, y).setBuild(build);
 				executeNTL();
 			} catch (TurnExecutionException e) {
-				throw new RuntimeException(e);
+				throw new IllegalStateException(e);
 			}
 		}
 		
@@ -1123,7 +1147,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				tile(x, y).addUnit(unit);
 				executeNTL();
 			} catch (TurnExecutionException e) {
-				throw new RuntimeException(e);
+				throw new IllegalStateException(e);
 			}
 		}
 		
@@ -1233,11 +1257,15 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		
 		/** {@inheritDoc} */
 		@Override
-		public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) { this.nextTurnListeners.add(listener); }
+		public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+			this.nextTurnListeners.add(listener);
+		}
 		
 		/** {@inheritDoc} */
 		@Override
-		public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) { this.nextTurnListeners.remove(listener); }
+		public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+			this.nextTurnListeners.remove(listener);
+		}
 		
 		/**
 		 * returns all entities on this world
@@ -1250,15 +1278,50 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		}
 		
 		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public WorldThing<?, ?> get(UUID uuid) {
+			return CompleteWorld.get(this.tiles, uuid);
+		}
+		
+		/**
 		 * this operation is not supported, this method will always throw an {@link UnsupportedOperationException}
 		 * 
 		 * @throws UnsupportedOperationException always
 		 */
 		@Override
-		public void finish(Turn t) throws UnsupportedOperationException {
+		public void finish(@SuppressWarnings("unused") Turn t) throws UnsupportedOperationException {
 			throw new UnsupportedOperationException("the build world does not support turns!");
 		}
 		
+	}
+	
+	private static WorldThing<?, ?> get(Tile[][] tiles, UUID uuid) {
+		for (int x = 0; x < tiles.length; x++) {
+			Tile[] ts = tiles[x];
+			for (int y = 0; y < ts.length; y++) {
+				Tile t = ts[y];
+				if (t == null) {
+					continue;
+				}
+				if (t.ground().uuid.equals(uuid)) {
+					return t.ground();
+				}
+				if (t.build() != null && t.build().uuid.equals(uuid)) {
+					return t.build();
+				}
+				Optional<? extends WorldThing<?, ?>> o = t.unitsStream().filter(u -> uuid.equals(u.uuid)).findAny();
+				if (o.isPresent()) {
+					return o.get();
+				}
+				o = t.resourcesStream().filter(r -> uuid.equals(r.uuid)).findAny();
+				if (o.isPresent()) {
+					return o.get();
+				}
+			}
+		}
+		return null;
 	}
 	
 	private static Map<User, List<Entity<?, ?>>> entities(Tile[][] tiles) {
