@@ -16,7 +16,9 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.ground;
 
+import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.UUID;
 
@@ -30,7 +32,9 @@ import de.hechler.patrick.utils.objects.Random2;
 @SuppressWarnings("javadoc")
 public abstract class SimpleGroundType extends GroundType {
 	
-	private Image                    img;
+	private Image         img;
+	private BufferedImage imgR;
+	
 	private final Map<String, Value> defs;
 	
 	public SimpleGroundType(String name, String localName, Map<String, ValueSpec> specs, Map<String, Value> defs) {
@@ -54,11 +58,13 @@ public abstract class SimpleGroundType extends GroundType {
 	}
 	
 	@Override
+	@SuppressWarnings("unused")
 	public Ground withRandomValues(World w, Random2 r, int x, int y) {
 		return new SimpleGround(r.nextUUID(), this.defs);
 	}
 	
 	@Override
+	@SuppressWarnings("unused")
 	public Ground withDefaultValues(World w, Random2 r, int x, int y) {
 		return new SimpleGround(r.nextUUID(), this.defs);
 	}
@@ -75,14 +81,37 @@ public abstract class SimpleGroundType extends GroundType {
 		}
 		
 		@Override
-		@SuppressWarnings("unused")
 		public Image image(int width, int heigh) {
-			if (SimpleGroundType.this.img == null) {
+			Image i = SimpleGroundType.this.img;
+			if (i == null) {
 				synchronized (SimpleGroundType.this) {
-					SimpleGroundType.this.img = SimpleGroundType.this.loadImage();
+					i = SimpleGroundType.this.img;
+					if (i == null) {
+						i                         = SimpleGroundType.this.loadImage();
+						SimpleGroundType.this.img = i;
+					}
 				}
 			}
-			return SimpleGroundType.this.img;
+			if (i.getWidth(null) == width) {
+				return i;
+			}
+			// store one rescaled globale version
+			BufferedImage r = SimpleGroundType.this.imgR;
+			if (r != null && r.getWidth(null) == width) {
+				return r;
+			}
+			synchronized (SimpleGroundType.this) {
+				r = SimpleGroundType.this.imgR;
+				if (r != null && r.getWidth(null) == width) {
+					return r;
+				}
+				r = new BufferedImage(width, heigh, BufferedImage.TYPE_INT_ARGB);
+				Graphics2D g = r.createGraphics();
+				g.drawImage(i, 0, 0, width, heigh, null);
+				g.dispose();
+				SimpleGroundType.this.imgR = r;
+				return r;
+			}
 		}
 		
 		@Override

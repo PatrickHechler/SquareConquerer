@@ -2,20 +2,15 @@ package de.hechler.patrick.games.sc.ui.display.world;
 
 import java.awt.Canvas;
 import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
-
-import de.hechler.patrick.games.sc.addons.addable.GroundType;
 
 public class ButtonGrid extends Canvas {
 	
@@ -70,7 +65,7 @@ public class ButtonGrid extends Canvas {
 	 * 
 	 * @return an array containing all registered mouse listeners
 	 */
-	public ButtonGridMouseListener[] getBGMouseListener() {
+	public ButtonGridMouseListener[] getBGMouseListeners() {
 		return this.listeners.toArray(new ButtonGridMouseListener[this.listeners.size()]);
 	}
 	
@@ -143,80 +138,14 @@ public class ButtonGrid extends Canvas {
 		
 	}
 	
-	public static void main(String[] args) {
-		Frame f = new Frame("some nice title");
-		f.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(@SuppressWarnings("unused") WindowEvent e) {
-				System.exit(0);
-			}
-		});
-		ButtonGrid bg = new ButtonGrid(3, 3, 64);
-		bg.setBtn(2, 0, GroundType.NOT_EXPLORED_GRND.image(16, 16));
-		f.add(bg);
-		f.pack();
-		f.setLocationByPlatform(true);
-		f.setVisible(true);
-		try {
-			Thread.sleep(1000L);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		bg.setBtn(0, 0, GroundType.NOT_EXPLORED_GRND.image(256, 256));
-		System.out.println("setbtn");
-		try {
-			Thread.sleep(1000L);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		bg.repaint();
-		System.out.println("repaint");
-		bg.addBGMouseListener(new ButtonGridMouseListener() {
-			
-			@Override
-			public void whelling(MouseWheelEvent e, int x, int y, int subx, int suby) {
-				System.out.println("WHELLING");
-				System.out.println("x: " + x + " y: " + y);
-				System.out.println(e.getUnitsToScroll());
-				System.out.println(e.getModifiersEx());
-				bg.setButtonSize(bg.getButtonSize() + e.getUnitsToScroll());
-				bg.setBtn(2, 0, GroundType.NOT_EXPLORED_GRND.image(16, 16));
-				bg.setBtn(0, 0, GroundType.NOT_EXPLORED_GRND.image(16, 16));
-				f.pack();
-				bg.repaint();
-			}
-			
-			@Override
-			public void released(MouseEvent e, int x, int y, int subx, int suby) {
-				System.out.println("ARREST THEM!");
-				System.out.println("x: " + x + " y: " + y);
-				System.out.println(e.getModifiersEx());
-				bg.repaint();
-			}
-			
-			@Override
-			public void pressed(MouseEvent e, int x, int y, int subx, int suby) {
-				System.out.println("RELEASE THE HOSTAGE!");
-				System.out.println("x: " + x + " y: " + y);
-			}
-			
-			@Override
-			public void moved(MouseEvent e, int x, int y, int subx, int suby, boolean dragging) {
-				if (dragging) {
-					System.out.println("BRING THE MOUSE TO ME!");
-					System.out.println("x: " + x + " y: " + y);
-				} else {
-					System.out.println("CATCH THE MOUSE!");
-					System.out.println("x: " + x + " y: " + y);
-				}
-			}
-		});
-	}
-	
 	/**
 	 * reset the image and the preferred size.
 	 */
 	public final void resetImg() {
+		Graphics2D oldG = this.g;
+		if (oldG != null) {
+			oldG.dispose();
+		}
 		this.img = new BufferedImage(this.xlen * this.bsize, this.ylen * this.bsize, BufferedImage.TYPE_INT_RGB);
 		this.g   = this.img.createGraphics();
 		super.setPreferredSize(new Dimension(this.img.getWidth(), this.img.getHeight()));
@@ -233,8 +162,8 @@ public class ButtonGrid extends Canvas {
 		if (buttonSize <= 0) {
 			throw new IllegalArgumentException("btnSize: " + buttonSize);
 		}
-		this.img = new BufferedImage(this.xlen * buttonSize, this.ylen * buttonSize, BufferedImage.TYPE_INT_RGB);
-		super.setPreferredSize(new Dimension(this.img.getWidth(), this.img.getHeight()));
+		this.bsize = buttonSize;
+		resetImg();
 	}
 	
 	/**
@@ -319,7 +248,7 @@ public class ButtonGrid extends Canvas {
 	 * @param y   the y coordinate of the button
 	 * @param img the new image of the button
 	 */
-	public void setBtn(int x, int y, Image img) {
+	public void paintBtn(int x, int y, Image img) {
 		if (x < 0 || y < 0 || x > this.xlen || y > this.ylen) {
 			throw new IllegalArgumentException("x: " + x + " y: " + y + " xlen: " + this.xlen + " ylen: " + this.ylen);
 		}
