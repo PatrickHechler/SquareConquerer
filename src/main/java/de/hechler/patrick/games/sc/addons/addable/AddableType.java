@@ -57,9 +57,17 @@ public abstract sealed class AddableType<M extends AddableType<M, A>, A extends 
 	
 	public abstract A withRandomValues(World w, Random2 r, int x, int y);
 	
-	public abstract Map<String, ValueSpec> specs();
+	public Map<String, ValueSpec> specs() {
+		return this.values;
+	}
 	
-	public abstract ValueSpec spec(String name);
+	public ValueSpec spec(String name) {
+		ValueSpec spec = this.values.get(name);
+		if (spec == null) {
+			throw new IllegalArgumentException("the spec '" + name + "' could not be found!");
+		}
+		return spec;
+	}
 	
 	public JustASpec justSpec(String name) {
 		return (JustASpec) spec(name);

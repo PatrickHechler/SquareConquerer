@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.IntConsumer;
 
 import de.hechler.patrick.games.sc.addons.Addons;
 import de.hechler.patrick.games.sc.addons.addable.AddableType;
@@ -53,17 +54,183 @@ import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 import de.hechler.patrick.games.sc.world.tile.TileImpl;
+import de.hechler.patrick.utils.interfaces.Executable;
 
-public class OpenWorld {
+public class OpenWorld implements IntConsumer {
 	
-	public static OpenWorld of(Connection conn, World uw) {
-		// TODO Auto-generated method stub
-		return null;
+	private final Connection conn;
+	private final World      world;
+	
+	private OpenWorld(Connection conn, World world) {
+		this.conn  = conn;
+		this.world = world;
 	}
-	// TODO
+	
+	public static OpenWorld of(Connection conn, World w) {
+		return new OpenWorld(conn, w);
+	}
+	
+	/**
+	 * <ol>
+	 * <li>send {@link #START_BLOCK}</li>
+	 * <li>receive {@link #ACCEPT_BLOCK}</li>
+	 * <li>do stuff</li></li>receive {@link #STOP_BLOCK}</li></li>send {@link #STOP_BLOCK}</li>
+	 * </ol>
+	 */
+	public static final int START_BLOCK  = 0x78C79319;
+	/** @see #START_BLOCK */
+	public static final int ACCEPT_BLOCK = 0x6CD001D7;
+	/** @see #START_BLOCK */
+	public static final int STOP_BLOCK   = 0xBF10CAD1;
 	
 	public void execute() throws IOException {
-		// TODO Auto-generated method stub
+		this.world.addNextTurnListener(this);
+		try {
+			while (!this.conn.closed()) {
+				this.conn.blocked(250, () -> this.exec(true), Connection.NOP);
+			}
+		} finally {
+			this.world.removeNextTurnListener(this);
+		}
+	}
+	
+	// GET_* are send by the client to get stuff
+	
+	/**
+	 * <ol>
+	 * <li>{@link #START_BLOCK start} block</li>
+	 * <li>send {@link #GET_WORLD}</li>
+	 * <li>{@link #loadWorld(Tile[][], Connection)}/{@link #saveWorld(World, Connection)}</li>
+	 * <li>stop block</li>
+	 * </ol>
+	 */
+	public static final int GET_WORLD = 0xAD505582;
+	/**
+	 * <ol>
+	 * <li>{@link #START_BLOCK start} block</li>
+	 * <li>send {@link #GET_SIZE}</li>
+	 * <li>receive {@link #GET_SIZE}</li>
+	 * <li>receive {@link World#xlen()}</li>
+	 * <li>receive {@link World#ylen()}</li>
+	 * <li>stop block</li>
+	 * </ol>
+	 */
+	public static final int GET_SIZE  = 0x62049F3D;
+	/**
+	 * <ol>
+	 * <li>{@link #START_BLOCK start} block</li>
+	 * <li>send {@link #GET_THING}</li>
+	 * <li>receive {@link #GET_THING}</li>
+	 * <li>send {@link UUID}</li>
+	 * <li>{@link #readThing(Connection)}/{@link #writeThing(Connection, WorldThing)}</li>
+	 * <li>stop block</li>
+	 * </ol>
+	 */
+	public static final int GET_THING = 0xC8F3FAE8;
+	
+	// NOTIFY_* are send by the server to notify the client about stuff
+	
+	/**
+	 * <ol>
+	 * <li>receive {@link #NOTIFY_NEXT_TURN}</li>
+	 * </ol>
+	 */
+	public static final int NOTIFY_NEXT_TURN = 0x12C6AEAE;
+	
+	public static void acceptBlockClient(Connection conn, int timeout, Executable<? extends IOException> exe) throws IOException {
+		acceptBlockClient(conn, timeout, exe, Connection.NOP);
+	}
+	
+	public static void acceptBlockClient(Connection conn, int timeout, Executable<? extends IOException> exe, Executable<IOException> onTimeout) throws IOException {
+		conn.blocked(timeout, () -> {
+			conn.readInt(START_BLOCK);
+			conn.writeInt(ACCEPT_BLOCK);
+			exe.execute();
+			conn.writeInt(STOP_BLOCK);
+			conn.readInt(STOP_BLOCK);
+		}, onTimeout);
+	}
+	
+	public static void doBlockedClient(Connection conn, Executable<? extends IOException> exe) throws IOException {
+		conn.blocked(() -> {
+			do {
+				conn.writeInt(START_BLOCK);
+				// the client has a higher priority
+			} while (conn.readInt(ACCEPT_BLOCK, START_BLOCK) != ACCEPT_BLOCK);
+			exe.execute();
+			conn.readInt(STOP_BLOCK);
+			conn.writeInt(STOP_BLOCK);
+		});
+	}
+	
+	private void doBlockedServer(Connection conn, Executable<? extends IOException> exe) throws IOException {
+		conn.blocked(() -> {
+			do {
+				conn.writeInt(START_BLOCK);
+				// the client has a higher priority
+				if (conn.readInt(ACCEPT_BLOCK, START_BLOCK) == ACCEPT_BLOCK) {
+					break;
+				}
+				this.exec(false);
+			} while (true);
+			exe.execute();
+			conn.readInt(STOP_BLOCK);
+			conn.writeInt(STOP_BLOCK);
+		});
+	}
+	
+	@Override
+	public void accept(int value) { // next turn listener: turn value starts
+		try {
+			doBlockedServer(this.conn, () -> {
+				this.conn.writeInt(NOTIFY_NEXT_TURN);
+				this.conn.writeInt(value);
+			});
+		} catch (IOException e) {
+			try {
+				this.conn.logOut();
+			} catch (IOException e1) {
+				e.addSuppressed(e1);
+			}
+			throw new IllegalStateException(e);
+		}
+	}
+	
+	private void exec(boolean sbnr) throws IOException {
+		if (sbnr) {
+			if (this.conn.readInt(START_BLOCK, Connection.CON_LOG_OUT) == Connection.CON_LOG_OUT) {
+				this.conn.close();
+				return;
+			}
+			this.conn.setTimeout(0);
+		}
+		this.conn.writeInt(ACCEPT_BLOCK);
+		switch (this.conn.readInt(GET_WORLD, GET_SIZE, GET_THING, Connection.CON_LOG_OUT)) {
+		case Connection.CON_LOG_OUT -> {
+			this.conn.close();
+			return;
+		}
+		case GET_WORLD -> saveWorld(this.world, this.conn);
+		case GET_SIZE -> {
+			this.conn.writeInt(GET_SIZE);
+			this.conn.writeInt(this.world.xlen());
+			this.conn.writeInt(this.world.ylen());
+		}
+		case GET_THING -> {
+			this.conn.writeInt(GET_THING);
+			UUID             uuid  = this.conn.readUUID();
+			WorldThing<?, ?> thing = this.world.get(uuid);
+			if (thing != null) {
+				this.conn.writeByte(1);
+				writeThing(this.conn, thing);
+			} else {
+				this.conn.writeByte(0);
+			}
+		}
+		default -> throw new AssertionError("illegal return value from readInt(int...)");
+		}
+		this.conn.writeInt(STOP_BLOCK);
+		this.conn.readInt(STOP_BLOCK);
 	}
 	
 	private static final int SEND_WORLD      = 0xAFD2E294;
@@ -126,7 +293,7 @@ public class OpenWorld {
 				conn.readInt(SEND_WORLD_SUB1);
 				Ground g = (Ground) readThing(conn);
 				conn.readInt(SEND_WORLD_SUB2);
-				int            cnt = conn.readPos();
+				int                         cnt = conn.readPos();
 				Map<ResourceType, Resource> r   = HashMap.newHashMap(cnt);
 				while (cnt-- > 0) {
 					Resource res = (Resource) readThing(conn);
@@ -168,9 +335,8 @@ public class OpenWorld {
 		Map<String, Value> map = wt.values();
 		conn.writeInt(map.size());
 		switch (wt) {
-		case @SuppressWarnings("preview") Ground g -> {
+		case @SuppressWarnings("preview") Ground g -> //
 			ignore = GROUND_IGNORE;
-		}
 		case @SuppressWarnings("preview") Resource r -> {
 			ignore = RESOURCE_IGNORE;
 			conn.writeInt(r.amount());
@@ -180,12 +346,10 @@ public class OpenWorld {
 			conn.writeInt(e.y());
 			conn.writeString(e.owner().name());
 			switch (e) {
-			case @SuppressWarnings("preview") Build b -> {
+			case @SuppressWarnings("preview") Build b -> //
 				ignore = BUILD_IGNORE;
-			}
-			case @SuppressWarnings("preview") Unit u -> {
+			case @SuppressWarnings("preview") Unit u -> //
 				ignore = UNIT_IGNORE;
-			}
 			}
 		}
 		}
@@ -267,9 +431,8 @@ public class OpenWorld {
 			conn.writeInt(INT_VALUE);
 			conn.writeInt(v.value());
 		}
-		case @SuppressWarnings("preview") JustAValue v -> {
+		case @SuppressWarnings("preview") JustAValue v -> //
 			conn.writeInt(JUST_A_VALUE);
-		}
 		case @SuppressWarnings("preview") LongValue v -> {
 			conn.writeInt(LONG_VALUE);
 			conn.writeLong(v.value());

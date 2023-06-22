@@ -20,6 +20,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -48,6 +51,7 @@ public class User implements Closeable {
 	
 	private final User              parent;
 	private final Map<String, User> childs;
+	private volatile boolean        forbidNew;
 	private volatile int            modCnt;
 	private volatile Secret0        s;
 	
@@ -102,6 +106,9 @@ public class User implements Closeable {
 				throw new IllegalStateException("only the root user can add users!");
 			}
 			synchronized (this) {
+				if (this.forbidNew) {
+					throw new IllegalStateException("new users are currently forbidden!");
+				}
 				this.checkNewUser(name);
 				User result = new User(new Secret0(name, pw));
 				this.childs.put(name, result);
@@ -202,6 +209,8 @@ public class User implements Closeable {
 	}
 	
 	private static final SecureRandom RND;
+	
+	private static final char[] NO_PW = new char[0];
 	
 	static {
 		SecureRandom r;
@@ -351,17 +360,7 @@ public class User implements Closeable {
 	}
 	
 	public static User nopw(String name) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	public void save(Connection conn) {
-		// TODO Auto-generated method stub
-	}
-	
-	public User addNopw(String name) {
-		// TODO Auto-generated method stub
-		return null;
+		return createUser(name, NO_PW);
 	}
 	
 	public Map<String, User> users() {
@@ -380,12 +379,83 @@ public class User implements Closeable {
 		return Collections.unmodifiableMap(this.childs);
 	}
 	
-	public void load(Connection conn) {
-		// TODO Auto-generated method stub
+	public User addNopw(String name) {
+		return addUser(name, NO_PW);
+	}
+	
+	private static final int SEND_USR      = 0x2BA395E3;
+	private static final int SEND_USR_SUB0 = 0x44B8BA5B;
+	private static final int SEND_USR_SUB1 = 0xD05E8CAF;
+	private static final int SEND_USR_FIN  = 0x8FD6FF7A;
+	
+	public void save(Connection conn) throws IOException {
+		conn.writeInt(SEND_USR);
+		conn.writeString(this.s.name);
+		if (this.parent != null) {
+			conn.writeInt(SEND_USR_SUB0);
+			for (User u : this.childs.values()) {
+				conn.writeInt(SEND_USR_SUB1);
+				conn.writeInt(u.s._pw.length);
+				ByteBuffer bb  = StandardCharsets.UTF_8.encode(CharBuffer.wrap(u.s._pw));
+				int        len = bb.limit();
+				if (bb.hasArray()) {
+					byte[] arr = bb.array();
+					int    off = bb.arrayOffset();
+					conn.writeArr(arr, off, len);
+					for (int i = 0; i < len; i++) arr[off + i] = 0;
+				} else {
+					for (int i = 0; i < len; i++) {
+						conn.writeByte(bb.get(i) & 0xFF);
+						bb.put(i, (byte) 0);
+					}
+				}
+				u.save(conn);
+			}
+		}
+		conn.writeInt(SEND_USR_FIN);
+	}
+	
+	public void load(Connection conn) throws IOException {
+		if (this.childs != null && !this.childs.isEmpty()) {
+			throw new IllegalStateException("only an user with no sub/child users can load");
+		}
+		conn.readInt(SEND_USR);
+		changeName(conn.readString());
+		if (conn.readInt(SEND_USR_FIN, SEND_USR_SUB0) == SEND_USR_SUB0) {
+			if (this.parent != null) {
+				throw new IllegalStateException("I am no root, but recieved a root user");
+			}
+			while (conn.readInt(SEND_USR_SUB1, SEND_USR_FIN) == SEND_USR_SUB1) {
+				char[] pw;
+				byte[] data = new byte[conn.readPos()];
+				conn.readArr(data);
+				CharBuffer cb = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(data));
+				for (int i = 0; i < data.length; i++) data[i] = 0;
+				int len = cb.limit();
+				if (cb.hasArray() && cb.arrayOffset() == 0 && len == cb.array().length) {
+					pw = cb.array();
+				} else {
+					pw = new char[len];
+					for (int i = 0; i < len; i++) {
+						pw[i] = cb.get(i);
+						cb.put(i, '\0');
+					}
+				}
+				User   sub  = new User(this, new Secret0("", pw));
+				sub.load(conn);
+				User old = this.childs.put(sub.name(), sub);
+				assert old == null;
+			}
+		} else if (this.parent == null) {
+			throw new IllegalStateException("I am a root, but recieved a non root user");
+		}
 	}
 	
 	public void allowNewUsers(boolean b) {
-		// TODO Auto-generated method stub
+		if (this.parent != null) {
+			throw new IllegalStateException("I am no root user!");
+		}
+		this.forbidNew = !b;
 	}
 	
 	@Override

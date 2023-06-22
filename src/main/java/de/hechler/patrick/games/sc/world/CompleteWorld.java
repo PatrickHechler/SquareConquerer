@@ -37,7 +37,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.function.BiConsumer;
+import java.util.function.IntConsumer;
 
 import de.hechler.patrick.games.sc.addons.Addon;
 import de.hechler.patrick.games.sc.addons.Addons;
@@ -72,7 +72,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	private final Tile[][]                         tiles;
 	private final UserPlacer                       placer;
 	private final Map<User, UserWorld>             subWorlds;
-	private final List<BiConsumer<byte[], byte[]>> nextTurnListeneres;
+	private final List<IntConsumer> nextTurnListeneres;
 	private final Map<User, Turn>                  userTurns;
 	private final List<Map<User, Turn>>            allTurns;
 	private volatile boolean                       allowRootTurns;
@@ -200,9 +200,10 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		return digest.digest(data);
 	}
 	
+	@SuppressWarnings("unused")
 	private void executeNTL(byte[] myhash, byte[] turnhash) {
-		for (BiConsumer<byte[], byte[]> r : this.nextTurnListeneres) {
-			r.accept(myhash, turnhash);
+		for (IntConsumer r : this.nextTurnListeneres) {
+			r.accept(this.allTurns.size());
 		}
 	}
 	
@@ -485,7 +486,13 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			this.rnd  = new Random2(sval);
 			Arrays.sort(users, null);
 			shuffle(this.rnd, users);
-			TileImpl.noCheck(() -> this.placer.initilize(this, users, this.rnd));
+			TileImpl.noCheck(() -> {
+				try {
+					this.placer.initilize(this, users, this.rnd);
+				} catch (TurnExecutionException e) {
+					throw new IllegalStateException(e);
+				}
+			});
 		}
 		threadStart(() -> executeNTL(hash, null));
 	}
@@ -550,13 +557,13 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	
 	/** {@inheritDoc} */
 	@Override
-	public synchronized void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+	public synchronized void addNextTurnListener(IntConsumer listener) {
 		this.nextTurnListeneres.add(listener);
 	}
 	
 	/** {@inheritDoc} */
 	@Override
-	public synchronized void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+	public synchronized void removeNextTurnListener(IntConsumer listener) {
 		this.nextTurnListeneres.remove(listener);
 	}
 	
@@ -741,7 +748,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 */
 	public static final class Builder implements World {
 		
-		private List<BiConsumer<byte[], byte[]>> nextTurnListeners = new ArrayList<>();
+		private List<IntConsumer> nextTurnListeners = new ArrayList<>();
 		private final Tile[][]                   tiles;
 		private final Random2                    rnd;
 		private final User                       root;
@@ -783,8 +790,8 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		}
 		
 		private void executeNTL() {
-			for (BiConsumer<byte[], byte[]> r : this.nextTurnListeners) {
-				r.accept(null, null);
+			for (IntConsumer r : this.nextTurnListeners) {
+				r.accept(-1);
 			}
 		}
 		
@@ -1257,13 +1264,13 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		
 		/** {@inheritDoc} */
 		@Override
-		public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+		public void addNextTurnListener(IntConsumer listener) {
 			this.nextTurnListeners.add(listener);
 		}
 		
 		/** {@inheritDoc} */
 		@Override
-		public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+		public void removeNextTurnListener(IntConsumer listener) {
 			this.nextTurnListeners.remove(listener);
 		}
 		

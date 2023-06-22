@@ -16,8 +16,10 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.addons.addable;
 
+import java.util.List;
 import java.util.Map;
 
+import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.entity.Entity;
 
@@ -26,5 +28,7 @@ public abstract sealed class EntityType<T extends EntityType<T, E>, E extends En
 	public EntityType(String name, String localName, Map<String, ValueSpec> values) {
 		super(name, localName, values);
 	}
+	
+	public abstract List<Map<String, Value>> startEntities();
 	
 }

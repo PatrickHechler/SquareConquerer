@@ -19,7 +19,7 @@ package de.hechler.patrick.games.sc.world;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.BiConsumer;
+import java.util.function.IntConsumer;
 
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.turn.Turn;
@@ -73,12 +73,12 @@ public class RemoteWorld implements World {
 	}
 	
 	@Override
-	public void addNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+	public void addNextTurnListener(IntConsumer listener) {
 		// TODO Auto-generated method stub
 	}
 	
 	@Override
-	public void removeNextTurnListener(BiConsumer<byte[], byte[]> listener) {
+	public void removeNextTurnListener(IntConsumer listener) {
 		// TODO Auto-generated method stub
 	}
 	
