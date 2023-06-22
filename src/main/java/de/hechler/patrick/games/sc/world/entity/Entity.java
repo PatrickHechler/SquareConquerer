@@ -20,7 +20,9 @@ import java.util.UUID;
 
 import de.hechler.patrick.games.sc.addons.addable.EntityType;
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
+import de.hechler.patrick.games.sc.world.tile.Tile;
 
 public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity<T, M>> extends WorldThing<T, M> permits Unit, Build {
 	
@@ -28,9 +30,10 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 		super(uuid);
 	}
 	
-	public static final String X     = "x";
-	public static final String Y     = "y";
-	public static final String OWNER = "owner";
+	public static final String X          = "x";
+	public static final String Y          = "y";
+	public static final String OWNER      = "owner";
+	public static final String VIEW_RANGE = "view:range";
 	
 	public int x() {
 		return intValue(X).value();
@@ -42,6 +45,19 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 	
 	public User owner() {
 		return userValue(OWNER).value();
+	}
+	
+	public int viewRange() {
+		return intValue(VIEW_RANGE).value();
+	}
+	
+	public int neededView(World w, int x, int y, Tile target, Tile neigbour) {
+		int   result = target.ground().viewBlock();
+		Build b      = target.build();
+		if (b != null) result += b.viewBlock();
+		result += target.resourcesStream().mapToInt(WorldThing::viewBlock).sum();
+		result += target.unitsStream().mapToInt(WorldThing::viewBlock).sum();
+		return result;
 	}
 	
 }

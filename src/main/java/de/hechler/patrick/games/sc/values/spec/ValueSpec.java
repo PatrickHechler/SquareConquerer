@@ -16,9 +16,13 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.values.spec;
 
+import de.hechler.patrick.games.sc.values.Value;
+
 public sealed interface ValueSpec
 	permits BooleanSpec, DoubleSpec, EnumSpec<?>, IntSpec, JustASpec, LongSpec, MapSpec, StringSpec, TypeSpec<?>, UserListSpec, UserSpec, WorldThingSpec {
 	
 	String name();
+	
+	void validate(Value v);
 	
 }

@@ -34,6 +34,8 @@ public interface World {
 	
 	int ylen();
 	
+	int turn();
+	
 	Tile tile(int x, int y);
 
 	void addNextTurnListener(IntConsumer listener);

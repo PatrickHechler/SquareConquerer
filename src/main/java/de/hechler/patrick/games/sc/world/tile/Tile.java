@@ -16,71 +16,240 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.tile;
 
+import java.lang.StackWalker.Option;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
+import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.world.CompleteWorld;
+import de.hechler.patrick.games.sc.world.UserWorld;
 import de.hechler.patrick.games.sc.world.entity.Build;
 import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.utils.objects.Random2;
+import jdk.incubator.concurrent.ScopedValue;
 
-public sealed interface Tile permits TileImpl, TileUnmod {
+@SuppressWarnings("javadoc")
+public final class Tile {
 	
-	/**
-	 * returns <code>true</code> if this tile is currently visible and <code>false</code> if not
-	 * 
-	 * @return <code>true</code> if this tile is currently visible and <code>false</code> if not
-	 */
-	boolean visible();
+	private final NavigableMap<ResourceType, Resource> resources = new TreeMap<>((a, b) -> a.name.compareTo(b.name));
 	
-	/**
-	 * returns the turn number where this tile was last seen
-	 * 
-	 * @return the turn number where this tile was last seen
-	 * 
-	 * @throws IllegalStateException if this tile is currently {@link #visible() visible}
-	 */
-	int lastTimeSeen() throws IllegalStateException;
+	private int              lastTimeSeen;
+	private Ground           ground;
+	private Build            build;
+	private final List<Unit> units;
 	
-	Ground ground();
+	public Tile(Ground ground) {
+		this.ground = Objects.requireNonNull(ground, "ground is null");
+		this.units  = new ArrayList<>();
+		this.lastTimeSeen = -1;
+	}
 	
-	int resourceCount();
+	public Tile(Ground ground, Map<ResourceType, Resource> resources, Build build, List<Unit> units, int lastSeen) {
+		if (lastSeen < -2) {
+			throw new IllegalArgumentException("illegal last seen value: " + lastSeen);
+		}
+		this.ground = ground;
+		this.resources.putAll(resources);
+		this.build = build;
+		this.units = new ArrayList<>(units);
+		this.units.sort(null);
+		this.lastTimeSeen = lastSeen;
+	}
 	
-	Resource resource(int index);
+	public boolean visible() {
+		return this.lastTimeSeen == -2;
+	}
 	
-	List<Resource> resourcesList();
+	public int lastTimeSeen() throws IllegalStateException {
+		if (this.lastTimeSeen == -2) {
+			throw new IllegalStateException("currently visible");
+		}
+		return this.lastTimeSeen;
+	}
 	
-	Stream<Resource> resourcesStream();
+	public int lastTimeSeen0() {
+		return this.lastTimeSeen;
+	}
 	
-	Build build();
+	public void setVisible(int turn, boolean visible) {
+		// the user placer should not change the visibility of the tiles
+		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != UserWorld.class) {
+			throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+		}
+		if (turn < -1) {
+			throw new IllegalArgumentException("turn < -1: " + turn);
+		}
+		if (visible) {
+			this.lastTimeSeen = -2;
+		} else {
+			this.lastTimeSeen = turn;
+		}
+	}
 	
-	int unitCount();
+	public Ground ground() {
+		return this.ground.unmodifiable();
+	}
 	
-	Unit unit(int index);
+	public int resourceCount() {
+		return this.resources.size();
+	}
 	
-	List<Unit> unitsList();
+	public Resource resource(int index) {
+		Iterator<Entry<ResourceType, Resource>> iter = this.resources.entrySet().iterator();
+		while (index-- > 0) iter.next();
+		return iter.next().getValue().unmodifiable();
+	}
 	
-	Stream<Unit> unitsStream();
+	public List<Resource> resourcesList() {
+		return this.resources.entrySet().stream().map(e -> e.getValue().unmodifiable()).toList();
+	}
 	
-	Tile unmodifiable();
+	public Stream<Resource> resourcesStream() {
+		return this.resources.entrySet().stream().map(e -> e.getValue().unmodifiable());
+	}
 	
-	TileImpl copy();
+	public Map<ResourceType, Resource> resourcesMap() {
+		Map<ResourceType, Resource> m = new HashMap<>(this.resources);
+		m.replaceAll((t, r) -> r.unmodifiable());
+		return m;
+	}
 	
-	Entity<?, ?>[] entities();
+	public Build build() {
+		return this.build != null ? this.build.unmodifiable() : null;
+	}
 	
-	void setBuild(Build b) throws TurnExecutionException;
+	public int unitCount() {
+		return this.units.size();
+	}
 	
-	void addUnit(Unit u) throws TurnExecutionException;
+	public Unit unit(int index) {
+		return this.units.get(index).unmodifiable();
+	}
 	
-	void removeUnit(Unit u) throws TurnExecutionException;
+	public List<Unit> unitsList() {
+		return this.units.stream().map(Unit::unmodifiable).toList();
+	}
 	
-	void addResource(Resource r);
+	public Stream<Unit> unitsStream() {
+		return this.units.stream().map(Unit::unmodifiable);
+	}
 	
-	Resource removeResource(Resource r, Random2 rnd) throws TurnExecutionException;
+	public Tile copy() {
+		return new Tile(this.ground, this.resources, this.build, this.units, this.lastTimeSeen);
+	}
 	
-	boolean same(Tile t);
+	public Entity<?, ?>[] entities() {
+		int            s      = this.units.size();
+		Entity<?, ?>[] result = new Entity<?, ?>[s + (this.build != null ? 1 : 0)];
+		int            off;
+		if (this.build != null) {
+			result[0] = this.build.unmodifiable();
+			off       = 1;
+		} else {
+			off = 0;
+		}
+		for (Entity<?, ?> e : this.units) {
+			result[off++] = e.unmodifiable();
+		}
+		return result;
+	}
+	
+	private static final ScopedValue<Boolean> NO_CHK = ScopedValue.newInstance();
+	
+	public static <T extends Throwable> void noCheck(Runnable r) throws T {
+		ScopedValue.where(NO_CHK, Boolean.TRUE, r);
+	}
+	
+	@SuppressWarnings("removal")
+	public static <T extends Throwable> void withCheck(Runnable r) throws T {
+		Boolean f = Boolean.FALSE;
+		if (f.booleanValue()) {
+			f = new Boolean(false);
+		}
+		ScopedValue.where(NO_CHK, f, r);
+	}
+	
+	private static boolean checkModify() {
+		return !NO_CHK.isBound() || !NO_CHK.get().booleanValue();
+	}
+	
+	public void addUnit(Unit u) throws TurnExecutionException {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		this.units.add(u);
+	}
+	
+	public void removeUnit(Unit u) throws TurnExecutionException {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		if (!this.units.remove(u)) {
+			throw new AssertionError("did not found my unit");
+		}
+	}
+	
+	public void setGround(Ground g) {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		this.ground = Objects.requireNonNull(g, "ground");
+	}
+	
+	public void setBuild(Build b) throws TurnExecutionException {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		this.build = b;
+	}
+	
+	public void addResource(Resource r) {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		this.resources.merge(r.type(), r, (a, b) -> {
+			a.add(b);
+			return a;
+		});
+	}
+	
+	public Resource removeResource(Resource r, Random2 rnd) throws TurnExecutionException {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		Resource old = this.resources.get(r.type());
+		return old.sub(r, rnd);
+	}
 	
 }

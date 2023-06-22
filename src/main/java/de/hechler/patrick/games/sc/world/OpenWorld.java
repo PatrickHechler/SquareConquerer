@@ -33,6 +33,7 @@ import de.hechler.patrick.games.sc.addons.addable.GroundType;
 import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.values.BooleanValue;
 import de.hechler.patrick.games.sc.values.DoubleValue;
@@ -53,7 +54,6 @@ import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
-import de.hechler.patrick.games.sc.world.tile.TileImpl;
 import de.hechler.patrick.utils.interfaces.Executable;
 
 public class OpenWorld implements IntConsumer {
@@ -94,13 +94,33 @@ public class OpenWorld implements IntConsumer {
 		}
 	}
 	
+	// MAKE_* are send by the client to do stuff
+	
+	/**
+	 * <ol>
+	 * <li>send {@link #MAKE_TURN}</li>
+	 * <li>receive {@link #MAKE_TURN}</li>
+	 * <li>{@link Turn#retrieveTurn(Connection)} / {@link Turn#sendTurn(Connection)}</li>
+	 * </ol>
+	 */
+	public static final int MAKE_TURN = 0xC255537F;
+	
 	// GET_* are send by the client to get stuff
 	
 	/**
 	 * <ol>
 	 * <li>{@link #START_BLOCK start} block</li>
+	 * <li>send {@link #GET_TURN}</li>
+	 * <li>receive {@link Connection#readInt() int} turn</li>
+	 * <li>stop block</li>
+	 * </ol>
+	 */
+	public static final int GET_TURN  = 0x21FB7A28;
+	/**
+	 * <ol>
+	 * <li>{@link #START_BLOCK start} block</li>
 	 * <li>send {@link #GET_WORLD}</li>
-	 * <li>{@link #loadWorld(Tile[][], Connection)}/{@link #saveWorld(World, Connection)}</li>
+	 * <li>{@link #loadWorld(Tile[][], Connection)} / {@link #saveWorld(World, Connection)}</li>
 	 * <li>stop block</li>
 	 * </ol>
 	 */
@@ -121,8 +141,8 @@ public class OpenWorld implements IntConsumer {
 	 * <li>{@link #START_BLOCK start} block</li>
 	 * <li>send {@link #GET_THING}</li>
 	 * <li>receive {@link #GET_THING}</li>
-	 * <li>send {@link UUID}</li>
-	 * <li>{@link #readThing(Connection)}/{@link #writeThing(Connection, WorldThing)}</li>
+	 * <li>send {@link Connection#writeUUID(UUID) UUID}</li>
+	 * <li>{@link #readThing(Connection)} / {@link #writeThing(Connection, WorldThing)}</li>
 	 * <li>stop block</li>
 	 * </ol>
 	 */
@@ -133,6 +153,7 @@ public class OpenWorld implements IntConsumer {
 	/**
 	 * <ol>
 	 * <li>receive {@link #NOTIFY_NEXT_TURN}</li>
+	 * <li>receive {@link Connection#readInt() int} turn</li>
 	 * </ol>
 	 */
 	public static final int NOTIFY_NEXT_TURN = 0x12C6AEAE;
@@ -205,11 +226,8 @@ public class OpenWorld implements IntConsumer {
 			this.conn.setTimeout(0);
 		}
 		this.conn.writeInt(ACCEPT_BLOCK);
-		switch (this.conn.readInt(GET_WORLD, GET_SIZE, GET_THING, Connection.CON_LOG_OUT)) {
-		case Connection.CON_LOG_OUT -> {
-			this.conn.close();
-			return;
-		}
+		switch (this.conn.readInt(GET_TURN, GET_WORLD, GET_SIZE, GET_THING, MAKE_TURN, Connection.CON_LOG_OUT)) {
+		case GET_TURN -> this.conn.writeInt(this.world.turn());
 		case GET_WORLD -> saveWorld(this.world, this.conn);
 		case GET_SIZE -> {
 			this.conn.writeInt(GET_SIZE);
@@ -226,6 +244,16 @@ public class OpenWorld implements IntConsumer {
 			} else {
 				this.conn.writeByte(0);
 			}
+		}
+		case MAKE_TURN -> {
+			this.conn.writeInt(MAKE_TURN);
+			Turn t = new Turn(this.world);
+			t.retrieveTurn(this.conn);
+			this.world.finish(t);
+		}
+		case Connection.CON_LOG_OUT -> {
+			this.conn.close();
+			return;
 		}
 		default -> throw new AssertionError("illegal return value from readInt(int...)");
 		}
@@ -252,6 +280,7 @@ public class OpenWorld implements IntConsumer {
 			for (int y = 0; y < ylen; y++) {
 				Tile t = world.tile(x, y);
 				conn.writeInt(SEND_WORLD_SUB1);
+				conn.writeInt(t.lastTimeSeen0());
 				writeThing(conn, t.ground());
 				conn.writeInt(SEND_WORLD_SUB2);
 				int cnt = t.resourceCount();
@@ -291,6 +320,10 @@ public class OpenWorld implements IntConsumer {
 			conn.readInt(SEND_WORLD_SUB0);
 			for (int y = 0; y < ylen; y++) {
 				conn.readInt(SEND_WORLD_SUB1);
+				int lastSeen = conn.readInt();
+				if (lastSeen < -2) { // well thats near and it fails anyway
+					lastSeen = conn.wrongInputPositive(lastSeen, false);
+				}
 				Ground g = (Ground) readThing(conn);
 				conn.readInt(SEND_WORLD_SUB2);
 				int                         cnt = conn.readPos();
@@ -311,7 +344,7 @@ public class OpenWorld implements IntConsumer {
 				if (conn.readByte(0, 1) != 0) {
 					b = (Build) readThing(conn);
 				}
-				tiles[x][y] = new TileImpl(g, r, b, u);
+				tiles[x][y] = new Tile(g, r, b, u, lastSeen);
 			}
 		}
 		conn.readInt(SEND_WORLD_FIN);

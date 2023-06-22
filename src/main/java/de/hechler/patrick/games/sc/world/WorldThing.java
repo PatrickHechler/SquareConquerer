@@ -1,3 +1,19 @@
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
 import java.util.Iterator;
@@ -29,6 +45,9 @@ import de.hechler.patrick.games.sc.world.resource.Resource;
 
 public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends WorldThing<T, M>> implements Imagable, Comparable<WorldThing<?, ?>>
 	permits Entity<?, ?>, Ground, Resource {
+	
+	// everything can block view, so this is here
+	public static final String VIEW_BLOCK = "view:block";
 	
 	public final UUID uuid;
 	
@@ -102,6 +121,10 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 	@SuppressWarnings("unchecked")
 	public <A extends AddableType<A, ?>> TypeValue<A> typeValue(String name) {
 		return (TypeValue<A>) value(name);
+	}
+	
+	public int viewBlock() {
+		return intValue(VIEW_BLOCK).value();
 	}
 	
 	// the order is needed for reproducibility

@@ -37,19 +37,19 @@ public class IgnoreCloseOutputStream extends OutputStream {
 	
 	/** {@inheritDoc} */
 	@Override
-	public void write(int b) throws IOException { out.write(b); }
+	public void write(int b) throws IOException { this.out.write(b); }
 	
 	/** {@inheritDoc} */
 	@Override
-	public void write(byte[] b) throws IOException { out.write(b); }
+	public void write(byte[] b) throws IOException { this.out.write(b); }
 	
 	/** {@inheritDoc} */
 	@Override
-	public void write(byte[] b, int off, int len) throws IOException { out.write(b, off, len); }
+	public void write(byte[] b, int off, int len) throws IOException { this.out.write(b, off, len); }
 	
 	/** {@inheritDoc} */
 	@Override
-	public void flush() throws IOException { out.flush(); }
+	public void flush() throws IOException { this.out.flush(); }
 	
 	/**
 	 * does nothing and just returns

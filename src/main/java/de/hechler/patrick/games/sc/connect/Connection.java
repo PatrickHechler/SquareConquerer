@@ -1066,7 +1066,9 @@ public class Connection implements WrongInputHandler, Closeable {
 	}
 	
 	/**
-	 * act like an invalid <code>int</code> was read {@inheritDoc}
+	 * act like an invalid <code>int</code> was read
+	 * <p>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public int wrongInputPositive(int read, boolean strictlyPositive) throws IOException, StreamCorruptedException, EOFException {

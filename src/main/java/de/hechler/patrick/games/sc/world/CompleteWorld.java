@@ -63,22 +63,29 @@ import de.hechler.patrick.games.sc.world.init.UserPlacer;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.NeigbourTiles;
 import de.hechler.patrick.games.sc.world.tile.Tile;
-import de.hechler.patrick.games.sc.world.tile.TileImpl;
+import de.hechler.patrick.utils.objects.Pos;
 import de.hechler.patrick.utils.objects.Random2;
 
+/**
+ * the complete world knows everything
+ * <p>
+ * after the game started, it can iterate over the old game states
+ * 
+ * @author Patrick Hechler
+ */
 public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	
-	private final User                             root;
-	private final Tile[][]                         tiles;
-	private final UserPlacer                       placer;
-	private final Map<User, UserWorld>             subWorlds;
-	private final List<IntConsumer> nextTurnListeneres;
-	private final Map<User, Turn>                  userTurns;
-	private final List<Map<User, Turn>>            allTurns;
-	private volatile boolean                       allowRootTurns;
-	private volatile Tile[][]                      starttiles;
-	private volatile byte[]                        seed;
-	private volatile Random2                       rnd;
+	private final User                  root;
+	private final Tile[][]              tiles;
+	private final UserPlacer            placer;
+	private final Map<User, UserWorld>  subWorlds;
+	private final List<IntConsumer>     nextTurnListeneres;
+	private final Map<User, Turn>       userTurns;
+	private final List<Map<User, Turn>> allTurns;
+	private volatile boolean            allowRootTurns;
+	private volatile Tile[][]           starttiles;
+	private volatile byte[]             seed;
+	private volatile Random2            rnd;
 	
 	private CompleteWorld(User root, Tile[][] tiles, UserPlacer placer) {
 		this.root               = root;
@@ -205,6 +212,12 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		for (IntConsumer r : this.nextTurnListeneres) {
 			r.accept(this.allTurns.size());
 		}
+	}
+	
+	/** {@inheritDoc} */
+	@Override
+	public int turn() {
+		return this.starttiles == null ? -1 : this.allTurns.size();
 	}
 	
 	/**
@@ -341,6 +354,9 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			UserWorld uw  = e.getValue();
 			conn.writeString(usr.name());
 			conn.writeInt(RWS_SUB4);
+			Pos p = uw.offset();
+			conn.writeInt(p.x());
+			conn.writeInt(p.y());
 			OpenWorld.saveWorld(uw, conn);
 		}
 		conn.writeInt(RWS_SUB5);
@@ -353,7 +369,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				Turn t = e.getValue();
 				conn.writeString(u.name());
 				conn.writeInt(RWS_SUB7);
-				t.sendTurn(conn, false);
+				t.sendTurn(conn);
 			}
 		}
 		conn.writeInt(RWS_SUB7);
@@ -381,10 +397,10 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		User root = conn.usr;
 		root.load(conn);
 		conn.readInt(RWS_SUB1);
-		Tile[][]      tiles = RemoteWorld.loadWorld(conn, root.users());
+		Tile[][]      tiles = OpenWorld.loadWorld(null, conn);
 		CompleteWorld res   = Builder.create(root, tiles);
 		conn.readInt(RWS_SUB2);
-		res.starttiles = RemoteWorld.loadWorld(conn, root.users());
+		res.starttiles = OpenWorld.loadWorld(null, conn);
 		conn.readInt(RWS_SUB2);
 		res.seed = seed;
 		res.rnd  = new Random2(curSeed);
@@ -392,8 +408,11 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			String name = conn.readString();
 			User   usr  = root.get(name);
 			conn.readInt(RWS_SUB4);
-			UserWorld uw = res.usrOf(usr, 0);
-			RemoteWorld.loadWorld(conn, root.users(), uw.cach());
+			int       xoff     = conn.readPos();
+			int       yoff     = conn.readPos();
+			Tile[][]  usrTiles = OpenWorld.loadWorld(null, conn);
+			UserWorld uw       = res.usrOf(usr, 0);
+			uw.init(usrTiles, xoff, yoff);
 		}
 		conn.readInt(RWS_SUB5);
 		for (int remain = conn.readInt(); remain > 0; remain--) {
@@ -405,7 +424,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				conn.readInt(RWS_SUB7);
 				Turn t = new Turn(res.usrOf(usr, 0));
 				conn.readInt(Turn.CMD_TURN);
-				t.retrieveTurn(conn, false);
+				t.retrieveTurn(conn);
 				add.put(usr, t);
 			}
 			res.allTurns.add(add);
@@ -486,7 +505,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			this.rnd  = new Random2(sval);
 			Arrays.sort(users, null);
 			shuffle(this.rnd, users);
-			TileImpl.noCheck(() -> {
+			Tile.noCheck(() -> {
 				try {
 					this.placer.initilize(this, users, this.rnd);
 				} catch (TurnExecutionException e) {
@@ -597,7 +616,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		for (Turn userturn : this.userTurns.values()) {
 			list.addAll(userturn.turns());
 			try {
-				userturn.sendTurn(conn, false);
+				userturn.sendTurn(conn);
 			} catch (IOException e) {
 				throw new IOError(e);
 			}
@@ -749,9 +768,9 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	public static final class Builder implements World {
 		
 		private List<IntConsumer> nextTurnListeners = new ArrayList<>();
-		private final Tile[][]                   tiles;
-		private final Random2                    rnd;
-		private final User                       root;
+		private final Tile[][]    tiles;
+		private final Random2     rnd;
+		private final User        root;
 		
 		private int resourceMask = 7;
 		
@@ -793,6 +812,12 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			for (IntConsumer r : this.nextTurnListeners) {
 				r.accept(-1);
 			}
+		}
+		
+		/** {@inheritDoc} */
+		@Override
+		public int turn() {
+			return -1;
 		}
 		
 		/**
@@ -837,7 +862,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		private Tile tile(int x, int y, NeigbourTiles neigbours) {
 			Ground   ground   = type(x, y, neigbours);
 			Resource resource = resource(x, y, neigbours);
-			TileImpl t        = new TileImpl(ground);
+			Tile     t        = new Tile(ground);
 			if (resource != null) {
 				t.addResource(resource);
 			}
@@ -910,7 +935,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 							&& (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))) {
 						continue;
 					}
-					TileImpl t = new TileImpl(randomGrnd(x, y));
+					Tile t = new Tile(randomGrnd(x, y));
 					this.tiles[x][y] = t;
 					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
 						Resource res = randomRes(x, y);
@@ -933,7 +958,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 					if (ts[y] != null && ts[y].ground().type() != GroundType.NOT_EXPLORED_TYPE) {
 						continue;
 					}
-					TileImpl t = new TileImpl(randomGrnd(x, y));
+					Tile t = new Tile(randomGrnd(x, y));
 					ts[y] = t;
 					if ((this.rnd.nextInt() & this.resourceMask) == 0) {
 						Resource res = randomRes(x, y);
@@ -961,28 +986,31 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		
 		private Ground randomGrnd(int x, int y) {
 			if (grounds == null) {
-				synchronized (Builder.class) {
-					if (grounds == null) {
-						List<GroundType>   gl = new ArrayList<>();
-						List<ResourceType> rl = new ArrayList<>();
-						for (Addon a : Addons.addons().values()) {
-							for (AddableType<?, ?> add : a.add.values()) {
-								if (add instanceof GroundType gt && gt != GroundType.NOT_EXPLORED_TYPE) {
-									gl.add(gt);
-								} else if (add instanceof ResourceType rt) {
-									rl.add(rt);
-								}
-							}
-						}
-						if (gl.isEmpty()) {
-							throw new AssertionError("no ground found!");
-						}
-						grounds   = gl;
-						resources = rl;
+				initGrnd();
+			}
+			return grounds.get(this.rnd.nextInt(grounds.size())).withRandomValues(this, this.rnd, x, y);
+		}
+		
+		private static synchronized void initGrnd() throws AssertionError {
+			if (grounds != null) {
+				return;
+			}
+			List<GroundType>   gl = new ArrayList<>();
+			List<ResourceType> rl = new ArrayList<>();
+			for (Addon a : Addons.addons().values()) {
+				for (AddableType<?, ?> add : a.add.values()) {
+					if (add instanceof GroundType gt && gt != GroundType.NOT_EXPLORED_TYPE) {
+						gl.add(gt);
+					} else if (add instanceof ResourceType rt) {
+						rl.add(rt);
 					}
 				}
 			}
-			return grounds.get(this.rnd.nextInt(grounds.size())).withRandomValues(this, this.rnd, x, y);
+			if (gl.isEmpty()) {
+				throw new AssertionError("no ground found!");
+			}
+			grounds   = gl;
+			resources = rl;
 		}
 		
 		/**
@@ -1030,7 +1058,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		@Override
 		public Tile tile(int x, int y) {
 			if (this.tiles[x][y] == null) {
-				this.tiles[x][y] = new TileImpl(GroundType.NOT_EXPLORED_TYPE.newInstance(this.rnd));
+				this.tiles[x][y] = new Tile(GroundType.NOT_EXPLORED_GRND);
 			}
 			return this.tiles[x][y];
 		}
@@ -1059,7 +1087,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 */
 		public void setGround(int x, int y, Ground g) {
 			if (this.tiles[x][y] == null) {
-				this.tiles[x][y] = new TileImpl(g);
+				this.tiles[x][y] = new Tile(g);
 			}
 			executeNTL();
 		}
@@ -1088,7 +1116,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 */
 		public void removeResource(int x, int y, Resource r) {
 			if (this.tiles[x][y] == null) {
-				this.tiles[x][y] = new TileImpl(GroundType.NOT_EXPLORED_TYPE.newInstance(this.rnd));
+				this.tiles[x][y] = new Tile(GroundType.NOT_EXPLORED_GRND);
 			}
 			try {
 				this.tiles[x][y].removeResource(r, this.rnd);
@@ -1109,7 +1137,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		public void setGroundResource(int x, int y, Ground g, Resource r) {
 			if (g == null) throw new NullPointerException("the ground is null");
 			if (r == null) throw new NullPointerException("the resource is null");
-			this.tiles[x][y] = new TileImpl(g);
+			this.tiles[x][y] = new Tile(g);
 			this.tiles[x][y].addResource(r);
 			executeNTL();
 		}
@@ -1304,7 +1332,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		
 	}
 	
-	private static WorldThing<?, ?> get(Tile[][] tiles, UUID uuid) {
+	static WorldThing<?, ?> get(Tile[][] tiles, UUID uuid) {
 		for (int x = 0; x < tiles.length; x++) {
 			Tile[] ts = tiles[x];
 			for (int y = 0; y < ts.length; y++) {
@@ -1312,11 +1340,13 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				if (t == null) {
 					continue;
 				}
-				if (t.ground().uuid.equals(uuid)) {
-					return t.ground();
+				WorldThing<?, ?> wt = t.ground();
+				if (wt.uuid.equals(uuid)) {
+					return wt;
 				}
-				if (t.build() != null && t.build().uuid.equals(uuid)) {
-					return t.build();
+				wt = t.build();
+				if (wt != null && wt.uuid.equals(uuid)) {
+					return wt;
 				}
 				Optional<? extends WorldThing<?, ?>> o = t.unitsStream().filter(u -> uuid.equals(u.uuid)).findAny();
 				if (o.isPresent()) {
@@ -1331,7 +1361,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		return null;
 	}
 	
-	private static Map<User, List<Entity<?, ?>>> entities(Tile[][] tiles) {
+	static Map<User, List<Entity<?, ?>>> entities(Tile[][] tiles) {
 		Map<User, List<Entity<?, ?>>> result = new HashMap<>();
 		for (int x = 0; x < tiles.length; x++) {
 			Tile[] ts = tiles[x];

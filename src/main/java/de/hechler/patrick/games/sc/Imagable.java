@@ -18,8 +18,26 @@ package de.hechler.patrick.games.sc;
 
 import java.awt.Image;
 
+/**
+ * an Imagable object can be represented with an {@link Image}.
+ * 
+ * @author Patrick Hechler
+ */
 public interface Imagable {
 	
-	Image image(int width, int heigh);
+	/**
+	 * returns an Image which represents this object
+	 * <p>
+	 * width and height should have the same value, if not the returned image will potentially look ugly<br>
+	 * also note that the returned image is allowed to have any sizes, thus a resize may be needed after this call
+	 * <p>
+	 * the returned image is not allowed to be modified and can be cached by this object
+	 * 
+	 * @param width  the width to which the image will be resized
+	 * @param height the height to which the image will be resized
+	 * 
+	 * @return an Image which represents this object
+	 */
+	Image image(int width, int height);
 	
 }

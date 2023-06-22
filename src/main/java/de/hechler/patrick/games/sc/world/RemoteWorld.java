@@ -16,6 +16,8 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,77 +27,161 @@ import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.entity.Entity;
-import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
+import de.hechler.patrick.utils.interfaces.Executable;
 
-public class RemoteWorld implements World {
+@SuppressWarnings("javadoc")
+public class RemoteWorld implements World, Executable<IOException> {
+	
+	private final Connection  conn;
+	private volatile Tile[][] tiles;
+	private volatile int      turn = -2;
+	private List<IntConsumer> ntl;
 	
 	public RemoteWorld(Connection conn) {
-		
+		this.conn = conn;
+		this.ntl  = new ArrayList<>();
 	}
 	
-	public static Tile[][] loadWorld(Connection conn, Map<String, User> users) {
-		// TODO Auto-generated method stub
-		return null;
+	@Override
+	public void execute() throws IOException {
+		while (!this.conn.closed()) {
+			OpenWorld.acceptBlockClient(this.conn, 250, this::exec);
+		}
 	}
 	
-	public static void loadWorld(Connection conn, Map<String, User> users, Tile[][] cach) {
-		// TODO Auto-generated method stub
-	}
-	
-	public static Resource readRes(Connection conn) {
-		// TODO Auto-generated method stub
-		return null;
+	private void exec() throws IOException {
+		this.conn.readInt(OpenWorld.NOTIFY_NEXT_TURN);
+		int turn = this.conn.readInt();
+		if (turn < -1) { // fails anyway
+			turn = this.conn.wrongInputPositive(turn, false);
+		}
+		for (IntConsumer c : this.ntl) {
+			c.accept(turn);
+		}
 	}
 	
 	@Override
 	public User user() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.conn.usr;
 	}
 	
 	@Override
 	public int xlen() {
-		// TODO Auto-generated method stub
-		return 0;
+		Tile[][] ts = this.tiles;
+		while (ts == null) {
+			update();
+			ts = this.tiles;
+		}
+		return ts.length;
 	}
 	
 	@Override
 	public int ylen() {
-		// TODO Auto-generated method stub
+		Tile[][] ts = this.tiles;
+		while (ts == null) {
+			update();
+			ts = this.tiles;
+		}
+		return ts[0].length;
+	}
+	
+	@Override
+	public int turn() {
+		int t = this.turn;
+		while (t < -1) {
+			updateTurn();
+			t = this.turn;
+		}
 		return 0;
 	}
 	
 	@Override
 	public Tile tile(int x, int y) {
-		// TODO Auto-generated method stub
-		return null;
+		Tile[][] ts = this.tiles;
+		while (ts == null) {
+			update();
+			ts = this.tiles;
+		}
+		return ts[x][y];
 	}
 	
 	@Override
 	public void addNextTurnListener(IntConsumer listener) {
-		// TODO Auto-generated method stub
+		this.ntl.add(listener);
 	}
 	
 	@Override
 	public void removeNextTurnListener(IntConsumer listener) {
-		// TODO Auto-generated method stub
+		if (!this.ntl.remove(listener)) {
+			throw new IllegalArgumentException("the given listener was not registered!");
+		}
 	}
 	
 	@Override
 	public void finish(Turn t) {
-		// TODO Auto-generated method stub
+		try {
+			OpenWorld.doBlockedClient(this.conn, () -> {
+				this.conn.writeInt(OpenWorld.MAKE_TURN);
+				this.conn.readInt(OpenWorld.MAKE_TURN);
+				t.sendTurn(this.conn);
+			});
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 	
 	@Override
 	public Map<User, List<Entity<?, ?>>> entities() {
-		// TODO Auto-generated method stub
-		return null;
+		Tile[][] ts = this.tiles;
+		while (ts == null) {
+			update();
+			ts = this.tiles;
+		}
+		return CompleteWorld.entities(ts);
 	}
-
+	
 	@Override
-	public WorldThing<?, ?> get(UUID uuid) { 
-	// TODO Auto-generated method stub
-	return null; }
+	public WorldThing<?, ?> get(UUID uuid) {
+		Tile[][] ts = this.tiles;
+		while (ts == null) {
+			update();
+			ts = this.tiles;
+		}
+		return CompleteWorld.get(ts, uuid);
+	}
+	
+	private synchronized void update() {
+		final Tile[][] ts = this.tiles;
+		if (ts != null) {
+			return;
+		}
+		try {
+			OpenWorld.doBlockedClient(this.conn, () -> {
+				this.conn.writeInt(OpenWorld.GET_WORLD);
+				this.tiles = OpenWorld.loadWorld(ts, this.conn);
+			});
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+	
+	private synchronized void updateTurn() {
+		if (this.turn >= -1) {
+			return;
+		}
+		try {
+			OpenWorld.doBlockedClient(this.conn, () -> {
+				this.conn.writeInt(OpenWorld.GET_TURN);
+				int t = this.conn.readInt();
+				if (t < -1) {
+					t = this.conn.wrongInputPositive(t, false);
+				}
+				this.turn = t;
+			});
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
 	
 }

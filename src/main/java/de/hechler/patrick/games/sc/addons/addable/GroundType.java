@@ -20,11 +20,15 @@ import java.awt.Image;
 import java.io.IOError;
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.imageio.ImageIO;
 
+import de.hechler.patrick.games.sc.values.IntValue;
+import de.hechler.patrick.games.sc.values.spec.IntSpec;
 import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.World;
+import de.hechler.patrick.games.sc.world.WorldThing;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.ground.SimpleGroundType;
 import de.hechler.patrick.games.sc.world.tile.NeigbourTiles;
@@ -36,7 +40,9 @@ public abstract non-sealed class GroundType extends AddableType<GroundType, Grou
 	}
 	
 	@SuppressWarnings("unused")
-	public static final SimpleGroundType NOT_EXPLORED_TYPE = new SimpleGroundType("base:not_explored", "not yet explored") {
+	public static final SimpleGroundType NOT_EXPLORED_TYPE = new SimpleGroundType("base:not_explored", "not yet explored",
+		Map.of(WorldThing.VIEW_BLOCK, new IntSpec(WorldThing.VIEW_BLOCK, Integer.MAX_VALUE, Integer.MAX_VALUE)),
+		Map.of(WorldThing.VIEW_BLOCK, new IntValue(WorldThing.VIEW_BLOCK, Integer.MAX_VALUE))) {
 		
 		@Override
 		protected Image loadImage() {
@@ -58,6 +64,8 @@ public abstract non-sealed class GroundType extends AddableType<GroundType, Grou
 		}
 		
 	};
+	
+	public static final Ground NOT_EXPLORED_GRND = NOT_EXPLORED_TYPE.newInstance(new UUID(0L, 0L));
 	
 	public abstract int propability(World world, int x, int y, NeigbourTiles neigbours);
 	

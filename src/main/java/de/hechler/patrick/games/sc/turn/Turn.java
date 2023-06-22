@@ -28,7 +28,6 @@ import java.util.TreeMap;
 
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.world.OpenWorld;
-import de.hechler.patrick.games.sc.world.RemoteWorld;
 import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
@@ -57,21 +56,21 @@ public final class Turn {
 	public Turn(World world) {
 		this.world = world;
 		this.turns = new TreeMap<>((a, b) -> {
-			int ac = a.x();
-			int bc = b.x();
-			if (ac > bc) return 1;
-			else if (ac < bc) return -1;
-			ac = a.y();
-			bc = b.y();
-			if (ac > bc) return 1;
-			else if (ac < bc) return -1;
-			if (a == b) return 0;
-			for (Entity<?, ?> c : world.tile(a.x(), ac).entities()) {
-				if (c.equals(a)) return 1;
-				if (c.equals(b)) return -1;
-			}
-			throw new AssertionError("the entities are not in my world");
-		});
+						int ac = a.x();
+						int bc = b.x();
+						if (ac > bc) return 1;
+						else if (ac < bc) return -1;
+						ac = a.y();
+						bc = b.y();
+						if (ac > bc) return 1;
+						else if (ac < bc) return -1;
+						if (a == b) return 0;
+						for (Entity<?, ?> c : world.tile(a.x(), ac).entities()) {
+							if (c.equals(a)) return 1;
+							if (c.equals(b)) return -1;
+						}
+						throw new AssertionError("the entities are not in my world");
+					});
 	}
 	
 	/**
@@ -102,11 +101,10 @@ public final class Turn {
 	/**
 	 * this constant is send to start the Turn send sequence
 	 * 
-	 * @see #sendTurn(Connection, boolean)
-	 * @see #retrieveTurn(Connection, boolean)
+	 * @see #sendTurn(Connection)
+	 * @see #retrieveTurn(Connection)
 	 */
 	public static final int  CMD_TURN  = 0x67A31709;
-	private static final int SUB0_TURN = 0x7A881D25;
 	private static final int ET_CARRY  = 0x5E209AC4;
 	private static final int ET_MOVE   = 0x037255BF;
 	private static final int ET_STORE  = 0xC9690B0E;
@@ -114,17 +112,13 @@ public final class Turn {
 	
 	/**
 	 * retrieves a turn from the given connection
-	 * <p>
-	 * if the turn was send with {@link #sendTurn(Connection, boolean) sendTurn(conn, true)}, <code>alsoWrite</code> must be set to <code>true</code> otherwise it
-	 * must be set to <code>false</code>
 	 * 
-	 * @param conn      the connection
-	 * @param alsoWrite if also write operations should be made
+	 * @param conn the connection
 	 * 
 	 * @throws IOException if an IO error occurs
 	 */
-	public void retrieveTurn(Connection conn, boolean alsoWrite) throws IOException {
-		if (alsoWrite) conn.writeInt(SUB0_TURN);
+	public void retrieveTurn(Connection conn) throws IOException {
+		conn.readInt(CMD_TURN);
 		if (!this.turns.isEmpty()) throw new IllegalStateException("turns is not empty");
 		int len = conn.readPos();
 		while (len-- > 0) {
@@ -135,7 +129,7 @@ public final class Turn {
 			switch (conn.readInt(ET_CARRY, ET_MOVE, ET_STORE)) {
 			case ET_CARRY -> {
 				e = this.world.tile(x, y).unit(conn.readPos());
-				Resource res    = RemoteWorld.readRes(conn);
+				Resource res = (Resource) OpenWorld.readThing(conn);
 				et = new CarryTurn((Unit) e, res);
 			}
 			case ET_MOVE -> {
@@ -150,7 +144,7 @@ public final class Turn {
 			case ET_STORE -> {
 				e = this.world.tile(x, y).unit(conn.readPos());
 				int      amount = conn.readInt();
-				Resource res    = RemoteWorld.readRes(conn);
+				Resource res    = (Resource) OpenWorld.readThing(conn);
 				et = new StoreTurn((Unit) e, res, amount);
 			}
 			default -> throw new AssertionError("illegal return value from conn.readInt(int...)"); //$NON-NLS-1$ this should not be possible
@@ -166,14 +160,12 @@ public final class Turn {
 	 * if this is no one-ways connection <code>alsoRead</code> should be set to <code>true</code>
 	 * 
 	 * @param conn     the connection
-	 * @param alsoRead if the connection should also be used to make read operations
 	 * 
 	 * @throws IOException if an IO error occurs
 	 */
 	@SuppressWarnings("preview")
-	public void sendTurn(Connection conn, boolean alsoRead) throws IOException {
-		if (alsoRead) conn.writeReadInt(CMD_TURN, SUB0_TURN);
-		else conn.writeInt(CMD_TURN);
+	public void sendTurn(Connection conn) throws IOException {
+		conn.writeInt(CMD_TURN);
 		conn.writeInt(this.turns.size());
 		for (Entry<Entity<?, ?>, EntityTurn> turn : this.turns.entrySet()) {
 			Entity<?, ?> e  = turn.getKey();
