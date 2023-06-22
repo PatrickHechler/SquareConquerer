@@ -81,4 +81,36 @@ public record Version(int major, int minor, int patch) implements Comparable<Ver
 		return this.major + "." + this.minor + "." + this.patch;
 	}
 	
+	/**
+	 * returns the {@link Version} which is represented by the given {@link String}
+	 * <p>
+	 * a version string can be one of the following:
+	 * <ul>
+	 * <li><code>major</code></li>
+	 * <li><code>major '.' minor</code></li>
+	 * <li><code>major '.' minor '.' patch</code></li>
+	 * </ul>
+	 * the {@link #toString()} method produces the last/full version
+	 * 
+	 * @param str the string which represents a version
+	 * 
+	 * @return the {@link Version} which is represented by the given {@link String}
+	 */
+	public static Version of(String str) {
+		int fi = str.indexOf('.');
+		if (fi == -1) {
+			int val = Integer.parseInt(str.trim());
+			return new Version(val, 0, 0);
+		}
+		int major = Integer.parseInt(str.substring(0, fi).trim());
+		int si    = str.indexOf(fi + 1, '.');
+		if (si == -1) {
+			int val = Integer.parseInt(str.substring(fi + 1).trim());
+			return new Version(major, val, 0);
+		}
+		int minor = Integer.parseInt(str.substring(fi + 1, si).trim());
+		int patch = Integer.parseInt(str.substring(si + 1).trim());
+		return new Version(major, minor, patch);
+	}
+	
 }

@@ -1,3 +1,6 @@
+import de.hechler.patrick.games.sc.addons.AddonProvider;
+import de.hechler.patrick.games.sc.addons.TheBaseAddonProvider;
+
 // This file is part of the Square Conquerer Project
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 // Copyright (C) 2023 Patrick Hechler
@@ -20,6 +23,10 @@
  * <p>
  * this module contains the base game.
  * 
+ * @provides AddonProvider with the base addon ({@link TheBaseAddonProvider})
+ * 
+ * @uses AddonProvider to get all addons
+ * 
  * @author Patrick Hechler
  */
 module de.hechler.patrick.games.squareconqerer {
@@ -27,23 +34,36 @@ module de.hechler.patrick.games.squareconqerer {
 	requires transitive java.desktop;
 	requires jdk.incubator.concurrent;
 	
+	
 	exports de.hechler.patrick.games.sc;
-	exports de.hechler.patrick.games.sc.addons.addable;
+	
 	exports de.hechler.patrick.games.sc.addons;
+	exports de.hechler.patrick.games.sc.addons.addable;
+	
 	exports de.hechler.patrick.games.sc.connect;
 	exports de.hechler.patrick.games.sc.error;
 	exports de.hechler.patrick.games.sc.turn;
+	
+	exports de.hechler.patrick.games.sc.ui.display;
+	exports de.hechler.patrick.games.sc.ui.display.world;
 	exports de.hechler.patrick.games.sc.ui.pages;
 	exports de.hechler.patrick.games.sc.ui.players;
+	
 	exports de.hechler.patrick.games.sc.values;
 	exports de.hechler.patrick.games.sc.values.spec;
+	
 	exports de.hechler.patrick.games.sc.world;
 	exports de.hechler.patrick.games.sc.world.entity;
 	exports de.hechler.patrick.games.sc.world.ground;
 	exports de.hechler.patrick.games.sc.world.init;
 	exports de.hechler.patrick.games.sc.world.resource;
 	exports de.hechler.patrick.games.sc.world.tile;
+	
 	exports de.hechler.patrick.utils.interfaces;
 	exports de.hechler.patrick.utils.objects;
+	
+	uses AddonProvider;
+	
+	provides AddonProvider with TheBaseAddonProvider;
 	
 }

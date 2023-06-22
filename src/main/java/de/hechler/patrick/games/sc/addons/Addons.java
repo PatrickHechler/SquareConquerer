@@ -90,33 +90,44 @@ public class Addons {
 		loadAddons();
 	}
 	
+	private static boolean loadAddons = false;
+	
 	private static synchronized void loadAddons() {
 		if (addons != null) return;
-		Map<String, Addon>           as = new HashMap<>();
-		ServiceLoader<AddonProvider> sl = ServiceLoader.load(AddonProvider.class, Addon.class.getClassLoader());
-		for (AddonProvider scap : sl) {
-			for (Addon sc : scap.addons()) {
-				// ignore the groups, the name must be unique
-				Addon old = as.put(sc.name, sc);
-				if (old != null) {
-					throw new AssertionError("multiple addons with the same name! name: " + sc.name + " classes: " + old.getClass().getModule() + "/"
-						+ old.getClass().getName() + " and " + sc.getClass().getModule() + "/" + sc.getClass().getName());
+		if (loadAddons) throw new AssertionError("circular loading of addons detected!");
+		Map<String, Addon> as = new HashMap<>();
+		loadAddons = true;
+		try {
+			ServiceLoader<AddonProvider> sl = ServiceLoader.load(AddonProvider.class, Addon.class.getClassLoader());
+			for (AddonProvider scap : sl) {
+				for (Addon sc : scap.addons()) {
+					// ignore the groups, the name must be unique
+					Addon old = as.put(sc.name, sc);
+					if (old != null) {
+						throw new AssertionError("multiple addons with the same name! name: " + sc.name + " classes: " + old.getClass().getModule() + "/"
+							+ old.getClass().getName() + " and " + sc.getClass().getModule() + "/" + sc.getClass().getName());
+					}
 				}
 			}
+			removeDisabled(as, System.getProperty(DISABLED_ADDONS_KEY));
+			removeDisabled(as, System.getenv(DISABLED_ADDONS_KEY));
+			Map<String, AddableType<?, ?>> ad = HashMap.newHashMap(as.size() + (as.size() >>> 3));
+			for (Addon a : as.values()) {
+				a.add.forEach((n, add) -> {
+					AddableType<?, ?> old = ad.put(n, add);
+					if (old != null) {
+						throw new AssertionError("multiple things with the same name where added! name:" + n);
+					}
+				});
+			}
+			addons = Collections.unmodifiableMap(as);
+			added  = Collections.unmodifiableMap(ad);
+		} finally {
+			loadAddons = false;
 		}
-		removeDisabled(as, System.getProperty(DISABLED_ADDONS_KEY));
-		removeDisabled(as, System.getenv(DISABLED_ADDONS_KEY));
-		Map<String, AddableType<?, ?>> ad = HashMap.newHashMap(as.size() + (as.size() >>> 3));
 		for (Addon a : as.values()) {
-			a.add.forEach((n, add) -> {
-				AddableType<?, ?> old = ad.put(n, add);
-				if (old != null) {
-					throw new AssertionError("multiple things with the same name where added! name:" + n);
-				}
-			});
+			a.checkDependencies(addons, added);
 		}
-		addons = Collections.unmodifiableMap(as);
-		added  = Collections.unmodifiableMap(ad);
 	}
 	
 	private static void removeDisabled(Map<String, Addon> as, String disabledList) {

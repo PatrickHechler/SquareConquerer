@@ -17,22 +17,25 @@
 package de.hechler.patrick.games.sc.ui.pages;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * this class represents a page, which be displayed to the user
  * 
  * @author Patrick Hechler
  * 
+ * @param title  the title of this page
  * @param blocks the blocks of this page
  */
-public record Page(List<PageBlock> blocks) {
+public record Page(String title, List<PageBlock> blocks) {
 	
 	/**
 	 * create an page from the given blocks
 	 * 
 	 * @param blocks the blocks of the page
 	 */
-	public Page(List<PageBlock> blocks) {
+	public Page(String title, List<PageBlock> blocks) {
+		this.title  = Objects.requireNonNull(title, "title");
 		this.blocks = List.copyOf(blocks);
 	}
 	
@@ -41,8 +44,8 @@ public record Page(List<PageBlock> blocks) {
 	 * 
 	 * @param blocks the blocks of the page
 	 */
-	public Page(PageBlock... blocks) {
-		this(List.of(blocks));
+	public Page(String title, PageBlock... blocks) {
+		this(title, List.of(blocks));
 	}
 	
 }
