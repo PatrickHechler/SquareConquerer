@@ -40,7 +40,7 @@ public class TheBaseAddon extends Addon {
 	
 	public static final String BASE_PROVIDER_NAME = "base:SquareConquerer";
 	
-	public TheBaseAddon() {
+	TheBaseAddon() {
 		super(BASE_PROVIDER_NAME, "Square Conquerer", new String[0], VERSION, Map.of(GroundType.NOT_EXPLORED_TYPE.name, GroundType.NOT_EXPLORED_TYPE), "AGPL v3+");
 	}
 	
@@ -54,34 +54,51 @@ public class TheBaseAddon extends Addon {
 		}
 	}
 	
+	@Override
+	public boolean hasCredits() {
+		return true;
+	}
+	
 	/** {@inheritDoc} */
 	@Override
 	protected Optional<Page> loadCredits() {
 		return Optional.of(new Page("Square Conquerer Credits", //
-			new EntryBlock(//
-				new TextEntry("Almoust everything: "),//
-				new LinkEntry("Patrick Hechler", URI.create("https://github.com/PatrickHechler")) //
-			)//
+				new EntryBlock(//
+						new TextEntry("Almoust everything: "), //
+						new LinkEntry("Patrick Hechler", URI.create("https://github.com/PatrickHechler")) //
+				)//
 		));
+	}
+	
+	@Override
+	public boolean hasHelp() {
+		return true; // thats a lie
 	}
 	
 	/** {@inheritDoc} */
 	@Override
 	protected Optional<Page> loadHelp() {
 		return Optional.of(new Page("Square Conquerer Help", //
-			new EntryBlock(new TextEntry("there is no help, good luck"))//
+				new EntryBlock(new TextEntry("there is no help, good luck"))//
 		));
 	}
 	
 	/** {@inheritDoc} */
 	@Override
-	public void checkDependencies(@SuppressWarnings("unused") Map<String, Addon> addons, @SuppressWarnings("unused") Map<String, AddableType<?, ?>> added) {
+	public void checkDependencies(Map<String, Addon> addons, Map<String, AddableType<?, ?>> added) {
+		String val = System.getProperty("square-conquerer.base-addon.no-check");
+		if ("no-check".equals(val)) {
+			return; // this can be dangerous
+		}
+		if (addons.get(this.name) != this) {
+			throw new MissingDependencyException("I am missing the base addon ('" + this.name + "')!");
+		}
 		for (AddableType<?, ?> a : added.values()) {
 			if (a instanceof GroundType && a != GroundType.NOT_EXPLORED_TYPE) {
 				return;
 			}
 		}
-		throw new MissingDependencyException("there is only the not-explored type!");
+		throw new MissingDependencyException("the only ground type is the not-explored ground type!");
 	}
 	
 }

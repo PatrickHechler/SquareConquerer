@@ -34,6 +34,7 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 	public static final String Y          = "y";
 	public static final String OWNER      = "owner";
 	public static final String VIEW_RANGE = "view:range";
+	public static final String LIVES      = "lives";
 	
 	public int x() {
 		return intValue(X).value();
@@ -51,6 +52,10 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 		return intValue(VIEW_RANGE).value();
 	}
 	
+	public int lives() {
+		return intValue(LIVES).value();
+	}
+	
 	public int neededView(World w, int x, int y, Tile target, Tile neigbour) {
 		int   result = target.ground().viewBlock();
 		Build b      = target.build();
@@ -59,5 +64,7 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 		result += target.unitsStream().mapToInt(WorldThing::viewBlock).sum();
 		return result;
 	}
+
+	public abstract int defend(Unit unit, int attackStrength);
 	
 }

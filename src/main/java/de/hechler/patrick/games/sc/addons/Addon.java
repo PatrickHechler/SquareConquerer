@@ -65,6 +65,8 @@ public abstract class Addon {
 	
 	protected abstract Optional<Page> loadCredits();
 	
+	public abstract boolean hasCredits();
+	
 	public Optional<Page> credits() {
 		if (this.credits == null) {
 			this.credits = this.loadCredits();
@@ -73,6 +75,8 @@ public abstract class Addon {
 	}
 	
 	protected abstract Optional<Page> loadHelp();
+	
+	public abstract boolean hasHelp();
 	
 	public Optional<Page> help() {
 		if (this.help == null) {

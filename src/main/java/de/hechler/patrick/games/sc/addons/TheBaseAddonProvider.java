@@ -26,7 +26,7 @@ public class TheBaseAddonProvider extends AddonProvider {
 	private static final List<Addon> LIST = List.of(BASE_ADDON);
 	
 	@Override
-	protected Iterable<Addon> addons() {
+	public Iterable<Addon> addons() {
 		return LIST;
 	}
 	

@@ -183,11 +183,7 @@ public class UserWorld implements World {
 			t.setGround(nt.ground());
 		}
 		if (nt.build() != null) {
-			try {
-				t.setBuild(nt.build());
-			} catch (TurnExecutionException e) {
-				throw new IllegalStateException(e);
-			}
+			t.setBuild(nt.build());
 		}
 		nt.resourcesStream().forEach(r -> {
 			if (t.resourcesStream().noneMatch(r::equals)) {

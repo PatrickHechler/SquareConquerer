@@ -132,10 +132,15 @@ public final class Turn {
 				et = new CarryTurn((Unit) e, res);
 			}
 			case ET_MOVE -> {
-				int             moves = conn.readInt();
-				List<Direction> dirs  = new ArrayList<>(moves);
+				int           moves = conn.readInt();
+				List<MoveAct> dirs  = new ArrayList<>(moves);
 				while (moves-- > 0) {
-					dirs.add(Direction.of(conn.readByte()));
+					int orid = conn.readByte();
+					if (orid != 0xFF) {
+						dirs.add(Direction.of(orid));
+					} else {
+						dirs.add(new Attack((Entity<?, ?>) this.world.get(conn.readUUID())));
+					}
 				}
 				et = new MoveTurn((Unit) e, dirs);
 			}
@@ -180,10 +185,16 @@ public final class Turn {
 			}
 			case MoveTurn mt -> {
 				conn.writeInt(ET_MOVE);
-				List<Direction> dirs = mt.dirs();
+				List<MoveAct> dirs = mt.acts();
 				conn.writeInt(dirs.size());
-				for (Direction dir : dirs) {
-					conn.writeByte(dir.ordinal());
+				for (MoveAct ma : dirs) {
+					switch (ma) {
+					case Direction dir -> conn.writeByte(dir.ordinal());
+					case Attack(Entity<?, ?> enemy) -> {
+						conn.writeByte(0xFF);
+						conn.writeUUID(enemy.uuid);
+					}
+					}
 				}
 			}
 			case StoreTurn st -> {

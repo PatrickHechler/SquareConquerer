@@ -93,4 +93,12 @@ public abstract non-sealed class Build extends Entity<BuildType, Build> {
 		value(new IntValue(NEEDED_WORK_TURNS, Math.max(0, val - e)));
 	}
 	
+	/** {@inheritDoc} */
+	@Override
+	public int defend(Unit unit, int attackStrength) {
+		if (attackStrength < 0) throw new AssertionError();
+		value(new IntValue(LIVES, Math.max(0, lives() - attackStrength)));
+		return 0;
+	}
+	
 }

@@ -1,6 +1,3 @@
-import de.hechler.patrick.games.sc.addons.AddonProvider;
-import de.hechler.patrick.games.sc.addons.TheBaseAddonProvider;
-
 // This file is part of the Square Conquerer Project
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 // Copyright (C) 2023 Patrick Hechler
@@ -17,6 +14,9 @@ import de.hechler.patrick.games.sc.addons.TheBaseAddonProvider;
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+import de.hechler.patrick.games.sc.addons.AddonProvider;
+import de.hechler.patrick.games.sc.addons.TheBaseAddonProvider;
 
 /**
  * this is the Square Conquerer module.

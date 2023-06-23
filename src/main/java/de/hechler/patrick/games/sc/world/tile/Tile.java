@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import de.hechler.patrick.games.sc.addons.addable.ResourceType;
+import de.hechler.patrick.games.sc.error.ErrorType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
 import de.hechler.patrick.games.sc.world.UserWorld;
@@ -216,7 +217,20 @@ public final class Tile {
 		this.ground = Objects.requireNonNull(g, "ground");
 	}
 	
-	public void setBuild(Build b) throws TurnExecutionException {
+	public void removeBuild(Build expect) throws TurnExecutionException {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		if (!this.build.equals(expect)) {
+			throw new TurnExecutionException(ErrorType.UNKNOWN);
+		}
+		this.build = null;
+	}
+	
+	public void setBuild(Build b) {
 		if (checkModify()) {
 			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {

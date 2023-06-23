@@ -26,19 +26,19 @@ import de.hechler.patrick.games.sc.world.entity.Unit;
  * @author Patrick Hechler
  * 
  * @param entity the unit which should be moved
- * @param dirs   the directions in which the entity should be moved
+ * @param acts   the directions in which the entity should be moved
  */
-public record MoveTurn(Unit entity, List<Direction> dirs) implements EntityTurn {
+public record MoveTurn(Unit entity, List<MoveAct> acts) implements EntityTurn {
 	
 	/**
 	 * create a new {@link MoveTurn} for the given unit with the direction list
 	 * 
 	 * @param entity the unit to be moved
-	 * @param dirs   the directions to which the unit should move
+	 * @param acts   the directions to which the unit should move
 	 */
-	public MoveTurn(Unit entity, List<Direction> dirs) {
+	public MoveTurn(Unit entity, List<MoveAct> acts) {
 		this.entity = entity;
-		this.dirs   = List.copyOf(dirs);
+		this.acts   = List.copyOf(acts);
 	}
 	
 	/**
@@ -47,7 +47,7 @@ public record MoveTurn(Unit entity, List<Direction> dirs) implements EntityTurn 
 	 * @param entity the unit to be moved
 	 * @param dirs   the directions to which the unit should move
 	 */
-	public MoveTurn(Unit entity, Direction... dirs) {
+	public MoveTurn(Unit entity, MoveAct... dirs) {
 		this(entity, List.of(dirs));
 	}
 	

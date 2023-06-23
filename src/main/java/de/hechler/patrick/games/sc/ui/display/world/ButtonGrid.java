@@ -164,7 +164,10 @@ public class ButtonGrid extends Canvas {
 		}
 		this.img = new BufferedImage(this.xlen * this.bsize, this.ylen * this.bsize, BufferedImage.TYPE_INT_RGB);
 		this.g   = this.img.createGraphics();
-		super.setPreferredSize(new Dimension(this.img.getWidth(), this.img.getHeight()));
+		Dimension s = new Dimension(this.img.getWidth(), this.img.getHeight());
+		super.setPreferredSize(s);
+		super.setMinimumSize(s);
+		super.setMaximumSize(s);
 	}
 	
 	/**
@@ -247,10 +250,22 @@ public class ButtonGrid extends Canvas {
 	
 	/**
 	 * paints all buttons to the graphics
+	 * <p>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void paint(Graphics g) {
 		g.drawImage(this.img, 0, 0, getWidth(), getHeight(), this);
+	}
+	
+	/**
+	 * just delegates {@link #paint(Graphics)}, without clearing anything
+	 * 
+	 * @see #paint(Graphics)
+	 */
+	@Override
+	public void update(Graphics g) {
+		paint(g);
 	}
 	
 	/**

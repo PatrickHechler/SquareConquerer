@@ -18,9 +18,9 @@ package de.hechler.patrick.games.sc.turn;
 
 
 @SuppressWarnings("javadoc")
-public enum Direction {
+public enum Direction implements MoveAct {
 	
-	X_ADD(1, 0), Y_ADD(0, 1), X_SUB(-1, 0), Y_SUB(0, -1), FIGTH(0, 0);
+	X_ADD(1, 0), Y_ADD(0, 1), X_SUB(-1, 0), Y_SUB(0, -1);
 	
 	public final int xadd;
 	public final int yadd;

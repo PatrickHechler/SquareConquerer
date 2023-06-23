@@ -41,7 +41,7 @@ public class Addons {
 	 * if an addon is disabled multiple times, it will have the same effect as disabling it once<br>
 	 * if a non existing addon is disabled, it will be ignored
 	 */
-	public static final String DISABLED_ADDONS_KEY = "squareconquerer.addons.disabled";                 //$NON-NLS-1$
+	public static final String DISABLED_ADDONS_KEY = "squareconquerer.addons.disabled"; //$NON-NLS-1$
 	
 	private static Map<String, Addon>             addons;
 	private static Map<String, AddableType<?, ?>> added;
@@ -95,17 +95,17 @@ public class Addons {
 	private static synchronized void loadAddons() {
 		if (addons != null) return;
 		if (loadAddons) throw new AssertionError("circular loading of addons detected!");
-		Map<String, Addon> as = new HashMap<>();
 		loadAddons = true;
 		try {
 			ServiceLoader<AddonProvider> sl = ServiceLoader.load(AddonProvider.class, Addon.class.getClassLoader());
+			Map<String, Addon>           as = new HashMap<>();
 			for (AddonProvider scap : sl) {
 				for (Addon sc : scap.addons()) {
 					// ignore the groups, the name must be unique
 					Addon old = as.put(sc.name, sc);
 					if (old != null) {
 						throw new AssertionError("multiple addons with the same name! name: " + sc.name + " classes: " + old.getClass().getModule() + "/"
-							+ old.getClass().getName() + " and " + sc.getClass().getModule() + "/" + sc.getClass().getName());
+								+ old.getClass().getName() + " and " + sc.getClass().getModule() + "/" + sc.getClass().getName());
 					}
 				}
 			}
@@ -125,7 +125,10 @@ public class Addons {
 		} finally {
 			loadAddons = false;
 		}
-		for (Addon a : as.values()) {
+		// always let the base addon check its dependencies (even if it is removed)
+		// the base addon only checks for itself and for the existence of at least one ground type (which is not the not explored ground type)
+		TheBaseAddonProvider.BASE_ADDON.checkDependencies(addons, added);
+		for (Addon a : addons.values()) {
 			a.checkDependencies(addons, added);
 		}
 	}
@@ -184,6 +187,14 @@ public class Addons {
 				as.remove("");
 			}
 		}
+	}
+	
+	public static GroupTree disabledGT() {
+		GroupTree                    gt = new GroupTree();
+		ServiceLoader<AddonProvider> sl = ServiceLoader.load(AddonProvider.class, Addon.class.getClassLoader());
+		sl.forEach(ap -> ap.addons().forEach(gt::add));
+		addons().values().forEach(gt::remove);
+		return gt;
 	}
 	
 }

@@ -26,26 +26,30 @@ import java.util.function.Function;
 public class GroupTree {
 	
 	private static final Consumer<GroupTree> DEEP_CLEAR = new Consumer<>() {
+		
 		@Override
 		public void accept(GroupTree g) {
 			g.addons.clear();
 			g.forEachGroup(this);
 			g.groups.clear();
 		}
+		
 	};
 	
 	private static final BiConsumer<GroupTree, Consumer<? super Addon>> FOR_EACH_DEEP = new BiConsumer<>() {
+		
 		@Override
 		public void accept(GroupTree g, Consumer<? super Addon> c) {
 			g.forEach(c, this, c);
 		}
+		
 	};
 	
 	private final GroupTree                   parent;
 	private final String                      name;
 	private final int                         depth;
 	private final Function<String, GroupTree> addFunc;
-	private final Map<String, Addon>        addons;
+	private final Map<String, Addon>          addons;
 	private final Map<String, GroupTree>      groups;
 	
 	public GroupTree() {
@@ -63,6 +67,11 @@ public class GroupTree {
 	
 	public boolean isEmpty() {
 		return this.addons.isEmpty() && this.groups.isEmpty();
+	}
+	
+	public String name() {
+		if (this.parent == null) throw new IllegalStateException("the root tree has no name!");
+		return this.name;
 	}
 	
 	public void transferFrom(GroupTree g) {

@@ -47,10 +47,12 @@ import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.ErrorType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.turn.Attack;
 import de.hechler.patrick.games.sc.turn.CarryTurn;
 import de.hechler.patrick.games.sc.turn.Direction;
 import de.hechler.patrick.games.sc.turn.EntityTurn;
 import de.hechler.patrick.games.sc.turn.MineTurn;
+import de.hechler.patrick.games.sc.turn.MoveAct;
 import de.hechler.patrick.games.sc.turn.MoveTurn;
 import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.StoreTurn;
@@ -278,7 +280,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	@Override
 	public Iterator<CompleteWorld> iterator() {
 		if (this.rnd == null) throw new IllegalStateException("the game did not yet start");
-		return new Iterator<CompleteWorld>() {
+		return new Iterator<>() {
 			
 			private Iterator<Map<User, Turn>> iter  = CompleteWorld.this.allTurns.iterator();
 			private CompleteWorld             world = null;
@@ -530,7 +532,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	
 	private static long val(byte[] s, int off) {
 		return s[off] & 0xFF | ((s[off + 1] & 0xFFL) << 8) | ((s[off + 2] & 0xFFL) << 16) | ((s[off + 3] & 0xFFL) << 24) | ((s[off + 4] & 0xFFL) << 32)
-			| ((s[off + 5] & 0xFFL) << 40) | ((s[off + 6] & 0xFFL) << 48) | ((s[off + 7] & 0xFFL) << 56);
+				| ((s[off + 5] & 0xFFL) << 40) | ((s[off + 6] & 0xFFL) << 48) | ((s[off + 7] & 0xFFL) << 56);
 	}
 	
 	/**
@@ -610,64 +612,92 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	}
 	
 	private synchronized void executeTurn() {
-		int turnNum = turn();
-		if (turnNum < 0) {
-			return;
-		}
-		NavigableMap<String, User> map = new TreeMap<>(this.allowRootTurns ? this.root.users() : this.root.subUsers());
-		turnNum %= map.size();
-		User usr      = map.values().stream().skip(turnNum).findFirst().orElseThrow();
-		Turn execTurn = this.userTurns.get(usr);
-		if (execTurn == null) {
-			return;
-		}
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		Connection            conn = Connection.createUnsecure(this.root, baos, this);
-		try {
-			execTurn.sendTurn(conn);
-		} catch (IOException e) {
-			throw new IOError(e);
-		}
-		this.allTurns.add(new HashMap<>(this.userTurns));
-		for (EntityTurn et : randomOrder(execTurn.turns())) {
-			try {
-				Entity<?, ?> e = et.entity();
-				Tile         t = this.tiles[e.x()][e.y()];
-				executeEntityTurn(et, t);
-			} catch (TurnExecutionException e) {
-				System.err.println(String.format("error while executing the user turn: %s: %s", et.entity().owner(), e.type));
-				e.printStackTrace();
-			} catch (Exception e) {
-				System.err.println(String.format("error while executing the user turn: %s:", et.entity().owner()));
-				e.printStackTrace();
+		while (true) {
+			int turnNum = turn();
+			if (turnNum < 0) {
+				return;
 			}
+			NavigableMap<String, User> map = new TreeMap<>(this.allowRootTurns ? this.root.users() : this.root.subUsers());
+			turnNum %= map.size();
+			User usr      = map.values().stream().skip(turnNum).findFirst().orElseThrow();
+			Turn execTurn = this.userTurns.get(usr);
+			if (execTurn == null) {
+				return;
+			}
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			Connection            conn = Connection.createUnsecure(this.root, baos, this);
+			try {
+				execTurn.sendTurn(conn);
+			} catch (IOException e) {
+				throw new IOError(e);
+			}
+			this.allTurns.add(new HashMap<>(this.userTurns));
+			for (EntityTurn et : randomOrder(execTurn.turns())) {
+				try {
+					Entity<?, ?> e = et.entity();
+					Tile         t = this.tiles[e.x()][e.y()];
+					executeEntityTurn(et, t);
+				} catch (TurnExecutionException e) {
+					System.err.println(String.format("error while executing the user turn: %s: %s", et.entity().owner(), e.type));
+					e.printStackTrace();
+				} catch (Exception e) {
+					System.err.println(String.format("error while executing the user turn: %s:", et.entity().owner()));
+					e.printStackTrace();
+				}
+			}
+			executeNTL(calcHash(), calcHash(baos.toByteArray()));
 		}
-		executeNTL(calcHash(), calcHash(baos.toByteArray()));
 	}
 	
 	@SuppressWarnings("preview")
 	private void executeEntityTurn(EntityTurn turn, Tile t) throws TurnExecutionException {
+		if (turn.entity().lives() <= 0) {
+			throw new TurnExecutionException(ErrorType.DEAD);
+		}
 		switch (turn) {
-		case MoveTurn(Unit u, List<Direction> dirs) -> {
+		case MoveTurn(Unit u, List<MoveAct> dirs) -> {
 			checkHasUnit(u, t);
 			if (u.moveRange() < dirs.size()) throw new TurnExecutionException(ErrorType.INVALID_TURN);
-			for (Direction dir : dirs) {
-				int  x       = u.x();
-				int  y       = u.y();
-				Tile newTile = this.tiles[x + dir.xadd][y + dir.yadd];
-				Tile oldTile = this.tiles[x][y];
-				u.changePos(x + dir.xadd, y + dir.yadd, newTile, oldTile);
-				boolean b = false;
-				try {
-					newTile.addUnit(u);
-					b = true;
-					oldTile.removeUnit(u);
-				} catch (TurnExecutionException tee) {
-					u.changePos(x, y, oldTile, newTile);
-					if (b) {
-						newTile.removeUnit(u);
+			for (MoveAct ma : dirs) {
+				int x = u.x();
+				int y = u.y();
+				switch (ma) {
+				case Direction dir -> {
+					Tile newTile = this.tiles[x + dir.xadd][y + dir.yadd];
+					Tile oldTile = this.tiles[x][y];
+					u.changePos(x + dir.xadd, y + dir.yadd, newTile, oldTile);
+					boolean b = false;
+					try {
+						newTile.addUnit(u);
+						b = true;
+						oldTile.removeUnit(u);
+					} catch (TurnExecutionException tee) {
+						u.changePos(x, y, oldTile, newTile);
+						if (b) {
+							newTile.removeUnit(u);
+						}
+						throw tee;
 					}
-					throw tee;
+				}
+				case Attack(Entity<?, ?> enemy) -> {
+					if (enemy.owner() == u.owner()) {
+						throw new TurnExecutionException(ErrorType.INVALID_TURN);
+					}
+					if (enemy.lives() <= 0) {
+						break;
+					}
+					u.attack(enemy);
+					if (enemy.lives() <= 0) {
+						switch (enemy) {
+						case Unit eu -> this.tiles[eu.x()][eu.y()].removeUnit(eu);
+						case Build eb -> this.tiles[eb.x()][eb.y()].removeBuild(eb);
+						}
+					}
+					if (u.lives() <= 0) {
+						this.tiles[x][y].removeUnit(u);
+						throw new TurnExecutionException(ErrorType.DEAD);
+					}
+				}
 				}
 			}
 		}
@@ -853,7 +883,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			if (grounds == null) {
 				randomGrnd(0, 0);
 			}
-			while (fillOnce());
+			while (fillOnce()) {/**/}
 			executeNTL();
 		}
 		
@@ -951,12 +981,12 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			for (int x = 0; x < this.tiles.length; x += 8) {
 				for (int y = x % 16 == 0 ? 0 : 4; y < this.tiles[x].length; y += 8) {
 					if ((this.tiles[x][y] != null && this.tiles[x][y].ground().type() != GroundType.NOT_EXPLORED_TYPE)
-						// do not place nearby other tiles and do not overwrite tiles
-						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
-						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))
-						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
-						|| (y + 1 < this.tiles[x].length
-							&& (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))) {
+							// do not place nearby other tiles and do not overwrite tiles
+							|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+							|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+							|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+							|| (y + 1 < this.tiles[x].length
+									&& (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))) {
 						continue;
 					}
 					Tile t = new Tile(randomGrnd(x, y));
@@ -1186,12 +1216,8 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * @param build the building to be placed at the given position
 		 */
 		public void setBuild(int x, int y, Build build) {
-			try {
-				tile(x, y).setBuild(build);
-				executeNTL();
-			} catch (TurnExecutionException e) {
-				throw new IllegalStateException(e);
-			}
+			tile(x, y).setBuild(build);
+			executeNTL();
 		}
 		
 		/**
