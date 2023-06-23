@@ -21,16 +21,22 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOError;
 import java.io.IOException;
 import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
+import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
+import de.hechler.patrick.games.sc.world.OpenWorld;
 import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
 import de.hechler.patrick.games.sc.world.entity.Build;
@@ -277,32 +283,140 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private Menu menuSave() {
 		Menu     m    = new Menu("Saves");
+		MenuItem load = new MenuItem("load");
+		m.add(load);
+		load.addActionListener(e -> {
+			try {
+				simpleLoad: {
+					int c = JOptionPane.showConfirmDialog(this.frame, "does the save also contain the users and everything else?", "load everything?",
+						JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+					switch (c) {
+					case JOptionPane.YES_OPTION:
+						break;
+					case JOptionPane.NO_OPTION:
+						break simpleLoad;
+					case JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
+						return;
+					default:
+						System.err.println("unknown return value from JOptPane: " + c);
+						return;
+					}
+					File file = new File("./complete-saves/");
+					if (!file.exists()) {
+						file.mkdir();
+					}
+					JFileChooser fc = new JFileChooser(file);
+					fc.setMultiSelectionEnabled(false);
+					int val = fc.showSaveDialog(this.frame);
+					if (val != JFileChooser.APPROVE_OPTION) return;
+					file = fc.getSelectedFile();
+					CompleteWorld cw;
+					User          usr     = this.world.user();
+					boolean       wasRoot = usr.isRoot();
+					User          root    = usr;
+					if (!wasRoot) {
+						root = usr.rootClone();
+					}
+					try {
+						try (Connection conn = Connection.OneWayAccept.acceptReadOnly(new FileInputStream(file), usr, null)) {
+							cw = CompleteWorld.loadEverything(conn);
+						}
+					} catch (Throwable t) {
+						if (!wasRoot) {
+							root.close();
+						}
+						throw t;
+					}
+					this.world = cw;
+					usr.close();
+					return;
+				}
+				File file = new File("./saves/");
+				if (!file.exists()) {
+					file.mkdir();
+				}
+				JFileChooser fc = new JFileChooser(file);
+				fc.setMultiSelectionEnabled(false);
+				int val = fc.showSaveDialog(this.frame);
+				if (val != JFileChooser.APPROVE_OPTION) return;
+				file = fc.getSelectedFile();
+				Tile[][] ts;
+				User     usr     = this.world.user();
+				boolean  wasRoot = usr.isRoot();
+				User     root    = usr;
+				if (!wasRoot) {
+					root = usr.rootClone();
+				}
+				try {
+					try (Connection conn = Connection.OneWayAccept.acceptReadOnly(new FileInputStream(file), this.world.user(), this.world)) {
+						ts = OpenWorld.loadWorld(null, conn);
+					}
+				} catch (Throwable t) {
+					if (!wasRoot) {
+						root.close();
+					}
+					throw t;
+				}
+				usr.close();
+				this.world = CompleteWorld.Builder.create(root, ts);
+				JOptionPane.showMessageDialog(this.frame, "loaded world (world is now in build mode)", "finish load", JOptionPane.INFORMATION_MESSAGE);
+			} catch (IOException ioe) {
+				JOptionPane.showMessageDialog(this.frame, ioe.toString(), "io error on save", JOptionPane.ERROR_MESSAGE);
+			}
+		});
 		MenuItem save = new MenuItem("save", new MenuShortcut(KeyEvent.VK_S, false));
 		m.add(save);
 		save.addActionListener(e -> {
-			simpleSave: if (this.world instanceof CompleteWorld cw) {
-				int c = JOptionPane.showConfirmDialog(this.frame, "should the save also contain the users and everything else?", "save everything?",
-					JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-				switch (c) {
-				case JOptionPane.YES_OPTION:
-					break;
-				case JOptionPane.NO_OPTION:
-					break simpleSave;
-				case JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
+			try {
+				simpleSave: if (this.world instanceof CompleteWorld cw) {
+					int c = JOptionPane.showConfirmDialog(this.frame, "should the save also contain the users and everything else?", "save everything?",
+						JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+					switch (c) {
+					case JOptionPane.YES_OPTION:
+						break;
+					case JOptionPane.NO_OPTION:
+						break simpleSave;
+					case JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
+						return;
+					default:
+						System.err.println("unknown return value from JOptPane: " + c);
+						return;
+					}
+					File file = new File("./complete-saves/");
+					if (!file.exists()) {
+						file.mkdir();
+					}
+					JFileChooser fc = new JFileChooser(file);
+					fc.setMultiSelectionEnabled(false);
+					int val = fc.showSaveDialog(this.frame);
+					if (val != JFileChooser.APPROVE_OPTION) return;
+					file = fc.getSelectedFile();
+					try (Connection conn = Connection.OneWayAccept.acceptReadOnly(new FileInputStream(file), this.world.user(), this.world)) {
+						cw.saveEverything(conn);
+					}
 					return;
-				default:
-					System.err.println("unknown return value from JOptPane: " + c);
-					return;
+				} else {
+					int c = JOptionPane.showConfirmDialog(this.frame, "the save may not contain all tiles, save anyway?", "no complete world",
+						JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+					if (c != JOptionPane.OK_OPTION) {
+						return;
+					}
 				}
-				// TODO
-			} else {
-				int c = JOptionPane.showConfirmDialog(this.frame, "the save may not contain all tiles, save anyway?", "no complete world",
-					JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-				if (c != JOptionPane.OK_OPTION) {
-					return;
+				File file = new File("./saves/");
+				if (!file.exists()) {
+					file.mkdir();
 				}
+				JFileChooser fc = new JFileChooser(file);
+				fc.setMultiSelectionEnabled(false);
+				int val = fc.showSaveDialog(this.frame);
+				if (val != JFileChooser.APPROVE_OPTION) return;
+				file = fc.getSelectedFile();
+				try (Connection conn = Connection.OneWayAccept.acceptReadOnly(new FileInputStream(file), this.world.user(), this.world)) {
+					OpenWorld.saveWorld(this.world, conn);
+				}
+			} catch (IOException ioe) {
+				JOptionPane.showMessageDialog(this.frame, ioe.toString(), "io error on save", JOptionPane.ERROR_MESSAGE);
 			}
-			// TODO
 		});
 		return m;
 	}
