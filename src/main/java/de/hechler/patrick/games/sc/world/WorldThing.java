@@ -65,8 +65,6 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 	
 	public abstract T type();
 	
-	public abstract M unmodifiable();
-	
 	public abstract Map<String, Value> values();
 	
 	public abstract Value value(String name);

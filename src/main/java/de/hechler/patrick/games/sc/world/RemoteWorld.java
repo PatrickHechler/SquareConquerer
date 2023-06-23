@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.IntConsumer;
 
 import de.hechler.patrick.games.sc.connect.Connection;
+import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.entity.Entity;
@@ -36,7 +36,7 @@ public class RemoteWorld implements World, Executable<IOException> {
 	private final Connection  conn;
 	private volatile Tile[][] tiles;
 	private volatile int      turn = -2;
-	private List<IntConsumer> ntl;
+	private List<NextTurnListener> ntl;
 	
 	public RemoteWorld(Connection conn) {
 		this.conn = conn;
@@ -56,8 +56,12 @@ public class RemoteWorld implements World, Executable<IOException> {
 		if (turn < -1) { // fails anyway
 			turn = this.conn.wrongInputPositive(turn, false);
 		}
-		for (IntConsumer c : this.ntl) {
-			c.accept(turn);
+		byte[] whash = new byte[32];
+		byte[] thash = new byte[32];
+		this.conn.readArr(whash);
+		this.conn.readArr(thash);
+		for (NextTurnListener c : this.ntl) {
+			c.nextTurn(turn, whash, thash);
 		}
 	}
 	
@@ -107,12 +111,12 @@ public class RemoteWorld implements World, Executable<IOException> {
 	}
 	
 	@Override
-	public void addNextTurnListener(IntConsumer listener) {
+	public void addNextTurnListener(NextTurnListener listener) {
 		this.ntl.add(listener);
 	}
 	
 	@Override
-	public void removeNextTurnListener(IntConsumer listener) {
+	public void removeNextTurnListener(NextTurnListener listener) {
 		if (!this.ntl.remove(listener)) {
 			throw new IllegalArgumentException("the given listener was not registered!");
 		}

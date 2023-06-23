@@ -51,8 +51,8 @@ public final class Tile {
 	private final List<Unit> units;
 	
 	public Tile(Ground ground) {
-		this.ground = Objects.requireNonNull(ground, "ground is null");
-		this.units  = new ArrayList<>();
+		this.ground       = Objects.requireNonNull(ground, "ground is null");
+		this.units        = new ArrayList<>();
 		this.lastTimeSeen = -1;
 	}
 	
@@ -100,7 +100,7 @@ public final class Tile {
 	}
 	
 	public Ground ground() {
-		return this.ground.unmodifiable();
+		return this.ground;
 	}
 	
 	public int resourceCount() {
@@ -110,25 +110,23 @@ public final class Tile {
 	public Resource resource(int index) {
 		Iterator<Entry<ResourceType, Resource>> iter = this.resources.entrySet().iterator();
 		while (index-- > 0) iter.next();
-		return iter.next().getValue().unmodifiable();
+		return iter.next().getValue();
 	}
 	
 	public List<Resource> resourcesList() {
-		return this.resources.entrySet().stream().map(e -> e.getValue().unmodifiable()).toList();
+		return this.resources.values().stream().toList();
 	}
 	
 	public Stream<Resource> resourcesStream() {
-		return this.resources.entrySet().stream().map(e -> e.getValue().unmodifiable());
+		return this.resources.values().stream();
 	}
 	
 	public Map<ResourceType, Resource> resourcesMap() {
-		Map<ResourceType, Resource> m = new HashMap<>(this.resources);
-		m.replaceAll((t, r) -> r.unmodifiable());
-		return m;
+		return new HashMap<>(this.resources);
 	}
 	
 	public Build build() {
-		return this.build != null ? this.build.unmodifiable() : null;
+		return this.build;
 	}
 	
 	public int unitCount() {
@@ -136,15 +134,15 @@ public final class Tile {
 	}
 	
 	public Unit unit(int index) {
-		return this.units.get(index).unmodifiable();
+		return this.units.get(index);
 	}
 	
 	public List<Unit> unitsList() {
-		return this.units.stream().map(Unit::unmodifiable).toList();
+		return this.units.stream().toList();
 	}
 	
 	public Stream<Unit> unitsStream() {
-		return this.units.stream().map(Unit::unmodifiable);
+		return this.units.stream();
 	}
 	
 	public Tile copy() {
@@ -156,13 +154,13 @@ public final class Tile {
 		Entity<?, ?>[] result = new Entity<?, ?>[s + (this.build != null ? 1 : 0)];
 		int            off;
 		if (this.build != null) {
-			result[0] = this.build.unmodifiable();
+			result[0] = this.build;
 			off       = 1;
 		} else {
 			off = 0;
 		}
 		for (Entity<?, ?> e : this.units) {
-			result[off++] = e.unmodifiable();
+			result[off++] = e;
 		}
 		return result;
 	}

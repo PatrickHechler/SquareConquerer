@@ -17,15 +17,13 @@
 package de.hechler.patrick.games.sc.turn;
 
 import de.hechler.patrick.games.sc.world.entity.Unit;
-import de.hechler.patrick.games.sc.world.resource.Resource;
 
 /**
- * this {@link EntityTurn} class is used to let an unit store resources in a building
+ * used to let units work in/on a building
  * 
+ * @param entity the entity which will work
  * @author Patrick Hechler
- * @param entity   the unit which should make the store operation
- * @param resource the resource which should be stored
  */
-public record StoreTurn(Unit entity, Resource resource) implements EntityTurn {
+public record WorkTurn(Unit entity) implements EntityTurn {
 	
 }

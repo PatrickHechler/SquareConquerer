@@ -5,6 +5,8 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -16,7 +18,7 @@ public class ButtonGrid extends Canvas {
 	
 	private static final long serialVersionUID = 961913053698535524L;
 	
-	private final List<ButtonGridMouseListener> listeners = new LinkedList<>();
+	private final List<ButtonGridListener> listeners = new LinkedList<>();
 	
 	private int bsize;
 	private int xlen;
@@ -34,10 +36,11 @@ public class ButtonGrid extends Canvas {
 		this.xlen  = xlen;
 		this.ylen  = ylen;
 		resetImg();
-		MouseAdapter ma = new BGMouseAdapter();
-		super.addMouseListener(ma);
-		super.addMouseMotionListener(ma);
-		super.addMouseWheelListener(ma);
+		BGAdapter a = new BGAdapter();
+		super.addMouseListener(a);
+		super.addMouseMotionListener(a);
+		super.addMouseWheelListener(a);
+		super.addKeyListener(a);
 	}
 	
 	/**
@@ -45,7 +48,7 @@ public class ButtonGrid extends Canvas {
 	 * 
 	 * @param bgml the mouse listener
 	 */
-	public void addBGMouseListener(ButtonGridMouseListener bgml) {
+	public void addBGListener(ButtonGridListener bgml) {
 		this.listeners.add(bgml);
 	}
 	
@@ -56,7 +59,7 @@ public class ButtonGrid extends Canvas {
 	 * 
 	 * @return <code>true</code> if the listener was register before this operation
 	 */
-	public boolean removeBGMouseListener(ButtonGridMouseListener bgml) {
+	public boolean removeBGMouseListener(ButtonGridListener bgml) {
 		return this.listeners.remove(bgml);
 	}
 	
@@ -65,11 +68,24 @@ public class ButtonGrid extends Canvas {
 	 * 
 	 * @return an array containing all registered mouse listeners
 	 */
-	public ButtonGridMouseListener[] getBGMouseListeners() {
-		return this.listeners.toArray(new ButtonGridMouseListener[this.listeners.size()]);
+	public ButtonGridListener[] getBGMouseListeners() {
+		return this.listeners.toArray(new ButtonGridListener[this.listeners.size()]);
 	}
 	
-	private class BGMouseAdapter extends MouseAdapter {
+	private class BGAdapter extends MouseAdapter implements KeyListener {
+		
+		@Override // does not work for all keys
+		public void keyTyped(@SuppressWarnings("unused") KeyEvent e) {/**/}
+		
+		@Override
+		public void keyPressed(KeyEvent e) {
+			for (ButtonGridListener bgl : ButtonGrid.this.listeners) {
+				bgl.kTyped(e);
+			}
+		}
+		
+		@Override
+		public void keyReleased(@SuppressWarnings("unused") KeyEvent e) {/**/}
 		
 		@Override
 		public void mousePressed(MouseEvent e) {
@@ -79,8 +95,8 @@ public class ButtonGrid extends Canvas {
 			x /= ButtonGrid.this.bsize;
 			int suby = y % ButtonGrid.this.bsize;
 			y /= ButtonGrid.this.bsize;
-			for (ButtonGridMouseListener bgml : ButtonGrid.this.listeners) {
-				bgml.pressed(e, x, y, subx, suby);
+			for (ButtonGridListener bgl : ButtonGrid.this.listeners) {
+				bgl.mPressed(e, x, y, subx, suby);
 			}
 		}
 		
@@ -92,8 +108,8 @@ public class ButtonGrid extends Canvas {
 			x /= ButtonGrid.this.bsize;
 			int suby = y % ButtonGrid.this.bsize;
 			y /= ButtonGrid.this.bsize;
-			for (ButtonGridMouseListener bgml : ButtonGrid.this.listeners) {
-				bgml.released(e, x, y, subx, suby);
+			for (ButtonGridListener bgl : ButtonGrid.this.listeners) {
+				bgl.mReleased(e, x, y, subx, suby);
 			}
 		}
 		
@@ -105,8 +121,8 @@ public class ButtonGrid extends Canvas {
 			x /= ButtonGrid.this.bsize;
 			int suby = y % ButtonGrid.this.bsize;
 			y /= ButtonGrid.this.bsize;
-			for (ButtonGridMouseListener bgml : ButtonGrid.this.listeners) {
-				bgml.moved(e, x, y, subx, suby, false);
+			for (ButtonGridListener bgl : ButtonGrid.this.listeners) {
+				bgl.mMoved(e, x, y, subx, suby, false);
 			}
 		}
 		
@@ -118,8 +134,8 @@ public class ButtonGrid extends Canvas {
 			x /= ButtonGrid.this.bsize;
 			int suby = y % ButtonGrid.this.bsize;
 			y /= ButtonGrid.this.bsize;
-			for (ButtonGridMouseListener bgml : ButtonGrid.this.listeners) {
-				bgml.moved(e, x, y, subx, suby, true);
+			for (ButtonGridListener bgl : ButtonGrid.this.listeners) {
+				bgl.mMoved(e, x, y, subx, suby, true);
 			}
 		}
 		
@@ -131,8 +147,8 @@ public class ButtonGrid extends Canvas {
 			x /= ButtonGrid.this.bsize;
 			int suby = y % ButtonGrid.this.bsize;
 			y /= ButtonGrid.this.bsize;
-			for (ButtonGridMouseListener bgml : ButtonGrid.this.listeners) {
-				bgml.whelling(e, x, y, subx, suby);
+			for (ButtonGridListener bgl : ButtonGrid.this.listeners) {
+				bgl.mWhelling(e, x, y, subx, suby);
 			}
 		}
 		

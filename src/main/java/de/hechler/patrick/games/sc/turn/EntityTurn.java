@@ -23,7 +23,7 @@ import de.hechler.patrick.games.sc.world.entity.Entity;
  * 
  * @author Patrick Hechler
  */
-public sealed interface EntityTurn permits CarryTurn, MoveTurn, StoreTurn {
+public sealed interface EntityTurn permits CarryTurn, MoveTurn, StoreTurn, MineTurn, WorkTurn {
 	
 	/**
 	 * returns the (main) entity on which this turn operates

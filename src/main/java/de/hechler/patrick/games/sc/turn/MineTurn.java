@@ -20,12 +20,12 @@ import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 
 /**
- * this {@link EntityTurn} class is used to let an unit store resources in a building
+ * used to carry resources stored on a tile
  * 
+ * @param entity the entity which will store the resources
+ * @param resource the resource
  * @author Patrick Hechler
- * @param entity   the unit which should make the store operation
- * @param resource the resource which should be stored
  */
-public record StoreTurn(Unit entity, Resource resource) implements EntityTurn {
+public record MineTurn(Unit entity, Resource resource) implements EntityTurn {
 	
 }

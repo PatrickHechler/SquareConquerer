@@ -120,11 +120,6 @@ public abstract class SimpleGroundType extends GroundType {
 		}
 		
 		@Override
-		public Ground unmodifiable() {
-			return this;
-		}
-		
-		@Override
 		public Map<String, Value> values() {
 			return this.vals;
 		}

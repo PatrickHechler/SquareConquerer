@@ -33,11 +33,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.function.IntConsumer;
 
 import de.hechler.patrick.games.sc.addons.Addon;
 import de.hechler.patrick.games.sc.addons.Addons;
@@ -50,9 +50,12 @@ import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.turn.CarryTurn;
 import de.hechler.patrick.games.sc.turn.Direction;
 import de.hechler.patrick.games.sc.turn.EntityTurn;
+import de.hechler.patrick.games.sc.turn.MineTurn;
 import de.hechler.patrick.games.sc.turn.MoveTurn;
+import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.StoreTurn;
 import de.hechler.patrick.games.sc.turn.Turn;
+import de.hechler.patrick.games.sc.turn.WorkTurn;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.entity.Build;
 import de.hechler.patrick.games.sc.world.entity.Entity;
@@ -75,17 +78,17 @@ import de.hechler.patrick.utils.objects.Random2;
  */
 public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	
-	private final User                  root;
-	private final Tile[][]              tiles;
-	private final UserPlacer            placer;
-	private final Map<User, UserWorld>  subWorlds;
-	private final List<IntConsumer>     nextTurnListeneres;
-	private final Map<User, Turn>       userTurns;
-	private final List<Map<User, Turn>> allTurns;
-	private volatile boolean            allowRootTurns;
-	private volatile Tile[][]           starttiles;
-	private volatile byte[]             seed;
-	private volatile Random2            rnd;
+	private final User                   root;
+	private final Tile[][]               tiles;
+	private final UserPlacer             placer;
+	private final Map<User, UserWorld>   subWorlds;
+	private final List<NextTurnListener> nextTurnListeneres;
+	private final Map<User, Turn>        userTurns;
+	private final List<Map<User, Turn>>  allTurns;
+	private volatile boolean             allowRootTurns;
+	private volatile Tile[][]            starttiles;
+	private volatile byte[]              seed;
+	private volatile Random2             rnd;
 	
 	private CompleteWorld(User root, Tile[][] tiles, UserPlacer placer) {
 		this.root               = root;
@@ -207,10 +210,9 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		return digest.digest(data);
 	}
 	
-	@SuppressWarnings("unused")
 	private void executeNTL(byte[] myhash, byte[] turnhash) {
-		for (IntConsumer r : this.nextTurnListeneres) {
-			r.accept(this.allTurns.size());
+		for (NextTurnListener r : this.nextTurnListeneres) {
+			r.nextTurn(this.allTurns.size(), myhash, turnhash);
 		}
 	}
 	
@@ -576,13 +578,13 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	
 	/** {@inheritDoc} */
 	@Override
-	public synchronized void addNextTurnListener(IntConsumer listener) {
+	public synchronized void addNextTurnListener(NextTurnListener listener) {
 		this.nextTurnListeneres.add(listener);
 	}
 	
 	/** {@inheritDoc} */
 	@Override
-	public synchronized void removeNextTurnListener(IntConsumer listener) {
+	public synchronized void removeNextTurnListener(NextTurnListener listener) {
 		this.nextTurnListeneres.remove(listener);
 	}
 	
@@ -591,7 +593,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 * if the user is the root user this operation will fail if {@link #allowRootTurns()} is <code>false</code><br>
 	 * if the user does not belong to this world this operation will fail
 	 * <p>
-	 * when all users have finished their turn, all turns are executed in random order and then the next turn starts.
+	 * when the current user has finished its turn, the turn is executed in random order and then the next turn starts.
 	 * <p>
 	 * {@inheritDoc}
 	 */
@@ -604,34 +606,39 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			if (e.entity().owner() != t.world.user()) throw new IllegalArgumentException("turn uses not owned entities");
 		}
 		this.userTurns.put(t.world.user(), t);
-		if (this.userTurns.size() >= (this.allowRootTurns ? this.root.users().keySet().size() + 1 : this.root.users().keySet().size())) {
-			executeTurn();
-		}
+		executeTurn();
 	}
 	
 	private synchronized void executeTurn() {
-		List<EntityTurn>      list = new ArrayList<>();                         // list is sorted: user names and then entity turns
+		int turnNum = turn();
+		if (turnNum < 0) {
+			return;
+		}
+		NavigableMap<String, User> map = new TreeMap<>(this.allowRootTurns ? this.root.users() : this.root.subUsers());
+		turnNum %= map.size();
+		User usr      = map.values().stream().skip(turnNum).findFirst().orElseThrow();
+		Turn execTurn = this.userTurns.get(usr);
+		if (execTurn == null) {
+			return;
+		}
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		Connection            conn = Connection.createUnsecure(this.root, baos, this);
-		for (Turn userturn : this.userTurns.values()) {
-			list.addAll(userturn.turns());
-			try {
-				userturn.sendTurn(conn);
-			} catch (IOException e) {
-				throw new IOError(e);
-			}
+		try {
+			execTurn.sendTurn(conn);
+		} catch (IOException e) {
+			throw new IOError(e);
 		}
 		this.allTurns.add(new HashMap<>(this.userTurns));
-		for (EntityTurn et : randomOrder(list)) {
+		for (EntityTurn et : randomOrder(execTurn.turns())) {
 			try {
 				Entity<?, ?> e = et.entity();
 				Tile         t = this.tiles[e.x()][e.y()];
-				executeEntityTurn(et, e, t);
+				executeEntityTurn(et, t);
 			} catch (TurnExecutionException e) {
 				System.err.println(String.format("error while executing the user turn: %s: %s", et.entity().owner(), e.type));
 				e.printStackTrace();
 			} catch (Exception e) {
-				System.err.println(String.format("error while executing the user turn: %s: %s", et.entity().owner(), ErrorType.UNKNOWN));
+				System.err.println(String.format("error while executing the user turn: %s:", et.entity().owner()));
 				e.printStackTrace();
 			}
 		}
@@ -639,16 +646,14 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	}
 	
 	@SuppressWarnings("preview")
-	private void executeEntityTurn(EntityTurn turn, Entity<?, ?> e, Tile t) throws TurnExecutionException {
+	private void executeEntityTurn(EntityTurn turn, Tile t) throws TurnExecutionException {
 		switch (turn) {
-		case MoveTurn mt -> {
-			checkHasUnit(e, t);
-			Unit            u    = (Unit) e;
-			List<Direction> dirs = mt.dirs();
+		case MoveTurn(Unit u, List<Direction> dirs) -> {
+			checkHasUnit(u, t);
 			if (u.moveRange() < dirs.size()) throw new TurnExecutionException(ErrorType.INVALID_TURN);
 			for (Direction dir : dirs) {
-				int  x       = e.x();
-				int  y       = e.y();
+				int  x       = u.x();
+				int  y       = u.y();
 				Tile newTile = this.tiles[x + dir.xadd][y + dir.yadd];
 				Tile oldTile = this.tiles[x][y];
 				u.changePos(x + dir.xadd, y + dir.yadd, newTile, oldTile);
@@ -666,21 +671,34 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 				}
 			}
 		}
-		case CarryTurn ct -> {
-			checkHasUnit(e, t);
+		case CarryTurn(Unit u, Resource res) -> {
+			checkHasUnit(u, t);
 			Build b = t.build();
 			if (b == null) throw new TurnExecutionException(ErrorType.INVALID_TURN);
-			if (!(e instanceof Unit u)) throw new TurnExecutionException(ErrorType.INVALID_TURN);
-			b.giveRes(u, ct.res(), this.rnd);
+			b.giveRes(u, res, this.rnd);
 		}
-		case StoreTurn st -> {
-			checkHasUnit(e, t);
+		case StoreTurn(Unit u, Resource res) -> {
+			checkHasUnit(u, t);
 			Build b = t.build();
 			if (b == null) throw new TurnExecutionException(ErrorType.INVALID_TURN);
-			if (!(e instanceof Unit u)) throw new TurnExecutionException(ErrorType.INVALID_TURN);
-			b.store(u, st.resource(), st.amount());
+			b.store(u, res);
 		}
-		default -> throw new AssertionError(String.format("unknown entity turn type: %s/%s", turn.getClass().getModule(), turn.getClass().getName()));
+		case MineTurn(Unit u, Resource res) -> {
+			checkHasUnit(u, t);
+			Resource r = t.removeResource(res, this.rnd);
+			try {
+				u.addResource(r);
+			} catch (Throwable err) {
+				t.addResource(r);
+				throw err;
+			}
+		}
+		case WorkTurn(Unit u) -> {
+			checkHasUnit(u, t);
+			Build b = t.build();
+			if (b == null) throw new TurnExecutionException(ErrorType.INVALID_TURN);
+			b.work(u);
+		}
 		}
 	}
 	
@@ -767,10 +785,10 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 */
 	public static final class Builder implements World {
 		
-		private List<IntConsumer> nextTurnListeners = new ArrayList<>();
-		private final Tile[][]    tiles;
-		private final Random2     rnd;
-		private final User        root;
+		private List<NextTurnListener> nextTurnListeners = new ArrayList<>();
+		private final Tile[][]         tiles;
+		private final Random2          rnd;
+		private final User             root;
 		
 		private int resourceMask = 7;
 		
@@ -809,12 +827,18 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		}
 		
 		private void executeNTL() {
-			for (IntConsumer r : this.nextTurnListeners) {
-				r.accept(-1);
+			for (NextTurnListener r : this.nextTurnListeners) {
+				r.nextTurn(-1, null, null);
 			}
 		}
 		
-		/** {@inheritDoc} */
+		/**
+		 * just returns <code>-1</code>
+		 * <p>
+		 * {@inheritDoc}
+		 * 
+		 * @return <code>-1</code>
+		 */
 		@Override
 		public int turn() {
 			return -1;
@@ -1252,7 +1276,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 					Tile t = ots[y];
 					if (t == null) throw new IllegalStateException("there is a null tile!");
 					t = t.copy();
-					if (t.ground() == null) throw new NullPointerException("there is a tile with a null ground!");
+					if (t.ground() == null) throw new IllegalStateException("there is a tile with a null ground!");
 					if (t.ground().type() == GroundType.NOT_EXPLORED_TYPE) throw new IllegalStateException("there is a tile with a not yet explored ground!");
 					ts[y] = t;
 				}
@@ -1292,13 +1316,13 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		
 		/** {@inheritDoc} */
 		@Override
-		public void addNextTurnListener(IntConsumer listener) {
+		public void addNextTurnListener(NextTurnListener listener) {
 			this.nextTurnListeners.add(listener);
 		}
 		
 		/** {@inheritDoc} */
 		@Override
-		public void removeNextTurnListener(IntConsumer listener) {
+		public void removeNextTurnListener(NextTurnListener listener) {
 			this.nextTurnListeners.remove(listener);
 		}
 		

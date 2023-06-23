@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.IntConsumer;
 
 import de.hechler.patrick.games.sc.addons.Addons;
 import de.hechler.patrick.games.sc.addons.addable.AddableType;
@@ -33,6 +32,7 @@ import de.hechler.patrick.games.sc.addons.addable.GroundType;
 import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.values.BooleanValue;
@@ -56,7 +56,7 @@ import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 import de.hechler.patrick.utils.interfaces.Executable;
 
-public class OpenWorld implements IntConsumer {
+public class OpenWorld implements NextTurnListener {
 	
 	private final Connection conn;
 	private final World      world;
@@ -154,6 +154,8 @@ public class OpenWorld implements IntConsumer {
 	 * <ol>
 	 * <li>receive {@link #NOTIFY_NEXT_TURN}</li>
 	 * <li>receive {@link Connection#readInt() int} turn</li>
+	 * <li>receive {@link Connection#readArr(byte[]) byte[]} world hash (SHA-256: 32 bytes)</li>
+	 * <li>receive {@link Connection#readArr(byte[]) byte[]} turn hash (SHA-256: 32 bytes)</li>
 	 * </ol>
 	 */
 	public static final int NOTIFY_NEXT_TURN = 0x12C6AEAE;
@@ -201,11 +203,15 @@ public class OpenWorld implements IntConsumer {
 	}
 	
 	@Override
-	public void accept(int value) { // next turn listener: turn value starts
+	public void nextTurn(int turn, byte[] whash, byte[] thash) {
+		assert whash == null || whash.length == 32;
+		assert thash == null || thash.length == 32;
+		assert turn >= -1;
 		try {
 			doBlockedServer(this.conn, () -> {
 				this.conn.writeInt(NOTIFY_NEXT_TURN);
-				this.conn.writeInt(value);
+				this.conn.writeArr(whash);
+				this.conn.writeArr(thash);
 			});
 		} catch (IOException e) {
 			try {

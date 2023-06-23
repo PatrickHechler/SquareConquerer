@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
-import java.util.function.IntConsumer;
 
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.entity.Build;
@@ -330,13 +330,13 @@ public class UserWorld implements World {
 	}
 	
 	@Override
-	public void addNextTurnListener(IntConsumer listener) {
+	public void addNextTurnListener(NextTurnListener listener) {
 		// well technically you can now remove the handler with a different user world or the complete world
 		this.cw.addNextTurnListener(listener);
 	}
 	
 	@Override
-	public void removeNextTurnListener(IntConsumer listener) {
+	public void removeNextTurnListener(NextTurnListener listener) {
 		this.cw.removeNextTurnListener(listener);
 	}
 	

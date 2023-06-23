@@ -75,6 +75,11 @@ public class User implements Closeable {
 		return this.parent == null;
 	}
 	
+	public User rootClone() {
+		Secret0 ms = this.s;
+		return new User(new Secret0(ms.name, ms._pw));
+	}
+	
 	public User get(String name) {
 		Objects.requireNonNull(name, "name");
 		@SuppressWarnings("resource")
@@ -316,7 +321,7 @@ public class User implements Closeable {
 	}
 	
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		if (this.s == null) {
 			return;
 		}
@@ -441,7 +446,7 @@ public class User implements Closeable {
 						cb.put(i, '\0');
 					}
 				}
-				User   sub  = new User(this, new Secret0("", pw));
+				User sub = new User(this, new Secret0("", pw));
 				sub.load(conn);
 				User old = this.childs.put(sub.name(), sub);
 				assert old == null;

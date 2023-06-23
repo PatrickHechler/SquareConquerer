@@ -35,6 +35,7 @@ public abstract non-sealed class Unit extends Entity<UnitType, Unit> {
 		super(uuid);
 	}
 	
+	public static final String WORK_EFFICIENCY = "work:efficiency";
 	public static final String MOVE_RANGE = "move:range";
 	public static final String CARRY      = "carry";
 	
@@ -58,6 +59,10 @@ public abstract non-sealed class Unit extends Entity<UnitType, Unit> {
 			Resource old = ((Resource) ((WorldThingValue) val).value());
 			old.add(add);
 		}
+	}
+
+	public int workEfficency() {
+		return intValue(WORK_EFFICIENCY).value();
 	}
 	
 }

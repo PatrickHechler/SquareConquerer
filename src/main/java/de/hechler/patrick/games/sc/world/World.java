@@ -19,8 +19,8 @@ package de.hechler.patrick.games.sc.world;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.IntConsumer;
 
+import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.entity.Entity;
@@ -38,9 +38,9 @@ public interface World {
 	
 	Tile tile(int x, int y);
 
-	void addNextTurnListener(IntConsumer listener);
+	void addNextTurnListener(NextTurnListener listener);
 	
-	void removeNextTurnListener(IntConsumer listener);
+	void removeNextTurnListener(NextTurnListener listener);
 	
 	void finish(Turn t);
 	

@@ -16,6 +16,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world.entity;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,8 @@ import de.hechler.patrick.games.sc.addons.addable.BuildType;
 import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.error.ErrorType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.values.IntValue;
+import de.hechler.patrick.games.sc.values.MapValue;
 import de.hechler.patrick.games.sc.values.TypeValue;
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.WorldThingValue;
@@ -32,18 +35,25 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public abstract non-sealed class Build extends Entity<BuildType, Build> {
 	
-	public static final String STORE = "store";
+	public static final String STORE             = "store";
+	public static final String NEEDED_RESOURCES  = "need:resource";
+	public static final String NEEDED_WORK_TURNS = "need:work:turns";
 	
 	public Build(UUID uuid) {
 		super(uuid);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public Map<TypeValue<ResourceType>, WorldThingValue> resources() {
+		return (Map) mapValue(STORE).value();
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private Optional<Resource> resource(ResourceType res) {
-		Map<Value, Value> map = mapValue(STORE).value();
-		Value             val = map.get(new TypeValue(res.name, res));
+		Map<TypeValue<ResourceType>, WorldThingValue> map = resources();
+		WorldThingValue                               val = map.get(new TypeValue(res.name, res));
 		if (val == null) return Optional.empty();
-		return (Optional) ((WorldThingValue) val).asOptional();
+		return (Optional) val.asOptional();
 	}
 	
 	public void giveRes(Unit u, Resource res, Random2 r) throws TurnExecutionException {
@@ -58,12 +68,29 @@ public abstract non-sealed class Build extends Entity<BuildType, Build> {
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void store(Unit u, Resource resource, int amount) {
+	public void store(Unit u, Resource resource) {
 		resource(resource.type()).ifPresentOrElse(r -> r.add(resource), () -> {
-			ResourceType      res = resource.type();
-			Map<Value, Value> map = mapValue(STORE).value();
+			ResourceType                                  res = resource.type();
+			Map<TypeValue<ResourceType>, WorldThingValue> map = new HashMap<>(resources());
 			map.put(new TypeValue(res.name, res), new WorldThingValue(res.name, resource));
+			value(new MapValue<TypeValue<ResourceType>, WorldThingValue>(STORE, map));
 		});
+	}
+	
+	public void work(Unit u) throws TurnExecutionException {
+		Map<Value, Value> map = mapValue(NEEDED_RESOURCES).value();
+		if (!map.isEmpty()) {
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		}
+		int val = intValue(NEEDED_WORK_TURNS).value();
+		if (val < 1) {
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		}
+		int e = u.workEfficency();
+		if (e < 0) {
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		}
+		value(new IntValue(NEEDED_WORK_TURNS, Math.max(0, val - e)));
 	}
 	
 }
