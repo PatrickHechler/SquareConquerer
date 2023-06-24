@@ -17,6 +17,7 @@
 package de.hechler.patrick.games.sc.ui.display;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Desktop;
@@ -67,23 +68,20 @@ public class PageDisplay {
 	
 	public JDialog display(Page p) {
 		JDialog d = new JDialog();
-		d.setLocationByPlatform(true);
-		return display(p, d);
+		return display(p, d, null);
 	}
 	
 	public JDialog display(Page p, Frame f) {
 		JDialog d = new JDialog(f);
-		d.setLocationRelativeTo(f);
-		return display(p, d);
+		return display(p, d, f);
 	}
 	
 	public JDialog display(Page p, Window w) {
 		JDialog d = new JDialog(w);
-		d.setLocationRelativeTo(w);
-		return display(p, d);
+		return display(p, d, w);
 	}
 	
-	public JDialog display(Page p, JDialog d) {
+	public JDialog display(Page p, JDialog d, Component relative) {
 		d.setTitle(p.title());
 		JPanel dp = new JPanel();
 		dp.setLayout(null);
@@ -126,7 +124,7 @@ public class PageDisplay {
 			}
 		}
 		dp.setPreferredSize(new Dimension(maxx, yoff));
-		return initDialog(d);
+		return initDialog(d, relative);
 	}
 	
 	private static int pageAddSepBlock(JPanel dp, int yoff, SeparatingBlock sb) {
@@ -253,10 +251,10 @@ public class PageDisplay {
 		return pref;
 	}
 	
-	public static JDialog initDialog(JDialog d) {
+	public static JDialog initDialog(JDialog d, Component relative) {
 		d.setModalityType(ModalityType.APPLICATION_MODAL);
 		d.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		d.getRootPane().getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke("ESCAPE"), "escape");
+		d.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "escape");
 		d.getRootPane().getActionMap().put("escape", new AbstractAction() {
 			
 			private static final long serialVersionUID = 2109799710377947913L;
@@ -298,6 +296,7 @@ public class PageDisplay {
 			scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		}
+		d.setLocationRelativeTo(relative);
 		d.setVisible(true);
 		return d;
 	}

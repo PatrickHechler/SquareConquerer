@@ -1,3 +1,19 @@
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.ui.display.world;
 
 import java.awt.Dimension;
@@ -43,13 +59,13 @@ import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JTree;
-import javax.swing.WindowConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import de.hechler.patrick.games.sc.Settings;
@@ -57,6 +73,7 @@ import de.hechler.patrick.games.sc.addons.Addon;
 import de.hechler.patrick.games.sc.addons.Addons;
 import de.hechler.patrick.games.sc.addons.GroupTree;
 import de.hechler.patrick.games.sc.addons.TheBaseAddonProvider;
+import de.hechler.patrick.games.sc.addons.addable.GroundType;
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.ui.display.PageDisplay;
@@ -69,6 +86,7 @@ import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
 import de.hechler.patrick.games.sc.world.entity.Build;
 import de.hechler.patrick.games.sc.world.ground.Ground;
+import de.hechler.patrick.games.sc.world.ground.SimpleGroundType;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
@@ -107,6 +125,7 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private Object data;
 	
+	private int modifiers;
 	private int mode;
 	private int x;
 	private int y;
@@ -122,27 +141,128 @@ public class WorldDisplay implements ButtonGridListener {
 		System.out.println("exec: x: " + this.x + " y: " + this.y);
 		if (this.world instanceof CompleteWorld.Builder b) {
 			switch (this.data) {
-			case Ground g -> {
+			case Ground g when this.modifiers == InputEvent.BUTTON1_DOWN_MASK -> {
 				try {// save to use UUID.random, because the game did not start, so it does not need to be reproduced
 					b.setGround(this.x, this.y, g.type().withValues(g.values(), UUID.randomUUID()));
 				} catch (TurnExecutionException e) {
 					JOptionPane.showMessageDialog(this.frame, "error while setting the ground: " + e.toString(), "error on set Ground", JOptionPane.ERROR_MESSAGE);
 				}
 			}
-			case Resource r -> {
+			case Resource r when this.modifiers == InputEvent.BUTTON1_DOWN_MASK -> {
 				try {// save to use UUID.random, because the game did not start, so it does not need to be reproduced
 					b.addResource(this.x, this.y, r.type().withValues(r.values(), UUID.randomUUID()));
 				} catch (TurnExecutionException e) {
-					JOptionPane.showMessageDialog(this.frame, "error while adding the resource: " + e.toString(), "error on add Resource", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this.frame, "error while adding the resource: " + e.toString(), "error on add Resource",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			case Resource r when this.modifiers == InputEvent.BUTTON3_DOWN_MASK -> {
+				try {// save to use UUID.random, because the game did not start, so it does not need to be reproduced
+					b.removeResource(this.x, this.y, r.type().withValues(r.values(), UUID.randomUUID()));
+				} catch (TurnExecutionException e) {
+					JOptionPane.showMessageDialog(this.frame, "error while adding the resource: " + e.toString(), "error on add Resource",
+							JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			case null, default -> {
-				
+				JDialog d = new JDialog(this.frame);
+				d.setTitle("choose action");
+				JPanel dp = new JPanel();
+				dp.setLayout(null);
+				d.setContentPane(dp);
+				int  maxx;
+				int  yoff;
+				Tile t = b.get(this.x, this.y);
+				if (t == null) {
+					JButton btn = new JButton("empty tile");
+					btn.setLocation(0, 0);
+					btn.setSize(btn.getPreferredSize());
+					dp.add(btn);
+					maxx = btn.getWidth();
+					yoff = btn.getHeight();
+					btn.addActionListener(e -> chooseGround(GroundType.NOT_EXPLORED_TYPE));
+				} else {
+					JLabel l = new JLabel("ground: ");
+					l.setLocation(0, 0);
+					l.setSize(l.getPreferredSize());
+					dp.add(l);
+					maxx = l.getWidth();
+					JButton btn = new JButton(t.ground().type().localName);
+					l.setLocation(maxx, 0);
+					l.setSize(l.getPreferredSize());
+					dp.add(l);
+					maxx = btn.getWidth();
+					yoff = Math.max(l.getHeight(), btn.getHeight());
+					btn.addActionListener(e -> chooseGround(t.ground().type()));
+					if (t.resourceCount() != 0) {
+						l = new JLabel("resources: ");
+						l.setLocation(0, yoff);
+						l.setSize(l.getPreferredSize());
+						dp.add(l);
+						JList<?> list = new JList<>(t.resourcesStream().map(r -> r.type().localName).toArray());
+						list.setLocation(l.getWidth(), yoff);
+						list.setSize(list.getPreferredSize());
+						dp.add(list);
+						maxx = Math.max(maxx, l.getWidth() + list.getWidth());
+						yoff += Math.max(l.getHeight(), list.getHeight());
+					}
+					if (t.build() != null) {
+						l = new JLabel("build: " + t.build().type().localName);
+						l.setLocation(0, yoff);
+						l.setSize(l.getPreferredSize());
+						dp.add(l);
+						maxx = Math.max(maxx, l.getWidth());
+						yoff += l.getHeight();
+					}
+					if (t.unitCount() != 0) {
+						l = new JLabel("resources: ");
+						l.setLocation(0, yoff);
+						l.setSize(l.getPreferredSize());
+						dp.add(l);
+						JList<?> list = new JList<>(t.unitsStream().map(u -> u.type().localName).toArray());
+						list.setLocation(l.getWidth(), yoff);
+						list.setSize(list.getPreferredSize());
+						dp.add(list);
+						maxx = Math.max(maxx, l.getWidth() + list.getWidth());
+						yoff += Math.max(l.getHeight(), list.getHeight());
+					}
+				}
+				JButton btn = new JButton("set ground");
+				btn.setLocation(0, yoff);
+				btn.setSize(btn.getPreferredSize());
+				dp.add(btn);
+				btn.addActionListener(e -> chooseGround(d, GroundType.NOT_EXPLORED_TYPE));
+				maxx = Math.max(maxx, btn.getWidth());
+				yoff += btn.getHeight();
+				btn = new JButton("add resource");
+				btn.setLocation(0, yoff);
+				btn.setSize(btn.getPreferredSize());
+				dp.add(btn);
+				btn.addActionListener(e -> chooseResource(d, true));
+				maxx = Math.max(maxx, btn.getWidth());
+				yoff += btn.getHeight();
+				btn = new JButton("remove resource");
+				btn.setLocation(0, yoff);
+				btn.setSize(btn.getPreferredSize());
+				dp.add(btn);
+				btn.addActionListener(e -> chooseResource(d, false));
+				maxx = Math.max(maxx, btn.getWidth());
+				yoff += btn.getHeight();
+				dp.setPreferredSize(new Dimension(maxx, yoff));
+				PageDisplay.initDialog(d, this.frame);
 			}
 			}
 		} else {
-			
+			System.out.println("else");
 		}
+	}
+	
+	private void chooseResource(JDialog parent, boolean add) {
+		//TODO
+	}
+
+	private void chooseGround(JDialog parent, GroundType def) {
+		//TODO
 	}
 	
 	/** {@inheritDoc} */
@@ -297,11 +417,12 @@ public class WorldDisplay implements ButtonGridListener {
 		} else if (this.mode == MODE_DRAG_MARK) {
 			updateBtns();
 		}
-		this.x    = x;
-		this.y    = y;
-		this.lx   = -1;
-		this.ly   = -1;
-		this.mode = MODE_PRESS;
+		this.x         = x;
+		this.y         = y;
+		this.lx        = -1;
+		this.ly        = -1;
+		this.mode      = MODE_PRESS;
+		this.modifiers = e.getModifiersEx();
 	}
 	
 	/** {@inheritDoc} */
@@ -500,7 +621,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JTree dtree = new JTree(droot);
 		dtree.setRootVisible(true);
 		dp.add(dtree);
-		PageDisplay.initDialog(d);
+		PageDisplay.initDialog(d, this.frame);
 	}
 	
 	private Menu menuSave() {
@@ -707,7 +828,6 @@ public class WorldDisplay implements ButtonGridListener {
 	private void doStartServer(MenuItem mi) {
 		JDialog dialog = new JDialog(this.frame);
 		dialog.setTitle("Open Server");
-		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		
 		JPanel dp = new JPanel();
 		dialog.setContentPane(dp);
@@ -792,7 +912,7 @@ public class WorldDisplay implements ButtonGridListener {
 			}
 			dialog.dispose();
 		});
-		PageDisplay.initDialog(dialog);
+		PageDisplay.initDialog(dialog, this.frame);
 	}
 	
 	private Menu menuBuild() {
@@ -837,10 +957,10 @@ public class WorldDisplay implements ButtonGridListener {
 				CompleteWorld.Builder b;
 				try {
 					b = new CompleteWorld.Builder(root, this.world.xlen(), this.world.ylen());
-					for (int x = 0, xlen = this.world.xlen(); x < xlen; x++) {
-						for (int y = 0, ylen = this.world.ylen(); y < ylen; y++) {
-							Tile t = this.world.tile(x, y);
-							b.setTile(x, y, t);
+					for (int cx = 0, xlen = this.world.xlen(); cx < xlen; cx++) {
+						for (int cy = 0, ylen = this.world.ylen(); cy < ylen; cy++) {
+							Tile t = this.world.tile(cx, cy);
+							b.setTile(cx, cy, t);
 						}
 					}
 				} catch (Throwable t) {
@@ -928,6 +1048,12 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private void updateBtn(BufferedImage img, Graphics2D g, int x, int y, int bsize) {
+		if (this.world instanceof CompleteWorld.Builder b) {
+			if (b.get(x, y) == null) {
+				this.grid.paintBtn(x, y, GroundType.NOT_EXPLORED_GRND.image(bsize, bsize));
+				return;
+			}
+		}
 		Tile t = this.world.tile(x, y);
 		g.drawImage(t.ground().image(bsize, bsize), 0, 0, bsize, bsize, null);
 		Build b = t.build();
