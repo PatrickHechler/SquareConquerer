@@ -18,7 +18,6 @@ package de.hechler.patrick.games.sc.addons;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import de.hechler.patrick.games.sc.addons.addable.AddableType;
 import de.hechler.patrick.games.sc.ui.pages.Page;
@@ -34,8 +33,8 @@ public abstract class Addon {
 	public final Map<String, ? extends AddableType<?, ?>> add;
 	public final String                                   licenseName;
 	private TextOnlyPage                                  license;
-	private Optional<Page>                                credits;
-	private Optional<Page>                                help;
+	private Page                                          credits;
+	private Page                                          help;
 	
 	public Addon(String name, String localName, String[] groups, Version version, Map<String, ? extends AddableType<?, ?>> add, String licenseName) {
 		this.name        = Objects.requireNonNull(name, "name is null");
@@ -63,22 +62,22 @@ public abstract class Addon {
 		return this.license;
 	}
 	
-	protected abstract Optional<Page> loadCredits();
+	protected abstract Page loadCredits();
 	
 	public abstract boolean hasCredits();
 	
-	public Optional<Page> credits() {
+	public Page credits() {
 		if (this.credits == null) {
 			this.credits = this.loadCredits();
 		}
 		return this.credits;
 	}
 	
-	protected abstract Optional<Page> loadHelp();
+	protected abstract Page loadHelp();
 	
 	public abstract boolean hasHelp();
 	
-	public Optional<Page> help() {
+	public Page help() {
 		if (this.help == null) {
 			this.help = this.loadHelp();
 		}

@@ -47,6 +47,7 @@ import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 
 import de.hechler.patrick.games.sc.ui.pages.Page;
 import de.hechler.patrick.games.sc.ui.pages.PageBlock;
@@ -254,6 +255,7 @@ public class PageDisplay {
 	
 	public static JDialog initDialog(JDialog d) {
 		d.setModalityType(ModalityType.APPLICATION_MODAL);
+		d.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		d.getRootPane().getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke("ESCAPE"), "escape");
 		d.getRootPane().getActionMap().put("escape", new AbstractAction() {
 			

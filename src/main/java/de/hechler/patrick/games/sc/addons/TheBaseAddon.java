@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Optional;
 
 import de.hechler.patrick.games.sc.addons.addable.AddableType;
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
@@ -34,14 +33,26 @@ import de.hechler.patrick.games.sc.ui.pages.PageEntry.TextEntry;
 import de.hechler.patrick.games.sc.ui.pages.TextOnlyPage;
 import de.hechler.patrick.utils.objects.Version;
 
+/**
+ * the base addon, the only addon which always must be enabled<br>
+ * it only adds the not explored ground
+ * 
+ * @author Patrick Hechler
+ */
 public class TheBaseAddon extends Addon {
 	
+	/**
+	 * the version of the base addon/game
+	 */
 	public static final Version VERSION = new Version(1, 0, 0);
 	
-	public static final String BASE_PROVIDER_NAME = "base:SquareConquerer";
+	/**
+	 * the name of the base addon
+	 */
+	public static final String BASE_ADDON_NAME = "base:SquareConquerer";
 	
 	TheBaseAddon() {
-		super(BASE_PROVIDER_NAME, "Square Conquerer", new String[0], VERSION, Map.of(GroundType.NOT_EXPLORED_TYPE.name, GroundType.NOT_EXPLORED_TYPE), "AGPL v3+");
+		super(BASE_ADDON_NAME, "Square Conquerer", new String[0], VERSION, Map.of(GroundType.NOT_EXPLORED_TYPE.name, GroundType.NOT_EXPLORED_TYPE), "AGPL v3+");
 	}
 	
 	/** {@inheritDoc} */
@@ -54,6 +65,7 @@ public class TheBaseAddon extends Addon {
 		}
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public boolean hasCredits() {
 		return true;
@@ -61,15 +73,16 @@ public class TheBaseAddon extends Addon {
 	
 	/** {@inheritDoc} */
 	@Override
-	protected Optional<Page> loadCredits() {
-		return Optional.of(new Page("Square Conquerer Credits", //
+	protected Page loadCredits() {
+		return new Page("Square Conquerer Credits", //
 				new EntryBlock(//
 						new TextEntry("Almoust everything: "), //
 						new LinkEntry("Patrick Hechler", URI.create("https://github.com/PatrickHechler")) //
 				)//
-		));
+		);
 	}
 	
+	/** {@inheritDoc} */
 	@Override
 	public boolean hasHelp() {
 		return true; // thats a lie
@@ -77,10 +90,10 @@ public class TheBaseAddon extends Addon {
 	
 	/** {@inheritDoc} */
 	@Override
-	protected Optional<Page> loadHelp() {
-		return Optional.of(new Page("Square Conquerer Help", //
+	protected Page loadHelp() {
+		return new Page("Square Conquerer Help", //
 				new EntryBlock(new TextEntry("there is no help, good luck"))//
-		));
+		);
 	}
 	
 	/** {@inheritDoc} */

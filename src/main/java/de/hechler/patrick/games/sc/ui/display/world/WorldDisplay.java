@@ -5,6 +5,7 @@ import java.awt.EventQueue;
 import java.awt.Frame;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
+import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Menu;
@@ -27,39 +28,58 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOError;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.nio.channels.ClosedByInterruptException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.JTree;
+import javax.swing.WindowConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import de.hechler.patrick.games.sc.Settings;
 import de.hechler.patrick.games.sc.addons.Addon;
 import de.hechler.patrick.games.sc.addons.Addons;
 import de.hechler.patrick.games.sc.addons.GroupTree;
 import de.hechler.patrick.games.sc.addons.TheBaseAddonProvider;
 import de.hechler.patrick.games.sc.connect.Connection;
+import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.ui.display.PageDisplay;
 import de.hechler.patrick.games.sc.ui.display.TextPageDisplay;
+import de.hechler.patrick.games.sc.ui.display.world.utils.NumberDocument;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
 import de.hechler.patrick.games.sc.world.OpenWorld;
 import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
 import de.hechler.patrick.games.sc.world.entity.Build;
+import de.hechler.patrick.games.sc.world.ground.Ground;
+import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
 public class WorldDisplay implements ButtonGridListener {
 	
-	private World      world;
-	private ButtonGrid grid;
-	private ScrollPane scroll;
-	private Frame      frame;
+	private Thread                serverThread;
+	private Map<User, Connection> connects;
+	private World                 world;
+	private ButtonGrid            grid;
+	private ScrollPane            scroll;
+	private Frame                 frame;
 	
 	public WorldDisplay(World world) {
 		this.world  = world;
@@ -85,6 +105,8 @@ public class WorldDisplay implements ButtonGridListener {
 	private static final int MODE_DRAG_MARK   = 2;
 	private static final int MODE_SINGLE_MARK = 3;
 	
+	private Object data;
+	
 	private int mode;
 	private int x;
 	private int y;
@@ -95,8 +117,32 @@ public class WorldDisplay implements ButtonGridListener {
 		System.out.println("exec mark: x: " + this.x + " y: " + this.y + " lx: " + this.lx + " ly: " + this.ly);
 	}
 	
+	@SuppressWarnings("preview")
 	private void execTileAct() {
 		System.out.println("exec: x: " + this.x + " y: " + this.y);
+		if (this.world instanceof CompleteWorld.Builder b) {
+			switch (this.data) {
+			case Ground g -> {
+				try {// save to use UUID.random, because the game did not start, so it does not need to be reproduced
+					b.setGround(this.x, this.y, g.type().withValues(g.values(), UUID.randomUUID()));
+				} catch (TurnExecutionException e) {
+					JOptionPane.showMessageDialog(this.frame, "error while setting the ground: " + e.toString(), "error on set Ground", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			case Resource r -> {
+				try {// save to use UUID.random, because the game did not start, so it does not need to be reproduced
+					b.addResource(this.x, this.y, r.type().withValues(r.values(), UUID.randomUUID()));
+				} catch (TurnExecutionException e) {
+					JOptionPane.showMessageDialog(this.frame, "error while adding the resource: " + e.toString(), "error on add Resource", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			case null, default -> {
+				
+			}
+			}
+		} else {
+			
+		}
 	}
 	
 	/** {@inheritDoc} */
@@ -179,8 +225,8 @@ public class WorldDisplay implements ButtonGridListener {
 	public void mMoved(MouseEvent e, int x, int y, int subx, int suby, boolean dragging) {
 		if (dragging) {
 			this.mode = MODE_DRAG_MARK;
-			x         = Math.max(0, Math.min(x, this.world.xlen()));
-			y         = Math.max(0, Math.min(y, this.world.ylen()));
+			x         = Math.max(0, Math.min(x, this.world.xlen() - 1));
+			y         = Math.max(0, Math.min(y, this.world.ylen() - 1));
 			if (x == this.lx && y == this.ly) {
 				return;
 			}
@@ -264,6 +310,8 @@ public class WorldDisplay implements ButtonGridListener {
 	public void mReleased(MouseEvent e, int x, int y, int subx, int suby) {
 		int ty = this.y;
 		int tx = this.x;
+		x = Math.max(0, Math.min(x, this.world.xlen() - 1));
+		y = Math.max(0, Math.min(y, this.world.ylen() - 1));
 		if (x != tx || y != ty || this.mode == MODE_DRAG_MARK) {
 			execMarkedAct();
 			this.mode = MODE_NONE;
@@ -389,7 +437,7 @@ public class WorldDisplay implements ButtonGridListener {
 			if (!a.hasCredits()) return;
 			MenuItem mi = new MenuItem(a.localName);
 			m.add(mi);
-			mi.addActionListener(e -> this.pd.display(a.credits().get(), this.frame));
+			mi.addActionListener(e -> this.pd.display(a.credits(), this.frame));
 		}, this.addLicenseRBC, m);
 		return m;
 	}
@@ -616,11 +664,135 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private Menu menuServer() {
 		Menu m = new Menu("Server");
-		if (this.world instanceof CompleteWorld) {
-			
+		if (this.world instanceof CompleteWorld || this.serverThread != null) {
+			MenuItem start = new MenuItem(this.serverThread == null ? "start" : "stop");
+			m.add(start);
+			start.addActionListener(e -> {
+				Thread st = this.serverThread;
+				if (st != null) {
+					Map<User, Connection> cs = this.connects;
+					st.interrupt();
+					try {
+						st.join(1000L);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+					if (cs != null) {
+						for (Connection c : cs.values()) {
+							try {
+								c.logOut();
+							} catch (IOException e1) {
+								e1.printStackTrace();
+							}
+						}
+					}
+					if (st.isAlive()) {
+						JOptionPane.showMessageDialog(this.frame, "I told the server to stop", "server still running", JOptionPane.WARNING_MESSAGE);
+					} else {
+						JOptionPane.showMessageDialog(this.frame, "the server stoped", "server shut down", JOptionPane.INFORMATION_MESSAGE);
+					}
+					start.setName("start");
+					return;
+				}
+				doStartServer(start);
+			});
 		}
-		// TODO
+		if (this.world instanceof CompleteWorld) {
+			MenuItem addUsr = new MenuItem("add User");
+			m.add(addUsr);
+		}
 		return m;
+	}
+	
+	private void doStartServer(MenuItem mi) {
+		JDialog dialog = new JDialog(this.frame);
+		dialog.setTitle("Open Server");
+		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		
+		JPanel dp = new JPanel();
+		dialog.setContentPane(dp);
+		dp.setLayout(new GridLayout(3, 2));
+		dp.add(new JLabel("Port:"));
+		NumberDocument portDoc = new NumberDocument(0x0000, 0xFFFF);
+		JTextField     portTxt = new JTextField(5);
+		portTxt.setDocument(portDoc);
+		portTxt.setText(Integer.toString(Connection.DEFAULT_PORT));
+		dp.add(portTxt);
+		
+		JCheckBox serverPWCB = new JCheckBox("Server Password");
+		serverPWCB.setToolTipText(//
+				/*		*/"<html>a server password lets remote users create accounts themself<br>" //
+						+ "It is then no longer needed to add all users manually,<br>"//
+						+ "but everyone with the server password can create an infinit amount of users</html>"//
+		);
+		dp.add(serverPWCB);
+		JPasswordField serverPWPF = new JPasswordField(16);
+		dp.add(serverPWPF);
+		serverPWPF.setVisible(false);
+		serverPWCB.addActionListener(oe -> serverPWPF.setVisible(serverPWCB.isSelected()));
+		
+		dp.add(new JLabel());
+		JButton start = new JButton("start");
+		dp.add(start);
+		
+		start.addActionListener(oe -> {
+			try {
+				int          port = portDoc.getNumber();
+				ServerSocket ss   = new ServerSocket(port);
+				synchronized (WorldDisplay.this) {
+					final Map<User, Connection> cs = new HashMap<>();
+					this.connects = cs;
+					
+					this.serverThread = Settings.threadStart(() -> {
+						try {
+							if (!(this.world instanceof CompleteWorld cw)) {
+								synchronized (this) {
+									if (this.serverThread == Thread.currentThread()) {
+										this.serverThread = null;
+										this.connects     = null;
+									}
+								}
+								return;
+							}
+							Connection.ServerAccept.accept(ss, cw, (conn, sok) -> Settings.threadStart(() -> {
+								String name = conn.usr.name();
+								if (sok == null) {
+									JOptionPane.showMessageDialog(this.frame, "'" + name + "' disconnected", "remote log out", JOptionPane.INFORMATION_MESSAGE);
+								} else {
+									InetAddress addr = sok.getInetAddress();
+									JOptionPane.showMessageDialog(this.frame, "'" + name + "' logged in from " + addr, "remote log in",
+											JOptionPane.INFORMATION_MESSAGE);
+								}
+							}), cs, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
+						} catch (IOException err) {
+							if (err instanceof ClosedByInterruptException || Thread.interrupted()) { return; }
+							JOptionPane.showMessageDialog(this.frame, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+						} finally {
+							synchronized (this) {
+								if (this.serverThread == Thread.currentThread()) {
+									this.serverThread = null;
+									this.connects     = null;
+								}
+							}
+							for (Connection conn : cs.values()) {
+								try {
+									conn.logOut();
+								} catch (IOException e1) {
+									e1.printStackTrace();
+								}
+							}
+						}
+					});
+				}
+				mi.setName("stop");
+				JOptionPane.showMessageDialog(this.frame, "server started on port " + ss.getLocalPort(), "Server Started", JOptionPane.INFORMATION_MESSAGE);
+			} catch (Exception err) {
+				JOptionPane.showMessageDialog(dialog, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			dialog.dispose();
+		});
+		PageDisplay.initDialog(dialog);
 	}
 	
 	private Menu menuBuild() {
@@ -688,14 +860,33 @@ public class WorldDisplay implements ButtonGridListener {
 		return m;
 	}
 	
+	private final BiConsumer<GroupTree, Menu> addHelps = addHelps();
+	
+	private BiConsumer<GroupTree, Menu> addHelps() {
+		return (gt, mi) -> {
+			Menu inner = new Menu(gt.name());
+			gt.forEach(a -> {
+				if (a == TheBaseAddonProvider.BASE_ADDON || !a.hasHelp()) return;
+				MenuItem i = new MenuItem(a.localName);
+				inner.add(i);
+				mi.addActionListener(e -> this.pd.display(a.help()));
+			}, this.addHelps, inner);
+			mi.add(inner);
+		};
+	}
+	
 	private Menu menuHelp(GroupTree gt) {
 		Menu         m            = new Menu("Help");
 		MenuShortcut helpShortCut = new MenuShortcut(KeyEvent.VK_F1);
 		MenuItem     help         = new MenuItem("HELP ME!", helpShortCut);
 		m.add(help);
-		help.addActionListener(e -> {
-			this.pd.display(TheBaseAddonProvider.BASE_ADDON.help().get(), this.frame);
-		});
+		help.addActionListener(e -> this.pd.display(TheBaseAddonProvider.BASE_ADDON.help(), this.frame));
+		gt.forEach(a -> {
+			if (a == TheBaseAddonProvider.BASE_ADDON || !a.hasHelp()) return;
+			MenuItem mi = new MenuItem(a.localName);
+			m.add(mi);
+			mi.addActionListener(e -> this.pd.display(a.help()));
+		}, this.addHelps, m);
 		return m;
 	}
 	

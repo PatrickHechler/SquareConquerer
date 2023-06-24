@@ -68,8 +68,8 @@ public class Settings {
 		
 	}
 	
-	public static void threadStart(Runnable task) {
-		OF_VIRTUAL.start(task);
+	public static Thread threadStart(Runnable task) {
+		return OF_VIRTUAL.start(task);
 	}
 	
 }
