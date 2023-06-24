@@ -37,9 +37,12 @@ public abstract non-sealed class Unit extends Entity<UnitType, Unit> {
 		super(uuid);
 	}
 	
-	public static final String WORK_EFFICIENCY = "work:efficiency";
-	public static final String MOVE_RANGE      = "move:range";
-	public static final String CARRY           = "carry";
+	public static final String WORK_EFFICIENCY     = "work:efficiency";
+	public static final String WORK_EFFICIENCY_LOC = "work efficiency";
+	public static final String MOVE_RANGE          = "move:range";
+	public static final String MOVE_RANGE_LOC      = "move range";
+	public static final String CARRY               = "carry";
+	public static final String CARRY_LOC           = "carry resources";
 	
 	public int moveRange() {
 		return intValue(MOVE_RANGE).value();

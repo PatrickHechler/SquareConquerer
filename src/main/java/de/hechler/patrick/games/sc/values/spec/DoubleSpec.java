@@ -22,10 +22,14 @@ import de.hechler.patrick.games.sc.values.DoubleValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record DoubleSpec(String name, double min, double max) implements ValueSpec {
+public record DoubleSpec(String name, String localName, double min, double max) implements ValueSpec {
 	
 	public DoubleSpec {
 		Objects.requireNonNull(name, "name");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public DoubleValue withValue(double val) {

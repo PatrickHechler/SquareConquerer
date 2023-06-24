@@ -35,9 +35,12 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public abstract non-sealed class Build extends Entity<BuildType, Build> {
 	
-	public static final String STORE             = "store";
-	public static final String NEEDED_RESOURCES  = "need:resource";
-	public static final String NEEDED_WORK_TURNS = "need:work:turns";
+	public static final String STORE                 = "store";
+	public static final String STORE_LOC             = "stored resources";
+	public static final String NEEDED_RESOURCES      = "need:resource";
+	public static final String NEEDED_RESOURCES_LOC  = "need resource for construction";
+	public static final String NEEDED_WORK_TURNS     = "need:work:turns";
+	public static final String NEEDED_WORK_TURNS_LOC = "need work turns for construction";
 	
 	public Build(UUID uuid) {
 		super(uuid);

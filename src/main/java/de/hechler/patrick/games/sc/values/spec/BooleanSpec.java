@@ -22,10 +22,14 @@ import de.hechler.patrick.games.sc.values.BooleanValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record BooleanSpec(String name) implements ValueSpec {
+public record BooleanSpec(String name, String localName) implements ValueSpec {
 	
 	public BooleanSpec {
 		Objects.requireNonNull(name, "name");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public BooleanValue withValue(boolean val) {

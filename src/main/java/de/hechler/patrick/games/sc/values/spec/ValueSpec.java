@@ -19,9 +19,11 @@ package de.hechler.patrick.games.sc.values.spec;
 import de.hechler.patrick.games.sc.values.Value;
 
 public sealed interface ValueSpec
-	permits BooleanSpec, DoubleSpec, EnumSpec<?>, IntSpec, JustASpec, LongSpec, MapSpec, StringSpec, TypeSpec<?>, UserListSpec, UserSpec, WorldThingSpec {
+		permits BooleanSpec, DoubleSpec, EnumSpec<?>, IntSpec, JustASpec, LongSpec, MapSpec, StringSpec, TypeSpec<?>, ListSpec, UserSpec, WorldThingSpec {
 	
 	String name();
+	
+	String localName();
 	
 	void validate(Value v);
 	

@@ -23,16 +23,20 @@ import de.hechler.patrick.games.sc.values.TypeValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record TypeSpec<T extends AddableType<T, ?>>(String name, Class<T> cls) implements ValueSpec {
+public record TypeSpec<T extends AddableType<T, ?>>(String name, String localName, Class<T> cls) implements ValueSpec {
 	
 	public TypeSpec {
 		Objects.requireNonNull(name, "name");
-		Objects.requireNonNull(cls, "value");
+		Objects.requireNonNull(cls, "cls");
 		cls.asSubclass(AddableType.class);
 	}
 	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
+	}
+	
 	public TypeValue<T> withValue(T value) {
-		return new TypeValue<>(this.name, this.cls.cast(value));
+		return new TypeValue<>(this.name, this.cls.cast(Objects.requireNonNull(value, "value")));
 	}
 	
 	@Override
@@ -42,4 +46,3 @@ public record TypeSpec<T extends AddableType<T, ?>>(String name, Class<T> cls) i
 	}
 	
 }
-

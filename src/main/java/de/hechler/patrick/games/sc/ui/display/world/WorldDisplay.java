@@ -32,6 +32,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.ScrollPane;
 import java.awt.Toolkit;
+import java.awt.event.FocusAdapter;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -47,7 +48,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.nio.channels.ClosedByInterruptException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -56,6 +59,7 @@ import java.util.function.Consumer;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -73,22 +77,47 @@ import de.hechler.patrick.games.sc.addons.Addon;
 import de.hechler.patrick.games.sc.addons.Addons;
 import de.hechler.patrick.games.sc.addons.GroupTree;
 import de.hechler.patrick.games.sc.addons.TheBaseAddonProvider;
+import de.hechler.patrick.games.sc.addons.addable.AddableType;
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
+import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.ui.display.PageDisplay;
 import de.hechler.patrick.games.sc.ui.display.TextPageDisplay;
+import de.hechler.patrick.games.sc.ui.display.world.utils.FPNumberDocument;
 import de.hechler.patrick.games.sc.ui.display.world.utils.NumberDocument;
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.values.BooleanValue;
+import de.hechler.patrick.games.sc.values.DoubleValue;
+import de.hechler.patrick.games.sc.values.EnumValue;
+import de.hechler.patrick.games.sc.values.IntValue;
+import de.hechler.patrick.games.sc.values.LongValue;
+import de.hechler.patrick.games.sc.values.StringValue;
+import de.hechler.patrick.games.sc.values.TypeValue;
+import de.hechler.patrick.games.sc.values.UserValue;
+import de.hechler.patrick.games.sc.values.Value;
+import de.hechler.patrick.games.sc.values.spec.BooleanSpec;
+import de.hechler.patrick.games.sc.values.spec.DoubleSpec;
+import de.hechler.patrick.games.sc.values.spec.EnumSpec;
+import de.hechler.patrick.games.sc.values.spec.IntSpec;
+import de.hechler.patrick.games.sc.values.spec.JustASpec;
+import de.hechler.patrick.games.sc.values.spec.ListSpec;
+import de.hechler.patrick.games.sc.values.spec.LongSpec;
+import de.hechler.patrick.games.sc.values.spec.MapSpec;
+import de.hechler.patrick.games.sc.values.spec.StringSpec;
+import de.hechler.patrick.games.sc.values.spec.TypeSpec;
+import de.hechler.patrick.games.sc.values.spec.UserSpec;
+import de.hechler.patrick.games.sc.values.spec.ValueSpec;
+import de.hechler.patrick.games.sc.values.spec.WorldThingSpec;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
 import de.hechler.patrick.games.sc.world.OpenWorld;
 import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
 import de.hechler.patrick.games.sc.world.entity.Build;
 import de.hechler.patrick.games.sc.world.ground.Ground;
-import de.hechler.patrick.games.sc.world.ground.SimpleGroundType;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
+import de.hechler.patrick.utils.objects.Random2;
 
 public class WorldDisplay implements ButtonGridListener {
 	
@@ -144,25 +173,20 @@ public class WorldDisplay implements ButtonGridListener {
 			case Ground g when this.modifiers == InputEvent.BUTTON1_DOWN_MASK -> {
 				try {// save to use UUID.random, because the game did not start, so it does not need to be reproduced
 					b.setGround(this.x, this.y, g.type().withValues(g.values(), UUID.randomUUID()));
-				} catch (TurnExecutionException e) {
-					JOptionPane.showMessageDialog(this.frame, "error while setting the ground: " + e.toString(), "error on set Ground", JOptionPane.ERROR_MESSAGE);
-				}
+					updateBtn(this.x, this.y);
+				} catch (@SuppressWarnings("unused") TurnExecutionException e) {/**/}
 			}
 			case Resource r when this.modifiers == InputEvent.BUTTON1_DOWN_MASK -> {
 				try {// save to use UUID.random, because the game did not start, so it does not need to be reproduced
 					b.addResource(this.x, this.y, r.type().withValues(r.values(), UUID.randomUUID()));
-				} catch (TurnExecutionException e) {
-					JOptionPane.showMessageDialog(this.frame, "error while adding the resource: " + e.toString(), "error on add Resource",
-							JOptionPane.ERROR_MESSAGE);
-				}
+					updateBtn(this.x, this.y);
+				} catch (@SuppressWarnings("unused") TurnExecutionException e) {/**/}
 			}
 			case Resource r when this.modifiers == InputEvent.BUTTON3_DOWN_MASK -> {
 				try {// save to use UUID.random, because the game did not start, so it does not need to be reproduced
 					b.removeResource(this.x, this.y, r.type().withValues(r.values(), UUID.randomUUID()));
-				} catch (TurnExecutionException e) {
-					JOptionPane.showMessageDialog(this.frame, "error while adding the resource: " + e.toString(), "error on add Resource",
-							JOptionPane.ERROR_MESSAGE);
-				}
+					updateBtn(this.x, this.y);
+				} catch (@SuppressWarnings("unused") TurnExecutionException e) {/**/}
 			}
 			case null, default -> {
 				JDialog d = new JDialog(this.frame);
@@ -180,7 +204,7 @@ public class WorldDisplay implements ButtonGridListener {
 					dp.add(btn);
 					maxx = btn.getWidth();
 					yoff = btn.getHeight();
-					btn.addActionListener(e -> chooseGround(GroundType.NOT_EXPLORED_TYPE));
+					btn.addActionListener(e -> chooseGround(d));
 				} else {
 					JLabel l = new JLabel("ground: ");
 					l.setLocation(0, 0);
@@ -193,7 +217,7 @@ public class WorldDisplay implements ButtonGridListener {
 					dp.add(l);
 					maxx = btn.getWidth();
 					yoff = Math.max(l.getHeight(), btn.getHeight());
-					btn.addActionListener(e -> chooseGround(t.ground().type()));
+					btn.addActionListener(e -> chooseGround(d));
 					if (t.resourceCount() != 0) {
 						l = new JLabel("resources: ");
 						l.setLocation(0, yoff);
@@ -203,7 +227,7 @@ public class WorldDisplay implements ButtonGridListener {
 						list.setLocation(l.getWidth(), yoff);
 						list.setSize(list.getPreferredSize());
 						dp.add(list);
-						maxx = Math.max(maxx, l.getWidth() + list.getWidth());
+						maxx  = Math.max(maxx, l.getWidth() + list.getWidth());
 						yoff += Math.max(l.getHeight(), list.getHeight());
 					}
 					if (t.build() != null) {
@@ -211,7 +235,7 @@ public class WorldDisplay implements ButtonGridListener {
 						l.setLocation(0, yoff);
 						l.setSize(l.getPreferredSize());
 						dp.add(l);
-						maxx = Math.max(maxx, l.getWidth());
+						maxx  = Math.max(maxx, l.getWidth());
 						yoff += l.getHeight();
 					}
 					if (t.unitCount() != 0) {
@@ -223,7 +247,7 @@ public class WorldDisplay implements ButtonGridListener {
 						list.setLocation(l.getWidth(), yoff);
 						list.setSize(list.getPreferredSize());
 						dp.add(list);
-						maxx = Math.max(maxx, l.getWidth() + list.getWidth());
+						maxx  = Math.max(maxx, l.getWidth() + list.getWidth());
 						yoff += Math.max(l.getHeight(), list.getHeight());
 					}
 				}
@@ -231,22 +255,22 @@ public class WorldDisplay implements ButtonGridListener {
 				btn.setLocation(0, yoff);
 				btn.setSize(btn.getPreferredSize());
 				dp.add(btn);
-				btn.addActionListener(e -> chooseGround(d, GroundType.NOT_EXPLORED_TYPE));
-				maxx = Math.max(maxx, btn.getWidth());
+				btn.addActionListener(e -> chooseGround(d));
+				maxx  = Math.max(maxx, btn.getWidth());
 				yoff += btn.getHeight();
-				btn = new JButton("add resource");
+				btn   = new JButton("add resource");
 				btn.setLocation(0, yoff);
 				btn.setSize(btn.getPreferredSize());
 				dp.add(btn);
 				btn.addActionListener(e -> chooseResource(d, true));
-				maxx = Math.max(maxx, btn.getWidth());
+				maxx  = Math.max(maxx, btn.getWidth());
 				yoff += btn.getHeight();
-				btn = new JButton("remove resource");
+				btn   = new JButton("remove resource");
 				btn.setLocation(0, yoff);
 				btn.setSize(btn.getPreferredSize());
 				dp.add(btn);
 				btn.addActionListener(e -> chooseResource(d, false));
-				maxx = Math.max(maxx, btn.getWidth());
+				maxx  = Math.max(maxx, btn.getWidth());
 				yoff += btn.getHeight();
 				dp.setPreferredSize(new Dimension(maxx, yoff));
 				PageDisplay.initDialog(d, this.frame);
@@ -257,12 +281,207 @@ public class WorldDisplay implements ButtonGridListener {
 		}
 	}
 	
-	private void chooseResource(JDialog parent, boolean add) {
-		//TODO
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private void costumize(JDialog grandParent, JDialog parent, AddableType<?, ?> type, int modifiers) {
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(new JScrollPane(dp));
+		d.setTitle("customize type");
+		int                maxx = 0;
+		int                yoff = 0;
+		Map<String, Value> val  = type.withDefaultValues(this.world, new Random2(), this.x, this.y).values();
+		for (ValueSpec spec : type.values.values()) {
+			JLabel l = new JLabel(spec.localName() + ": ");
+			l.setLocation(0, yoff);
+			l.setSize(l.getPreferredSize());
+			dp.add(l);
+			switch (spec) {
+			case @SuppressWarnings("preview") BooleanSpec b -> {
+				JCheckBox cb = new JCheckBox();
+				cb.setSelected(((BooleanValue) val.get(b.name())).value());
+				cb.addActionListener(e -> val.put(b.name(), b.withValue(cb.isSelected())));
+				cb.setSize(cb.getPreferredSize());
+				cb.setLocation(l.getWidth(), yoff);
+				dp.add(cb);
+				maxx  = Math.max(maxx, l.getWidth() + cb.getWidth());
+				yoff += Math.max(l.getHeight(), cb.getHeight());
+			}
+			case @SuppressWarnings("preview") DoubleSpec n -> {
+				FPNumberDocument doc = new FPNumberDocument(n.min(), n.max());
+				JTextField       t   = new JTextField(doc, Double.toString(((DoubleValue) val.get(n.name())).value()), 0);
+				t.addFocusListener(new FocusAdapter() {
+					
+					@Override
+					public void focusLost(@SuppressWarnings("unused") java.awt.event.FocusEvent e) {
+						val.put(n.name(), n.withValue(doc.getNumber(((DoubleValue) val.get(n.name())).value())));
+					}
+					
+				});
+				t.setSize(t.getPreferredSize());
+				t.setLocation(l.getWidth(), yoff);
+				dp.add(t);
+				maxx  = Math.max(maxx, l.getWidth() + t.getWidth());
+				yoff += Math.max(l.getHeight(), t.getHeight());
+			}
+			case @SuppressWarnings("preview") EnumSpec s -> {
+				JComboBox<?> cb = new JComboBox<>(s.cls().getEnumConstants());
+				cb.setSelectedIndex(((EnumValue<?>) val.get(s.name())).value().ordinal());
+				cb.addActionListener(e -> val.put(s.name(), s.withValue((Enum) cb.getSelectedItem())));
+				cb.setSize(cb.getPreferredSize());
+				cb.setLocation(l.getWidth(), yoff);
+				dp.add(cb);
+				maxx  = Math.max(maxx, l.getWidth() + cb.getWidth());
+				yoff += Math.max(l.getHeight(), cb.getHeight());
+			}
+			case @SuppressWarnings("preview") IntSpec i -> {
+				NumberDocument doc = new NumberDocument(i.min(), i.max());
+				JTextField     t   = new JTextField(doc, Integer.toString(((IntValue) val.get(i.name())).value()), 0);
+				t.addFocusListener(new FocusAdapter() {
+					
+					@Override
+					public void focusLost(@SuppressWarnings("unused") java.awt.event.FocusEvent e) {
+						val.put(i.name(), i.withValue(doc.getNumber(((IntValue) val.get(i.name())).value())));
+					}
+					
+				});
+				t.setSize(t.getPreferredSize());
+				t.setLocation(l.getWidth(), yoff);
+				dp.add(t);
+				maxx  = Math.max(maxx, l.getWidth() + t.getWidth());
+				yoff += Math.max(l.getHeight(), t.getHeight());
+			}
+			case @SuppressWarnings("preview") JustASpec j -> {
+				JLabel ol = new JLabel("just some value");
+				ol.setSize(ol.getPreferredSize());
+				ol.setLocation(l.getWidth(), yoff);
+				dp.add(ol);
+				maxx  = Math.max(maxx, l.getWidth() + ol.getWidth());
+				yoff += Math.max(l.getHeight(), ol.getHeight());
+			}
+			case @SuppressWarnings("preview") LongSpec n -> {
+				NumberDocument doc = new NumberDocument(n.min(), n.max());
+				JTextField     t   = new JTextField(doc, Long.toString(((LongValue) val.get(n.name())).value()), 0);
+				t.addFocusListener(new FocusAdapter() {
+					
+					@Override
+					public void focusLost(@SuppressWarnings("unused") java.awt.event.FocusEvent e) {
+						val.put(n.name(), n.withValue(doc.getNumber(((LongValue) val.get(n.name())).value())));
+					}
+					
+				});
+				t.setSize(t.getPreferredSize());
+				t.setLocation(l.getWidth(), yoff);
+				dp.add(t);
+				maxx  = Math.max(maxx, l.getWidth() + t.getWidth());
+				yoff += Math.max(l.getHeight(), t.getHeight());
+			}
+			case @SuppressWarnings("preview") StringSpec s -> {
+				JTextField t = new JTextField(((StringValue) val.get(s.name())).value());
+				t.addFocusListener(new FocusAdapter() {
+					
+					@Override
+					public void focusLost(@SuppressWarnings("unused") java.awt.event.FocusEvent e) {
+						val.put(s.name(), s.withValue(t.getText()));
+					}
+					
+				});
+				t.setSize(t.getPreferredSize());
+				t.setLocation(l.getWidth(), yoff);
+				dp.add(t);
+				maxx  = Math.max(maxx, l.getWidth() + t.getWidth());
+				yoff += Math.max(l.getHeight(), t.getHeight());
+			}
+			case @SuppressWarnings("preview") TypeSpec t -> {
+				List<AddableType<?, ?>> list = new ArrayList<>();
+				for (Addon a : Addons.addons().values()) {
+					for (AddableType<?, ?> at : a.add.values()) {
+						if (t.cls().isInstance(at)) list.add(at);
+					}
+				}
+				JComboBox<?> cb = new JComboBox<>(list.toArray());
+				cb.setSelectedItem(((TypeValue<?>) val.get(t.name())).value());
+				cb.addActionListener(e -> val.put(t.name(), t.withValue((AddableType<?, ?>) cb.getSelectedItem())));
+				cb.setSize(cb.getPreferredSize());
+				cb.setLocation(l.getWidth(), yoff);
+				dp.add(cb);
+				maxx  = Math.max(maxx, l.getWidth() + cb.getWidth());
+				yoff += Math.max(l.getHeight(), cb.getHeight());
+			}
+			case @SuppressWarnings("preview") UserSpec u -> {
+				List<User> list = new ArrayList<>();
+				list.addAll(this.world.user().users().values());
+				list.sort((a,b) -> a.name().compareTo(b.name()));
+				JComboBox<?> cb = new JComboBox<>(list.toArray());
+				cb.setSelectedItem(((UserValue) val.get(u.name())).value());
+				cb.addActionListener(e -> val.put(u.name(), u.withValue((User) cb.getSelectedItem())));
+				cb.setSize(cb.getPreferredSize());
+				cb.setLocation(l.getWidth(), yoff);
+				dp.add(cb);
+				maxx  = Math.max(maxx, l.getWidth() + cb.getWidth());
+				yoff += Math.max(l.getHeight(), cb.getHeight());
+			}
+			case @SuppressWarnings("preview") ListSpec u -> {
+				//TODO
+			}
+			case @SuppressWarnings("preview") MapSpec m -> {
+				//TODO
+			}
+			case @SuppressWarnings("preview") WorldThingSpec w -> {
+				//TODO
+			}
+			}
+		}
 	}
-
-	private void chooseGround(JDialog parent, GroundType def) {
-		//TODO
+	
+	private void chooseResource(JDialog parent, boolean add) {
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(new JScrollPane(dp));
+		d.setTitle("choose resource");
+		List<ResourceType> list = new ArrayList<>();
+		for (Addon a : Addons.addons().values()) {
+			for (AddableType<?, ?> at : a.add.values()) {
+				if (at instanceof ResourceType rt) list.add(rt);
+			}
+		}
+		list.sort((a, b) -> {
+			int c = a.localName.compareTo(b.localName);
+			if (c == 0 && a != b) c = a.name.compareTo(b.name); // well, the user can to try both, the order remains
+			return c;
+		});
+		JComboBox<?> cb = new JComboBox<>(list.stream().map(rt -> rt.localName).toArray());
+		cb.setLocation(0, 0);
+		cb.setSize(cb.getPreferredSize());
+		dp.add(cb);
+		cb.addActionListener(e -> costumize(parent, d, list.get(cb.getSelectedIndex()), add ? InputEvent.BUTTON1_DOWN_MASK : InputEvent.BUTTON3_DOWN_MASK));
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private void chooseGround(JDialog parent) {
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(new JScrollPane(dp));
+		d.setTitle("choose ground");
+		List<GroundType> list = new ArrayList<>();
+		for (Addon a : Addons.addons().values()) {
+			for (AddableType<?, ?> at : a.add.values()) {
+				if (at instanceof GroundType gt) list.add(gt);
+			}
+		}
+		list.sort((a, b) -> {
+			int c = a.localName.compareTo(b.localName);
+			if (c == 0 && a != b) c = a.name.compareTo(b.name); // well, the user can to try both, the order remains
+			return c;
+		});
+		JComboBox<?> cb = new JComboBox<>(list.stream().map(rt -> rt.localName).toArray());
+		cb.setLocation(0, 0);
+		cb.setSize(cb.getPreferredSize());
+		dp.add(cb);
+		cb.addActionListener(e -> costumize(parent, d, list.get(cb.getSelectedIndex()), InputEvent.BUTTON1_DOWN_MASK));
+		PageDisplay.initDialog(d, parent);
 	}
 	
 	/** {@inheritDoc} */
@@ -1045,6 +1264,15 @@ public class WorldDisplay implements ButtonGridListener {
 		}
 		g.dispose();
 		this.grid.repaint();
+	}
+	
+	private void updateBtn(int x, int y) {
+		int           bsize = this.grid.getButtonSize();
+		BufferedImage img   = new BufferedImage(bsize, bsize, BufferedImage.TYPE_INT_RGB);
+		Graphics2D    g     = img.createGraphics();
+		updateBtn(img, g, x, y, bsize);
+		g.dispose();
+		this.grid.repaint(x * bsize, y * bsize, bsize, bsize);
 	}
 	
 	private void updateBtn(BufferedImage img, Graphics2D g, int x, int y, int bsize) {

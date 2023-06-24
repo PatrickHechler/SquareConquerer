@@ -29,14 +29,14 @@ import javax.swing.text.PlainDocument;
  * 
  * @author Patrick Hechler
  */
-public class NumberDocument extends PlainDocument {
+public class FPNumberDocument extends PlainDocument {
 	
 	private static final long serialVersionUID = -9063163520415353449L;
 	
 	private static final Pattern PATTERN = Pattern.compile("^[0-9]+$"); //$NON-NLS-1$
 	
-	private final long minNum;
-	private final long maxNum;
+	private final double minNum;
+	private final double maxNum;
 	
 	/**
 	 * create a new {@link NumberDocument} which is always between
@@ -44,7 +44,7 @@ public class NumberDocument extends PlainDocument {
 	 * @param minNum the minimum number must be at max 0
 	 * @param maxNum the maximum number must be at min 0
 	 */
-	public NumberDocument(long minNum, long maxNum) {
+	public FPNumberDocument(double minNum, double maxNum) {
 		this.minNum = minNum;
 		this.maxNum = maxNum;
 		if (minNum > maxNum) {
@@ -75,9 +75,9 @@ public class NumberDocument extends PlainDocument {
 			int    val  = Integer.parseInt(str0);
 			if (val < this.minNum || val > this.maxNum) {
 				if (this.minNum > 9 && val >= 0) {
-					super.replace(0, getLength(), Long.toString(this.minNum), a);
+					super.replace(0, getLength(), Double.toString(this.minNum), a);
 				} else if (this.maxNum < 0 && val >= 0) {
-					super.replace(0, getLength(), Long.toString(this.maxNum), a);
+					super.replace(0, getLength(), Double.toString(this.maxNum), a);
 				}
 				return;
 			}
@@ -91,14 +91,14 @@ public class NumberDocument extends PlainDocument {
 	 * returns the current number of this document
 	 * <p>
 	 * note that if the document contains an empty or invalid string this method returns 0 (even if 0 is outside of the allowed bounds)<br>
-	 * this call is equivalent to {@link #getNumber(int) getNumber(0)}
+	 * this call is equivalent to {@link #getNumber(double) getNumber(0D)}
 	 * 
 	 * @return the current number of this document
 	 * 
-	 * @see #getNumber(int)
+	 * @see #getNumber(double)
 	 */
-	public int getNumber() {
-		return getNumber(0);
+	public double getNumber() {
+		return getNumber(0D);
 	}
 	
 	/**
@@ -106,37 +106,16 @@ public class NumberDocument extends PlainDocument {
 	 * <br>
 	 * if the document contains an empty or invalid string this method returns <code>empty</code> (even if <code>empty</code> is outside of the allowed bounds)
 	 * 
-	 * @param empty the value to be returned when the document holds an empty or illegal string
+	 * @param empty the value to be returned when the document holds an empty string
 	 * 
 	 * @return the number of this document or <code>empty</code> if there is none
 	 */
-	public int getNumber(int empty) {
+	public double getNumber(double empty) {
 		if (getLength() == 0) {
 			return empty;
 		}
 		try {
-			long val = Long.parseLong(getText(0, getLength()));
-			if (val < this.minNum || val > this.maxNum) return empty;
-			if (val > Integer.MAX_VALUE || val < Integer.MIN_VALUE) throw new IndexOutOfBoundsException("the value " + val + " is outside of the int bounds");
-			return (int) val;
-		} catch (NumberFormatException | BadLocationException e) {
-			throw new ConcurrentModificationException(e);
-		}
-	}
-	
-	/**
-	 * like {@link #getNumber(int)}, but returns and gets a <code>long</code>
-	 * 
-	 * @param empty the value to be returned when the document holds an empty or illegal string
-	 * 
-	 * @return the number of this document or <code>empty</code> if there is none
-	 */
-	public long getNumber(long empty) {
-		if (getLength() == 0) {
-			return empty;
-		}
-		try {
-			long val = Long.parseLong(getText(0, getLength()));
+			double val = Double.parseDouble(getText(0, getLength()));
 			if (val < this.minNum || val > this.maxNum) return empty;
 			return val;
 		} catch (NumberFormatException | BadLocationException e) {

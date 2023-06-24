@@ -34,17 +34,16 @@ import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.Turn;
-import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.values.BooleanValue;
 import de.hechler.patrick.games.sc.values.DoubleValue;
 import de.hechler.patrick.games.sc.values.EnumValue;
 import de.hechler.patrick.games.sc.values.IntValue;
 import de.hechler.patrick.games.sc.values.JustAValue;
+import de.hechler.patrick.games.sc.values.ListValue;
 import de.hechler.patrick.games.sc.values.LongValue;
 import de.hechler.patrick.games.sc.values.MapValue;
 import de.hechler.patrick.games.sc.values.StringValue;
 import de.hechler.patrick.games.sc.values.TypeValue;
-import de.hechler.patrick.games.sc.values.UserListValue;
 import de.hechler.patrick.games.sc.values.UserValue;
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.WorldThingValue;
@@ -496,13 +495,13 @@ public class OpenWorld implements NextTurnListener {
 			conn.writeInt(TYPE_VALUE);
 			conn.writeString(v.value().name);
 		}
-		case @SuppressWarnings("preview") UserListValue v -> {
+		case @SuppressWarnings("preview") ListValue v -> {
 			conn.writeInt(USER_LIST_VALUE);
-			List<User> list = v.value();
+			List<Value> list = v.value();
 			conn.writeInt(list.size());
-			for (User user : list) {
+			for (Value user : list) {
 				conn.writeInt(USER_LIST_VALUE_S);
-				conn.writeString(user.name());
+				writeValue(conn, user);
 			}
 			conn.writeInt(USER_LIST_VALUE_F);
 		}
@@ -581,21 +580,20 @@ public class OpenWorld implements NextTurnListener {
 			return new TypeValue(name, Addons.type(conn.readString()));
 		}
 		case USER_LIST_VALUE -> {
-			List<User> list = new ArrayList<>(conn.readPos());
+			List<Value> list = new ArrayList<>(conn.readPos());
 			for (;;) {
 				if (conn.readInt(USER_LIST_VALUE_S, USER_LIST_VALUE_F) == USER_LIST_VALUE_F) {
 					break;
 				}
-				list.add(conn.usr.get(conn.readString()));
+				list.add(readValue(conn));
 			}
-			return new UserListValue(name, list);
+			return new ListValue(name, list);
 		}
 		case USER_VALUE -> {
 			if (conn.readByte(1, 0) != 0) {
 				return new UserValue(name, conn.usr.get(conn.readString()));
-			} else {
-				return new UserValue(name, null);
 			}
+			return new UserValue(name, null);
 		}
 		case WORLD_THING_VALUE -> {
 			switch (conn.readByte(3, 2, 1, 0)) {

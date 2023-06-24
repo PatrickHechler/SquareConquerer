@@ -30,11 +30,16 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 		super(uuid);
 	}
 	
-	public static final String X          = "x";
-	public static final String Y          = "y";
-	public static final String OWNER      = "owner";
-	public static final String VIEW_RANGE = "view:range";
-	public static final String LIVES      = "lives";
+	public static final String X              = "x";
+	public static final String X_LOC          = "x coordinate";
+	public static final String Y              = "y";
+	public static final String Y_LOC          = "y coordinate";
+	public static final String OWNER          = "owner";
+	public static final String OWNER_LOC      = "owner";
+	public static final String VIEW_RANGE     = "view:range";
+	public static final String VIEW_RANGE_LOC = "view range";
+	public static final String LIVES          = "lives";
+	public static final String LIVES_LOC      = "lives";
 	
 	public int x() {
 		return intValue(X).value();
@@ -64,7 +69,7 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 		result += target.unitsStream().mapToInt(WorldThing::viewBlock).sum();
 		return result;
 	}
-
+	
 	public abstract int defend(Unit unit, int attackStrength);
 	
 }

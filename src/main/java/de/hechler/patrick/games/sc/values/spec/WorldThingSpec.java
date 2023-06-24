@@ -24,11 +24,15 @@ import de.hechler.patrick.games.sc.values.WorldThingValue;
 import de.hechler.patrick.games.sc.world.WorldThing;
 
 @SuppressWarnings("javadoc")
-public record WorldThingSpec(String name, Consumer<WorldThing<?, ?>> validator) implements ValueSpec {
+public record WorldThingSpec(String name, String localName, Consumer<WorldThing<?, ?>> validator) implements ValueSpec {
 	
 	public WorldThingSpec {
 		Objects.requireNonNull(name, "name");
 		Objects.requireNonNull(validator, "validator");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public WorldThingValue withValue(WorldThing<?, ?> val) {

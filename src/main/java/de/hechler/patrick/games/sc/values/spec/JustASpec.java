@@ -22,10 +22,14 @@ import de.hechler.patrick.games.sc.values.JustAValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record JustASpec(String name) implements ValueSpec {
+public record JustASpec(String name, String localName) implements ValueSpec {
 	
 	public JustASpec {
 		Objects.requireNonNull(name, "name");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public JustAValue asValue() {

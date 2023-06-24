@@ -17,7 +17,7 @@
 package de.hechler.patrick.games.sc.values;
 
 public sealed interface Value permits BooleanValue, DoubleValue, EnumValue<?>, IntValue, JustAValue, LongValue, MapValue<?, ?>, StringValue, TypeValue<?>,
-	UserListValue, UserValue, WorldThingValue {
+	ListValue, UserValue, WorldThingValue {
 	
 	String name();
 	

@@ -30,7 +30,8 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public abstract non-sealed class Resource extends WorldThing<ResourceType, Resource> {
 	
-	public static final String AMOUNT = "amount";
+	public static final String AMOUNT     = "amount";
+	public static final String AMOUNT_LOC = "amount";
 	
 	public Resource(UUID uuid) {
 		super(uuid);

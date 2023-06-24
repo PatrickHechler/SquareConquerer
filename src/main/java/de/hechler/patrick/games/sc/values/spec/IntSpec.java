@@ -22,10 +22,14 @@ import de.hechler.patrick.games.sc.values.IntValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record IntSpec(String name, int min, int max) implements ValueSpec {
+public record IntSpec(String name, String localName, int min, int max) implements ValueSpec {
 	
 	public IntSpec {
 		Objects.requireNonNull(name, "name");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public IntValue withValue(int val) {

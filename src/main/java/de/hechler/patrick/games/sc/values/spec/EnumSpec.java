@@ -22,10 +22,15 @@ import de.hechler.patrick.games.sc.values.EnumValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record EnumSpec<T extends Enum<T>>(String name, Class<T> cls) implements ValueSpec {
+public record EnumSpec<T extends Enum<T>>(String name, String localName, Class<T> cls) implements ValueSpec {
 	
 	public EnumSpec {
 		Objects.requireNonNull(name, "name");
+		Objects.requireNonNull(cls, "class");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public EnumValue<T> withValue(T val) {

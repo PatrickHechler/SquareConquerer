@@ -32,7 +32,7 @@ import de.hechler.patrick.games.sc.values.spec.IntSpec;
 import de.hechler.patrick.games.sc.values.spec.JustASpec;
 import de.hechler.patrick.games.sc.values.spec.LongSpec;
 import de.hechler.patrick.games.sc.values.spec.StringSpec;
-import de.hechler.patrick.games.sc.values.spec.UserListSpec;
+import de.hechler.patrick.games.sc.values.spec.ListSpec;
 import de.hechler.patrick.games.sc.values.spec.UserSpec;
 import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.World;
@@ -97,8 +97,8 @@ public abstract sealed class AddableType<M extends AddableType<M, A>, A extends 
 		return (UserSpec) spec(name);
 	}
 	
-	public UserListSpec userListSpec(String name) {
-		return (UserListSpec) spec(name);
+	public ListSpec userListSpec(String name) {
+		return (ListSpec) spec(name);
 	}
 	
 }
