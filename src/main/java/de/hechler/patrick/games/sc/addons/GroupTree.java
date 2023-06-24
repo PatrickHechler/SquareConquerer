@@ -16,9 +16,9 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.addons;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -61,8 +61,8 @@ public class GroupTree {
 		this.name    = name;
 		this.depth   = parent != null ? parent.depth + 1 : 0;
 		this.addFunc = str -> new GroupTree(this, str);
-		this.addons  = new HashMap<>();
-		this.groups  = new HashMap<>();
+		this.addons  = new TreeMap<>();
+		this.groups  = new TreeMap<>();
 	}
 	
 	public boolean isEmpty() {
@@ -128,13 +128,12 @@ public class GroupTree {
 	public boolean contains(Addon addon) {
 		if (this.depth == addon.groupDepth()) {
 			return this.addons.containsKey(addon.name);
-		} else {
-			GroupTree g = this.groups.get(addon.group(this.depth));
-			if (g == null) {
-				return false;
-			}
-			return g.contains(addon);
 		}
+		GroupTree g = this.groups.get(addon.group(this.depth));
+		if (g == null) {
+			return false;
+		}
+		return g.contains(addon);
 	}
 	
 	public <T> void forEach(Consumer<? super Addon> c0, BiConsumer<? super GroupTree, T> c1, T arg) {

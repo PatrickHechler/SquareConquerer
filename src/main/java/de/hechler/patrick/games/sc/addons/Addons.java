@@ -41,7 +41,10 @@ public class Addons {
 	 * if an addon is disabled multiple times, it will have the same effect as disabling it once<br>
 	 * if a non existing addon is disabled, it will be ignored
 	 */
-	public static final String DISABLED_ADDONS_KEY = "squareconquerer.addons.disabled"; //$NON-NLS-1$
+	public static final String DISABLED_ADDONS_KEY          = "squareconquerer.addons.disabled";       //$NON-NLS-1$
+	
+	public static final String DISABLED_ADDONS_NO_ENV_KEY   = "squareconquerer.addons.disabled.noenv"; //$NON-NLS-1$
+	public static final String DISABLED_ADDONS_NO_ENV_VALUE = "noenv";                                 //$NON-NLS-1$
 	
 	private static Map<String, Addon>             addons;
 	private static Map<String, AddableType<?, ?>> added;
@@ -110,7 +113,9 @@ public class Addons {
 				}
 			}
 			removeDisabled(as, System.getProperty(DISABLED_ADDONS_KEY));
-			removeDisabled(as, System.getenv(DISABLED_ADDONS_KEY));
+			if (!DISABLED_ADDONS_NO_ENV_VALUE.equals(System.getProperty(DISABLED_ADDONS_NO_ENV_KEY))) {
+				removeDisabled(as, System.getenv(DISABLED_ADDONS_KEY));
+			}
 			Map<String, AddableType<?, ?>> ad = HashMap.newHashMap(as.size() + (as.size() >>> 3));
 			for (Addon a : as.values()) {
 				a.add.forEach((n, add) -> {

@@ -281,9 +281,15 @@ public class WorldDisplay implements ButtonGridListener {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
+	private <T extends WorldThing<?, T>> void costumize(JDialog grandParent, JDialog parent, AddableType<?, ?> type, int modifiers) {
+		costumize(new JDialog(parent), type.withDefaultValues(this.world, new Random2(), this.x, this.y).values(), type, val -> {
+			// TODO
+		});
+	}
+	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private void costumize(JDialog grandParent, JDialog parent, AddableType<?, ?> type, int modifiers) {
-		JDialog d  = new JDialog(parent);
+	private <T extends WorldThing<?, T>> void costumize(JDialog d, Map<String, Value> startValues, AddableType<?, T> type, Consumer<T> finishJook) {
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(new JScrollPane(dp));
@@ -411,7 +417,7 @@ public class WorldDisplay implements ButtonGridListener {
 			case @SuppressWarnings("preview") UserSpec u -> {
 				List<User> list = new ArrayList<>();
 				list.addAll(this.world.user().users().values());
-				list.sort((a,b) -> a.name().compareTo(b.name()));
+				list.sort((a, b) -> a.name().compareTo(b.name()));
 				JComboBox<?> cb = new JComboBox<>(list.toArray());
 				cb.setSelectedItem(((UserValue) val.get(u.name())).value());
 				cb.addActionListener(e -> val.put(u.name(), u.withValue((User) cb.getSelectedItem())));
@@ -422,13 +428,13 @@ public class WorldDisplay implements ButtonGridListener {
 				yoff += Math.max(l.getHeight(), cb.getHeight());
 			}
 			case @SuppressWarnings("preview") ListSpec u -> {
-				//TODO
+				// TODO
 			}
 			case @SuppressWarnings("preview") MapSpec m -> {
-				//TODO
+				// TODO
 			}
 			case @SuppressWarnings("preview") WorldThingSpec w -> {
-				//TODO
+				// TODO
 			}
 			}
 		}
@@ -734,7 +740,9 @@ public class WorldDisplay implements ButtonGridListener {
 		mb.add(menuCredits(gt));
 		this.frame.setMenuBar(mb);
 		updateBtns();
-		this.frame.setLocationByPlatform(true);
+		if (firstCall) {
+			this.frame.setLocationByPlatform(true);
+		}
 		this.scroll.setPreferredSize(this.grid.getPreferredSize());
 		pack(firstCall);
 	}
@@ -829,18 +837,117 @@ public class WorldDisplay implements ButtonGridListener {
 		GroupTree disabled = Addons.disabledGT();
 		JDialog   d        = new JDialog(this.frame);
 		JPanel    dp       = new JPanel();
+		dp.setLayout(null);
 		d.setContentPane(new JScrollPane(dp));
+		d.setTitle("manage addons");
+		JButton disableBtn = new JButton("disable selected");
+		disableBtn.setLocation(0, 0);
+		disableBtn.setSize(disableBtn.getPreferredSize());
+		dp.add(disableBtn);
+		JButton enableBtn = new JButton("enable selected");
+		// location sat the end (enabled tree width not yet known)
+		enableBtn.setSize(disableBtn.getPreferredSize());
+		dp.add(enableBtn);
+		int                    yoff  = Math.max(disableBtn.getHeight(), enableBtn.getHeight());
 		DefaultMutableTreeNode eroot = new DefaultMutableTreeNode("enabled");
 		enabled.forEach(a -> eroot.add(new DefaultMutableTreeNode(a.localName)), ADD_ADDONS_TO_NODE, eroot);
 		JTree etree = new JTree(eroot);
 		etree.setRootVisible(true);
+		etree.setSize(etree.getPreferredSize());
+		etree.setLocation(0, yoff);
 		dp.add(etree);
 		DefaultMutableTreeNode droot = new DefaultMutableTreeNode("disabled");
 		disabled.forEach(a -> droot.add(new DefaultMutableTreeNode(a.localName)), ADD_ADDONS_TO_NODE, droot);
 		JTree dtree = new JTree(droot);
 		dtree.setRootVisible(true);
+		dtree.setSize(dtree.getPreferredSize());
+		int xoff = Math.max(disableBtn.getWidth(), etree.getWidth());
+		dtree.setLocation(xoff, yoff);
 		dp.add(dtree);
+		enableBtn.setLocation(xoff, 0);
+		xoff += Math.max(enableBtn.getWidth(), dtree.getWidth());
+		yoff += Math.max(etree.getHeight(), dtree.getHeight());
+		JButton finish = new JButton("FINISH");
+		finish.setLocation(0, yoff);
+		finish.setSize(finish.getPreferredSize());
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d,
+					"continue with the addon configuration (your current world will be discarded (and the server will be closed if running))", "change addons",
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return; // the environment is not editable, so disabled it
+			System.setProperty(Addons.DISABLED_ADDONS_NO_ENV_KEY, Addons.DISABLED_ADDONS_NO_ENV_VALUE);
+			StringBuilder b = new StringBuilder();
+			disabled.forEachDeep(a -> append(b, a.name));
+			synchronized (this) {
+				Thread                t  = this.serverThread;
+				Map<User, Connection> cs = this.connects;
+				this.serverThread = null;
+				this.connects     = null;
+				if (t != null) {
+					for (int i = 0; t.isAlive() && i < 10; i++) {
+						t.interrupt();
+						try {
+							t.join(1000L);
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+					}
+					if (t.isAlive()) {
+						JOptionPane.showMessageDialog(d, "I told the server to stop", "server still running", JOptionPane.ERROR_MESSAGE);
+					} else {
+						JOptionPane.showMessageDialog(d, "the server to stoped", "server shut down", JOptionPane.INFORMATION_MESSAGE);
+					}
+				}
+				if (cs != null) {
+					for (Connection conn : cs.values()) {
+						try {
+							conn.logOut();
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+					}
+				}
+			}
+			User oldUsr  = this.world.user();
+			User newUser = oldUsr.rootClone();
+			if (this.world instanceof Closeable clos) {
+				try {
+					clos.close();
+				} catch (IOException e1) {
+					JOptionPane.showMessageDialog(d, "error on world close: " + e1.toString() + " (I will continue and ignore the error)", "error on close",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			oldUsr.close();
+			this.world = new CompleteWorld.Builder(newUser, 16, 16);
+			d.dispose();
+			rebuildFrame(false);
+		});
+		dp.add(finish);
+		dp.setPreferredSize(new Dimension(Math.max(xoff, finish.getWidth()), yoff + finish.getHeight()));
 		PageDisplay.initDialog(d, this.frame);
+	}
+	
+	private static void append(StringBuilder b, String name) {
+		int ci = name.indexOf(':');
+		int bi = name.indexOf('\\');
+		if (ci == -1 && bi == -1) {
+			b.append(name);
+			return;
+		}
+		int index = 0;
+		do {
+			int ni;
+			if (ci > bi) {
+				ni = bi;
+				bi = name.indexOf('\\', ni + 1);
+			} else {
+				ni = ci;
+				ci = name.indexOf(':', ni + 1);
+			}
+			b.append(name, index, ni).append('\\');
+		} while (ci != -1 || bi != -1);
+		b.append(name, index, name.length());
 	}
 	
 	private Menu menuSave() {
