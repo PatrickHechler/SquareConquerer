@@ -1822,41 +1822,28 @@ public class WorldDisplay implements ButtonGridListener {
 		});
 		dp.add(finish);
 		dp.setPreferredSize(new Dimension(Math.max(xoff, finish.getWidth()), yoff + finish.getHeight()));
-		enableBtn.addActionListener(e -> {
-			if (dtree.getSelectionCount() == 0) return;
-			for (TreePath path : dtree.getSelectionPaths()) {
-				Object obj = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
-				if (obj instanceof GroupTree gt) {
-					enabled.transferFrom(gt);
-				} else if (obj instanceof Addon a) {
-					enabled.add(a);
-					disabled.remove(a);
-				} else if ((obj instanceof String) && (!"disabled".equals(obj) || !"enabled".equals(obj))) {
-					enabled.transferFrom(disabled);
-				} else {
-					System.err.println("unknown value: " + obj.getClass() + " : " + obj);
-				}
-			}
-			rebuildManageAddons(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff);
-		});
-		disableBtn.addActionListener(e -> {
-			if (etree.getSelectionCount() == 0) return;
-			for (TreePath path : etree.getSelectionPaths()) {
-				Object obj = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
-				if (obj instanceof GroupTree gt) {
-					disabled.transferFrom(gt);
-				} else if (obj instanceof Addon a) {
-					disabled.add(a);
-					enabled.remove(a);
-				} else if ((obj instanceof String) && (!"disabled".equals(obj) || !"enabled".equals(obj))) {
-					disabled.transferFrom(enabled);
-				} else {
-					System.err.println("unknown value: " + obj.getClass() + " : " + obj);
-				}
-			}
-			rebuildManageAddons(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff);
-		});
+		enableBtn.addActionListener(e -> enableOrDisablePressed(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff, etree, dtree, true));
+		disableBtn.addActionListener(e -> enableOrDisablePressed(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff, etree, dtree, false));
 		dp.repaint();
+	}
+	
+	private void enableOrDisablePressed(GroupTree enabled, GroupTree disabled, JDialog d, JPanel dp, JButton disableBtn, JButton enableBtn, final int origyoff,
+			JTree etree, JTree dtree, boolean doEnable) {
+		if ((doEnable ? dtree : etree).getSelectionCount() == 0) return;
+		for (TreePath path : (doEnable ? dtree : etree).getSelectionPaths()) {
+			Object obj = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+			if (obj instanceof GroupTree gt) {
+				(doEnable ? enabled : disabled).transferFrom(gt);
+			} else if (obj instanceof Addon a) {
+				(doEnable ? enabled : disabled).add(a);
+				(doEnable ? disabled : enabled).remove(a);
+			} else if ((obj instanceof String) && (!"disabled".equals(obj) || !"enabled".equals(obj))) {
+				(doEnable ? enabled : disabled).transferFrom(doEnable ? disabled : enabled);
+			} else {
+				System.err.println("unknown value: " + obj.getClass() + " : " + obj);
+			}
+		}
+		rebuildManageAddons(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff);
 	}
 	
 	private static void append(StringBuilder b, String name) {
@@ -2049,31 +2036,10 @@ public class WorldDisplay implements ButtonGridListener {
 			start.addActionListener(e -> {
 				Thread st = this.serverThread;
 				if (st != null) {
-					Map<User, Connection> cs = this.connects;
-					st.interrupt();
-					try {
-						st.join(1000L);
-					} catch (InterruptedException e1) {
-						e1.printStackTrace();
-					}
-					if (cs != null) {
-						for (Connection c : cs.values()) {
-							try {
-								c.logOut();
-							} catch (IOException e1) {
-								e1.printStackTrace();
-							}
-						}
-					}
-					if (st.isAlive()) {
-						JOptionPane.showMessageDialog(this.frame, "I told the server to stop", "server still running", JOptionPane.WARNING_MESSAGE);
-					} else {
-						JOptionPane.showMessageDialog(this.frame, "the server stoped", "server shut down", JOptionPane.INFORMATION_MESSAGE);
-					}
-					start.setName("start");
-					return;
+					doStopServer(start, st);
+				} else {
+					doStartServer(start);
 				}
-				doStartServer(start);
 			});
 		}
 		if (this.world instanceof CompleteWorld) {
@@ -2081,6 +2047,31 @@ public class WorldDisplay implements ButtonGridListener {
 			m.add(addUsr);
 		}
 		return m;
+	}
+	
+	private void doStopServer(MenuItem start, Thread st) {
+		Map<User, Connection> cs = this.connects;
+		st.interrupt();
+		try {
+			st.join(1000L);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		if (cs != null) {
+			for (Connection c : cs.values()) {
+				try {
+					c.logOut();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		}
+		if (st.isAlive()) {
+			JOptionPane.showMessageDialog(this.frame, "I told the server to stop", "server still running", JOptionPane.WARNING_MESSAGE);
+		} else {
+			JOptionPane.showMessageDialog(this.frame, "the server stoped", "server shut down", JOptionPane.INFORMATION_MESSAGE);
+		}
+		start.setName("start");
 	}
 	
 	private void doStartServer(MenuItem mi) {
