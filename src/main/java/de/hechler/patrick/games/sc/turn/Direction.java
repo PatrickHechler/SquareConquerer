@@ -41,4 +41,26 @@ public enum Direction implements MoveAct {
 		throw new IllegalArgumentException("there is no Direction with the ordinal " + ordinal);
 	}
 	
+	public static Direction of(int xadd, int yadd) {
+		switch (xadd) {
+		case 0:
+			switch (yadd) {
+			case 1:
+				return Y_ADD;
+			case -1:
+				return Y_SUB;
+			default:
+				throw new IllegalArgumentException("xadd: " + xadd + " yadd: " + yadd);
+			}
+		case 1:
+			if (yadd != 0) throw new IllegalArgumentException("xadd: " + xadd + " yadd: " + yadd);
+			return X_ADD;
+		case -1:
+			if (yadd != 0) throw new IllegalArgumentException("xadd: " + xadd + " yadd: " + yadd);
+			return X_SUB;
+		default:
+			throw new IllegalArgumentException("xadd: " + xadd + " yadd: " + yadd);
+		}
+	}
+	
 }

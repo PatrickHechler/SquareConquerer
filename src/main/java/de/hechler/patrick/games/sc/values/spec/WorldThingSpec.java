@@ -17,14 +17,14 @@
 package de.hechler.patrick.games.sc.values.spec;
 
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.WorldThingValue;
 import de.hechler.patrick.games.sc.world.WorldThing;
 
 @SuppressWarnings("javadoc")
-public record WorldThingSpec(String name, String localName, Consumer<WorldThing<?, ?>> validator) implements ValueSpec {
+public record WorldThingSpec(String name, String localName, Predicate<WorldThing<?, ?>> validator) implements ValueSpec {
 	
 	public WorldThingSpec {
 		Objects.requireNonNull(name, "name");
@@ -36,14 +36,14 @@ public record WorldThingSpec(String name, String localName, Consumer<WorldThing<
 	}
 	
 	public WorldThingValue withValue(WorldThing<?, ?> val) {
-		this.validator.accept(val);
+		if (this.validator.test(val)) throw new IllegalArgumentException("the given value is invalid");
 		return new WorldThingValue(this.name, val);
 	}
 	
 	@Override
-	public void validate(Value v) {
+	public void validate(Value v) throws IllegalArgumentException {
 		if (!(v instanceof WorldThingValue wt)) throw new IllegalArgumentException("the given value is no world thing value");
-		this.validator.accept(wt.value());
+		if (this.validator.test(wt.value())) throw new IllegalArgumentException("the given value is invalid");
 	}
 	
 }

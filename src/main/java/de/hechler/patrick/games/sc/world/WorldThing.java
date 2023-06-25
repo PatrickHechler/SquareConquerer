@@ -112,8 +112,8 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 	}
 	
 	@SuppressWarnings("unchecked")
-	public <K extends Value, V extends Value> MapValue<K, V> mapValue(String name) {
-		return (MapValue<K, V>) value(name);
+	public <V extends Value> MapValue<V> mapValue(String name) {
+		return (MapValue<V>) value(name);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -189,8 +189,8 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 			UUID ouuid = ((WorldThingValue) ov).value().uuid;
 			return uuid.compareTo(ouuid);
 		}
-		case @SuppressWarnings("preview") MapValue<?, ?> mv -> {
-			return mapCompare(mv, (MapValue<?, ?>) ov);
+		case @SuppressWarnings("preview") MapValue<?> mv -> {
+			return mapCompare(mv, (MapValue<?>) ov);
 		}
 		case @SuppressWarnings("preview") TypeValue<?> tv -> {
 			return tv.name().compareTo(((TypeValue<?>) ov).name());
@@ -198,26 +198,24 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		}
 	}
 	
-	private static int mapCompare(MapValue<?, ?> mv, MapValue<?, ?> omv) {
-		Set<?>                                            oes  = omv.navigatableMap().entrySet();
+	private static int mapCompare(MapValue<?> mv, MapValue<?> omv) {
+		Set<?>                                   oes  = omv.navigatableMap().entrySet();
 		@SuppressWarnings("unchecked")
-		Iterator<Entry<? extends Value, ? extends Value>> iter = ((Set<Entry<? extends Value, ? extends Value>>) oes).iterator();
-		for (Entry<? extends Value, ? extends Value> e : mv.navigatableMap().entrySet()) {
+		Iterator<Entry<String, ? extends Value>> iter = ((Set<Entry<String, ? extends Value>>) oes).iterator();
+		for (Entry<String, ? extends Value> e : mv.navigatableMap().entrySet()) {
 			if (!iter.hasNext()) return 1;
-			Entry<? extends Value, ? extends Value> oe = iter.next();
-			Value                                   o  = e.getKey();
-			Value                                   oo = oe.getKey();
+			Entry<String, ? extends Value> oe = iter.next();
+			String                         o  = e.getKey();
+			String                         oo = oe.getKey();
 			
-			int cmp = o.name().compareTo(oo.name());
-			if (cmp != 0) return cmp;
-			cmp = compare(o, oo);
+			int cmp = o.compareTo(oo);
 			if (cmp != 0) return cmp;
 			
-			o   = e.getValue();
-			oo  = oe.getValue();
-			cmp = o.name().compareTo(oo.name());
+			Value vo  = e.getValue();
+			Value voo = oe.getValue();
+			cmp = vo.name().compareTo(voo.name());
 			if (cmp != 0) return cmp;
-			cmp = compare(o, oo);
+			cmp = compare(vo, voo);
 			if (cmp != 0) return cmp;
 		}
 		if (iter.hasNext()) return -1;
@@ -259,9 +257,9 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 			}
 		}
 		case @SuppressWarnings("preview") WorldThingValue wtv -> h = h * 41 + 4;
-		case @SuppressWarnings("preview") MapValue<?, ?> mv -> {
-			for (Entry<? extends Value, ? extends Value> e : (Set<Entry<? extends Value, ? extends Value>>) (Set<?>) mv.navigatableMap().entrySet()) {
-				h = hash(h, e.getKey());
+		case @SuppressWarnings("preview") MapValue<?> mv -> {
+			for (Entry<String, ? extends Value> e : (Set<Entry<String, ? extends Value>>) (Set<?>) mv.navigatableMap().entrySet()) {
+				h = h + 31 * e.getKey().hashCode();
 				h = hash(h, e.getValue());
 			}
 		}

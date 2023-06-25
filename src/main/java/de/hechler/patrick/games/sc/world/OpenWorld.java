@@ -475,13 +475,13 @@ public class OpenWorld implements NextTurnListener {
 			conn.writeInt(LONG_VALUE);
 			conn.writeLong(v.value());
 		}
-		case @SuppressWarnings("preview") MapValue<?, ?> v -> {
+		case @SuppressWarnings("preview") MapValue<?> v -> {
 			conn.writeInt(MAP_VALUE);
 			Map<?, ?> map = v.value();
 			conn.writeInt(map.size());
 			for (Entry<?, ?> e : map.entrySet()) {
 				conn.writeInt(MAP_VALUE_SUB0);
-				writeValue(conn, (Value) e.getKey());
+				conn.writeString((String) e.getKey());
 				conn.writeInt(MAP_VALUE_SUB1);
 				writeValue(conn, (Value) e.getValue());
 			}
@@ -560,13 +560,13 @@ public class OpenWorld implements NextTurnListener {
 			return new LongValue(name, conn.readLong());
 		}
 		case MAP_VALUE -> {
-			Map<Value, Value> map = new HashMap<>();
+			Map<String, Value> map = new HashMap<>();
 			conn.writeInt(map.size());
 			for (;;) {
 				if (conn.readInt(MAP_VALUE_SUB0, MAP_VALUE_FIN) == MAP_VALUE_FIN) {
 					break;
 				}
-				Value k = readValue(conn);
+				String k = conn.readString();
 				conn.readInt(MAP_VALUE_SUB1);
 				Value v = readValue(conn);
 				map.put(k, v);

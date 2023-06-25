@@ -33,13 +33,13 @@ public record MapSpec(String name, String localName) implements ValueSpec {
 		return this.localName == null ? this.name : this.localName;
 	}
 	
-	public <K extends Value, V extends Value> MapValue<K, V> withValue(Map<K, V> value) {
+	public <V extends Value> MapValue<V> withValue(Map<String, V> value) {
 		return new MapValue<>(this.name, value);
 	}
 	
 	@Override
 	public void validate(Value v) {
-		if (!(v instanceof MapValue d)) throw new IllegalArgumentException("the given value is no map value");
+		if (!(v instanceof MapValue<?> d)) throw new IllegalArgumentException("the given value is no map value");
 	}
 	
 }

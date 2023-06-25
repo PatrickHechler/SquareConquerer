@@ -150,7 +150,11 @@ public final class Tile {
 		return new Tile(this.ground, this.resources, this.build, this.units, this.lastTimeSeen);
 	}
 	
-	public Entity<?, ?>[] entities() {
+	public Stream<Entity<?,?>> entitiesStream() {
+		return Stream.of(entities());
+	}
+	
+	public Entity<?,?>[] entities() {
 		int            s      = this.units.size();
 		Entity<?, ?>[] result = new Entity<?, ?>[s + (this.build != null ? 1 : 0)];
 		int            off;
@@ -193,6 +197,7 @@ public final class Tile {
 			}
 		}
 		this.units.add(u);
+		this.units.sort(null);
 	}
 	
 	public void removeUnit(Unit u) throws TurnExecutionException {
@@ -261,7 +266,14 @@ public final class Tile {
 			}
 		}
 		Resource old = this.resources.get(r.type());
-		return old.sub(r, rnd);
+		if (old == null) {
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		}
+		Resource result = old.sub(r, rnd);
+		if (old.amount() <= 0) {
+			this.resources.remove(r.type());
+		}
+		return result;
 	}
 	
 }

@@ -72,4 +72,9 @@ public abstract sealed class Entity<T extends EntityType<T, M>, M extends Entity
 	
 	public abstract int defend(Unit unit, int attackStrength);
 	
+	@Override
+	public String toString() {
+		return type().localName + ": x: " + x() + " y: " + y() + " lives: " + lives();
+	}
+	
 }

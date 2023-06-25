@@ -22,23 +22,23 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 
-public record MapValue<K extends Value, V extends Value>(String name, Map<K, V> value) implements Value {
+public record MapValue<V extends Value>(String name, Map<String, V> value) implements Value {
 	
 	@SuppressWarnings("cast")
-	public MapValue(String name, Map<K, V> value) {
+	public MapValue(String name, Map<String, V> value) {
 		this.name  = Objects.requireNonNull(name, "name");
 		this.value = Collections.unmodifiableNavigableMap(new TreeMap<>(value));
 		this.value.forEach((k, v) -> {
 			Objects.requireNonNull(k, "entry.key");
 			Objects.requireNonNull(v, "entry.value");
-			if (!(k instanceof Value) || !(v instanceof Value)) {
+			if (k.getClass() != String.class || !(v instanceof Value)) {
 				throw new AssertionError("key or value are from an illegal type");
 			}
 		});
 	}
 	
-	public NavigableMap<K, V> navigatableMap() {
-		return (NavigableMap<K, V>) this.value;
+	public NavigableMap<String, V> navigatableMap() {
+		return (NavigableMap<String, V>) this.value;
 	}
 	
 }

@@ -24,7 +24,6 @@ import de.hechler.patrick.games.sc.addons.addable.UnitType;
 import de.hechler.patrick.games.sc.error.ErrorType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.values.IntValue;
-import de.hechler.patrick.games.sc.values.TypeValue;
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.WorldThingValue;
 import de.hechler.patrick.games.sc.values.spec.IntSpec;
@@ -53,17 +52,17 @@ public abstract non-sealed class Unit extends Entity<UnitType, Unit> {
 		value(new IntValue(Y, y));
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void addResource(Resource add) {
-		Map<Value, Value> map = new TreeMap<>(mapValue(CARRY).navigatableMap());
-		TypeValue         tv  = new TypeValue(add.type().name, add.type());
-		Value             val = map.get(tv);
+	public Resource addResource(Resource add) {
+		Map<String, Value> map    = new TreeMap<>(mapValue(CARRY).navigatableMap());
+		String             tvname = add.type().name;
+		Value              val    = map.get(tvname);
 		if (val == null) {
-			map.put(tv, new WorldThingValue(tv.name(), add));
+			map.put(tvname, new WorldThingValue(tvname, add));
 		} else {
 			Resource old = ((Resource) ((WorldThingValue) val).value());
 			old.add(add);
 		}
+		return null;
 	}
 	
 	public int workEfficency() {
