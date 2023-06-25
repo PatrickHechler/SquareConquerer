@@ -991,10 +991,298 @@ public class WorldDisplay implements ButtonGridListener {
 	private static final String WORLD_THING_VALUE_LOC = "entity value";                // I don't support adding ground/resource anyway
 	
 	private void insertValue(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JLabel l = new JLabel("select value type: ");
+		l.setSize(l.getPreferredSize());
+		l.setLocation(0, 0);
+		dp.add(l);
+		JComboBox<String> cb = new JComboBox<>(new String[] { BOOLEAN_VALUE_LOC, DOUBLE_VALUE_LOC, INT_VALUE_LOC, JUST_A_VALUE_LOC, LONG_VALUE_LOC, MAP_VALUE_LOC,
+				STRING_VALUE_LOC, TYPE_VALUE_LOC, LIST_VALUE_LOC, USER_VALUE_LOC, WORLD_THING_VALUE_LOC });
+		cb.setSize(cb.getPreferredSize());
+		cb.setLocation(l.getWidth(), 0);
+		dp.add(cb);
+		cb.addActionListener(e -> {
+			String val = (String) cb.getSelectedItem();
+			int    c   = JOptionPane.showConfirmDialog(d, "insert a " + val, "select value type", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION);
+			switch (val) {
+			case BOOLEAN_VALUE_LOC -> insertBoolean(d, resultAcceptor);
+			case DOUBLE_VALUE_LOC -> insertDouble(d, resultAcceptor);
+			case INT_VALUE_LOC -> insertInt(d, resultAcceptor);
+			case JUST_A_VALUE_LOC -> insertJustAValue(d, resultAcceptor);
+			case LONG_VALUE_LOC -> insertLong(d, resultAcceptor);
+			case MAP_VALUE_LOC -> insertMap(d, resultAcceptor);
+			case STRING_VALUE_LOC -> insertString(d, resultAcceptor);
+			case TYPE_VALUE_LOC -> insertType(d, resultAcceptor);
+			case LIST_VALUE_LOC -> insertList(d, resultAcceptor);
+			case USER_VALUE_LOC -> insertUser(d, resultAcceptor);
+			case WORLD_THING_VALUE_LOC -> insertThing(d, resultAcceptor);
+			default -> throw new AssertionError("unknown selected value: " + val);
+			}
+		});
+		dp.setPreferredSize(new Dimension(l.getWidth() + cb.getWidth(), Math.max(l.getHeight(), cb.getHeight())));
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertBoolean(JDialog parent, Consumer<Value> resultAcceptor) {
 		JDialog d = new JDialog(parent);
-		
-		// TODO Auto-generated method stub
-		
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		JCheckBox cb = new JCheckBox();
+		cb.setSize(cb.getPreferredSize());
+		cb.setLocation(finish.getWidth() + name.getWidth(), 0);
+		dp.add(cb);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value?", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new BooleanValue(name.getText(), cb.isSelected()));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertDouble(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		JTextField num = new JTextField(16);
+		FPNumberDocument doc = new FPNumberDocument(Double.MIN_NORMAL, Double.MAX_VALUE);
+		num.setSize(num.getPreferredSize());
+		num.setLocation(finish.getWidth() + name.getWidth(), 0);
+		dp.add(num);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value?", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new DoubleValue(name.getText(), doc.getNumber(0D)));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertInt(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		JTextField num = new JTextField(16);
+		NumberDocument doc = new NumberDocument(Integer.MIN_VALUE, Integer.MAX_VALUE);
+		num.setSize(num.getPreferredSize());
+		num.setLocation(finish.getWidth() + name.getWidth(), 0);
+		dp.add(num);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value?", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new IntValue(name.getText(), doc.getNumber(0)));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertJustAValue(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value?", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new JustAValue(name.getText()));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertLong(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		JTextField num = new JTextField(16);
+		NumberDocument doc = new NumberDocument(Long.MIN_VALUE, Long.MAX_VALUE);
+		num.setSize(num.getPreferredSize());
+		num.setLocation(finish.getWidth() + name.getWidth(), 0);
+		dp.add(num);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value?", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new LongValue(name.getText(), doc.getNumber(0L)));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertMap(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value? (with an empty map)", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new MapValue<>(name.getText(), Map.of()));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertString(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		JTextField value = new JTextField("enter here the string value of the value");
+		value.setSize(value.getPreferredSize());
+		value.setLocation(finish.getWidth() + name.getWidth(), 0);
+		dp.add(value);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value?", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new StringValue(name.getText(), value.getText()));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private static void insertType(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		JComboBox<?> value = new JComboBox<>(Addons.addons().values().stream().flatMap(a -> a.add.values().stream()).toArray());
+		value.setSize(value.getPreferredSize());
+		value.setLocation(finish.getWidth() + name.getWidth(), 0);
+		dp.add(value);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value?", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new TypeValue(name.getText(), (AddableType<?, ?>) value.getSelectedItem()));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertList(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value? (with an empty list)", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new ListValue(name.getText(), List.of()));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertUser(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value? (with an no selected  user)", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new UserValue(name.getText(), null));
+		});
+		PageDisplay.initDialog(d, parent);
+	}
+	
+	private static void insertThing(JDialog parent, Consumer<Value> resultAcceptor) {
+		JDialog d = new JDialog(parent);
+		JPanel dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JButton finish = new JButton("finish");
+		finish.setSize(finish.getPreferredSize());
+		finish.setLocation(0, 0);
+		dp.add(finish);
+		JTextField name = new JTextField("enter here the name of the value");
+		name.setSize(name.getPreferredSize());
+		name.setLocation(0, finish.getWidth());
+		dp.add(name);
+		finish.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(d, "insert the value? (with no selected thing)", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			resultAcceptor.accept(new WorldThingValue(name.getText(), null));
+		});
 		PageDisplay.initDialog(d, parent);
 	}
 	

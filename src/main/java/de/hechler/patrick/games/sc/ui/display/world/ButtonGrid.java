@@ -184,6 +184,7 @@ public class ButtonGrid extends Canvas {
 		super.setPreferredSize(s);
 		super.setMinimumSize(s);
 		super.setMaximumSize(s);
+		super.setSize(s);
 	}
 	
 	/**

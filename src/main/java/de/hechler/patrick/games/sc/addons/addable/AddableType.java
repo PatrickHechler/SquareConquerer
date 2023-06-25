@@ -101,4 +101,9 @@ public abstract sealed class AddableType<M extends AddableType<M, A>, A extends 
 		return (ListSpec) spec(name);
 	}
 	
+	@Override
+	public String toString() {
+		return this.localName;
+	}
+	
 }
