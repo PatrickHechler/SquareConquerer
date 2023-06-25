@@ -67,4 +67,9 @@ public abstract non-sealed class Resource extends WorldThing<ResourceType, Resou
 		value(new IntValue(AMOUNT, amount() + res.amount()));
 	}
 	
+	@Override
+	public String toString() {
+		return type().localName + ": amount: " + amount();
+	}
+	
 }

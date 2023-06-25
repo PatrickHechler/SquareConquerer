@@ -17,6 +17,7 @@
 package de.hechler.patrick.games.sc.world.entity;
 
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.UUID;
 
@@ -52,8 +53,12 @@ public abstract non-sealed class Unit extends Entity<UnitType, Unit> {
 		value(new IntValue(Y, y));
 	}
 	
+	public NavigableMap<String, Value> carry() {
+		return mapValue(CARRY).navigatableMap();
+	}
+	
 	public Resource addResource(Resource add) {
-		Map<String, Value> map    = new TreeMap<>(mapValue(CARRY).navigatableMap());
+		Map<String, Value> map    = new TreeMap<>(carry());
 		String             tvname = add.type().name;
 		Value              val    = map.get(tvname);
 		if (val == null) {

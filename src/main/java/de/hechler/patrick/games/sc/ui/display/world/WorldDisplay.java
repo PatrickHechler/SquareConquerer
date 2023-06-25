@@ -88,9 +88,12 @@ import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.turn.Attack;
+import de.hechler.patrick.games.sc.turn.CarryTurn;
 import de.hechler.patrick.games.sc.turn.Direction;
 import de.hechler.patrick.games.sc.turn.EntityTurn;
+import de.hechler.patrick.games.sc.turn.MineTurn;
 import de.hechler.patrick.games.sc.turn.MoveTurn;
+import de.hechler.patrick.games.sc.turn.StoreTurn;
 import de.hechler.patrick.games.sc.turn.WorkTurn;
 import de.hechler.patrick.games.sc.ui.display.PageDisplay;
 import de.hechler.patrick.games.sc.ui.display.TextPageDisplay;
@@ -139,6 +142,7 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public class WorldDisplay implements ButtonGridListener {
 	
+	private static final UUID     NULL_UUID = new UUID(0L, 0L);
 	private Thread                serverThread;
 	private Map<User, Connection> connects;
 	private World                 world;
@@ -279,16 +283,45 @@ public class WorldDisplay implements ButtonGridListener {
 		this.turn.put(use, new WorkTurn((Unit) use));
 	}
 	
+	private final BiConsumer<Unit, Resource> storeTurnConsumer = (u, r) -> this.turn.put(u, new StoreTurn(u, r));
+	private final BiConsumer<Unit, Resource> carryTurnConsumer = (u, r) -> this.turn.put(u, new CarryTurn(u, r));
+	private final BiConsumer<Unit, Resource> mineTurnConsumer  = (u, r) -> this.turn.put(u, new MineTurn(u, r));
+	
 	private void storeTurn(Entity<?, ?> use) {
-		// TODO Auto-generated method stub
+		resourceTurn((Unit) use, this.storeTurnConsumer, ((Unit) use).carry().values().toArray(new Resource[0]));
 	}
 	
 	private void carryTurn(Entity<?, ?> use) {
-		// TODO Auto-generated method stub
+		resourceTurn((Unit) use, this.carryTurnConsumer, this.world.tile(this.x, this.y).build().resources().values().toArray(new Resource[0]));
 	}
 	
 	private void mineTurn(Entity<?, ?> use) {
-		// TODO Auto-generated method stub
+		resourceTurn((Unit) use, this.mineTurnConsumer, this.world.tile(this.x, this.y).resourcesStream().toArray(len -> new Resource[len]));
+	}
+	
+	
+	private void resourceTurn(Unit u, BiConsumer<Unit, Resource> addTurn, Resource[] avail) {
+		JDialog d  = new JDialog(this.frame);
+		JPanel  dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(dp);
+		JLabel l = new JLabel("select the resource: ");
+		l.setSize(l.getPreferredSize());
+		l.setLocation(0, 0);
+		dp.add(l);
+		JComboBox<Resource> cb = new JComboBox<>(avail);
+		cb.setSize(cb.getPreferredSize());
+		cb.setLocation(l.getWidth(), 0);
+		dp.add(cb);
+		cb.addActionListener(e -> {
+			Resource res = (Resource) cb.getSelectedItem();
+			if (res == null) return;
+			int c = JOptionPane.showConfirmDialog(d, "use the selected resource (" + res + ')', "select resouce", JOptionPane.OK_CANCEL_OPTION,
+					JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			costumize(d, res.values(), res.type(), r -> addTurn.accept(u, res));
+		});
+		PageDisplay.initDialog(d, dp);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -615,7 +648,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JPanel             dp   = new JPanel();
 		costumize(dp, d, fval.values(), () -> {
 			try {
-				finishHook.accept(type.withValues(fval, UUID.randomUUID()));
+				finishHook.accept(type.withValues(fval, NULL_UUID));
 			} catch (TurnExecutionException e) {
 				JOptionPane.showMessageDialog(d, "error while creating the thing: " + e.toString(), "could not create", JOptionPane.ERROR_MESSAGE);
 				finishHook.accept(null);
@@ -911,19 +944,20 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private void rebuildCostumMap(MapValue<?> v, BiConsumer<Integer, Value> replace, Integer index, JDialog d, JPanel dp, JButton btn) {
 		while (dp.getComponentCount() > 0) dp.remove(0);
-		Pos     off    = costumize(dp, d, v.value().values(), null, GENERIC_SPEC, (i, newval) -> {
-							Map<String, Value> newMap = new HashMap<>(v.value());
-							if (i == null) {
-								newMap.remove(newval.name());
-							} else {
-								newMap.put(newval.name(), newval);
-							}
-							MapValue<Value> nv = new MapValue<>(v.name(), newMap);
-							replace.accept(index, nv);
-							if (i == null) {
-								rebuildCostumMap(nv, replace, index, d, dp, btn);
-							}
-						}, false, true);
+		Pos off = costumize(dp, d, v.value().values(), null, GENERIC_SPEC, (i, newval) -> {
+			Map<String, Value> newMap = new HashMap<>(v.value());
+			if (i == null) {
+				newMap.remove(newval.name());
+			} else {
+				newMap.put(newval.name(), newval);
+			}
+			MapValue<Value> nv = new MapValue<>(v.name(), newMap);
+			replace.accept(index, nv);
+			if (i == null) {
+				rebuildCostumMap(nv, replace, index, d, dp, btn);
+			}
+		}, false, true);
+		
 		JButton insert = new JButton("insert");
 		insert.setSize(insert.getPreferredSize());
 		insert.setLocation(0, off.y());
@@ -948,19 +982,20 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private void rebuildCostumList(JButton btn, ListValue v, BiConsumer<Integer, Value> replace, Integer index, JDialog d, JPanel dp) {
-		Pos     off    = costumize(dp, d, v.value(), null, GENERIC_SPEC, (i, newval) -> {
-							List<Value> newlist = new ArrayList<>(v.value());
-							if (newval == null) {
-								newlist.remove(i.intValue());
-							} else {
-								newlist.set(i.intValue(), newval);
-							}
-							ListValue nl = new ListValue(v.name(), newlist);
-							replace.accept(index, nl);
-							if (newval == null) {
-								rebuildCostumList(btn, nl, replace, index, d, dp);
-							}
-						}, true, true);
+		Pos off = costumize(dp, d, v.value(), null, GENERIC_SPEC, (i, newval) -> {
+			List<Value> newlist = new ArrayList<>(v.value());
+			if (newval == null) {
+				newlist.remove(i.intValue());
+			} else {
+				newlist.set(i.intValue(), newval);
+			}
+			ListValue nl = new ListValue(v.name(), newlist);
+			replace.accept(index, nl);
+			if (newval == null) {
+				rebuildCostumList(btn, nl, replace, index, d, dp);
+			}
+		}, true, true);
+		
 		JButton insert = new JButton("insert");
 		insert.setSize(insert.getPreferredSize());
 		insert.setLocation(0, off.y());
@@ -979,7 +1014,7 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private static final String BOOLEAN_VALUE_LOC = "yes/no value";
 	private static final String DOUBLE_VALUE_LOC  = "floating point number value";
-	// ENUM_VALUE_LOC not supported (need to chouse class)
+	// ENUM_VALUE_LOC not supported (need to choose class)
 	private static final String INT_VALUE_LOC         = "number value";
 	private static final String JUST_A_VALUE_LOC      = "just a value";
 	private static final String LONG_VALUE_LOC        = "big number value";
@@ -990,7 +1025,7 @@ public class WorldDisplay implements ButtonGridListener {
 	private static final String USER_VALUE_LOC        = "user value";
 	private static final String WORLD_THING_VALUE_LOC = "entity value";                // I don't support adding ground/resource anyway
 	
-	private void insertValue(JDialog parent, Consumer<Value> resultAcceptor) {
+	private static void insertValue(JDialog parent, Consumer<Value> resultAcceptor) {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
@@ -1028,8 +1063,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertBoolean(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1053,8 +1088,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertDouble(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1065,7 +1100,7 @@ public class WorldDisplay implements ButtonGridListener {
 		name.setSize(name.getPreferredSize());
 		name.setLocation(0, finish.getWidth());
 		dp.add(name);
-		JTextField num = new JTextField(16);
+		JTextField       num = new JTextField(16);
 		FPNumberDocument doc = new FPNumberDocument(Double.MIN_NORMAL, Double.MAX_VALUE);
 		num.setSize(num.getPreferredSize());
 		num.setLocation(finish.getWidth() + name.getWidth(), 0);
@@ -1079,8 +1114,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertInt(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1091,7 +1126,7 @@ public class WorldDisplay implements ButtonGridListener {
 		name.setSize(name.getPreferredSize());
 		name.setLocation(0, finish.getWidth());
 		dp.add(name);
-		JTextField num = new JTextField(16);
+		JTextField     num = new JTextField(16);
 		NumberDocument doc = new NumberDocument(Integer.MIN_VALUE, Integer.MAX_VALUE);
 		num.setSize(num.getPreferredSize());
 		num.setLocation(finish.getWidth() + name.getWidth(), 0);
@@ -1105,8 +1140,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertJustAValue(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1126,8 +1161,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertLong(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1138,7 +1173,7 @@ public class WorldDisplay implements ButtonGridListener {
 		name.setSize(name.getPreferredSize());
 		name.setLocation(0, finish.getWidth());
 		dp.add(name);
-		JTextField num = new JTextField(16);
+		JTextField     num = new JTextField(16);
 		NumberDocument doc = new NumberDocument(Long.MIN_VALUE, Long.MAX_VALUE);
 		num.setSize(num.getPreferredSize());
 		num.setLocation(finish.getWidth() + name.getWidth(), 0);
@@ -1152,8 +1187,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertMap(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1173,8 +1208,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertString(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1199,8 +1234,8 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static void insertType(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1224,8 +1259,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertList(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1245,8 +1280,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertUser(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1258,7 +1293,8 @@ public class WorldDisplay implements ButtonGridListener {
 		name.setLocation(0, finish.getWidth());
 		dp.add(name);
 		finish.addActionListener(e -> {
-			int c = JOptionPane.showConfirmDialog(d, "insert the value? (with an no selected  user)", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			int c = JOptionPane.showConfirmDialog(d, "insert the value? (with an no selected  user)", "insert", JOptionPane.OK_CANCEL_OPTION,
+					JOptionPane.QUESTION_MESSAGE);
 			if (c != JOptionPane.OK_OPTION) return;
 			resultAcceptor.accept(new UserValue(name.getText(), null));
 		});
@@ -1266,8 +1302,8 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private static void insertThing(JDialog parent, Consumer<Value> resultAcceptor) {
-		JDialog d = new JDialog(parent);
-		JPanel dp = new JPanel();
+		JDialog d  = new JDialog(parent);
+		JPanel  dp = new JPanel();
 		dp.setLayout(null);
 		d.setContentPane(dp);
 		JButton finish = new JButton("finish");
@@ -1279,7 +1315,8 @@ public class WorldDisplay implements ButtonGridListener {
 		name.setLocation(0, finish.getWidth());
 		dp.add(name);
 		finish.addActionListener(e -> {
-			int c = JOptionPane.showConfirmDialog(d, "insert the value? (with no selected thing)", "insert", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			int c = JOptionPane.showConfirmDialog(d, "insert the value? (with no selected thing)", "insert", JOptionPane.OK_CANCEL_OPTION,
+					JOptionPane.QUESTION_MESSAGE);
 			if (c != JOptionPane.OK_OPTION) return;
 			resultAcceptor.accept(new WorldThingValue(name.getText(), null));
 		});

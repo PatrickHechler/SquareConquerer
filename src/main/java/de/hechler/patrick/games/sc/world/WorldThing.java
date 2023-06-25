@@ -289,4 +289,9 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		return v1.compareTo((T) v2);
 	}
 	
+	@Override
+	public String toString() {
+		return type().localName;
+	}
+	
 }
