@@ -74,6 +74,11 @@ public class GroupTree {
 		return this.name;
 	}
 	
+	@Override
+	public String toString() {
+		return name();
+	}
+	
 	public void transferFrom(GroupTree g) {
 		if (g == this) {
 			throw new IllegalArgumentException("I won't transfer to myself");
@@ -96,7 +101,7 @@ public class GroupTree {
 				mg = mg.parent;
 			}
 		}
-		forEachDeep(this::add);
+		g.forEachDeep(this::add);
 		DEEP_CLEAR.accept(g);
 		if (g.parent != null) {
 			g.parent.groups.remove(g.name);

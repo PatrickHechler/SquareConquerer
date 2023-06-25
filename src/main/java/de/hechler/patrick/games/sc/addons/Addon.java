@@ -86,4 +86,9 @@ public abstract class Addon {
 	
 	public abstract void checkDependencies(Map<String, Addon> addons, Map<String, AddableType<?, ?>> added);
 	
+	@Override
+	public String toString() {
+		return this.localName;
+	}
+	
 }

@@ -76,6 +76,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
 
 import de.hechler.patrick.games.sc.Settings;
 import de.hechler.patrick.games.sc.addons.Addon;
@@ -893,6 +894,7 @@ public class WorldDisplay implements ButtonGridListener {
 							return;
 						}
 						Object obj = tree.getSelectionPath().getLastPathComponent();
+						obj = ((DefaultMutableTreeNode) obj).getUserObject();
 						if (obj instanceof User) {
 							JOptionPane.showMessageDialog(sub, "you need to select exactly one entity, not a user", "not one entity selected",
 									JOptionPane.ERROR_MESSAGE);
@@ -1702,7 +1704,7 @@ public class WorldDisplay implements ButtonGridListener {
 		Menu     m      = new Menu("Addons");
 		MenuItem manage = new MenuItem("manage");
 		m.add(manage);
-		manage.addActionListener(e -> doManageAddons(gt));
+		manage.addActionListener(e -> doManageAddons());
 		return m;
 	}
 	
@@ -1710,13 +1712,15 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private static BiConsumer<GroupTree, DefaultMutableTreeNode> addAddonsToList() {
 		return (gt, node) -> {
-			DefaultMutableTreeNode inner = new DefaultMutableTreeNode(gt.name());
-			gt.forEach(a -> inner.add(new DefaultMutableTreeNode(a.localName)), ADD_ADDONS_TO_NODE, inner);
+			DefaultMutableTreeNode inner = new DefaultMutableTreeNode(gt);
+			gt.forEach(a -> inner.add(new DefaultMutableTreeNode(a)), ADD_ADDONS_TO_NODE, inner);
 			node.add(inner);
 		};
 	}
 	
-	private void doManageAddons(GroupTree enabled) {
+	private void doManageAddons() {
+		GroupTree enabled = new GroupTree();
+		Addons.addons().values().forEach(enabled::add);
 		GroupTree disabled = Addons.disabledGT();
 		JDialog   d        = new JDialog(this.frame);
 		JPanel    dp       = new JPanel();
@@ -1731,16 +1735,23 @@ public class WorldDisplay implements ButtonGridListener {
 		// location sat the end (enabled tree width not yet known)
 		enableBtn.setSize(disableBtn.getPreferredSize());
 		dp.add(enableBtn);
-		int                    yoff  = Math.max(disableBtn.getHeight(), enableBtn.getHeight());
+		int yoff = Math.max(disableBtn.getHeight(), enableBtn.getHeight());
+		rebuildManageAddons(enabled, disabled, d, dp, disableBtn, enableBtn, yoff);
+		PageDisplay.initDialog(d, this.frame);
+	}
+	
+	private void rebuildManageAddons(GroupTree enabled, GroupTree disabled, JDialog d, JPanel dp, JButton disableBtn, JButton enableBtn, int yoff) {
+		final int origyoff = yoff;
+		while (dp.getComponentCount() > 2) dp.remove(2);
 		DefaultMutableTreeNode eroot = new DefaultMutableTreeNode("enabled");
-		enabled.forEach(a -> eroot.add(new DefaultMutableTreeNode(a.localName)), ADD_ADDONS_TO_NODE, eroot);
+		enabled.forEach(a -> eroot.add(new DefaultMutableTreeNode(a)), ADD_ADDONS_TO_NODE, eroot);
 		JTree etree = new JTree(eroot);
 		etree.setRootVisible(true);
 		etree.setSize(etree.getPreferredSize());
 		etree.setLocation(0, yoff);
 		dp.add(etree);
 		DefaultMutableTreeNode droot = new DefaultMutableTreeNode("disabled");
-		disabled.forEach(a -> droot.add(new DefaultMutableTreeNode(a.localName)), ADD_ADDONS_TO_NODE, droot);
+		disabled.forEach(a -> droot.add(new DefaultMutableTreeNode(a)), ADD_ADDONS_TO_NODE, droot);
 		JTree dtree = new JTree(droot);
 		dtree.setRootVisible(true);
 		dtree.setSize(dtree.getPreferredSize());
@@ -1758,9 +1769,6 @@ public class WorldDisplay implements ButtonGridListener {
 					"continue with the addon configuration (your current world will be discarded (and the server will be closed if running))", "change addons",
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
 			if (c != JOptionPane.OK_OPTION) return; // the environment is not editable, so disabled it
-			System.setProperty(Addons.DISABLED_ADDONS_NO_ENV_KEY, Addons.DISABLED_ADDONS_NO_ENV_VALUE);
-			StringBuilder b = new StringBuilder();
-			disabled.forEachDeep(a -> append(b, a.name));
 			synchronized (this) {
 				Thread                t  = this.serverThread;
 				Map<User, Connection> cs = this.connects;
@@ -1804,11 +1812,51 @@ public class WorldDisplay implements ButtonGridListener {
 			oldUsr.close();
 			this.world = new CompleteWorld.Builder(newUser, 16, 16);
 			d.dispose();
+			StringBuilder b = new StringBuilder();
+			disabled.forEachDeep(a -> append(b, a.name));
+			System.setProperty(Addons.DISABLED_ADDONS_NO_ENV_KEY, Addons.DISABLED_ADDONS_NO_ENV_VALUE);
+			System.setProperty(Addons.DISABLED_ADDONS_KEY, b.toString());
+			Addons.reloadAddons();
+			System.out.println("new addons: " + Addons.addons());
 			rebuildFrame(false);
 		});
 		dp.add(finish);
 		dp.setPreferredSize(new Dimension(Math.max(xoff, finish.getWidth()), yoff + finish.getHeight()));
-		PageDisplay.initDialog(d, this.frame);
+		enableBtn.addActionListener(e -> {
+			if (dtree.getSelectionCount() == 0) return;
+			for (TreePath path : dtree.getSelectionPaths()) {
+				Object obj = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+				if (obj instanceof GroupTree gt) {
+					enabled.transferFrom(gt);
+				} else if (obj instanceof Addon a) {
+					enabled.add(a);
+					disabled.remove(a);
+				} else if ((obj instanceof String) && (!"disabled".equals(obj) || !"enabled".equals(obj))) {
+					enabled.transferFrom(disabled);
+				} else {
+					System.err.println("unknown value: " + obj.getClass() + " : " + obj);
+				}
+			}
+			rebuildManageAddons(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff);
+		});
+		disableBtn.addActionListener(e -> {
+			if (etree.getSelectionCount() == 0) return;
+			for (TreePath path : etree.getSelectionPaths()) {
+				Object obj = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+				if (obj instanceof GroupTree gt) {
+					disabled.transferFrom(gt);
+				} else if (obj instanceof Addon a) {
+					disabled.add(a);
+					enabled.remove(a);
+				} else if ((obj instanceof String) && (!"disabled".equals(obj) || !"enabled".equals(obj))) {
+					disabled.transferFrom(enabled);
+				} else {
+					System.err.println("unknown value: " + obj.getClass() + " : " + obj);
+				}
+			}
+			rebuildManageAddons(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff);
+		});
+		dp.repaint();
 	}
 	
 	private static void append(StringBuilder b, String name) {
@@ -1821,7 +1869,7 @@ public class WorldDisplay implements ButtonGridListener {
 		int index = 0;
 		do {
 			int ni;
-			if (ci > bi) {
+			if (ci > bi && bi != -1) {
 				ni = bi;
 				bi = name.indexOf('\\', ni + 1);
 			} else {
@@ -1829,6 +1877,7 @@ public class WorldDisplay implements ButtonGridListener {
 				ci = name.indexOf(':', ni + 1);
 			}
 			b.append(name, index, ni).append('\\');
+			index = ni;
 		} while (ci != -1 || bi != -1);
 		b.append(name, index, name.length());
 	}
