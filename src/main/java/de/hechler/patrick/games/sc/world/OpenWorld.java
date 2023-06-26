@@ -560,8 +560,7 @@ public class OpenWorld implements NextTurnListener {
 			return new LongValue(name, conn.readLong());
 		}
 		case MAP_VALUE -> {
-			Map<String, Value> map = new HashMap<>();
-			conn.writeInt(map.size());
+			Map<String, Value> map = new HashMap<>(conn.readPos());
 			for (;;) {
 				if (conn.readInt(MAP_VALUE_SUB0, MAP_VALUE_FIN) == MAP_VALUE_FIN) {
 					break;
