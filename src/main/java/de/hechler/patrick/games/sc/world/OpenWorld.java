@@ -535,7 +535,7 @@ public class OpenWorld implements NextTurnListener {
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Value readValue(Connection conn) throws IOException {
-		conn.writeInt(SEND_VALUE);
+		conn.readInt(SEND_VALUE);
 		String name = conn.readString();
 		switch (conn.readInt(BOOLEAN_VALUE, DOUBLE_VALUE, ENUM_VALUE, INT_VALUE, JUST_A_VALUE, LONG_VALUE, MAP_VALUE, STRING_VALUE, TYPE_VALUE, USER_LIST_VALUE,
 			USER_VALUE, WORLD_THING_VALUE)) {
