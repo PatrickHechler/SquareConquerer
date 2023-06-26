@@ -16,6 +16,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +32,11 @@ import de.hechler.patrick.games.sc.world.tile.Tile;
 import de.hechler.patrick.utils.interfaces.Executable;
 
 @SuppressWarnings("javadoc")
-public class RemoteWorld implements World, Executable<IOException> {
+public class RemoteWorld implements World, Executable<IOException>, Closeable {
 	
-	private final Connection  conn;
-	private volatile Tile[][] tiles;
-	private volatile int      turn = -2;
+	private final Connection       conn;
+	private volatile Tile[][]      tiles;
+	private volatile int           turn = -2;
 	private List<NextTurnListener> ntl;
 	
 	public RemoteWorld(Connection conn) {
@@ -48,6 +49,11 @@ public class RemoteWorld implements World, Executable<IOException> {
 		while (!this.conn.closed()) {
 			OpenWorld.acceptBlockClient(this.conn, 250, this::exec);
 		}
+	}
+	
+	@Override
+	public void close() throws IOException {
+		this.conn.logOut();
 	}
 	
 	private void exec() throws IOException {

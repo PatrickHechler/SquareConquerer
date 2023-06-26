@@ -63,7 +63,7 @@ public class MeeleUnit extends SimpleUnit {
 	
 	@Override
 	public UnitType type() {
-		return FigtherAddonProvider.MEELE_TYPE;
+		return SimpleAddonsProvider.MEELE_TYPE;
 	}
 	
 	@Override

@@ -9,7 +9,7 @@ import de.hechler.patrick.games.sc.addons.addable.GroundType;
 import de.hechler.patrick.games.sc.addons.addable.UnitType;
 import de.hechler.patrick.utils.objects.Version;
 
-public class FigtherAddonProvider extends AddonProvider {
+public class SimpleAddonsProvider extends AddonProvider {
 	
 	public static final UnitType   MEELE_TYPE         = new MeeleType();
 	public static final UnitType   WORKER_TYPE        = new WorkerType();
@@ -17,10 +17,10 @@ public class FigtherAddonProvider extends AddonProvider {
 	public static final GroundType GRASS_TYPE         = new GrassType();
 	
 	private static final List<Addon> ADDONS = List.of(//
-			new SimpleAddon(MEELE_TYPE.name, MEELE_TYPE.localName, new String[] { "fighter", "unit" }, new Version(1, 0, 0), MEELE_TYPE), //
-			new SimpleAddon(WORKER_TYPE.name, WORKER_TYPE.localName, new String[] { "fighter", "unit" }, new Version(1, 0, 0), WORKER_TYPE), //
-			new SimpleAddon(CLONE_FACTORY_TYPE.name, CLONE_FACTORY_TYPE.localName, new String[] { "fighter", "build" }, new Version(1, 0, 0), CLONE_FACTORY_TYPE), //
-			new SimpleAddon(GRASS_TYPE.name, GRASS_TYPE.localName, new String[] { "fighter", "ground" }, new Version(1, 0, 0), GRASS_TYPE) //
+			new SimpleAddon(MEELE_TYPE.name, MEELE_TYPE.localName, new String[] { "unit" }, new Version(1, 0, 0), MEELE_TYPE), //
+			new SimpleAddon(WORKER_TYPE.name, WORKER_TYPE.localName, new String[] { "unit" }, new Version(1, 0, 0), WORKER_TYPE), //
+			new SimpleAddon(CLONE_FACTORY_TYPE.name, CLONE_FACTORY_TYPE.localName, new String[] { "build" }, new Version(1, 0, 0), CLONE_FACTORY_TYPE), //
+			new SimpleAddon(GRASS_TYPE.name, GRASS_TYPE.localName, new String[] { "ground" }, new Version(1, 0, 0), GRASS_TYPE) //
 	);
 	
 	@Override

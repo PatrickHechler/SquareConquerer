@@ -30,7 +30,7 @@ import de.hechler.patrick.utils.objects.Random2;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class CloneFactoryType extends BuildType {
 	
-	public static final String NAME     = "pat.fighter.clone-factory";
+	public static final String NAME     = "pat.simple.clone-factory";
 	public static final String NAME_LOC = "clone factory";
 	
 	static final int MAX_LIVES = 50;

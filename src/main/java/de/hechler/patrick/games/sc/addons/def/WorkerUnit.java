@@ -63,7 +63,7 @@ public class WorkerUnit extends SimpleUnit {
 	
 	@Override
 	public UnitType type() {
-		return FigtherAddonProvider.WORKER_TYPE;
+		return SimpleAddonsProvider.WORKER_TYPE;
 	}
 	
 	@Override

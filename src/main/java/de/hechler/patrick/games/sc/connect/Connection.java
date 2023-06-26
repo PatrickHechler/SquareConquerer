@@ -601,8 +601,8 @@ public class Connection implements WrongInputHandler, Closeable {
 				tcin.close();
 				tcout.close();
 			}
-			CipherInputStream  cin  = User.decrypt(pw, new IgnoreCloseInputStream(in), salt, initVec);
-			CipherOutputStream cout = User.encrypt(pw, new IgnoreCloseOutputStream(out), salt, initVec);
+			CipherInputStream  cin  = User.decrypt(pw, in, salt, initVec);
+			CipherOutputStream cout = User.encrypt(pw, out, salt, initVec);
 			try {
 				writeInt(cout, ClientConnect.SUB_NEW);
 				readInt(DEFAULT_WRONG_INPUT, cin, ClientConnect.SUB_NEW);

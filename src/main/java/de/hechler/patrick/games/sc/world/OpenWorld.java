@@ -402,7 +402,7 @@ public class OpenWorld implements NextTurnListener {
 	}
 	
 	public static WorldThing<?, ?> readThing(Connection conn) throws IOException {
-		conn.writeInt(WRITE_THING);
+		conn.readInt(WRITE_THING);
 		UUID               uuid   = conn.readUUID();
 		AddableType<?, ?>  type   = Addons.type(conn.readString());
 		Map<String, Value> values = HashMap.newHashMap(conn.readPos());

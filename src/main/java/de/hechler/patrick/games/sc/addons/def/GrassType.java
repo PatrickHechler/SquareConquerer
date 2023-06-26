@@ -15,7 +15,7 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public class GrassType extends GroundType {
 	
-	private static final String NAME     = "pat.fighter.grass";
+	private static final String NAME     = "pat.simple.grass";
 	private static final String NAME_LOC = "grass land";
 	
 	public GrassType() {

@@ -26,13 +26,13 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public class WorkerType extends UnitType {
 	
-	private static final String NAME       = "pat.fighter.worker";
+	private static final String NAME       = "pat.simple.worker";
 	private static final String NAME_LOC = "worker/builder";
 	
 	static final int MAX_LIVES = 20;
 	
 	private static final List<Map<String, Value>> START_VALUES = List.of(Map.of( //
-			Unit.CARRY, new MapValue<Value>(Unit.CARRY, Map.of()), //
+			Unit.CARRY, new MapValue<>(Unit.CARRY, Map.of()), //
 			Unit.MOVE_RANGE, new IntValue(Unit.MOVE_RANGE, 10), //
 			Unit.WORK_EFFICIENCY, new IntValue(Unit.WORK_EFFICIENCY, 2), //
 			Entity.LIVES, new IntValue(Entity.LIVES, MAX_LIVES), //

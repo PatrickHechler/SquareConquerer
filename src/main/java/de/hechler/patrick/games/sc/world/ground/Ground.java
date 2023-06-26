@@ -27,4 +27,8 @@ public abstract non-sealed class Ground extends WorldThing<GroundType, Ground> {
 		super(uuid);
 	}
 	
+	public static final String LAND_WALK   = "walk:land";
+	public static final String WATER_WALK  = "walk:water";
+	public static final String HILL_HEIGTH = "walk:hills";
+	
 }

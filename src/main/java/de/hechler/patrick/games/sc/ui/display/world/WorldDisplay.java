@@ -32,8 +32,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.ScrollPane;
 import java.awt.Toolkit;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -312,7 +310,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(this.frame);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JLabel l = new JLabel("select the resource: ");
 		l.setSize(l.getPreferredSize());
 		l.setLocation(0, 0);
@@ -481,7 +479,7 @@ public class WorldDisplay implements ButtonGridListener {
 					JDialog inner = new JDialog(d);
 					JPanel  dp    = new JPanel();
 					dp.setLayout(null);
-					inner.setContentPane(dp);
+					inner.setContentPane(new JScrollPane(dp));
 					JLabel label = new JLabel("type: " + v.value().type().localName);
 					label.setSize(label.getPreferredSize());
 					label.setLocation(0, 0);
@@ -517,7 +515,7 @@ public class WorldDisplay implements ButtonGridListener {
 					JDialog inner = new JDialog(d);
 					JPanel  dp    = new JPanel();
 					dp.setLayout(null);
-					inner.setContentPane(dp);
+					inner.setContentPane(new JScrollPane(dp));
 					showThing(inner, dp, 0, 0, thing);
 					PageDisplay.initDialog(inner, d);
 				});
@@ -554,7 +552,7 @@ public class WorldDisplay implements ButtonGridListener {
 			d.setTitle("choose action");
 			JPanel dp = new JPanel();
 			dp.setLayout(null);
-			d.setContentPane(dp);
+			d.setContentPane(new JScrollPane(dp));
 			int  maxx;
 			int  yoff;
 			Tile t = b.get(this.x, this.y);
@@ -1038,7 +1036,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JLabel l = new JLabel("select value type: ");
 		l.setSize(l.getPreferredSize());
 		l.setLocation(0, 0);
@@ -1075,7 +1073,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1100,7 +1098,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1126,7 +1124,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1152,7 +1150,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1173,7 +1171,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1199,7 +1197,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1220,7 +1218,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1246,7 +1244,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1271,7 +1269,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1292,7 +1290,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1314,7 +1312,7 @@ public class WorldDisplay implements ButtonGridListener {
 		JDialog d  = new JDialog(parent);
 		JPanel  dp = new JPanel();
 		dp.setLayout(null);
-		d.setContentPane(dp);
+		d.setContentPane(new JScrollPane(dp));
 		JButton finish = new JButton("finish");
 		finish.setSize(finish.getPreferredSize());
 		finish.setLocation(0, 0);
@@ -1840,7 +1838,7 @@ public class WorldDisplay implements ButtonGridListener {
 					int yo = origyoff + Math.max(dtree.getHeight(), etree.getHeight());
 					int xo = Math.max(disableBtn.getWidth(), etree.getWidth()) + Math.max(enableBtn.getWidth(), dtree.getWidth());
 					finish.setLocation(0, yo);
-					xo = Math.max(xo, finish.getWidth());
+					xo  = Math.max(xo, finish.getWidth());
 					yo += finish.getHeight();
 					Dimension s = new Dimension(xo, yo);
 					dp.setPreferredSize(s);
@@ -1867,7 +1865,7 @@ public class WorldDisplay implements ButtonGridListener {
 					dtree.setLocation(xo, origyoff);
 					xo += Math.max(enableBtn.getWidth(), dtree.getWidth());
 					finish.setLocation(0, yo);
-					xo = Math.max(xo, finish.getWidth());
+					xo  = Math.max(xo, finish.getWidth());
 					yo += finish.getHeight();
 					Dimension s = new Dimension(xo, yo);
 					dp.setPreferredSize(s);
@@ -2101,10 +2099,103 @@ public class WorldDisplay implements ButtonGridListener {
 			});
 		}
 		if (this.world instanceof CompleteWorld) {
-			MenuItem addUsr = new MenuItem("add User");
-			m.add(addUsr);
+			MenuItem manageUsrs = new MenuItem("manage Users");
+			m.add(manageUsrs);
+			manageUsrs.addActionListener(e -> {
+				// TODO
+			});
 		}
+		MenuItem connect = new MenuItem("connect");
+		m.add(connect);
+		connect.addActionListener(e -> doServerConnect());
 		return m;
+	}
+	
+	private void doServerConnect() {
+		JDialog d  = new JDialog(this.frame);
+		JPanel  dp = new JPanel();
+		dp.setLayout(null);
+		d.setContentPane(new JScrollPane(dp));
+		JLabel lhost = new JLabel("server host: ");
+		lhost.setSize(lhost.getPreferredSize());
+		lhost.setLocation(0, 0);
+		dp.add(lhost);
+		JTextField thost = new JTextField(64);
+		thost.setSize(thost.getPreferredSize());
+		thost.setLocation(lhost.getWidth(), 0);
+		dp.add(thost);
+		int    yoff  = Math.max(lhost.getHeight(), thost.getHeight());
+		int    maxx  = lhost.getWidth() + thost.getWidth();
+		JLabel lport = new JLabel("server port: ");
+		lport.setSize(lport.getPreferredSize());
+		lport.setLocation(0, yoff);
+		dp.add(lport);
+		NumberDocument dport = new NumberDocument(0, 0xFFFF);
+		JTextField     tport = new JTextField(dport, "", 5);
+		tport.setSize(tport.getPreferredSize());
+		tport.setLocation(lport.getWidth(), yoff);
+		dp.add(tport);
+		yoff += Math.max(lport.getHeight(), tport.getHeight());
+		maxx  = Math.max(maxx, lport.getWidth() + tport.getWidth());
+		JCheckBox cspw = new JCheckBox("use server password");
+		cspw.setToolTipText("<html>a server password can be used to create an account</html>");
+		cspw.setSelected(false);
+		cspw.setSize(cspw.getPreferredSize());
+		cspw.setLocation(0, yoff);
+		dp.add(cspw);
+		JPasswordField tspw = new JPasswordField(64);
+		tspw.setSize(tspw.getPreferredSize());
+		tspw.setLocation(cspw.getWidth(), yoff);
+		tspw.setVisible(false);
+		dp.add(tspw);
+		cspw.addActionListener(ie -> tspw.setVisible(cspw.isSelected()));
+		yoff += Math.max(cspw.getHeight(), tspw.getHeight());
+		maxx  = Math.max(maxx, cspw.getWidth() + tspw.getWidth());
+		JButton pconnect = new JButton("connect");
+		pconnect.setSize(pconnect.getPreferredSize());
+		pconnect.setLocation(0, yoff);
+		dp.add(pconnect);
+		yoff += pconnect.getHeight();
+		maxx  = Math.max(maxx, pconnect.getWidth());
+		pconnect.addActionListener(e -> {
+			int c = JOptionPane.showConfirmDialog(this.frame, "connect to the given server?", "connect", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (c != JOptionPane.OK_OPTION) return;
+			String     host = thost.getText();
+			int        port = dport.getNumber(Connection.DEFAULT_PORT);
+			Connection conn;
+			User       usr  = this.world.user();
+			User       root = usr.isRoot() ? usr : usr.rootClone();
+			try {
+				if (cspw.isSelected()) {
+					conn = Connection.ClientConnect.connectNew(host, port, usr, tspw.getPassword());
+				} else {
+					conn = Connection.ClientConnect.connect(host, port, usr);
+				}
+			} catch (IOException | RuntimeException err) {
+				if (root != usr) {
+					root.close();
+				}
+				JOptionPane.showMessageDialog(d, "error: " + err.toString(), "error on connect", JOptionPane.ERROR_MESSAGE);
+				return;
+			} catch (Throwable t) {
+				if (root != usr) {
+					root.close();
+				}
+				throw t;
+			}
+			if (this.world instanceof Closeable clos) {
+				try {
+					clos.close();
+				} catch (IOException err) {
+					JOptionPane.showMessageDialog(d, "error: " + err.toString(), "error while closing the old world", JOptionPane.WARNING_MESSAGE);
+				}
+			}
+			d.dispose();
+			this.world = conn.world();
+			rebuildFrame(false);
+		});
+		dp.setPreferredSize(new Dimension(maxx, yoff));
+		PageDisplay.initDialog(d, this.frame);
 	}
 	
 	private void doStopServer(MenuItem start, Thread st) {
@@ -2137,7 +2228,7 @@ public class WorldDisplay implements ButtonGridListener {
 		dialog.setTitle("Open Server");
 		
 		JPanel dp = new JPanel();
-		dialog.setContentPane(dp);
+		dialog.setContentPane(new JScrollPane(dp));
 		dp.setLayout(new GridLayout(3, 2));
 		dp.add(new JLabel("Port:"));
 		NumberDocument portDoc = new NumberDocument(0x0000, 0xFFFF);
@@ -2420,9 +2511,44 @@ public class WorldDisplay implements ButtonGridListener {
 	 */
 	public static void main(String[] args) {
 		EventQueue.invokeLater(() -> {
-			CompleteWorld.Builder w = new CompleteWorld.Builder(User.nopw("nice user"), 16, 16);
-			WorldDisplay          d = new WorldDisplay(w);
-			d.init();
+			JDialog d  = new JDialog();
+			JPanel  dp = new JPanel();
+			dp.setLayout(null);
+			d.setContentPane(new JScrollPane(dp));
+			JLabel l = new JLabel("username: ");
+			l.setSize(l.getPreferredSize());
+			l.setLocation(0, 0);
+			dp.add(l);
+			JTextField t = new JTextField(32);
+			t.setSize(t.getPreferredSize());
+			t.setLocation(l.getWidth(), 0);
+			dp.add(t);
+			int yoff = Math.max(l.getHeight(), t.getHeight());
+			int maxx = l.getWidth() + t.getWidth();
+			l = new JLabel("password: ");
+			l.setSize(l.getPreferredSize());
+			l.setLocation(0, yoff);
+			dp.add(l);
+			JPasswordField p = new JPasswordField(32);
+			p.setSize(p.getPreferredSize());
+			p.setLocation(l.getWidth(), yoff);
+			dp.add(p);
+			yoff += Math.max(l.getHeight(), p.getHeight());
+			maxx  = Math.max(maxx, l.getWidth() + p.getWidth());
+			JButton finish = new JButton("start");
+			finish.setSize(finish.getPreferredSize());
+			finish.setLocation(0, yoff);
+			dp.add(finish);
+			yoff += finish.getHeight();
+			maxx  = Math.max(maxx, finish.getWidth());
+			dp.setPreferredSize(new Dimension(maxx, yoff));
+			finish.addActionListener(e -> {
+				d.dispose();
+				CompleteWorld.Builder w  = new CompleteWorld.Builder(User.createUser(t.getText(), p.getPassword()), 16, 16);
+				WorldDisplay          wd = new WorldDisplay(w);
+				wd.init();
+			});
+			PageDisplay.initDialog(d, null);
 		});
 	}
 	

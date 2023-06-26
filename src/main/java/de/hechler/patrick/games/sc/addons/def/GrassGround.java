@@ -53,7 +53,7 @@ public class GrassGround extends Ground {
 	
 	@Override
 	public GroundType type() {
-		return FigtherAddonProvider.GRASS_TYPE;
+		return SimpleAddonsProvider.GRASS_TYPE;
 	}
 	
 	@Override

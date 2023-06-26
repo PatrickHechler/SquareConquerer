@@ -78,7 +78,7 @@ public class CloneFactoryBuild extends SimpleBuild {
 	
 	@Override
 	public BuildType type() {
-		return FigtherAddonProvider.CLONE_FACTORY_TYPE;
+		return SimpleAddonsProvider.CLONE_FACTORY_TYPE;
 	}
 	
 	@Override
