@@ -25,6 +25,6 @@ public sealed interface ValueSpec
 	
 	String localName();
 	
-	void validate(Value v);
+	void validate(Value v) throws IllegalArgumentException;
 	
 }

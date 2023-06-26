@@ -75,6 +75,17 @@ public abstract non-sealed class Unit extends Entity<UnitType, Unit> {
 	}
 	
 	public void attack(Entity<?, ?> enemy) throws TurnExecutionException {
+		int    oldLives = lives();
+		double val      = attackStrength(enemy, oldLives);
+		int    d        = enemy.defend(this, (int) val);
+		if (d < 0) {
+			throw new AssertionError("defend result is negative");
+		}
+		int newLives = oldLives - d;
+		value(new IntValue(LIVES, Math.max(0, newLives)));
+	}
+	
+	protected double attackStrength(Entity<?, ?> enemy, int oldLives) throws TurnExecutionException {
 		int x    = x();
 		int y    = y();
 		int ex   = enemy.x();
@@ -83,19 +94,13 @@ public abstract non-sealed class Unit extends Entity<UnitType, Unit> {
 		if (diff > 1) {
 			throw new TurnExecutionException(ErrorType.INVALID_TURN);
 		}
-		int    oldLives = lives();
-		double l        = oldLives;
-		double maxl     = ((IntSpec) type().values.get(LIVES)).max();
-		double el       = enemy.lives();
-		double emaxl    = ((IntSpec) enemy.type().values.get(LIVES)).max();
-		double val      = (l * l * l) / maxl;
+		double l     = oldLives;
+		double maxl  = ((IntSpec) type().values.get(LIVES)).max();
+		double el    = enemy.lives();
+		double emaxl = ((IntSpec) enemy.type().values.get(LIVES)).max();
+		double val   = (l * l * l) / maxl;
 		val /= el * el * emaxl;
-		int d = enemy.defend(this, (int) val);
-		if (d < 0) {
-			throw new AssertionError("defend result is negative");
-		}
-		int newLives = oldLives - d;
-		value(new IntValue(LIVES, Math.max(0, newLives)));
+		return val;
 	}
 	
 	/** {@inheritDoc} */

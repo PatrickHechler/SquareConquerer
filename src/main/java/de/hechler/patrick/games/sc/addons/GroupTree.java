@@ -112,7 +112,7 @@ public class GroupTree {
 		if (this.depth == addon.groupDepth()) {
 			this.addons.put(addon.name, addon);
 		} else {
-			this.groups.computeIfAbsent(addon.group(this.depth), this.addFunc);
+			this.groups.computeIfAbsent(addon.group(this.depth), this.addFunc).add(addon);
 		}
 	}
 	

@@ -571,7 +571,7 @@ public class OpenWorld implements NextTurnListener {
 				Value v = readValue(conn);
 				map.put(k, v);
 			}
-			return new MapValue<>(name, map);
+			return new MapValue<Value>(name, map);
 		}
 		case STRING_VALUE -> {
 			return new StringValue(name, conn.readString());

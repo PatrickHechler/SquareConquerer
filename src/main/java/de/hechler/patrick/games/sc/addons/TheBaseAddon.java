@@ -49,7 +49,7 @@ public class TheBaseAddon extends Addon {
 	/**
 	 * the name of the base addon
 	 */
-	public static final String BASE_ADDON_NAME = "base:SquareConquerer";
+	public static final String BASE_ADDON_NAME = "base.SquareConquerer";
 	
 	TheBaseAddon() {
 		super(BASE_ADDON_NAME, "Square Conquerer", new String[0], VERSION, Map.of(GroundType.NOT_EXPLORED_TYPE.name, GroundType.NOT_EXPLORED_TYPE), "AGPL v3+");

@@ -34,7 +34,7 @@ public record MapSpec(String name, String localName) implements ValueSpec {
 	}
 	
 	public <V extends Value> MapValue<V> withValue(Map<String, V> value) {
-		return new MapValue<>(this.name, value);
+		return new MapValue<V>(this.name, value);
 	}
 	
 	@Override

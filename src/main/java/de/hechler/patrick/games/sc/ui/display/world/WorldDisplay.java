@@ -32,6 +32,8 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.ScrollPane;
 import java.awt.Toolkit;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -75,7 +77,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTree;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeWillExpandListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.TreePath;
 
 import de.hechler.patrick.games.sc.Settings;
@@ -143,7 +148,9 @@ import de.hechler.patrick.utils.objects.Random2;
 
 public class WorldDisplay implements ButtonGridListener {
 	
-	private static final UUID     NULL_UUID = new UUID(0L, 0L);
+	// TODO move to different class
+	public static final UUID NULL_UUID = new UUID(0L, 0L);
+	
 	private Thread                serverThread;
 	private Map<User, Connection> connects;
 	private World                 world;
@@ -968,7 +975,7 @@ public class WorldDisplay implements ButtonGridListener {
 			insertValue(d, val -> {
 				Map<String, Value> newlist = new HashMap<>(v.value());
 				newlist.put(val.name(), val);
-				MapValue<?> nm = new MapValue<>(v.name(), newlist);
+				MapValue<?> nm = new MapValue<Value>(v.name(), newlist);
 				replace.accept(index, nm);
 				btn.setText(newlist.size() + " list entries");
 				rebuildCostumMap(nm, replace, index, d, dp, btn);
@@ -1712,7 +1719,7 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private static BiConsumer<GroupTree, DefaultMutableTreeNode> addAddonsToList() {
 		return (gt, node) -> {
-			DefaultMutableTreeNode inner = new DefaultMutableTreeNode(gt);
+			DefaultMutableTreeNode inner = new DefaultMutableTreeNode(gt, true);
 			gt.forEach(a -> inner.add(new DefaultMutableTreeNode(a)), ADD_ADDONS_TO_NODE, inner);
 			node.add(inner);
 		};
@@ -1743,14 +1750,14 @@ public class WorldDisplay implements ButtonGridListener {
 	private void rebuildManageAddons(GroupTree enabled, GroupTree disabled, JDialog d, JPanel dp, JButton disableBtn, JButton enableBtn, int yoff) {
 		final int origyoff = yoff;
 		while (dp.getComponentCount() > 2) dp.remove(2);
-		DefaultMutableTreeNode eroot = new DefaultMutableTreeNode("enabled");
+		DefaultMutableTreeNode eroot = new DefaultMutableTreeNode("enabled", true);
 		enabled.forEach(a -> eroot.add(new DefaultMutableTreeNode(a)), ADD_ADDONS_TO_NODE, eroot);
 		JTree etree = new JTree(eroot);
 		etree.setRootVisible(true);
 		etree.setSize(etree.getPreferredSize());
 		etree.setLocation(0, yoff);
 		dp.add(etree);
-		DefaultMutableTreeNode droot = new DefaultMutableTreeNode("disabled");
+		DefaultMutableTreeNode droot = new DefaultMutableTreeNode("disabled", true);
 		disabled.forEach(a -> droot.add(new DefaultMutableTreeNode(a)), ADD_ADDONS_TO_NODE, droot);
 		JTree dtree = new JTree(droot);
 		dtree.setRootVisible(true);
@@ -1824,6 +1831,57 @@ public class WorldDisplay implements ButtonGridListener {
 		dp.setPreferredSize(new Dimension(Math.max(xoff, finish.getWidth()), yoff + finish.getHeight()));
 		enableBtn.addActionListener(e -> enableOrDisablePressed(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff, etree, dtree, true));
 		disableBtn.addActionListener(e -> enableOrDisablePressed(enabled, disabled, d, dp, disableBtn, enableBtn, origyoff, etree, dtree, false));
+		dtree.addTreeWillExpandListener(new TreeWillExpandListener() {
+			
+			@Override
+			public void treeWillExpand(@SuppressWarnings("unused") TreeExpansionEvent event) throws ExpandVetoException {
+				EventQueue.invokeLater(() -> {
+					dtree.setSize(dtree.getPreferredSize());
+					int yo = origyoff + Math.max(dtree.getHeight(), etree.getHeight());
+					int xo = Math.max(disableBtn.getWidth(), etree.getWidth()) + Math.max(enableBtn.getWidth(), dtree.getWidth());
+					finish.setLocation(0, yo);
+					xo = Math.max(xo, finish.getWidth());
+					yo += finish.getHeight();
+					Dimension s = new Dimension(xo, yo);
+					dp.setPreferredSize(s);
+					dp.setSize(s);
+					d.repaint();
+				});
+			}
+			
+			@Override
+			public void treeWillCollapse(@SuppressWarnings("unused") TreeExpansionEvent event) throws ExpandVetoException {
+				treeWillExpand(null);
+			}
+			
+		});
+		etree.addTreeWillExpandListener(new TreeWillExpandListener() {
+			
+			@Override
+			public void treeWillExpand(@SuppressWarnings("unused") TreeExpansionEvent event) throws ExpandVetoException {
+				EventQueue.invokeLater(() -> {
+					etree.setSize(etree.getPreferredSize());
+					int yo = origyoff + Math.max(dtree.getHeight(), etree.getHeight());
+					int xo = Math.max(disableBtn.getWidth(), etree.getWidth());
+					enableBtn.setLocation(xo, disableBtn.getY());
+					dtree.setLocation(xo, origyoff);
+					xo += Math.max(enableBtn.getWidth(), dtree.getWidth());
+					finish.setLocation(0, yo);
+					xo = Math.max(xo, finish.getWidth());
+					yo += finish.getHeight();
+					Dimension s = new Dimension(xo, yo);
+					dp.setPreferredSize(s);
+					dp.setSize(s);
+					d.repaint();
+				});
+			}
+			
+			@Override
+			public void treeWillCollapse(@SuppressWarnings("unused") TreeExpansionEvent event) throws ExpandVetoException {
+				treeWillExpand(null);
+			}
+			
+		});
 		dp.repaint();
 	}
 	

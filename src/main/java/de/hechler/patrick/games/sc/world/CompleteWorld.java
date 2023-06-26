@@ -645,6 +645,18 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 					e.printStackTrace();
 				}
 			}
+			int pc = this.allowRootTurns ? this.user().users().size() : this.user().subUsers().size();
+			for (int x = 0; x < this.tiles.length; x++) {
+				Tile[] ts = this.tiles[x];
+				for (int y = 0; y < ts.length; y++) {
+					Tile t = ts[y];
+					t.ground().nextTurnNotify(pc);
+					WorldThing<?, ?> w = t.build();
+					if (w != null) w.nextTurnNotify(pc);
+					t.resourcesStream().forEach(r -> r.nextTurnNotify(pc));
+					t.unitsStream().forEach(u -> u.nextTurnNotify(pc));
+				}
+			}
 			executeNTL(calcHash(), calcHash(baos.toByteArray()));
 		}
 	}
@@ -938,6 +950,9 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			for (i = 0; props[i] <= val; i++) {
 				val -= props[i];
 			}
+			if (i >= resources.size()) {
+				return null;
+			}
 			return resources.get(i).withNeigbours(this, x, y, neigbours);
 		}
 		
@@ -971,10 +986,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			for (i = 0; props[i] <= val; i++) {
 				val -= props[i];
 			}
-			if (i == 0) {
-				return null;
-			}
-			return grounds.get(i - 1).withNeigbours(this, x, y, neigbours);
+			return grounds.get(i).withNeigbours(this, x, y, neigbours);
 		}
 		
 		private void placeSomePoints() {

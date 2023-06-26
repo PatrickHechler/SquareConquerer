@@ -79,7 +79,7 @@ public abstract non-sealed class Build extends Entity<BuildType, Build> {
 			ResourceType                 res = resource.type();
 			Map<String, WorldThingValue> map = new HashMap<>(resources());
 			map.put(res.name, new WorldThingValue(res.name, resource));
-			value(new MapValue<>(STORE, map));
+			value(new MapValue<WorldThingValue>(STORE, map));
 		});
 	}
 	
