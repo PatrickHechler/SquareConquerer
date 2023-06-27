@@ -2104,6 +2104,14 @@ public class WorldDisplay implements ButtonGridListener {
 			manageUsrs.addActionListener(e -> {
 				// TODO
 			});
+			if (((CompleteWorld)this.world).started()) {
+				MenuItem startGame = new MenuItem("start the game");
+				m.add(startGame);
+				startGame.addActionListener(e -> {
+					if (!(this.world instanceof CompleteWorld cw)) return;
+					// TODO
+				});
+			}
 		}
 		MenuItem connect = new MenuItem("connect");
 		m.add(connect);
@@ -2282,6 +2290,7 @@ public class WorldDisplay implements ButtonGridListener {
 											JOptionPane.INFORMATION_MESSAGE);
 								}
 							}), cs, serverPWCB.isSelected() ? serverPWPF.getPassword() : null);
+							mi.setName("stop");
 						} catch (IOException err) {
 							if (err instanceof ClosedByInterruptException || Thread.interrupted()) { return; }
 							JOptionPane.showMessageDialog(this.frame, "error: " + err.getMessage(), err.getClass().getSimpleName(), JOptionPane.ERROR_MESSAGE);

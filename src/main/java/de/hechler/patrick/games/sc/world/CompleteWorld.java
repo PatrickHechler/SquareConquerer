@@ -294,7 +294,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			public CompleteWorld next() {
 				if (this.world == null) { // do a copy of the start tiles
 					this.world = Builder.create(CompleteWorld.this.root, CompleteWorld.this.starttiles, CompleteWorld.this.placer);
-				} else if (!this.world.running()) {
+				} else if (!this.world.started()) {
 					this.world.startGame0(CompleteWorld.this.seed, false);
 				} else if (!this.iter.hasNext()) {
 					throw new NoSuchElementException("no more elements");
@@ -542,7 +542,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 * 
 	 * @return <code>true</code> if the game is currently running and <code>false</code> if not
 	 */
-	public synchronized boolean running() {
+	public synchronized boolean started() {
 		return this.rnd != null;
 	}
 	
