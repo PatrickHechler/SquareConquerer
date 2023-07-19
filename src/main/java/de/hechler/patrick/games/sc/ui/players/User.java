@@ -247,6 +247,15 @@ public class User implements Closeable {
 	}
 	
 	/**
+	 * returns a random long value
+	 * 
+	 * @return a random long value
+	 */
+	public static long randomLong() {
+		return RND.nextLong();
+	}
+	
+	/**
 	 * creates a new decrypt-stream, which uses the given password, salt and initVec to decrypt and the uses the stream to get its encrypted data
 	 * 
 	 * @param pw      the password of the cipher

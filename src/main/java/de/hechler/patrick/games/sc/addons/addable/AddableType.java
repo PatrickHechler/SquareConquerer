@@ -37,7 +37,7 @@ import de.hechler.patrick.games.sc.values.spec.UserSpec;
 import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 public abstract sealed class AddableType<M extends AddableType<M, A>, A extends WorldThing<M, A>> permits EntityType<?, ?>, GroundType, ResourceType {
 	
@@ -53,9 +53,9 @@ public abstract sealed class AddableType<M extends AddableType<M, A>, A extends 
 	
 	public abstract A withValues(Map<String, Value> values, UUID uuid) throws TurnExecutionException;
 	
-	public abstract A withDefaultValues(World w, Random2 r, int x, int y);
+	public abstract A withDefaultValues(World w, ACORNRandom r, int x, int y);
 	
-	public abstract A withRandomValues(World w, Random2 r, int x, int y);
+	public abstract A withRandomValues(World w, ACORNRandom r, int x, int y);
 	
 	public ValueSpec spec(String name) {
 		ValueSpec spec = this.values.get(name);
