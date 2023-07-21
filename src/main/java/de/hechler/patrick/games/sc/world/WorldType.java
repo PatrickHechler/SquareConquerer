@@ -14,22 +14,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.world.init;
+package de.hechler.patrick.games.sc.world;
 
-import java.io.IOException;
-
-import de.hechler.patrick.games.sc.connect.Connection;
-import de.hechler.patrick.games.sc.error.TurnExecutionException;
-import de.hechler.patrick.games.sc.ui.players.User;
-import de.hechler.patrick.games.sc.world.World;
-import de.hechler.patrick.utils.objects.ACORNRandom;
-
-public interface UserPlacer {
+public interface WorldType {
 	
-	void initilize(World w, User[] users, ACORNRandom rnd) throws TurnExecutionException;
-
-	void writePlacer(Connection conn) throws IOException;
-	
-	// static UserPlacer readPlacer(Connection conn) throws IOException
+	String name();
 	
 }

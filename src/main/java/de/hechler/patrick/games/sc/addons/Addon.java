@@ -18,10 +18,12 @@ package de.hechler.patrick.games.sc.addons;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import de.hechler.patrick.games.sc.addons.addable.AddableType;
 import de.hechler.patrick.games.sc.ui.pages.Page;
 import de.hechler.patrick.games.sc.ui.pages.TextOnlyPage;
+import de.hechler.patrick.games.sc.world.WorldType;
 import de.hechler.patrick.utils.objects.Version;
 
 public abstract class Addon {
@@ -31,17 +33,24 @@ public abstract class Addon {
 	private final String[]                                groups;
 	public final Version                                  version;
 	public final Map<String, ? extends AddableType<?, ?>> add;
+	public final Optional<WorldType>                      worldAdd;
 	public final String                                   licenseName;
 	private TextOnlyPage                                  license;
 	private Page                                          credits;
 	private Page                                          help;
 	
 	public Addon(String name, String localName, String[] groups, Version version, Map<String, ? extends AddableType<?, ?>> add, String licenseName) {
+		this(name, localName, groups, version, add, Optional.empty(), licenseName);
+	}
+	
+	public Addon(String name, String localName, String[] groups, Version version, Map<String, ? extends AddableType<?, ?>> add, Optional<WorldType> worldAdd,
+			String licenseName) {
 		this.name        = Objects.requireNonNull(name, "name is null");
 		this.localName   = Objects.requireNonNullElse(localName, name);
 		this.groups      = groups.clone();
 		this.version     = Objects.requireNonNull(version, "version is null");
 		this.add         = Map.copyOf(add);
+		this.worldAdd    = worldAdd;
 		this.licenseName = Objects.requireNonNull(licenseName, "license name is null");
 	}
 	

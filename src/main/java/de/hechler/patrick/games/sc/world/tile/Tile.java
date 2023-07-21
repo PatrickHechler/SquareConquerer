@@ -38,7 +38,7 @@ import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 import jdk.incubator.concurrent.ScopedValue;
 
 @SuppressWarnings("javadoc")
@@ -258,7 +258,7 @@ public final class Tile {
 		});
 	}
 	
-	public Resource removeResource(Resource r, Random2 rnd) throws TurnExecutionException {
+	public Resource removeResource(Resource r, ACORNRandom rnd) throws TurnExecutionException {
 		if (checkModify()) {
 			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {

@@ -1,8 +1,11 @@
 package de.hechler.patrick.utils.objects;
 
-import java.util.Random;
+import java.lang.StackWalker.Option;
+import java.util.UUID;
+import java.util.random.RandomGenerator;
 
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.world.CompleteWorld;
 
 /**
  * this PRNG uses the ACORN Algorithm
@@ -11,9 +14,7 @@ import de.hechler.patrick.games.sc.ui.players.User;
  *
  * @author Patrick Hechler
  */
-public class ACORNRandom extends Random {
-	
-	private static final long serialVersionUID = -1558116918215850555L;
+public class ACORNRandom implements RandomGenerator {
 	
 	/**
 	 * the amount of 128 bit entries when creating instances with the {@link #ACORNRandom() no-arg constructor}
@@ -30,7 +31,7 @@ public class ACORNRandom extends Random {
 	private final long[] state;
 	
 	private ACORNRandom(long[] seed) {
-		this.state = seed;
+		this.state     = seed;
 		this.state[0] |= 1L;
 		for (int i = 1; i < this.state.length; i += 2) {
 			this.state[i] &= HIGH_MASK;
@@ -81,15 +82,32 @@ public class ACORNRandom extends Random {
 		return arr;
 	}
 	
-	// this method is used by the Random class to get random values
-	
-	/** {@inheritDoc} */
-	@Override
-	protected int next(int bits) {
-		return ((1 << bits) - 1) & (int) nextLong();
+	/**
+	 * throws an IllegalCallerException if called from an other class than {@link CompleteWorld}
+	 * <p>
+	 * returns the current state.<br>
+	 * pass this array to the {@link #ACORNRandom(long[], boolean)} constructor to get an copy of the current instance
+	 * 
+	 * @return the current state if called from {@link CompleteWorld}
+	 * 
+	 * @throws IllegalCallerException if called from an other class than {@link CompleteWorld}
+	 */
+	public long[] getCurrentState() throws IllegalCallerException {
+		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+		if (caller != CompleteWorld.class) {
+			throw new IllegalCallerException("illegal caller: " + caller.getName());
+		}
+		return this.state;
 	}
 	
-	// overwrite the methods which (may) need more than 32 bits
+	/**
+	 * return a new random UUID
+	 * 
+	 * @return a new random UUID
+	 */
+	public synchronized UUID nextUUID() {
+		return new UUID(nextLong(), nextLong());
+	}
 	
 	/** {@inheritDoc} */
 	@Override
@@ -107,12 +125,6 @@ public class ACORNRandom extends Random {
 			this.state[i + 1]  = high;
 		}
 		return (low >> 56) | (high << 8);
-	}
-	
-	/** {@inheritDoc} */
-	@Override
-	public double nextDouble() {
-		return ((1L << Double.PRECISION) & nextLong()) * 0x1.0p-53;
 	}
 	
 	/** {@inheritDoc} */
@@ -151,18 +163,6 @@ public class ACORNRandom extends Random {
 				off++;
 			} while (--len > 0);
 		}
-	}
-	
-	/**
-	 * throws an {@link UnsupportedOperationException}
-	 * <p>
-	 * {@inheritDoc}
-	 * 
-	 * @throws UnsupportedOperationException always
-	 */
-	@Override
-	public synchronized void setSeed(@SuppressWarnings("unused") long seed) throws UnsupportedOperationException {
-		throw new UnsupportedOperationException("I need more than a simple long as a seed!");
 	}
 	
 }

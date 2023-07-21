@@ -17,7 +17,6 @@
 
 import de.hechler.patrick.games.sc.addons.AddonProvider;
 import de.hechler.patrick.games.sc.addons.TheBaseAddonProvider;
-import de.hechler.patrick.games.sc.addons.def.SimpleAddonsProvider;
 
 /**
  * this is the Square Conquerer module.
@@ -65,6 +64,6 @@ module de.hechler.patrick.games.squareconqerer {
 	
 	uses AddonProvider;
 	
-	provides AddonProvider with TheBaseAddonProvider, SimpleAddonsProvider;
+	provides AddonProvider with TheBaseAddonProvider;
 	
 }

@@ -30,7 +30,7 @@ import de.hechler.patrick.games.sc.values.MapValue;
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.WorldThingValue;
 import de.hechler.patrick.games.sc.world.resource.Resource;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 public abstract non-sealed class Build extends Entity<BuildType, Build> {
 	
@@ -58,7 +58,7 @@ public abstract non-sealed class Build extends Entity<BuildType, Build> {
 		return (Optional) val.asOptional();
 	}
 	
-	public void giveRes(Unit u, Resource res, Random2 r) throws TurnExecutionException {
+	public void giveRes(Unit u, Resource res, ACORNRandom r) throws TurnExecutionException {
 		Resource myRes = resource(res.type()).orElseThrow(() -> new TurnExecutionException(ErrorType.INVALID_TURN));
 		Resource add   = myRes.sub(res, r);
 		try {
@@ -79,7 +79,7 @@ public abstract non-sealed class Build extends Entity<BuildType, Build> {
 			ResourceType                 res = resource.type();
 			Map<String, WorldThingValue> map = new HashMap<>(resources());
 			map.put(res.name, new WorldThingValue(res.name, resource));
-			value(new MapValue<WorldThingValue>(STORE, map));
+			value(new MapValue<>(STORE, map));
 		});
 	}
 	

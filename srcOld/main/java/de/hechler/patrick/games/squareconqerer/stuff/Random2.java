@@ -50,7 +50,7 @@ import java.util.random.RandomGenerator;
  * 
  * @see java.util.Random
  */
-public final class Random2 implements RandomGenerator, java.io.Serializable {
+public final class ACORNRandom implements RandomGenerator, java.io.Serializable {
 	
 	/*
 	 * RandomWrapper is not here Class used to wrap a {@link java.util.random.RandomGenerator} to {@link java.util.Random}.
@@ -75,7 +75,7 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 * Creates a new random number generator. This constructor sets the seed of the random number generator to a value very likely to be distinct from any other
 	 * invocation of this constructor.
 	 */
-	public Random2() {
+	public ACORNRandom() {
 		this(seedUniquifier() ^ System.nanoTime());
 	}
 	
@@ -97,14 +97,14 @@ public final class Random2 implements RandomGenerator, java.io.Serializable {
 	 *
 	 * @param seed the initial seed
 	 */
-	public Random2(long seed) {
+	public ACORNRandom(long seed) {
 		this.seed = new AtomicLong(seed);
 	}
 	
 	/**
-	 * returns the current seed of this {@link Random2}
+	 * returns the current seed of this {@link ACORNRandom}
 	 * 
-	 * @return the current seed of this {@link Random2}
+	 * @return the current seed of this {@link ACORNRandom}
 	 */
 	public long getCurrentSeed() {
 		return this.seed.get();

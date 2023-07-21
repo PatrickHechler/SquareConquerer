@@ -34,7 +34,7 @@ import de.hechler.patrick.games.squareconqerer.addons.entities.AddonEntities;
 import de.hechler.patrick.games.squareconqerer.addons.entities.EntityTrait;
 import de.hechler.patrick.games.squareconqerer.addons.entities.EntityTraitWithVal;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.stuff.Random2;
+import de.hechler.patrick.games.squareconqerer.stuff.ACORNRandom;
 import de.hechler.patrick.games.squareconqerer.world.World;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
@@ -194,7 +194,7 @@ public class DefaultUserPlacer implements UserPlacer {
 	
 	/** {@inheritDoc} */
 	@Override
-	public void initilize(World world, User[] usrs, Random2 rnd) {
+	public void initilize(World world, User[] usrs, ACORNRandom rnd) {
 		int sum = 0;
 		for (List<Map<String, EntityTraitWithVal>> list : this.entityAmounts.values()) {
 			sum += list.size();
@@ -220,7 +220,7 @@ public class DefaultUserPlacer implements UserPlacer {
 		}
 	}
 	
-	private void initUsr(Random2 rnd, User usr, World world, int x, int y, int size, int remainUnitCount) {
+	private void initUsr(ACORNRandom rnd, User usr, World world, int x, int y, int size, int remainUnitCount) {
 		Point[] p = new Point[remainUnitCount];
 		for (Entry<String, List<Map<String, EntityTraitWithVal>>> entry : this.entityAmounts.entrySet()) {
 			String                                type      = entry.getKey();

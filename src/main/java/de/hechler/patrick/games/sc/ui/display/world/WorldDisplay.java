@@ -142,7 +142,7 @@ import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 import de.hechler.patrick.utils.objects.Pos;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 public class WorldDisplay implements ButtonGridListener {
 	
@@ -639,7 +639,7 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private <T extends WorldThing<?, T>> void costumize(JDialog grandParent, JDialog parent, AddableType<?, ?> type, int modifiers) {
 		JDialog d = new JDialog(parent);
-		costumize(d, type.withDefaultValues(this.world, new Random2(), this.x, this.y).values(), type, val -> {
+		costumize(d, type.withDefaultValues(this.world, new ACORNRandom(), this.x, this.y).values(), type, val -> {
 			parent.dispose();
 			grandParent.dispose();
 			this.modifiers = modifiers;

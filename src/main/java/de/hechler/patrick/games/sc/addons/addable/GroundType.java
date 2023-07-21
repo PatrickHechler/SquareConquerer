@@ -32,6 +32,7 @@ import de.hechler.patrick.games.sc.world.WorldThing;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.ground.SimpleGroundType;
 import de.hechler.patrick.games.sc.world.tile.NeigbourTiles;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 public abstract non-sealed class GroundType extends AddableType<GroundType, Ground> {
 	
@@ -45,8 +46,8 @@ public abstract non-sealed class GroundType extends AddableType<GroundType, Grou
 	
 	@SuppressWarnings("unused")
 	public static final SimpleGroundType NOT_EXPLORED_TYPE = new SimpleGroundType("base:not_explored", "not yet explored",
-		Map.of(WorldThing.VIEW_BLOCK, new IntSpec(WorldThing.VIEW_BLOCK, WorldThing.VIEW_BLOCK_LOC, Integer.MAX_VALUE, Integer.MAX_VALUE)),
-		Map.of(WorldThing.VIEW_BLOCK, new IntValue(WorldThing.VIEW_BLOCK, Integer.MAX_VALUE))) {
+			Map.of(WorldThing.VIEW_BLOCK, new IntSpec(WorldThing.VIEW_BLOCK, WorldThing.VIEW_BLOCK_LOC, Integer.MAX_VALUE, Integer.MAX_VALUE)),
+			Map.of(WorldThing.VIEW_BLOCK, new IntValue(WorldThing.VIEW_BLOCK, Integer.MAX_VALUE))) {
 		
 		@Override
 		protected Image loadImage() {
@@ -65,6 +66,16 @@ public abstract non-sealed class GroundType extends AddableType<GroundType, Grou
 		@Override
 		public Ground withNeigbours(World world, int x, int y, NeigbourTiles neigbours) {
 			throw new AssertionError("withNeigbours called, but my probability is zero!");
+		}
+		
+		@Override
+		public Ground withDefaultValues(World w, ACORNRandom r, int x, int y) {
+			throw new AssertionError("withDefaultValues called!");
+		}
+		
+		@Override
+		public Ground withRandomValues(World w, ACORNRandom r, int x, int y) {
+			throw new AssertionError("withRandomValues called!");
 		}
 		
 	};

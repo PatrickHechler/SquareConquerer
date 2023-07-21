@@ -44,7 +44,7 @@ import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
 import de.hechler.patrick.games.squareconqerer.exceptions.TurnExecutionException;
 import de.hechler.patrick.games.squareconqerer.exceptions.enums.ErrorType;
-import de.hechler.patrick.games.squareconqerer.stuff.Random2;
+import de.hechler.patrick.games.squareconqerer.stuff.ACORNRandom;
 import de.hechler.patrick.games.squareconqerer.world.entity.Building;
 import de.hechler.patrick.games.squareconqerer.world.entity.Entity;
 import de.hechler.patrick.games.squareconqerer.world.entity.Unit;
@@ -101,7 +101,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	private volatile boolean                       allowRootTurns;
 	private volatile Tile[][]                      starttiles;
 	private volatile byte[]                        seed;
-	private volatile Random2                       rnd;
+	private volatile ACORNRandom                       rnd;
 	
 	private RootWorld(RootUser root, Tile[][] tiles, UserPlacer placer) {
 		this.root               = root;
@@ -409,7 +409,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		res.starttiles = RemoteWorld.loadWorld(conn, root.users());
 		conn.readInt(RWS_SUB2);
 		res.seed = seed;
-		res.rnd  = new Random2(curSeed);
+		res.rnd  = new ACORNRandom(curSeed);
 		for (int remain = conn.readInt(); remain > 0; remain--) {
 			String name = conn.readString();
 			User   usr  = root.get(name);
@@ -507,7 +507,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			if ((users.length + 1) * 16 != s.length) throw new IllegalArgumentException(INAVLID_RND_ARR_SIZE);
 			long sval = seed(s);
 			this.seed = s;
-			this.rnd  = new Random2(sval);
+			this.rnd  = new ACORNRandom(sval);
 			Arrays.sort(users, null);
 			shuffle(this.rnd, users);
 			Tile.noCheck(() -> this.placer.initilize(this, users, this.rnd));
@@ -690,7 +690,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 	 * @param rnd the random to be used
 	 * @param arr the array to be shuffled
 	 */
-	public static <T> void shuffle(Random2 rnd, T[] arr) {
+	public static <T> void shuffle(ACORNRandom rnd, T[] arr) {
 		for (int i = 0; i < arr.length - 1; i++) {
 			int val = rnd.nextInt();
 			val &= 0x7FFFFFFF;
@@ -758,7 +758,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		
 		private List<BiConsumer<byte[], byte[]>> nextTurnListeners = new ArrayList<>();
 		private final Tile[][]                   tiles;
-		private final Random2                    rnd;
+		private final ACORNRandom                    rnd;
 		private final RootUser                   root;
 		
 		private int resourceMask = 7;
@@ -771,7 +771,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @param ylen the y-len (height) of the builder
 		 */
 		public Builder(RootUser usr, int xlen, int ylen) {
-			this(usr, xlen, ylen, new Random2());
+			this(usr, xlen, ylen, new ACORNRandom());
 		}
 		
 		/**
@@ -782,7 +782,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @param ylen the y-len (height) of the builder
 		 * @param rnd  the random of the builder
 		 */
-		public Builder(RootUser usr, int xlen, int ylen, Random2 rnd) {
+		public Builder(RootUser usr, int xlen, int ylen, ACORNRandom rnd) {
 			if (xlen <= 0 || ylen <= 0) { throw new IllegalArgumentException("xlen=" + xlen + " ylen=" + ylen); } //$NON-NLS-1$ //$NON-NLS-2$
 			if (rnd == null) throw new NullPointerException(RND_IS_NULL);
 			if (usr == null) throw new NullPointerException(USR_IS_NULL);
@@ -791,7 +791,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 			this.rnd   = rnd;
 		}
 		
-		private Builder(RootUser usr, Tile[][] tiles, Random2 rnd) {
+		private Builder(RootUser usr, Tile[][] tiles, ACORNRandom rnd) {
 			this.root  = usr;
 			this.tiles = tiles;
 			this.rnd   = rnd;
@@ -1198,7 +1198,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * @return the newly created builder
 		 */
 		public static Builder createBuilder(RootUser root, Tile[][] tiles) {
-			return createBuilder(root, tiles, new Random2());
+			return createBuilder(root, tiles, new ACORNRandom());
 		}
 		
 		/**
@@ -1210,7 +1210,7 @@ public final class RootWorld implements World, Iterable<RootWorld> {
 		 * 
 		 * @return the newly created builder
 		 */
-		public static Builder createBuilder(RootUser root, Tile[][] tiles, Random2 rnd) {
+		public static Builder createBuilder(RootUser root, Tile[][] tiles, ACORNRandom rnd) {
 			Tile[][] copy = tiles.clone(); // do clone, so the rectangular form can not be destroyed
 			int      ylen = copy[0].length;
 			for (int x = 0; x < copy.length; x++) { // only enforce the rectangular form, the builder is allowed to contain invalid tiles
