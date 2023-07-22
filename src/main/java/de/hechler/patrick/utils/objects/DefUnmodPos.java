@@ -16,6 +16,6 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.utils.objects;
 
-public record Pos(int x, int y) {
+public record DefUnmodPos(int x, int y) {
 	
 }

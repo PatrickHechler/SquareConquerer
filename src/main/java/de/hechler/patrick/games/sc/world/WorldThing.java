@@ -43,7 +43,7 @@ import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 
 public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends WorldThing<T, M>> implements Imagable, Comparable<WorldThing<?, ?>>
-		permits Entity<?, ?>, Ground, Resource {
+		permits Entity<?, ?>, Ground, Resource, World {
 	
 	// everything can block view, so this is here
 	public static final String VIEW_BLOCK     = "view:block";
@@ -91,8 +91,9 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		return (BooleanValue) value(name);
 	}
 	
-	public EnumValue<?> enumValue(String name) {
-		return (EnumValue<?>) value(name);
+	@SuppressWarnings("unchecked")
+	public <E extends Enum<E>> EnumValue<E> enumValue(String name) {
+		return (EnumValue<E>) value(name);
 	}
 	
 	public StringValue stringValue(String name) {

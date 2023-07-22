@@ -14,10 +14,19 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.world;
+package de.hechler.patrick.utils.objects;
 
-public interface WorldType {
+@SuppressWarnings("javadoc")
+public class DefModPos {
 	
-	String name();
+	public int x;
+	public int y;
+	
+	public DefModPos() {}
+	
+	public DefModPos(int x, int y) {
+		this.x = x;
+		this.y = y;
+	}
 	
 }

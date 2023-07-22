@@ -141,13 +141,10 @@ import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.Tile;
-import de.hechler.patrick.utils.objects.Pos;
+import de.hechler.patrick.utils.objects.DefUnmodPos;
 import de.hechler.patrick.utils.objects.ACORNRandom;
 
 public class WorldDisplay implements ButtonGridListener {
-	
-	// TODO move to different class
-	public static final UUID NULL_UUID = new UUID(0L, 0L);
 	
 	private Thread                serverThread;
 	private Map<User, Connection> connects;
@@ -333,13 +330,13 @@ public class WorldDisplay implements ButtonGridListener {
 	@SuppressWarnings("unchecked")
 	private void moveAttackTurn(Entity<?, ?> use) {
 		this.data = new ArrayList<>();
-		((List<Object>) this.data).add(new Pos(use.x(), use.y()));
+		((List<Object>) this.data).add(new DefUnmodPos(use.x(), use.y()));
 		((List<Object>) this.data).add(use);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void moveOrAttack(List<Object> l) {
-		Pos  p    = (Pos) l.get(0);
+		DefUnmodPos  p    = (DefUnmodPos) l.get(0);
 		int  xadd = this.x - p.x();
 		int  yadd = this.y - p.y();
 		int  diff = Math.abs(xadd) + Math.abs(yadd);
@@ -663,7 +660,7 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private <T extends WorldThing<?, T>> Pos costumize(JPanel dp, JDialog d, Collection<? extends Value> val, Runnable finishHook, Function<Value, ValueSpec> specs,
+	private <T extends WorldThing<?, T>> DefUnmodPos costumize(JPanel dp, JDialog d, Collection<? extends Value> val, Runnable finishHook, Function<Value, ValueSpec> specs,
 			BiConsumer<Integer, Value> replace, boolean isList, boolean allowRemove) {
 		dp.setLayout(null);
 		d.setContentPane(new JScrollPane(dp));
@@ -921,7 +918,7 @@ public class WorldDisplay implements ButtonGridListener {
 			}
 			}
 		}
-		return new Pos(maxx, yoff);
+		return new DefUnmodPos(maxx, yoff);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes", "preview" })
@@ -951,7 +948,7 @@ public class WorldDisplay implements ButtonGridListener {
 	
 	private void rebuildCostumMap(MapValue<?> v, BiConsumer<Integer, Value> replace, Integer index, JDialog d, JPanel dp, JButton btn) {
 		while (dp.getComponentCount() > 0) dp.remove(0);
-		Pos off = costumize(dp, d, v.value().values(), null, GENERIC_SPEC, (i, newval) -> {
+		DefUnmodPos off = costumize(dp, d, v.value().values(), null, GENERIC_SPEC, (i, newval) -> {
 			Map<String, Value> newMap = new HashMap<>(v.value());
 			if (i == null) {
 				newMap.remove(newval.name());
@@ -989,7 +986,7 @@ public class WorldDisplay implements ButtonGridListener {
 	}
 	
 	private void rebuildCostumList(JButton btn, ListValue v, BiConsumer<Integer, Value> replace, Integer index, JDialog d, JPanel dp) {
-		Pos off = costumize(dp, d, v.value(), null, GENERIC_SPEC, (i, newval) -> {
+		DefUnmodPos off = costumize(dp, d, v.value(), null, GENERIC_SPEC, (i, newval) -> {
 			List<Value> newlist = new ArrayList<>(v.value());
 			if (newval == null) {
 				newlist.remove(i.intValue());

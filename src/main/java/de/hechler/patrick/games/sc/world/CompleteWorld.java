@@ -68,7 +68,7 @@ import de.hechler.patrick.games.sc.world.init.UserPlacer;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.NeigbourTiles;
 import de.hechler.patrick.games.sc.world.tile.Tile;
-import de.hechler.patrick.utils.objects.Pos;
+import de.hechler.patrick.utils.objects.DefUnmodPos;
 import de.hechler.patrick.utils.objects.ACORNRandom;
 
 /**
@@ -78,7 +78,7 @@ import de.hechler.patrick.utils.objects.ACORNRandom;
  * 
  * @author Patrick Hechler
  */
-public class CompleteWorld implements World, Iterable<CompleteWorld> {
+public class CompleteWorld extends World implements Iterable<CompleteWorld> {
 	
 	private final User                   root;
 	private final Tile[][]               tiles;
@@ -362,7 +362,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			UserWorld uw  = e.getValue();
 			conn.writeString(usr.name());
 			conn.writeInt(RWS_SUB4);
-			Pos p = uw.offset();
+			DefUnmodPos p = uw.offset();
 			conn.writeInt(p.x());
 			conn.writeInt(p.y());
 			OpenWorld.saveWorld(uw, conn);

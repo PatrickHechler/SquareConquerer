@@ -14,21 +14,19 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.addons;
+package de.hechler.patrick.games.sc.addons.addable;
 
-import java.util.List;
+import java.util.Map;
 
-@SuppressWarnings("javadoc")
-public class TheBaseAddonProvider extends AddonProvider {
+import de.hechler.patrick.games.sc.values.spec.ValueSpec;
+import de.hechler.patrick.games.sc.world.Pos;
+import de.hechler.patrick.games.sc.world.World;
+
+
+public abstract non-sealed class WorldType<P extends Pos> extends AddableType<WorldType<P>, World<P>> {
 	
-	public static final TheBaseAddon BASE_ADDON = new TheBaseAddon();
-	public static final WorldAddon WORLD_ADDON = new WorldAddon();
-	
-	private static final List<Addon> LIST = List.of(BASE_ADDON, WORLD_ADDON);
-	
-	@Override
-	public Iterable<Addon> addons() {
-		return LIST;
+	public WorldType(String name, String localName, Map<String, ValueSpec> values) {
+		super(name, localName, values);
 	}
 	
 }

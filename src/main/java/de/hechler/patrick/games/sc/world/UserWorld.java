@@ -16,6 +16,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
+import java.awt.Image;
 import java.lang.StackWalker.Option;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,23 +26,25 @@ import java.util.Map.Entry;
 import java.util.UUID;
 
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
+import de.hechler.patrick.games.sc.addons.addable.WorldType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.world.entity.Build;
 import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.tile.Tile;
-import de.hechler.patrick.utils.objects.Pos;
+import de.hechler.patrick.utils.objects.DefUnmodPos;
 
 @SuppressWarnings("javadoc")
-public class UserWorld implements World {
+public class UserWorld extends World {
 	
 	private final CompleteWorld cw;
 	private final User          usr;
 	public final int            modCnt;
-	private volatile Pos        off;
+	private volatile DefUnmodPos        off;
 	private volatile Tile[][]   tiles;
 	private volatile boolean    needUpdate = true;
 	
@@ -97,7 +100,7 @@ public class UserWorld implements World {
 		if (!this.needUpdate) {
 			return;
 		}
-		Pos                           oldOff   = this.off;
+		DefUnmodPos                           oldOff   = this.off;
 		Map<User, List<Entity<?, ?>>> all      = this.cw.entities();
 		List<Entity<?, ?>>            mine     = all.get(this.usr);
 		Tile[][]                      oldTiles = this.tiles;
@@ -155,7 +158,7 @@ public class UserWorld implements World {
 		this.needUpdate = false;
 	}
 	
-	private void addOldData(Pos oldOff, int minx, int miny, Tile[][] newTiles) {
+	private void addOldData(DefUnmodPos oldOff, int minx, int miny, Tile[][] newTiles) {
 		int      addx     = oldOff.x() - minx;
 		int      addy     = oldOff.y() - miny;
 		Tile[][] oldTiles = this.tiles;
@@ -202,7 +205,7 @@ public class UserWorld implements World {
 		nar[ny] = t;
 	}
 	
-	private void updateNoResize(List<Entity<?, ?>> mine, Pos off) {
+	private void updateNoResize(List<Entity<?, ?>> mine, DefUnmodPos off) {
 		int      xoff    = off.x();
 		int      yoff    = off.y();
 		Tile[][] myTiles = this.tiles;
@@ -213,15 +216,15 @@ public class UserWorld implements World {
 	
 	private void gAdd(Tile[][] tiles, int xoff, int yoff, Entity<?, ?> e) {
 		try {
-			Map<Pos, Integer> nmap = new HashMap<>();
-			Map<Pos, Integer> emap = new HashMap<>();
-			Map<Pos, Integer> tmap = new HashMap<>();
+			Map<DefUnmodPos, Integer> nmap = new HashMap<>();
+			Map<DefUnmodPos, Integer> emap = new HashMap<>();
+			Map<DefUnmodPos, Integer> tmap = new HashMap<>();
 			gInitLoop(tiles, xoff, yoff, e, nmap);
 			while (!nmap.isEmpty()) {
-				Iterator<Entry<Pos, Integer>> iter = nmap.entrySet().iterator();
+				Iterator<Entry<DefUnmodPos, Integer>> iter = nmap.entrySet().iterator();
 				while (iter.hasNext()) {
-					Entry<Pos, Integer> n  = iter.next();
-					Pos                 p  = n.getKey();
+					Entry<DefUnmodPos, Integer> n  = iter.next();
+					DefUnmodPos                 p  = n.getKey();
 					Integer             r  = n.getValue();
 					int                 ri = r.intValue();
 					iter.remove();
@@ -241,7 +244,7 @@ public class UserWorld implements World {
 						gAdd(tmap, tiles, x, y - 1, xoff, yoff, t, e, ri);
 					}
 				}
-				Map<Pos, Integer> smap = tmap;
+				Map<DefUnmodPos, Integer> smap = tmap;
 				tmap = nmap;
 				nmap = smap;
 			}
@@ -250,7 +253,7 @@ public class UserWorld implements World {
 		}
 	}
 	
-	private void gAdd(Map<Pos, Integer> tmap, Tile[][] tiles, int x, int y, int xoff, int yoff, Tile old, Entity<?, ?> e, int range) {
+	private void gAdd(Map<DefUnmodPos, Integer> tmap, Tile[][] tiles, int x, int y, int xoff, int yoff, Tile old, Entity<?, ?> e, int range) {
 		if (x < 0 || y < 0 || x >= this.cw.xlen() || y >= this.cw.ylen()) {
 			return;
 		}
@@ -264,11 +267,11 @@ public class UserWorld implements World {
 		range -= need;
 		if (range > 0) {
 			Integer val = Integer.valueOf(range);
-			tmap.put(new Pos(x, y), val);
+			tmap.put(new DefUnmodPos(x, y), val);
 		}
 	}
 	
-	private void gInitLoop(Tile[][] tiles, int xoff, int yoff, Entity<?, ?> e, Map<Pos, Integer> nmap) throws TurnExecutionException {
+	private void gInitLoop(Tile[][] tiles, int xoff, int yoff, Entity<?, ?> e, Map<DefUnmodPos, Integer> nmap) throws TurnExecutionException {
 		int  x  = e.x();
 		int  y  = e.y();
 		int  vr = e.viewRange();
@@ -287,7 +290,7 @@ public class UserWorld implements World {
 				t.setBuild((Build) e);
 			}
 		}
-		nmap.put(new Pos(x, y), Integer.valueOf(vr));
+		nmap.put(new DefUnmodPos(x, y), Integer.valueOf(vr));
 	}
 	
 	void init(Tile[][] tiles, int xoff, int yoff) {
@@ -299,10 +302,10 @@ public class UserWorld implements World {
 			throw new IllegalStateException("already initilized!");
 		}
 		this.tiles = tiles;
-		this.off   = new Pos(xoff, yoff);
+		this.off   = new DefUnmodPos(xoff, yoff);
 	}
 	
-	Pos offset() {
+	DefUnmodPos offset() {
 		Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != CompleteWorld.class) {
 			throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
@@ -359,5 +362,5 @@ public class UserWorld implements World {
 		}
 		return CompleteWorld.get(this.tiles, uuid);
 	}
-	
+
 }

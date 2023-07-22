@@ -39,7 +39,7 @@ import de.hechler.patrick.games.sc.world.World;
 import de.hechler.patrick.games.sc.world.WorldThing;
 import de.hechler.patrick.utils.objects.ACORNRandom;
 
-public abstract sealed class AddableType<M extends AddableType<M, A>, A extends WorldThing<M, A>> permits EntityType<?, ?>, GroundType, ResourceType {
+public abstract sealed class AddableType<M extends AddableType<M, A>, A extends WorldThing<M, A>> permits EntityType<?, ?>, GroundType, ResourceType, WorldType {
 	
 	public final String                          name;
 	public final String                          localName;

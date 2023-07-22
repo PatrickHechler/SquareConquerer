@@ -17,7 +17,7 @@
 package de.hechler.patrick.games.squareconqerer.stuff;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.random.RandomGenerator;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 
 /**
@@ -50,10 +50,10 @@ import java.util.random.RandomGenerator;
  * 
  * @see java.util.Random
  */
-public final class ACORNRandom implements RandomGenerator, java.io.Serializable {
+public final class ACORNRandom implements ACORNRandom, java.io.Serializable {
 	
 	/*
-	 * RandomWrapper is not here Class used to wrap a {@link java.util.random.RandomGenerator} to {@link java.util.Random}.
+	 * RandomWrapper is not here Class used to wrap a {@link java.util.random.ACORNRandom} to {@link java.util.Random}.
 	 */
 	
 	private static final long serialVersionUID = -9068865220583004496L;
