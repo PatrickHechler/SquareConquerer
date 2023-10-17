@@ -16,9 +16,9 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.addons;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -26,26 +26,30 @@ import java.util.function.Function;
 public class GroupTree {
 	
 	private static final Consumer<GroupTree> DEEP_CLEAR = new Consumer<>() {
+		
 		@Override
 		public void accept(GroupTree g) {
 			g.addons.clear();
 			g.forEachGroup(this);
 			g.groups.clear();
 		}
+		
 	};
 	
 	private static final BiConsumer<GroupTree, Consumer<? super Addon>> FOR_EACH_DEEP = new BiConsumer<>() {
+		
 		@Override
 		public void accept(GroupTree g, Consumer<? super Addon> c) {
 			g.forEach(c, this, c);
 		}
+		
 	};
 	
 	private final GroupTree                   parent;
 	private final String                      name;
 	private final int                         depth;
 	private final Function<String, GroupTree> addFunc;
-	private final Map<String, Addon>        addons;
+	private final Map<String, Addon>          addons;
 	private final Map<String, GroupTree>      groups;
 	
 	public GroupTree() {
@@ -57,12 +61,22 @@ public class GroupTree {
 		this.name    = name;
 		this.depth   = parent != null ? parent.depth + 1 : 0;
 		this.addFunc = str -> new GroupTree(this, str);
-		this.addons  = new HashMap<>();
-		this.groups  = new HashMap<>();
+		this.addons  = new TreeMap<>();
+		this.groups  = new TreeMap<>();
 	}
 	
 	public boolean isEmpty() {
 		return this.addons.isEmpty() && this.groups.isEmpty();
+	}
+	
+	public String name() {
+		if (this.parent == null) throw new IllegalStateException("the root tree has no name!");
+		return this.name;
+	}
+	
+	@Override
+	public String toString() {
+		return name();
 	}
 	
 	public void transferFrom(GroupTree g) {
@@ -87,7 +101,7 @@ public class GroupTree {
 				mg = mg.parent;
 			}
 		}
-		forEachDeep(this::add);
+		g.forEachDeep(this::add);
 		DEEP_CLEAR.accept(g);
 		if (g.parent != null) {
 			g.parent.groups.remove(g.name);
@@ -98,7 +112,7 @@ public class GroupTree {
 		if (this.depth == addon.groupDepth()) {
 			this.addons.put(addon.name, addon);
 		} else {
-			this.groups.computeIfAbsent(addon.group(this.depth), this.addFunc);
+			this.groups.computeIfAbsent(addon.group(this.depth), this.addFunc).add(addon);
 		}
 	}
 	
@@ -119,13 +133,12 @@ public class GroupTree {
 	public boolean contains(Addon addon) {
 		if (this.depth == addon.groupDepth()) {
 			return this.addons.containsKey(addon.name);
-		} else {
-			GroupTree g = this.groups.get(addon.group(this.depth));
-			if (g == null) {
-				return false;
-			}
-			return g.contains(addon);
 		}
+		GroupTree g = this.groups.get(addon.group(this.depth));
+		if (g == null) {
+			return false;
+		}
+		return g.contains(addon);
 	}
 	
 	public <T> void forEach(Consumer<? super Addon> c0, BiConsumer<? super GroupTree, T> c1, T arg) {

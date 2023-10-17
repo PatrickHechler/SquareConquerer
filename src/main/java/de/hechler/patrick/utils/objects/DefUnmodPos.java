@@ -14,19 +14,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-package de.hechler.patrick.games.sc.values;
+package de.hechler.patrick.utils.objects;
 
-import java.util.List;
-import java.util.Objects;
-
-import de.hechler.patrick.games.sc.ui.players.User;
-
-public record UserListValue(String name, List<User> value) implements Value {
-	
-	public UserListValue(String name, List<User> value) {
-		this.name  = Objects.requireNonNull(name, "name");
-		this.value = List.copyOf(value);
-	}
+public record DefUnmodPos(int x, int y) {
 	
 }
-

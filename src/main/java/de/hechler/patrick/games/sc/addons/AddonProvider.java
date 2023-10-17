@@ -18,6 +18,6 @@ package de.hechler.patrick.games.sc.addons;
 
 public abstract class AddonProvider {
 	
-	protected abstract Iterable<Addon> addons();
+	public abstract Iterable<Addon> addons();
 	
 }

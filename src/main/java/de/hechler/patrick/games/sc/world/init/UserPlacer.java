@@ -22,11 +22,11 @@ import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.world.World;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 public interface UserPlacer {
 	
-	void initilize(World w, User[] users, Random2 rnd) throws TurnExecutionException;
+	void initilize(World w, User[] users, ACORNRandom rnd) throws TurnExecutionException;
 
 	void writePlacer(Connection conn) throws IOException;
 	

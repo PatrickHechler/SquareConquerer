@@ -19,39 +19,42 @@ package de.hechler.patrick.games.sc.values.spec;
 import java.util.List;
 import java.util.Objects;
 
-import de.hechler.patrick.games.sc.ui.players.User;
-import de.hechler.patrick.games.sc.values.UserListValue;
+import de.hechler.patrick.games.sc.values.ListValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record UserListSpec(String name, int minSize, int maxSize) implements ValueSpec {
+public record ListSpec(String name, String localName, int minSize, int maxSize) implements ValueSpec {
 	
-	public UserListSpec {
+	public ListSpec {
 		Objects.requireNonNull(name, "name");
 		if (minSize > maxSize || minSize < 0) {
 			throw new IllegalArgumentException("min=" + minSize + " max=" + maxSize);
 		}
 	}
 	
-	public UserListValue withValue(List<User> val) {
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
+	}
+	
+	public ListValue withValue(List<Value> val) {
 		int s = val.size();
 		if (s < this.minSize || s > this.maxSize) {
 			throw new IllegalArgumentException("min=" + this.minSize + " max=" + this.maxSize + " size=" + s);
 		}
-		return new UserListValue(this.name, val);
+		return new ListValue(this.name, val);
 	}
 	
-	public UserListValue withValue(User... val) {
+	public ListValue withValue(Value... val) {
 		int s = val.length;
 		if (s < this.minSize || s > this.maxSize) {
 			throw new IllegalArgumentException("min=" + this.minSize + " max=" + this.maxSize + " size=" + s);
 		}
-		return new UserListValue(this.name, List.of(val));
+		return new ListValue(this.name, List.of(val));
 	}
 	
 	@Override
 	public void validate(Value v) {
-		if (!(v instanceof UserListValue d)) throw new IllegalArgumentException("the given value is no user list value");
+		if (!(v instanceof ListValue d)) throw new IllegalArgumentException("the given value is no user list value");
 		if (d.value().size() < this.minSize || d.value().size() > this.maxSize)
 			throw new IllegalArgumentException("the given values size is outside of the allowed bounds");
 	}

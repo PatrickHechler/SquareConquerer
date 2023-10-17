@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Optional;
 
 import de.hechler.patrick.games.sc.addons.addable.AddableType;
 import de.hechler.patrick.games.sc.addons.addable.GroundType;
@@ -34,14 +33,26 @@ import de.hechler.patrick.games.sc.ui.pages.PageEntry.TextEntry;
 import de.hechler.patrick.games.sc.ui.pages.TextOnlyPage;
 import de.hechler.patrick.utils.objects.Version;
 
+/**
+ * the base addon, the only addon which always must be enabled<br>
+ * it only adds the not explored ground
+ * 
+ * @author Patrick Hechler
+ */
 public class TheBaseAddon extends Addon {
 	
+	/**
+	 * the version of the base addon/game
+	 */
 	public static final Version VERSION = new Version(1, 0, 0);
 	
-	public static final String BASE_PROVIDER_NAME = "base:SquareConquerer";
+	/**
+	 * the name of the base addon
+	 */
+	public static final String BASE_ADDON_NAME = "base.SquareConquerer";
 	
-	public TheBaseAddon() {
-		super(BASE_PROVIDER_NAME, "Square Conquerer", new String[0], VERSION, Map.of(GroundType.NOT_EXPLORED_TYPE.name, GroundType.NOT_EXPLORED_TYPE), "AGPL v3+");
+	TheBaseAddon() {
+		super(BASE_ADDON_NAME, "Square Conquerer", new String[0], VERSION, Map.of(GroundType.NOT_EXPLORED_TYPE.name, GroundType.NOT_EXPLORED_TYPE), "AGPL v3+");
 	}
 	
 	/** {@inheritDoc} */
@@ -56,32 +67,51 @@ public class TheBaseAddon extends Addon {
 	
 	/** {@inheritDoc} */
 	@Override
-	protected Optional<Page> loadCredits() {
-		return Optional.of(new Page("Square Conquerer Credits", //
-			new EntryBlock(//
-				new TextEntry("Almoust everything: "),//
-				new LinkEntry("Patrick Hechler", URI.create("https://github.com/PatrickHechler")) //
-			)//
-		));
+	public boolean hasCredits() {
+		return true;
 	}
 	
 	/** {@inheritDoc} */
 	@Override
-	protected Optional<Page> loadHelp() {
-		return Optional.of(new Page("Square Conquerer Help", //
-			new EntryBlock(new TextEntry("there is no help, good luck"))//
-		));
+	protected Page loadCredits() {
+		return new Page("Square Conquerer Credits", //
+				new EntryBlock(//
+						new TextEntry("Almoust everything: "), //
+						new LinkEntry("Patrick Hechler", URI.create("https://github.com/PatrickHechler")) //
+				)//
+		);
 	}
 	
 	/** {@inheritDoc} */
 	@Override
-	public void checkDependencies(@SuppressWarnings("unused") Map<String, Addon> addons, @SuppressWarnings("unused") Map<String, AddableType<?, ?>> added) {
+	public boolean hasHelp() {
+		return true; // thats a lie
+	}
+	
+	/** {@inheritDoc} */
+	@Override
+	protected Page loadHelp() {
+		return new Page("Square Conquerer Help", //
+				new EntryBlock(new TextEntry("there is no help, good luck"))//
+		);
+	}
+	
+	/** {@inheritDoc} */
+	@Override
+	public void checkDependencies(Map<String, Addon> addons, Map<String, AddableType<?, ?>> added) {
+		String val = System.getProperty("square-conquerer.base-addon.no-check");
+		if ("no-check".equals(val)) {
+			return; // this can be dangerous
+		}
+		if (addons.get(this.name) != this) {
+			throw new MissingDependencyException("I am missing the base addon ('" + this.name + "')!");
+		}
 		for (AddableType<?, ?> a : added.values()) {
 			if (a instanceof GroundType && a != GroundType.NOT_EXPLORED_TYPE) {
 				return;
 			}
 		}
-		throw new MissingDependencyException("there is only the not-explored type!");
+		throw new MissingDependencyException("the only ground type is the not-explored ground type!");
 	}
 	
 }

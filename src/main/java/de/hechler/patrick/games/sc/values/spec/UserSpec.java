@@ -23,10 +23,14 @@ import de.hechler.patrick.games.sc.values.UserValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record UserSpec(String name) implements ValueSpec {
+public record UserSpec(String name, String localName) implements ValueSpec {
 	
 	public UserSpec {
 		Objects.requireNonNull(name, "name");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public UserValue withValue(User val) {

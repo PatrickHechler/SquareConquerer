@@ -25,17 +25,16 @@ import java.util.UUID;
 
 import de.hechler.patrick.games.sc.Imagable;
 import de.hechler.patrick.games.sc.addons.addable.AddableType;
-import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.values.BooleanValue;
 import de.hechler.patrick.games.sc.values.DoubleValue;
 import de.hechler.patrick.games.sc.values.EnumValue;
 import de.hechler.patrick.games.sc.values.IntValue;
 import de.hechler.patrick.games.sc.values.JustAValue;
+import de.hechler.patrick.games.sc.values.ListValue;
 import de.hechler.patrick.games.sc.values.LongValue;
 import de.hechler.patrick.games.sc.values.MapValue;
 import de.hechler.patrick.games.sc.values.StringValue;
 import de.hechler.patrick.games.sc.values.TypeValue;
-import de.hechler.patrick.games.sc.values.UserListValue;
 import de.hechler.patrick.games.sc.values.UserValue;
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.WorldThingValue;
@@ -44,10 +43,11 @@ import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 
 public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends WorldThing<T, M>> implements Imagable, Comparable<WorldThing<?, ?>>
-	permits Entity<?, ?>, Ground, Resource {
+		permits Entity<?, ?>, Ground, Resource, World {
 	
 	// everything can block view, so this is here
-	public static final String VIEW_BLOCK = "view:block";
+	public static final String VIEW_BLOCK     = "view:block";
+	public static final String VIEW_BLOCK_LOC = "view block";
 	
 	public final UUID uuid;
 	
@@ -91,8 +91,9 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		return (BooleanValue) value(name);
 	}
 	
-	public EnumValue<?> enumValue(String name) {
-		return (EnumValue<?>) value(name);
+	@SuppressWarnings("unchecked")
+	public <E extends Enum<E>> EnumValue<E> enumValue(String name) {
+		return (EnumValue<E>) value(name);
 	}
 	
 	public StringValue stringValue(String name) {
@@ -103,8 +104,8 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		return (UserValue) value(name);
 	}
 	
-	public UserListValue userListValue(String name) {
-		return (UserListValue) value(name);
+	public ListValue userListValue(String name) {
+		return (ListValue) value(name);
 	}
 	
 	public WorldThingValue worldThingValue(String name) {
@@ -112,8 +113,8 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 	}
 	
 	@SuppressWarnings("unchecked")
-	public <K extends Value, V extends Value> MapValue<K, V> mapValue(String name) {
-		return (MapValue<K, V>) value(name);
+	public <V extends Value> MapValue<V> mapValue(String name) {
+		return (MapValue<V>) value(name);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -169,9 +170,9 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		case @SuppressWarnings("preview") UserValue uv -> {
 			return uv.value().name().compareTo(((UserValue) ov).value().name());
 		}
-		case @SuppressWarnings("preview") UserListValue ulv -> {
-			Iterator<User> iter  = ulv.value().iterator();
-			Iterator<User> oiter = ((UserListValue) ov).value().iterator();
+		case @SuppressWarnings("preview") ListValue ulv -> {
+			Iterator<Value> iter  = ulv.value().iterator();
+			Iterator<Value> oiter = ((ListValue) ov).value().iterator();
 			while (iter.hasNext()) {
 				if (!oiter.hasNext()) return 1;
 				int cmp = iter.next().name().compareTo(oiter.next().name());
@@ -189,8 +190,8 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 			UUID ouuid = ((WorldThingValue) ov).value().uuid;
 			return uuid.compareTo(ouuid);
 		}
-		case @SuppressWarnings("preview") MapValue<?, ?> mv -> {
-			return mapCompare(mv, (MapValue<?, ?>) ov);
+		case @SuppressWarnings("preview") MapValue<?> mv -> {
+			return mapCompare(mv, (MapValue<?>) ov);
 		}
 		case @SuppressWarnings("preview") TypeValue<?> tv -> {
 			return tv.name().compareTo(((TypeValue<?>) ov).name());
@@ -198,26 +199,24 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		}
 	}
 	
-	private static int mapCompare(MapValue<?, ?> mv, MapValue<?, ?> omv) {
-		Set<?>                                            oes  = omv.navigatableMap().entrySet();
+	private static int mapCompare(MapValue<?> mv, MapValue<?> omv) {
+		Set<?>                                   oes  = omv.navigatableMap().entrySet();
 		@SuppressWarnings("unchecked")
-		Iterator<Entry<? extends Value, ? extends Value>> iter = ((Set<Entry<? extends Value, ? extends Value>>) oes).iterator();
-		for (Entry<? extends Value, ? extends Value> e : mv.navigatableMap().entrySet()) {
+		Iterator<Entry<String, ? extends Value>> iter = ((Set<Entry<String, ? extends Value>>) oes).iterator();
+		for (Entry<String, ? extends Value> e : mv.navigatableMap().entrySet()) {
 			if (!iter.hasNext()) return 1;
-			Entry<? extends Value, ? extends Value> oe = iter.next();
-			Value                                   o  = e.getKey();
-			Value                                   oo = oe.getKey();
+			Entry<String, ? extends Value> oe = iter.next();
+			String                         o  = e.getKey();
+			String                         oo = oe.getKey();
 			
-			int cmp = o.name().compareTo(oo.name());
-			if (cmp != 0) return cmp;
-			cmp = compare(o, oo);
+			int cmp = o.compareTo(oo);
 			if (cmp != 0) return cmp;
 			
-			o   = e.getValue();
-			oo  = oe.getValue();
-			cmp = o.name().compareTo(oo.name());
+			Value vo  = e.getValue();
+			Value voo = oe.getValue();
+			cmp = vo.name().compareTo(voo.name());
 			if (cmp != 0) return cmp;
-			cmp = compare(o, oo);
+			cmp = compare(vo, voo);
 			if (cmp != 0) return cmp;
 		}
 		if (iter.hasNext()) return -1;
@@ -253,15 +252,15 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 		case @SuppressWarnings("preview") EnumValue<?> ev -> h = h * 53 + ev.value().hashCode();
 		case @SuppressWarnings("preview") StringValue sv -> h = h * 11 + sv.value().hashCode();
 		case @SuppressWarnings("preview") UserValue uv -> h = h * 51 + uv.value().name().hashCode();
-		case @SuppressWarnings("preview") UserListValue ulv -> {
-			for (User usr : ulv.value()) {
+		case @SuppressWarnings("preview") ListValue ulv -> {
+			for (Value usr : ulv.value()) {
 				h = h * 37 + usr.name().hashCode();
 			}
 		}
 		case @SuppressWarnings("preview") WorldThingValue wtv -> h = h * 41 + 4;
-		case @SuppressWarnings("preview") MapValue<?, ?> mv -> {
-			for (Entry<? extends Value, ? extends Value> e : (Set<Entry<? extends Value, ? extends Value>>) (Set<?>) mv.navigatableMap().entrySet()) {
-				h = hash(h, e.getKey());
+		case @SuppressWarnings("preview") MapValue<?> mv -> {
+			for (Entry<String, ? extends Value> e : (Set<Entry<String, ? extends Value>>) (Set<?>) mv.navigatableMap().entrySet()) {
+				h = h + 31 * e.getKey().hashCode();
 				h = hash(h, e.getValue());
 			}
 		}
@@ -289,6 +288,15 @@ public abstract sealed class WorldThing<T extends AddableType<T, M>, M extends W
 	@SuppressWarnings("unchecked")
 	private static <T extends Enum<T>> int cmp(Enum<T> v1, Enum<?> v2) {
 		return v1.compareTo((T) v2);
+	}
+	
+	@Override
+	public String toString() {
+		return type().localName;
+	}
+	
+	public Iterable<WorldThing<?,?>> nextTurnNotify(int playerCount) {
+		return null;
 	}
 	
 }

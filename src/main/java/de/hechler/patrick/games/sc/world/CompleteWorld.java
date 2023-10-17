@@ -47,10 +47,12 @@ import de.hechler.patrick.games.sc.addons.addable.ResourceType;
 import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.ErrorType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
+import de.hechler.patrick.games.sc.turn.Attack;
 import de.hechler.patrick.games.sc.turn.CarryTurn;
 import de.hechler.patrick.games.sc.turn.Direction;
 import de.hechler.patrick.games.sc.turn.EntityTurn;
 import de.hechler.patrick.games.sc.turn.MineTurn;
+import de.hechler.patrick.games.sc.turn.MoveAct;
 import de.hechler.patrick.games.sc.turn.MoveTurn;
 import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.StoreTurn;
@@ -66,8 +68,8 @@ import de.hechler.patrick.games.sc.world.init.UserPlacer;
 import de.hechler.patrick.games.sc.world.resource.Resource;
 import de.hechler.patrick.games.sc.world.tile.NeigbourTiles;
 import de.hechler.patrick.games.sc.world.tile.Tile;
-import de.hechler.patrick.utils.objects.Pos;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.DefUnmodPos;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 /**
  * the complete world knows everything
@@ -76,7 +78,7 @@ import de.hechler.patrick.utils.objects.Random2;
  * 
  * @author Patrick Hechler
  */
-public class CompleteWorld implements World, Iterable<CompleteWorld> {
+public class CompleteWorld extends World implements Iterable<CompleteWorld> {
 	
 	private final User                   root;
 	private final Tile[][]               tiles;
@@ -88,7 +90,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	private volatile boolean             allowRootTurns;
 	private volatile Tile[][]            starttiles;
 	private volatile byte[]              seed;
-	private volatile Random2             rnd;
+	private volatile ACORNRandom         rnd;
 	
 	private CompleteWorld(User root, Tile[][] tiles, UserPlacer placer) {
 		this.root               = root;
@@ -278,7 +280,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	@Override
 	public Iterator<CompleteWorld> iterator() {
 		if (this.rnd == null) throw new IllegalStateException("the game did not yet start");
-		return new Iterator<CompleteWorld>() {
+		return new Iterator<>() {
 			
 			private Iterator<Map<User, Turn>> iter  = CompleteWorld.this.allTurns.iterator();
 			private CompleteWorld             world = null;
@@ -292,7 +294,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			public CompleteWorld next() {
 				if (this.world == null) { // do a copy of the start tiles
 					this.world = Builder.create(CompleteWorld.this.root, CompleteWorld.this.starttiles, CompleteWorld.this.placer);
-				} else if (!this.world.running()) {
+				} else if (!this.world.started()) {
 					this.world.startGame0(CompleteWorld.this.seed, false);
 				} else if (!this.iter.hasNext()) {
 					throw new NoSuchElementException("no more elements");
@@ -334,7 +336,11 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	private /* synchronized */ void saveEverything(Connection conn, boolean savePWs) throws IOException {
 		if (this.seed == null) throw new IllegalStateException("the game did not yet start");
 		conn.writeInt(RWS_START);
-		conn.writeLong(this.rnd.getCurrentSeed());
+		long[] arr = this.rnd.getCurrentState();
+		conn.writeInt(arr.length);
+		for (int i = 0; i < arr.length; i++) {
+			conn.writeLong(arr[i]);
+		}
 		conn.writeInt(this.seed.length);
 		conn.writeArr(this.seed);
 		conn.writeInt(RWS_SUB0);
@@ -356,7 +362,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			UserWorld uw  = e.getValue();
 			conn.writeString(usr.name());
 			conn.writeInt(RWS_SUB4);
-			Pos p = uw.offset();
+			DefUnmodPos p = uw.offset();
 			conn.writeInt(p.x());
 			conn.writeInt(p.y());
 			OpenWorld.saveWorld(uw, conn);
@@ -392,8 +398,11 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 */
 	public static CompleteWorld loadEverything(Connection conn) throws IOException {
 		conn.readInt(RWS_START);
-		long   curSeed = conn.readLong();
-		byte[] seed    = new byte[conn.readInt()];
+		long[] curState = new long[conn.readStrictPos()];
+		for (int i = 0; i < curState.length; i++) {
+			curState[i] = conn.readLong();
+		}
+		byte[] seed = new byte[conn.readInt()];
 		conn.readArr(seed);
 		conn.readInt(RWS_SUB0);
 		User root = conn.usr;
@@ -405,7 +414,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		res.starttiles = OpenWorld.loadWorld(null, conn);
 		conn.readInt(RWS_SUB2);
 		res.seed = seed;
-		res.rnd  = new Random2(curSeed);
+		res.rnd  = new ACORNRandom(curState, true);
 		for (int remain = conn.readPos(); remain > 0; remain--) {
 			String name = conn.readString();
 			User   usr  = root.get(name);
@@ -475,9 +484,18 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	/**
 	 * start the game with the given seed
 	 * <p>
-	 * the seed needs to be build the following way:<br>
-	 * the first 16 bytes are randomly generated by the root<br>
-	 * every 16 bytes are generated by a sub world user. the sub world users are ordered according to their name (sort them with {@link String#compareTo(String)}).
+	 * the seed must have the following properties:
+	 * <ul>
+	 * <li>the length (in bytes) modulo 15 is zero</li>
+	 * <li>the first and last 8 * 15 bytes are filled by the server/root</li>
+	 * <li>the other bytes are filled by each user/sub world
+	 * <ul>
+	 * <li>each user/sub world fills a (strict positive) amount of bytes with a length which is modulo 15 zero (for example 15, 30 or 45)</li>
+	 * <li>they are sorted after the {@link User#name()} (according to {@link String#compareTo(String)})</li>
+	 * <li>all users/sub worlds provide the same amount of bytes</li>
+	 * </ul>
+	 * </li>
+	 * </ul>
 	 * 
 	 * @param s the random seed
 	 */
@@ -501,10 +519,9 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			Map<String, User> map    = this.root.subUsers();
 			Collection<User>  values = map.values();
 			User[]            users  = values.toArray(new User[values.size()]);
-			if ((users.length + 1) * 16 != s.length) throw new IllegalArgumentException("inavlid array size");
-			long sval = seed(s);
+			long[]            sval   = seed(s);
 			this.seed = s;
-			this.rnd  = new Random2(sval);
+			this.rnd  = new ACORNRandom(sval, true);
 			Arrays.sort(users, null);
 			shuffle(this.rnd, users);
 			Tile.noCheck(() -> {
@@ -518,19 +535,26 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		threadStart(() -> executeNTL(hash, null));
 	}
 	
-	private static long seed(byte[] s) {
-		long val = 0x6AAF88D7759474ABL;
-		for (int i = 0; i < s.length; i += 16) {
-			long vi = val(s, i);
-			val  = (val * vi) ^ ~Math.multiplyHigh(val, vi);
-			val ^= val(s, i + 8);
+	private static long[] seed(byte[] s) {
+		if ((s.length % 15) != 0) { // the ignored byte is skipped, so its only 15 bytes for each two longs
+			throw new IllegalStateException("invalid seed size: " + s.length);
 		}
-		return val;
+		long[] seed = new long[s.length >> 3];
+		for (int i = 0,oi=0; i < seed.length;i+=2,oi+=15) {
+			seed[i] = val(s, oi);
+			seed[i+1] = val0(s, oi+8);
+		}
+		return seed;
 	}
 	
 	private static long val(byte[] s, int off) {
 		return s[off] & 0xFF | ((s[off + 1] & 0xFFL) << 8) | ((s[off + 2] & 0xFFL) << 16) | ((s[off + 3] & 0xFFL) << 24) | ((s[off + 4] & 0xFFL) << 32)
-			| ((s[off + 5] & 0xFFL) << 40) | ((s[off + 6] & 0xFFL) << 48) | ((s[off + 7] & 0xFFL) << 56);
+				| ((s[off + 5] & 0xFFL) << 40) | ((s[off + 6] & 0xFFL) << 48) | ((s[off + 7] & 0xFFL) << 56);
+	}
+	
+	private static long val0(byte[] s, int off) {
+		return s[off] & 0xFF | ((s[off + 1] & 0xFFL) << 8) | ((s[off + 2] & 0xFFL) << 16) | ((s[off + 3] & 0xFFL) << 24) | ((s[off + 4] & 0xFFL) << 32)
+				| ((s[off + 5] & 0xFFL) << 40) | ((s[off + 6] & 0xFFL) << 48);
 	}
 	
 	/**
@@ -540,7 +564,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 * 
 	 * @return <code>true</code> if the game is currently running and <code>false</code> if not
 	 */
-	public synchronized boolean running() {
+	public synchronized boolean started() {
 		return this.rnd != null;
 	}
 	
@@ -610,64 +634,104 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	}
 	
 	private synchronized void executeTurn() {
-		int turnNum = turn();
-		if (turnNum < 0) {
-			return;
-		}
-		NavigableMap<String, User> map = new TreeMap<>(this.allowRootTurns ? this.root.users() : this.root.subUsers());
-		turnNum %= map.size();
-		User usr      = map.values().stream().skip(turnNum).findFirst().orElseThrow();
-		Turn execTurn = this.userTurns.get(usr);
-		if (execTurn == null) {
-			return;
-		}
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		Connection            conn = Connection.createUnsecure(this.root, baos, this);
-		try {
-			execTurn.sendTurn(conn);
-		} catch (IOException e) {
-			throw new IOError(e);
-		}
-		this.allTurns.add(new HashMap<>(this.userTurns));
-		for (EntityTurn et : randomOrder(execTurn.turns())) {
-			try {
-				Entity<?, ?> e = et.entity();
-				Tile         t = this.tiles[e.x()][e.y()];
-				executeEntityTurn(et, t);
-			} catch (TurnExecutionException e) {
-				System.err.println(String.format("error while executing the user turn: %s: %s", et.entity().owner(), e.type));
-				e.printStackTrace();
-			} catch (Exception e) {
-				System.err.println(String.format("error while executing the user turn: %s:", et.entity().owner()));
-				e.printStackTrace();
+		while (true) {
+			int turnNum = turn();
+			if (turnNum < 0) {
+				return;
 			}
+			NavigableMap<String, User> map = new TreeMap<>(this.allowRootTurns ? this.root.users() : this.root.subUsers());
+			turnNum %= map.size();
+			User usr      = map.values().stream().skip(turnNum).findFirst().orElseThrow();
+			Turn execTurn = this.userTurns.get(usr);
+			if (execTurn == null) {
+				return;
+			}
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			Connection            conn = Connection.createUnsecure(this.root, baos, this);
+			try {
+				execTurn.sendTurn(conn);
+			} catch (IOException e) {
+				throw new IOError(e);
+			}
+			this.allTurns.add(new HashMap<>(this.userTurns));
+			for (EntityTurn et : randomOrder(execTurn.turns())) {
+				try {
+					Entity<?, ?> e = et.entity();
+					Tile         t = this.tiles[e.x()][e.y()];
+					executeEntityTurn(et, t);
+				} catch (TurnExecutionException e) {
+					System.err.println(String.format("error while executing the user turn: %s: %s", et.entity().owner(), e.type));
+					e.printStackTrace();
+				} catch (Exception e) {
+					System.err.println(String.format("error while executing the user turn: %s:", et.entity().owner()));
+					e.printStackTrace();
+				}
+			}
+			int pc = this.allowRootTurns ? this.user().users().size() : this.user().subUsers().size();
+			for (int x = 0; x < this.tiles.length; x++) {
+				Tile[] ts = this.tiles[x];
+				for (int y = 0; y < ts.length; y++) {
+					Tile t = ts[y];
+					t.ground().nextTurnNotify(pc);
+					WorldThing<?, ?> w = t.build();
+					if (w != null) w.nextTurnNotify(pc);
+					t.resourcesStream().forEach(r -> r.nextTurnNotify(pc));
+					t.unitsStream().forEach(u -> u.nextTurnNotify(pc));
+				}
+			}
+			executeNTL(calcHash(), calcHash(baos.toByteArray()));
 		}
-		executeNTL(calcHash(), calcHash(baos.toByteArray()));
 	}
 	
 	@SuppressWarnings("preview")
 	private void executeEntityTurn(EntityTurn turn, Tile t) throws TurnExecutionException {
+		if (turn.entity().lives() <= 0) {
+			throw new TurnExecutionException(ErrorType.DEAD);
+		}
 		switch (turn) {
-		case MoveTurn(Unit u, List<Direction> dirs) -> {
+		case MoveTurn(Unit u, List<MoveAct> dirs) -> {
 			checkHasUnit(u, t);
 			if (u.moveRange() < dirs.size()) throw new TurnExecutionException(ErrorType.INVALID_TURN);
-			for (Direction dir : dirs) {
-				int  x       = u.x();
-				int  y       = u.y();
-				Tile newTile = this.tiles[x + dir.xadd][y + dir.yadd];
-				Tile oldTile = this.tiles[x][y];
-				u.changePos(x + dir.xadd, y + dir.yadd, newTile, oldTile);
-				boolean b = false;
-				try {
-					newTile.addUnit(u);
-					b = true;
-					oldTile.removeUnit(u);
-				} catch (TurnExecutionException tee) {
-					u.changePos(x, y, oldTile, newTile);
-					if (b) {
-						newTile.removeUnit(u);
+			for (MoveAct ma : dirs) {
+				int x = u.x();
+				int y = u.y();
+				switch (ma) {
+				case Direction dir -> {
+					Tile newTile = this.tiles[x + dir.xadd][y + dir.yadd];
+					Tile oldTile = this.tiles[x][y];
+					u.changePos(x + dir.xadd, y + dir.yadd, newTile, oldTile);
+					boolean b = false;
+					try {
+						newTile.addUnit(u);
+						b = true;
+						oldTile.removeUnit(u);
+					} catch (TurnExecutionException tee) {
+						u.changePos(x, y, oldTile, newTile);
+						if (b) {
+							newTile.removeUnit(u);
+						}
+						throw tee;
 					}
-					throw tee;
+				}
+				case Attack(Entity<?, ?> enemy) -> {
+					if (enemy.owner() == u.owner()) {
+						throw new TurnExecutionException(ErrorType.INVALID_TURN);
+					}
+					if (enemy.lives() <= 0) {
+						break;
+					}
+					u.attack(enemy);
+					if (enemy.lives() <= 0) {
+						switch (enemy) {
+						case Unit eu -> this.tiles[eu.x()][eu.y()].removeUnit(eu);
+						case Build eb -> this.tiles[eb.x()][eb.y()].removeBuild(eb);
+						}
+					}
+					if (u.lives() <= 0) {
+						this.tiles[x][y].removeUnit(u);
+						throw new TurnExecutionException(ErrorType.DEAD);
+					}
+				}
 				}
 			}
 		}
@@ -721,7 +785,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 	 * @param rnd the random to be used
 	 * @param arr the array to be shuffled
 	 */
-	public static <T> void shuffle(Random2 rnd, T[] arr) {
+	public static <T> void shuffle(ACORNRandom rnd, T[] arr) {
 		for (int i = 0; i < arr.length - 1; i++) {
 			int val = rnd.nextInt();
 			val &= 0x7FFFFFFF;
@@ -787,7 +851,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		
 		private List<NextTurnListener> nextTurnListeners = new ArrayList<>();
 		private final Tile[][]         tiles;
-		private final Random2          rnd;
+		private final ACORNRandom      rnd;
 		private final User             root;
 		
 		private int resourceMask = 7;
@@ -800,7 +864,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * @param ylen the y-len (height) of the builder
 		 */
 		public Builder(User usr, int xlen, int ylen) {
-			this(usr, xlen, ylen, new Random2());
+			this(usr, xlen, ylen, new ACORNRandom());
 		}
 		
 		/**
@@ -811,7 +875,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * @param ylen the y-len (height) of the builder
 		 * @param rnd  the random of the builder
 		 */
-		public Builder(User usr, int xlen, int ylen, Random2 rnd) {
+		public Builder(User usr, int xlen, int ylen, ACORNRandom rnd) {
 			if (xlen <= 0 || ylen <= 0) { throw new IllegalArgumentException("xlen=" + xlen + " ylen=" + ylen); } //$NON-NLS-1$ //$NON-NLS-2$
 			if (rnd == null) throw new NullPointerException("random is null");
 			if (usr == null) throw new NullPointerException("user is null");
@@ -820,7 +884,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			this.rnd   = rnd;
 		}
 		
-		private Builder(User usr, Tile[][] tiles, Random2 rnd) {
+		private Builder(User usr, Tile[][] tiles, ACORNRandom rnd) {
 			this.root  = usr;
 			this.tiles = tiles;
 			this.rnd   = rnd;
@@ -853,7 +917,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			if (grounds == null) {
 				randomGrnd(0, 0);
 			}
-			while (fillOnce());
+			while (fillOnce()) {/**/}
 			executeNTL();
 		}
 		
@@ -908,6 +972,9 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			for (i = 0; props[i] <= val; i++) {
 				val -= props[i];
 			}
+			if (i >= resources.size()) {
+				return null;
+			}
 			return resources.get(i).withNeigbours(this, x, y, neigbours);
 		}
 		
@@ -941,22 +1008,19 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 			for (i = 0; props[i] <= val; i++) {
 				val -= props[i];
 			}
-			if (i == 0) {
-				return null;
-			}
-			return grounds.get(i - 1).withNeigbours(this, x, y, neigbours);
+			return grounds.get(i).withNeigbours(this, x, y, neigbours);
 		}
 		
 		private void placeSomePoints() {
 			for (int x = 0; x < this.tiles.length; x += 8) {
 				for (int y = x % 16 == 0 ? 0 : 4; y < this.tiles[x].length; y += 8) {
 					if ((this.tiles[x][y] != null && this.tiles[x][y].ground().type() != GroundType.NOT_EXPLORED_TYPE)
-						// do not place nearby other tiles and do not overwrite tiles
-						|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
-						|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))
-						|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
-						|| (y + 1 < this.tiles[x].length
-							&& (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))) {
+							// do not place nearby other tiles and do not overwrite tiles
+							|| (x > 0 && (this.tiles[x - 1][y] != null && this.tiles[x - 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+							|| (y > 0 && (this.tiles[x][y - 1] != null && this.tiles[x][y - 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+							|| (x + 1 < this.tiles.length && (this.tiles[x + 1][y] != null && this.tiles[x + 1][y].ground().type() != GroundType.NOT_EXPLORED_TYPE))
+							|| (y + 1 < this.tiles[x].length
+									&& (this.tiles[x][y + 1] != null && this.tiles[x][y + 1].ground().type() != GroundType.NOT_EXPLORED_TYPE))) {
 						continue;
 					}
 					Tile t = new Tile(randomGrnd(x, y));
@@ -1186,12 +1250,8 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * @param build the building to be placed at the given position
 		 */
 		public void setBuild(int x, int y, Build build) {
-			try {
-				tile(x, y).setBuild(build);
-				executeNTL();
-			} catch (TurnExecutionException e) {
-				throw new IllegalStateException(e);
-			}
+			tile(x, y).setBuild(build);
+			executeNTL();
 		}
 		
 		/**
@@ -1293,7 +1353,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * @return the newly created builder
 		 */
 		public static Builder createBuilder(User root, Tile[][] tiles) {
-			return createBuilder(root, tiles, new Random2());
+			return createBuilder(root, tiles, new ACORNRandom());
 		}
 		
 		/**
@@ -1305,7 +1365,7 @@ public class CompleteWorld implements World, Iterable<CompleteWorld> {
 		 * 
 		 * @return the newly created builder
 		 */
-		public static Builder createBuilder(User root, Tile[][] tiles, Random2 rnd) {
+		public static Builder createBuilder(User root, Tile[][] tiles, ACORNRandom rnd) {
 			Tile[][] copy = tiles.clone(); // do clone, so the rectangular form can not be destroyed
 			int      ylen = copy[0].length;
 			for (int x = 0; x < copy.length; x++) { // only enforce the rectangular form, the builder is allowed to contain invalid tiles

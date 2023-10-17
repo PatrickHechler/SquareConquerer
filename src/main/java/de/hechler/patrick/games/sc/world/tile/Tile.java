@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import de.hechler.patrick.games.sc.addons.addable.ResourceType;
+import de.hechler.patrick.games.sc.error.ErrorType;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.world.CompleteWorld;
 import de.hechler.patrick.games.sc.world.UserWorld;
@@ -37,7 +38,7 @@ import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.ground.Ground;
 import de.hechler.patrick.games.sc.world.resource.Resource;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 import jdk.incubator.concurrent.ScopedValue;
 
 @SuppressWarnings("javadoc")
@@ -149,7 +150,11 @@ public final class Tile {
 		return new Tile(this.ground, this.resources, this.build, this.units, this.lastTimeSeen);
 	}
 	
-	public Entity<?, ?>[] entities() {
+	public Stream<Entity<?,?>> entitiesStream() {
+		return Stream.of(entities());
+	}
+	
+	public Entity<?,?>[] entities() {
 		int            s      = this.units.size();
 		Entity<?, ?>[] result = new Entity<?, ?>[s + (this.build != null ? 1 : 0)];
 		int            off;
@@ -192,6 +197,7 @@ public final class Tile {
 			}
 		}
 		this.units.add(u);
+		this.units.sort(null);
 	}
 	
 	public void removeUnit(Unit u) throws TurnExecutionException {
@@ -216,7 +222,20 @@ public final class Tile {
 		this.ground = Objects.requireNonNull(g, "ground");
 	}
 	
-	public void setBuild(Build b) throws TurnExecutionException {
+	public void removeBuild(Build expect) throws TurnExecutionException {
+		if (checkModify()) {
+			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
+				throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
+			}
+		}
+		if (!this.build.equals(expect)) {
+			throw new TurnExecutionException(ErrorType.UNKNOWN);
+		}
+		this.build = null;
+	}
+	
+	public void setBuild(Build b) {
 		if (checkModify()) {
 			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
@@ -239,7 +258,7 @@ public final class Tile {
 		});
 	}
 	
-	public Resource removeResource(Resource r, Random2 rnd) throws TurnExecutionException {
+	public Resource removeResource(Resource r, ACORNRandom rnd) throws TurnExecutionException {
 		if (checkModify()) {
 			Class<?> caller = StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			if (caller != CompleteWorld.class && caller != CompleteWorld.Builder.class) {
@@ -247,7 +266,14 @@ public final class Tile {
 			}
 		}
 		Resource old = this.resources.get(r.type());
-		return old.sub(r, rnd);
+		if (old == null) {
+			throw new TurnExecutionException(ErrorType.INVALID_TURN);
+		}
+		Resource result = old.sub(r, rnd);
+		if (old.amount() <= 0) {
+			this.resources.remove(r.type());
+		}
+		return result;
 	}
 	
 }

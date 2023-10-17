@@ -34,17 +34,16 @@ import de.hechler.patrick.games.sc.connect.Connection;
 import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.Turn;
-import de.hechler.patrick.games.sc.ui.players.User;
 import de.hechler.patrick.games.sc.values.BooleanValue;
 import de.hechler.patrick.games.sc.values.DoubleValue;
 import de.hechler.patrick.games.sc.values.EnumValue;
 import de.hechler.patrick.games.sc.values.IntValue;
 import de.hechler.patrick.games.sc.values.JustAValue;
+import de.hechler.patrick.games.sc.values.ListValue;
 import de.hechler.patrick.games.sc.values.LongValue;
 import de.hechler.patrick.games.sc.values.MapValue;
 import de.hechler.patrick.games.sc.values.StringValue;
 import de.hechler.patrick.games.sc.values.TypeValue;
-import de.hechler.patrick.games.sc.values.UserListValue;
 import de.hechler.patrick.games.sc.values.UserValue;
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.WorldThingValue;
@@ -403,7 +402,7 @@ public class OpenWorld implements NextTurnListener {
 	}
 	
 	public static WorldThing<?, ?> readThing(Connection conn) throws IOException {
-		conn.writeInt(WRITE_THING);
+		conn.readInt(WRITE_THING);
 		UUID               uuid   = conn.readUUID();
 		AddableType<?, ?>  type   = Addons.type(conn.readString());
 		Map<String, Value> values = HashMap.newHashMap(conn.readPos());
@@ -476,13 +475,13 @@ public class OpenWorld implements NextTurnListener {
 			conn.writeInt(LONG_VALUE);
 			conn.writeLong(v.value());
 		}
-		case @SuppressWarnings("preview") MapValue<?, ?> v -> {
+		case @SuppressWarnings("preview") MapValue<?> v -> {
 			conn.writeInt(MAP_VALUE);
 			Map<?, ?> map = v.value();
 			conn.writeInt(map.size());
 			for (Entry<?, ?> e : map.entrySet()) {
 				conn.writeInt(MAP_VALUE_SUB0);
-				writeValue(conn, (Value) e.getKey());
+				conn.writeString((String) e.getKey());
 				conn.writeInt(MAP_VALUE_SUB1);
 				writeValue(conn, (Value) e.getValue());
 			}
@@ -496,13 +495,13 @@ public class OpenWorld implements NextTurnListener {
 			conn.writeInt(TYPE_VALUE);
 			conn.writeString(v.value().name);
 		}
-		case @SuppressWarnings("preview") UserListValue v -> {
+		case @SuppressWarnings("preview") ListValue v -> {
 			conn.writeInt(USER_LIST_VALUE);
-			List<User> list = v.value();
+			List<Value> list = v.value();
 			conn.writeInt(list.size());
-			for (User user : list) {
+			for (Value user : list) {
 				conn.writeInt(USER_LIST_VALUE_S);
-				conn.writeString(user.name());
+				writeValue(conn, user);
 			}
 			conn.writeInt(USER_LIST_VALUE_F);
 		}
@@ -536,7 +535,7 @@ public class OpenWorld implements NextTurnListener {
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Value readValue(Connection conn) throws IOException {
-		conn.writeInt(SEND_VALUE);
+		conn.readInt(SEND_VALUE);
 		String name = conn.readString();
 		switch (conn.readInt(BOOLEAN_VALUE, DOUBLE_VALUE, ENUM_VALUE, INT_VALUE, JUST_A_VALUE, LONG_VALUE, MAP_VALUE, STRING_VALUE, TYPE_VALUE, USER_LIST_VALUE,
 			USER_VALUE, WORLD_THING_VALUE)) {
@@ -561,18 +560,17 @@ public class OpenWorld implements NextTurnListener {
 			return new LongValue(name, conn.readLong());
 		}
 		case MAP_VALUE -> {
-			Map<Value, Value> map = new HashMap<>();
-			conn.writeInt(map.size());
+			Map<String, Value> map = new HashMap<>(conn.readPos());
 			for (;;) {
 				if (conn.readInt(MAP_VALUE_SUB0, MAP_VALUE_FIN) == MAP_VALUE_FIN) {
 					break;
 				}
-				Value k = readValue(conn);
+				String k = conn.readString();
 				conn.readInt(MAP_VALUE_SUB1);
 				Value v = readValue(conn);
 				map.put(k, v);
 			}
-			return new MapValue<>(name, map);
+			return new MapValue<Value>(name, map);
 		}
 		case STRING_VALUE -> {
 			return new StringValue(name, conn.readString());
@@ -581,21 +579,20 @@ public class OpenWorld implements NextTurnListener {
 			return new TypeValue(name, Addons.type(conn.readString()));
 		}
 		case USER_LIST_VALUE -> {
-			List<User> list = new ArrayList<>(conn.readPos());
+			List<Value> list = new ArrayList<>(conn.readPos());
 			for (;;) {
 				if (conn.readInt(USER_LIST_VALUE_S, USER_LIST_VALUE_F) == USER_LIST_VALUE_F) {
 					break;
 				}
-				list.add(conn.usr.get(conn.readString()));
+				list.add(readValue(conn));
 			}
-			return new UserListValue(name, list);
+			return new ListValue(name, list);
 		}
 		case USER_VALUE -> {
 			if (conn.readByte(1, 0) != 0) {
 				return new UserValue(name, conn.usr.get(conn.readString()));
-			} else {
-				return new UserValue(name, null);
 			}
+			return new UserValue(name, null);
 		}
 		case WORLD_THING_VALUE -> {
 			switch (conn.readByte(3, 2, 1, 0)) {

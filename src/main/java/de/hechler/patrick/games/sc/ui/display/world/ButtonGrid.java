@@ -1,3 +1,19 @@
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.ui.display.world;
 
 import java.awt.Canvas;
@@ -164,7 +180,11 @@ public class ButtonGrid extends Canvas {
 		}
 		this.img = new BufferedImage(this.xlen * this.bsize, this.ylen * this.bsize, BufferedImage.TYPE_INT_RGB);
 		this.g   = this.img.createGraphics();
-		super.setPreferredSize(new Dimension(this.img.getWidth(), this.img.getHeight()));
+		Dimension s = new Dimension(this.img.getWidth(), this.img.getHeight());
+		super.setPreferredSize(s);
+		super.setMinimumSize(s);
+		super.setMaximumSize(s);
+		super.setSize(s);
 	}
 	
 	/**
@@ -247,10 +267,22 @@ public class ButtonGrid extends Canvas {
 	
 	/**
 	 * paints all buttons to the graphics
+	 * <p>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void paint(Graphics g) {
 		g.drawImage(this.img, 0, 0, getWidth(), getHeight(), this);
+	}
+	
+	/**
+	 * just delegates {@link #paint(Graphics)}, without clearing anything
+	 * 
+	 * @see #paint(Graphics)
+	 */
+	@Override
+	public void update(Graphics g) {
+		paint(g);
 	}
 	
 	/**

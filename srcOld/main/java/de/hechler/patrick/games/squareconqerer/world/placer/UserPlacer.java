@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import de.hechler.patrick.games.squareconqerer.User;
 import de.hechler.patrick.games.squareconqerer.connect.Connection;
-import de.hechler.patrick.games.squareconqerer.stuff.Random2;
+import de.hechler.patrick.games.squareconqerer.stuff.ACORNRandom;
 import de.hechler.patrick.games.squareconqerer.world.World;
 
 /**
@@ -40,7 +40,7 @@ public interface UserPlacer {
 	 * @param usrs  all users to be placed placed in a random order
 	 * @param rnd   the worlds random object
 	 */
-	void initilize(World world, User[] usrs, Random2 rnd);
+	void initilize(World world, User[] usrs, ACORNRandom rnd);
 	
 	/**
 	 * sends this {@link UserPlacer} over the given connection

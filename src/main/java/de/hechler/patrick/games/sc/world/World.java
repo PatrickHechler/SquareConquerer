@@ -16,36 +16,59 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.world;
 
+import java.awt.Image;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import de.hechler.patrick.games.sc.addons.addable.WorldType;
 import de.hechler.patrick.games.sc.turn.NextTurnListener;
 import de.hechler.patrick.games.sc.turn.Turn;
 import de.hechler.patrick.games.sc.ui.players.User;
+import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.tile.Tile;
 
-public interface World {
+public abstract non-sealed class World<P extends Pos> extends WorldThing<WorldType<P>, World<P>> {
 	
-	User user();
-	
-	int xlen();
-	
-	int ylen();
-	
-	int turn();
-	
-	Tile tile(int x, int y);
+	public static final UUID NULL_UUID = new UUID(0L, 0L);
 
-	void addNextTurnListener(NextTurnListener listener);
+	public World() {
+		super(NULL_UUID);
+	}
 	
-	void removeNextTurnListener(NextTurnListener listener);
+	public World(UUID uuid) {
+		super(uuid);
+	}
 	
-	void finish(Turn t);
+	public abstract User user();
 	
-	Map<User, List<Entity<?, ?>>> entities();
-
-	WorldThing<?, ?> get(UUID uuid);
+	public abstract int turn();
+	
+	public abstract int xlen();
+	
+	public abstract int ylen();
+	
+	public abstract Tile tile(int x, int y);
+	
+	public abstract void addNextTurnListener(NextTurnListener listener);
+	
+	public abstract void removeNextTurnListener(NextTurnListener listener);
+	
+	public abstract void finish(Turn t);
+	
+	public abstract Map<User, List<Entity<?, ?>>> entities();
+	
+	public abstract WorldThing<?, ?> get(UUID uuid);
+	
+	@Override
+	public Image image(int width, int height) {
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	public void value(Value newValue) {
+		throw new UnsupportedOperationException();
+	}
 	
 }

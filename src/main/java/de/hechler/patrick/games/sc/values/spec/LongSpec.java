@@ -22,10 +22,14 @@ import de.hechler.patrick.games.sc.values.LongValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record LongSpec(String name, long min, long max) implements ValueSpec {
+public record LongSpec(String name, String localName, long min, long max) implements ValueSpec {
 	
 	public LongSpec {
 		Objects.requireNonNull(name, "name");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public LongValue withValue(long val) {

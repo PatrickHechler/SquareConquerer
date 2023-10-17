@@ -185,7 +185,7 @@ public class User implements Closeable {
 	public synchronized int modifyCount() throws IllegalCallerException {
 		Class<?> caller = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 		if (caller != Connection.ServerAccept.class && caller != Connection.OneWayAccept.class && caller != CompleteWorld.class
-			&& caller != Connection.ClientConnect.class && caller != Connection.class) {
+				&& caller != Connection.ClientConnect.class && caller != Connection.class) {
 			throw new IllegalCallerException(String.format("illegal caller: %s/%s", caller.getModule(), caller.getName()));
 		}
 		return this.modCnt;
@@ -244,6 +244,15 @@ public class User implements Closeable {
 	 */
 	public static int randomInt() {
 		return RND.nextInt();
+	}
+	
+	/**
+	 * returns a random long value
+	 * 
+	 * @return a random long value
+	 */
+	public static long randomLong() {
+		return RND.nextLong();
 	}
 	
 	/**
@@ -334,6 +343,11 @@ public class User implements Closeable {
 			this.s = null;
 			this.modCnt++;
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return name();
 	}
 	
 	private static record Secret0(String name, char[] _pw) {

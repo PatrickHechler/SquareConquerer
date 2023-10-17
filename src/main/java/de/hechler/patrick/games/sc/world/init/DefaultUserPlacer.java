@@ -38,7 +38,7 @@ import de.hechler.patrick.games.sc.world.entity.Build;
 import de.hechler.patrick.games.sc.world.entity.Entity;
 import de.hechler.patrick.games.sc.world.entity.Unit;
 import de.hechler.patrick.games.sc.world.tile.Tile;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 import de.hechler.patrick.utils.objects.TwoVals;
 
 public class DefaultUserPlacer implements UserPlacer {
@@ -69,7 +69,7 @@ public class DefaultUserPlacer implements UserPlacer {
 	}
 	
 	@Override
-	public void initilize(World w, User[] users, Random2 rnd) throws TurnExecutionException {
+	public void initilize(World w, User[] users, ACORNRandom rnd) throws TurnExecutionException {
 		int     sum  = this.starts.size();
 		int     size = (int) Math.sqrt(sum) + 1;
 		Point[] p    = new Point[users.length];
@@ -92,7 +92,7 @@ public class DefaultUserPlacer implements UserPlacer {
 		}
 	}
 	
-	private void initUsr(Random2 rnd, User usr, World world, int x, int y, int size, int remainUnitCount) throws TurnExecutionException {
+	private void initUsr(ACORNRandom rnd, User usr, World world, int x, int y, int size, int remainUnitCount) throws TurnExecutionException {
 		Point[] p = new Point[remainUnitCount];
 		for (TwoVals<EntityType<?, ?>, Map<String, Value>> tv : this.starts) {
 			EntityType<?, ?>   type = tv.a;

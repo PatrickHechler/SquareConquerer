@@ -27,7 +27,7 @@ import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.values.spec.ValueSpec;
 import de.hechler.patrick.games.sc.world.World;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 @SuppressWarnings("javadoc")
 public abstract class SimpleGroundType extends GroundType {
@@ -59,13 +59,13 @@ public abstract class SimpleGroundType extends GroundType {
 	
 	@Override
 	@SuppressWarnings("unused")
-	public Ground withRandomValues(World w, Random2 r, int x, int y) {
+	public Ground withRandomValues(World w, ACORNRandom r, int x, int y) {
 		return new SimpleGround(r.nextUUID(), this.defs);
 	}
 	
 	@Override
 	@SuppressWarnings("unused")
-	public Ground withDefaultValues(World w, Random2 r, int x, int y) {
+	public Ground withDefaultValues(World w, ACORNRandom r, int x, int y) {
 		return new SimpleGround(r.nextUUID(), this.defs);
 	}
 	

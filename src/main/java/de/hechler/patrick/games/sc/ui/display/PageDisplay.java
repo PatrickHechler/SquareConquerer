@@ -1,28 +1,32 @@
-//This file is part of the Square Conquerer Project
-//DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//Copyright (C) 2023  Patrick Hechler
+// This file is part of the Square Conquerer Project
+// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+// Copyright (C) 2023 Patrick Hechler
 //
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU Affero General Public License as published
-//by the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU Affero General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 //
-//You should have received a copy of the GNU Affero General Public License
-//along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 package de.hechler.patrick.games.sc.ui.display;
 
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Desktop;
+import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Rectangle;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
@@ -30,17 +34,21 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 
 import de.hechler.patrick.games.sc.ui.pages.Page;
 import de.hechler.patrick.games.sc.ui.pages.PageBlock;
@@ -50,33 +58,30 @@ import de.hechler.patrick.games.sc.world.World;
 
 public class PageDisplay {
 	
-	private final Consumer<World>  setWorld;
-	private final Supplier<String> discardMsg;
+	private final BiConsumer<JDialog, World> setWorld;
+	private final Supplier<String>           discardMsg;
 	
-	public PageDisplay(Consumer<World> setWorld, Supplier<String> discardMsg) {
+	public PageDisplay(BiConsumer<JDialog, World> setWorld, Supplier<String> discardMsg) {
 		this.setWorld   = Objects.requireNonNull(setWorld, "set world");
 		this.discardMsg = Objects.requireNonNull(discardMsg, "discard message");
 	}
 	
 	public JDialog display(Page p) {
 		JDialog d = new JDialog();
-		d.setLocationByPlatform(true);
-		return display(p, d);
+		return display(p, d, null);
 	}
 	
 	public JDialog display(Page p, Frame f) {
 		JDialog d = new JDialog(f);
-		d.setLocationRelativeTo(f);
-		return display(p, d);
+		return display(p, d, f);
 	}
 	
 	public JDialog display(Page p, Window w) {
 		JDialog d = new JDialog(w);
-		d.setLocationRelativeTo(w);
-		return display(p, d);
+		return display(p, d, w);
 	}
 	
-	public JDialog display(Page p, JDialog d) {
+	public JDialog display(Page p, JDialog d, Component relative) {
 		d.setTitle(p.title());
 		JPanel dp = new JPanel();
 		dp.setLayout(null);
@@ -119,7 +124,7 @@ public class PageDisplay {
 			}
 		}
 		dp.setPreferredSize(new Dimension(maxx, yoff));
-		return initDialog(d);
+		return initDialog(d, relative);
 	}
 	
 	private static int pageAddSepBlock(JPanel dp, int yoff, SeparatingBlock sb) {
@@ -156,16 +161,15 @@ public class PageDisplay {
 			
 			@Override
 			public void mouseClicked(@SuppressWarnings("unused") MouseEvent e) {
-				int chosen = JOptionPane.showConfirmDialog(dialog,
-					"load world " + we.worldName() + '?' + PageDisplay.this.discardMsg.get(),
-					"load " + we.worldName() + '?', JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+				int chosen = JOptionPane.showConfirmDialog(dialog, "load world " + we.worldName() + '?' + PageDisplay.this.discardMsg.get(),
+						"load " + we.worldName() + '?', JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 				if (chosen != JOptionPane.YES_OPTION) return;
 				World w = we.world().get();
 				if (w == null) {
 					JOptionPane.showMessageDialog(dialog, "error: world is null", "there is no world", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
-				PageDisplay.this.setWorld.accept(w);
+				PageDisplay.this.setWorld.accept(dialog, w);
 			}
 			
 		});
@@ -222,7 +226,7 @@ public class PageDisplay {
 					Desktop.getDesktop().browse(uri);
 				} catch (IOException | RuntimeException e1) {
 					JOptionPane.showMessageDialog(dialog, "error while opening link '" + le.link() + "': " + e1.toString(), "could not open the link",
-						JOptionPane.ERROR_MESSAGE);
+							JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			
@@ -247,30 +251,52 @@ public class PageDisplay {
 		return pref;
 	}
 	
-	static JDialog initDialog(JDialog d) {
-		JScrollPane scroll = (JScrollPane) d.getContentPane();
-		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-		scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+	public static JDialog initDialog(JDialog d, Component relative) {
+		d.setModalityType(ModalityType.APPLICATION_MODAL);
+		d.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		d.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "escape");
+		d.getRootPane().getActionMap().put("escape", new AbstractAction() {
+			
+			private static final long serialVersionUID = 2109799710377947913L;
+			
+			@Override
+			public void actionPerformed(@SuppressWarnings("unused") ActionEvent e) {
+				d.dispose();
+			}
+			
+		});
+		Container cont = d.getContentPane();
+		if (cont instanceof JScrollPane scroll) {
+			scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+			scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		}
 		d.pack();
 		Rectangle bounds = d.getGraphicsConfiguration().getBounds();
 		int       w      = d.getWidth();
 		int       h      = d.getHeight();
 		boolean   set    = false;
 		if (bounds.width < d.getWidth()) {
-			w    = bounds.width;
-			set  = true;
-			h   += scroll.getHorizontalScrollBar().getHeight();
+			w   = bounds.width;
+			set = true;
+			if (cont instanceof JScrollPane scroll) {
+				h += scroll.getHorizontalScrollBar().getHeight();
+			}
 		}
 		if (bounds.height < d.getHeight()) {
 			h   = bounds.height;
 			set = true;
-			w   = Math.min(w + scroll.getVerticalScrollBar().getWidth(), bounds.width);
+			if (cont instanceof JScrollPane scroll) {
+				w   = Math.min(w + scroll.getVerticalScrollBar().getWidth(), bounds.width);
+			}
 		}
 		if (set) {
 			d.setSize(w, h);
 		}
-		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		if (cont instanceof JScrollPane scroll) {
+			scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+			scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		}
+		d.setLocationRelativeTo(relative);
 		d.setVisible(true);
 		return d;
 	}

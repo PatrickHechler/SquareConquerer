@@ -23,10 +23,14 @@ import de.hechler.patrick.games.sc.values.StringValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record StringSpec(String name) implements ValueSpec {
+public record StringSpec(String name, String localName) implements ValueSpec {
 	
 	public StringSpec {
 		Objects.requireNonNull(name, "name");
+	}
+	
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
 	}
 	
 	public StringValue withValue(String val) {

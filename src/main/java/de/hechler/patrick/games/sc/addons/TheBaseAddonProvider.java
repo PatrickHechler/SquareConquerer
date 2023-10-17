@@ -22,11 +22,12 @@ import java.util.List;
 public class TheBaseAddonProvider extends AddonProvider {
 	
 	public static final TheBaseAddon BASE_ADDON = new TheBaseAddon();
+	public static final WorldAddon WORLD_ADDON = new WorldAddon();
 	
-	private static final List<Addon> LIST = List.of(BASE_ADDON);
+	private static final List<Addon> LIST = List.of(BASE_ADDON, WORLD_ADDON);
 	
 	@Override
-	protected Iterable<Addon> addons() {
+	public Iterable<Addon> addons() {
 		return LIST;
 	}
 	

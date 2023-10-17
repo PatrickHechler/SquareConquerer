@@ -34,7 +34,7 @@ import de.hechler.patrick.games.squareconqerer.User.RootUser;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPage;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageBlock;
 import de.hechler.patrick.games.squareconqerer.addons.pages.SCPageEntry;
-import de.hechler.patrick.games.squareconqerer.stuff.Random2;
+import de.hechler.patrick.games.squareconqerer.stuff.ACORNRandom;
 import de.hechler.patrick.games.squareconqerer.world.resource.OreResourceType;
 import de.hechler.patrick.games.squareconqerer.world.tile.GroundType;
 import de.hechler.patrick.games.squareconqerer.world.tile.Tile;
@@ -90,7 +90,7 @@ public class PageWorld {
 		randomTiles(false);
 	}
 	
-	private static Tile randomTile(Random2 rnd, boolean allowNotExplored) {
+	private static Tile randomTile(ACORNRandom rnd, boolean allowNotExplored) {
 		OreResourceType ort = OreResourceType.of(rnd.nextInt(OreResourceType.count()));
 		GroundType      tt;
 		do {
@@ -173,7 +173,7 @@ public class PageWorld {
 	 * @param allowNotExplored if {@link GroundType#NOT_EXPLORED} is allowed to be generated randomly
 	 */
 	public void randomTiles(boolean allowNotExplored) {
-		Random2 rnd = new Random2();
+		ACORNRandom rnd = new ACORNRandom();
 		do {
 			this.pageTile = randomTile(rnd, allowNotExplored);
 			this.linkTile = randomTile(rnd, allowNotExplored);

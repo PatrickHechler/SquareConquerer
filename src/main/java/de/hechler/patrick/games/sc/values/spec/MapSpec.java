@@ -23,19 +23,23 @@ import de.hechler.patrick.games.sc.values.MapValue;
 import de.hechler.patrick.games.sc.values.Value;
 
 @SuppressWarnings("javadoc")
-public record MapSpec(String name) implements ValueSpec {
+public record MapSpec(String name, String localName) implements ValueSpec {
 	
 	public MapSpec {
 		Objects.requireNonNull(name, "name");
 	}
 	
-	public <K extends Value, V extends Value> MapValue<K, V> withValue(Map<K, V> value) {
-		return new MapValue<>(this.name, value);
+	public String localName() {
+		return this.localName == null ? this.name : this.localName;
+	}
+	
+	public <V extends Value> MapValue<V> withValue(Map<String, V> value) {
+		return new MapValue<V>(this.name, value);
 	}
 	
 	@Override
 	public void validate(Value v) {
-		if (!(v instanceof MapValue d)) throw new IllegalArgumentException("the given value is no map value");
+		if (!(v instanceof MapValue<?> d)) throw new IllegalArgumentException("the given value is no map value");
 	}
 	
 }

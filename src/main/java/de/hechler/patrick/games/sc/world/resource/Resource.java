@@ -26,11 +26,12 @@ import de.hechler.patrick.games.sc.error.TurnExecutionException;
 import de.hechler.patrick.games.sc.values.IntValue;
 import de.hechler.patrick.games.sc.values.Value;
 import de.hechler.patrick.games.sc.world.WorldThing;
-import de.hechler.patrick.utils.objects.Random2;
+import de.hechler.patrick.utils.objects.ACORNRandom;
 
 public abstract non-sealed class Resource extends WorldThing<ResourceType, Resource> {
 	
-	public static final String AMOUNT = "amount";
+	public static final String AMOUNT     = "amount";
+	public static final String AMOUNT_LOC = "amount";
 	
 	public Resource(UUID uuid) {
 		super(uuid);
@@ -40,7 +41,7 @@ public abstract non-sealed class Resource extends WorldThing<ResourceType, Resou
 		return intValue(AMOUNT).value();
 	}
 	
-	public Resource sub(Resource sub, Random2 r) throws TurnExecutionException {
+	public Resource sub(Resource sub, ACORNRandom r) throws TurnExecutionException {
 		if (type() != sub.type()) {
 			throw new IllegalArgumentException("the given resource has a different type!");
 		}
@@ -64,6 +65,11 @@ public abstract non-sealed class Resource extends WorldThing<ResourceType, Resou
 			throw new IllegalArgumentException("the given resource has a different type!");
 		}
 		value(new IntValue(AMOUNT, amount() + res.amount()));
+	}
+	
+	@Override
+	public String toString() {
+		return type().localName + ": amount: " + amount();
 	}
 	
 }
